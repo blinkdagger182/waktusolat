@@ -10,33 +10,21 @@
 		7205C1F02D797535001D4979 /* LockScreen3Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EE2D797535001D4979 /* LockScreen3Widget.swift */; };
 		7205C1F12D797535001D4979 /* LockScreen4Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EF2D797535001D4979 /* LockScreen4Widget.swift */; };
 		720CCE432E3960BB002DD82E /* Globals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE422E3960BB002DD82E /* Globals.swift */; };
-		720CCE442E3960BB002DD82E /* Globals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE422E3960BB002DD82E /* Globals.swift */; };
 		720CCE452E3960BB002DD82E /* Globals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE422E3960BB002DD82E /* Globals.swift */; };
-		720CCE462E3960BB002DD82E /* Globals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE422E3960BB002DD82E /* Globals.swift */; };
 		720DEC682D2456FF006EA342 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720DEC642D2456FF006EA342 /* CreditsView.swift */; };
 		722BBD382F0997DB004F3659 /* AdhanSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722BBD372F0997DB004F3659 /* AdhanSheet.swift */; };
 		72537C1E2F04338E00829F59 /* AppReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1D2F04338E00829F59 /* AppReview.swift */; };
 		72537C202F04340600829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
-		72537C212F04340600829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
 		72537C222F0434C500829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
-		72537C232F0434C500829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
 		72574CCC2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
-		72574CCD2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
-		72574CCE2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
 		72574CCF2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
-		72574CD42E49F35600BFF138 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CD32E49F35600BFF138 /* AppIntents.swift */; };
 		72574CD52E49F35600BFF138 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CD32E49F35600BFF138 /* AppIntents.swift */; };
 		72574CD62E49F35600BFF138 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CD32E49F35600BFF138 /* AppIntents.swift */; };
-		72574CD72E49F35600BFF138 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CD32E49F35600BFF138 /* AppIntents.swift */; };
 		7263422B2E8CCB4C00B9A0DA /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7263422A2E8CCB4C00B9A0DA /* CalendarView.swift */; };
-		72657D462E3EB6C700D8F41B /* ArabicLetterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D452E3EB6C700D8F41B /* ArabicLetterView.swift */; };
-		72657D472E3EB6C700D8F41B /* Arabic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D432E3EB6C700D8F41B /* Arabic.swift */; };
-		72657D482E3EB6C700D8F41B /* ArabicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D442E3EB6C700D8F41B /* ArabicView.swift */; };
 		72657D492E3EB6C700D8F41B /* ArabicLetterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D452E3EB6C700D8F41B /* ArabicLetterView.swift */; };
 		72657D4A2E3EB6C700D8F41B /* Arabic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D432E3EB6C700D8F41B /* Arabic.swift */; };
 		72657D4B2E3EB6C700D8F41B /* ArabicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D442E3EB6C700D8F41B /* ArabicView.swift */; };
 		72657D4C2E3EB6D200D8F41B /* Arabic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D432E3EB6C700D8F41B /* Arabic.swift */; };
-		72657D4D2E3EB6D200D8F41B /* Arabic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72657D432E3EB6C700D8F41B /* Arabic.swift */; };
 		72728C962B3D18E500FAA3B3 /* Al-AdhanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728C952B3D18E500FAA3B3 /* Al-AdhanApp.swift */; };
 		72728C9A2B3D18E600FAA3B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72728C992B3D18E600FAA3B3 /* Assets.xcassets */; };
 		72728CA42B3D191F00FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
@@ -50,20 +38,6 @@
 		72728CBD2B3D1A8300FAA3B3 /* PrayerList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CBC2B3D1A8300FAA3B3 /* PrayerList.swift */; };
 		72728CC02B3D1AA000FAA3B3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CBF2B3D1AA000FAA3B3 /* SettingsView.swift */; };
 		72728CC22B3D1AA300FAA3B3 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CC12B3D1AA300FAA3B3 /* Settings.swift */; };
-		72728CCA2B3D1FF900FAA3B3 /* Al-AdhanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CC92B3D1FF900FAA3B3 /* Al-AdhanApp.swift */; };
-		72728CD42B3D1FFA00FAA3B3 /* Al-Adhan.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 72728CC72B3D1FF900FAA3B3 /* Al-Adhan.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		72728CDE2B3D204200FAA3B3 /* LaunchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */; };
-		72728CDF2B3D204400FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
-		72728CE02B3D204900FAA3B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72728C992B3D18E600FAA3B3 /* Assets.xcassets */; };
-		72728CE12B3D204C00FAA3B3 /* AdhanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB32B3D19EE00FAA3B3 /* AdhanView.swift */; };
-		72728CE22B3D204C00FAA3B3 /* PrayerCountdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CBA2B3D1A7A00FAA3B3 /* PrayerCountdown.swift */; };
-		72728CE32B3D204C00FAA3B3 /* QiblaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB82B3D1A6E00FAA3B3 /* QiblaView.swift */; };
-		72728CE42B3D204C00FAA3B3 /* PrayerList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CBC2B3D1A8300FAA3B3 /* PrayerList.swift */; };
-		72728CE52B3D204F00FAA3B3 /* 99_Names_Of_Allah.json in Resources */ = {isa = PBXBuildFile; fileRef = 72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */; };
-		72728CE72B3D204F00FAA3B3 /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CAA2B3D198300FAA3B3 /* ToolsView.swift */; };
-		72728CE82B3D205200FAA3B3 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CC12B3D1AA300FAA3B3 /* Settings.swift */; };
-		72728CE92B3D205200FAA3B3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CBF2B3D1AA000FAA3B3 /* SettingsView.swift */; };
-		72728CEB2B3D209E00FAA3B3 /* OtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CEA2B3D209E00FAA3B3 /* OtherView.swift */; };
 		72728CF72B3D51B200FAA3B3 /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CF62B3D51B200FAA3B3 /* Widgets.swift */; };
 		72728CF92B3D51B200FAA3B3 /* PrayersWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CF82B3D51B200FAA3B3 /* PrayersWidget.swift */; };
 		72728CFF2B3D51B300FAA3B3 /* Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 72728CF02B3D51B200FAA3B3 /* Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -74,23 +48,12 @@
 		72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
 		72728D262B3D52BE00FAA3B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72728C992B3D18E600FAA3B3 /* Assets.xcassets */; };
 		72728D282B3D52C400FAA3B3 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CC12B3D1AA300FAA3B3 /* Settings.swift */; };
-		72728D4A2B3D535600FAA3B3 /* Complication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D492B3D535600FAA3B3 /* Complication.swift */; };
-		72728D502B3D535700FAA3B3 /* Complication.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 72728D452B3D535600FAA3B3 /* Complication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		72728D572B3D538100FAA3B3 /* PrayersProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D052B3D51F800FAA3B3 /* PrayersProvider.swift */; };
-		72728D582B3D538400FAA3B3 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CC12B3D1AA300FAA3B3 /* Settings.swift */; };
-		72728D592B3D538800FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
-		72728D5A2B3D538B00FAA3B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72728C992B3D18E600FAA3B3 /* Assets.xcassets */; };
 		72827EAF2E3D70EC00EBA534 /* SettingsAdhanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72827EAE2E3D70EC00EBA534 /* SettingsAdhanView.swift */; };
-		72827EB02E3D70EC00EBA534 /* SettingsAdhanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72827EAE2E3D70EC00EBA534 /* SettingsAdhanView.swift */; };
 		728E2EEB2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
 		728E2EEC2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
-		728E2EED2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
-		728E2EEE2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
 		72BC6B242E2B9D9300ACD832 /* OtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CEA2B3D209E00FAA3B3 /* OtherView.swift */; };
 		72C30E8D2BCC648400F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E8C2BCC648400F54570 /* Adhan */; };
 		72C30E8F2BCC649400F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E8E2BCC649400F54570 /* Adhan */; };
-		72C30E912BCC649C00F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E902BCC649C00F54570 /* Adhan */; };
-		72C30E932BCC64A600F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E922BCC64A600F54570 /* Adhan */; };
 		72C7DD782D79AA0C00FC6058 /* SimpleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C7DD772D79AA0C00FC6058 /* SimpleWidget.swift */; };
 		72CCAE602D42CD8A00871A6A /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE5F2D42CD8A00871A6A /* MapView.swift */; };
 		72CCAE622D42CDAD00871A6A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE612D42CDAD00871A6A /* AppDelegate.swift */; };
@@ -98,18 +61,9 @@
 		72CCAE662D42CE0000871A6A /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE652D42CE0000871A6A /* SearchBar.swift */; };
 		72CCAE682D42CE2B00871A6A /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE672D42CE2B00871A6A /* DismissKeyboard.swift */; };
 		72D0BCCB2D7AE99600B7E4F5 /* Prayers2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */; };
-		72F969872D701C520046661E /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE672D42CE2B00871A6A /* DismissKeyboard.swift */; };
-		72F969882D701C550046661E /* ConditionalStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE632D42CDEB00871A6A /* ConditionalStyle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		72728CD22B3D1FFA00FAA3B3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 72728C8A2B3D18E500FAA3B3 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 72728CC62B3D1FF900FAA3B3;
-			remoteInfo = "Adhan Watch Watch App";
-		};
 		72728CFD2B3D51B300FAA3B3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 72728C8A2B3D18E500FAA3B3 /* Project object */;
@@ -117,27 +71,9 @@
 			remoteGlobalIDString = 72728CEF2B3D51B200FAA3B3;
 			remoteInfo = WidgetExtension;
 		};
-		72728D4E2B3D535700FAA3B3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 72728C8A2B3D18E500FAA3B3 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 72728D442B3D535600FAA3B3;
-			remoteInfo = ComplicationExtension;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		72728CD82B3D1FFA00FAA3B3 /* Embed Watch Content */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
-			files = (
-				72728CD42B3D1FFA00FAA3B3 /* Al-Adhan.app in Embed Watch Content */,
-			);
-			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		72728D032B3D51B300FAA3B3 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
@@ -145,17 +81,6 @@
 			dstSubfolderSpec = 13;
 			files = (
 				72728CFF2B3D51B300FAA3B3 /* Widget.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		72728D202B3D526800FAA3B3 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 12;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				72728D502B3D535700FAA3B3 /* Complication.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -228,27 +153,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		72728CC42B3D1FF900FAA3B3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				72C30E912BCC649C00F54570 /* Adhan in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		72728CED2B3D51B200FAA3B3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				72C30E8F2BCC649400F54570 /* Adhan in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		72728D422B3D535600FAA3B3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				72C30E932BCC64A600F54570 /* Adhan in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -437,13 +346,11 @@
 				72728C8E2B3D18E500FAA3B3 /* Sources */,
 				72728C8F2B3D18E500FAA3B3 /* Frameworks */,
 				72728C902B3D18E500FAA3B3 /* Resources */,
-				72728CD82B3D1FFA00FAA3B3 /* Embed Watch Content */,
 				72728D032B3D51B300FAA3B3 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				72728CD32B3D1FFA00FAA3B3 /* PBXTargetDependency */,
 				72728CFE2B3D51B300FAA3B3 /* PBXTargetDependency */,
 			);
 			name = iPhone;
@@ -452,28 +359,6 @@
 			);
 			productName = "Prayer Times";
 			productReference = 72728C922B3D18E500FAA3B3 /* iPhone.app */;
-			productType = "com.apple.product-type.application";
-		};
-		72728CC62B3D1FF900FAA3B3 /* Watch */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 72728CD52B3D1FFA00FAA3B3 /* Build configuration list for PBXNativeTarget "Watch" */;
-			buildPhases = (
-				72728CC32B3D1FF900FAA3B3 /* Sources */,
-				72728CC42B3D1FF900FAA3B3 /* Frameworks */,
-				72728CC52B3D1FF900FAA3B3 /* Resources */,
-				72728D202B3D526800FAA3B3 /* Embed Foundation Extensions */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				72728D4F2B3D535700FAA3B3 /* PBXTargetDependency */,
-			);
-			name = Watch;
-			packageProductDependencies = (
-				72C30E902BCC649C00F54570 /* Adhan */,
-			);
-			productName = "Adhan Watch Watch App";
-			productReference = 72728CC72B3D1FF900FAA3B3 /* Al-Adhan.app */;
 			productType = "com.apple.product-type.application";
 		};
 		72728CEF2B3D51B200FAA3B3 /* Widget */ = {
@@ -496,26 +381,6 @@
 			productReference = 72728CF02B3D51B200FAA3B3 /* Widget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		72728D442B3D535600FAA3B3 /* Complication */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 72728D512B3D535700FAA3B3 /* Build configuration list for PBXNativeTarget "Complication" */;
-			buildPhases = (
-				72728D412B3D535600FAA3B3 /* Sources */,
-				72728D422B3D535600FAA3B3 /* Frameworks */,
-				72728D432B3D535600FAA3B3 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = Complication;
-			packageProductDependencies = (
-				72C30E922BCC64A600F54570 /* Adhan */,
-			);
-			productName = ComplicationExtension;
-			productReference = 72728D452B3D535600FAA3B3 /* Complication.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -529,13 +394,7 @@
 					72728C912B3D18E500FAA3B3 = {
 						CreatedOnToolsVersion = 15.1;
 					};
-					72728CC62B3D1FF900FAA3B3 = {
-						CreatedOnToolsVersion = 15.1;
-					};
 					72728CEF2B3D51B200FAA3B3 = {
-						CreatedOnToolsVersion = 15.1;
-					};
-					72728D442B3D535600FAA3B3 = {
 						CreatedOnToolsVersion = 15.1;
 					};
 				};
@@ -558,8 +417,6 @@
 			targets = (
 				72728C912B3D18E500FAA3B3 /* iPhone */,
 				72728CEF2B3D51B200FAA3B3 /* Widget */,
-				72728CC62B3D1FF900FAA3B3 /* Watch */,
-				72728D442B3D535600FAA3B3 /* Complication */,
 			);
 		};
 /* End PBXProject section */
@@ -575,31 +432,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		72728CC52B3D1FF900FAA3B3 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				72728CDF2B3D204400FAA3B3 /* Uthmani.otf in Resources */,
-				72728CE02B3D204900FAA3B3 /* Assets.xcassets in Resources */,
-				72728CE52B3D204F00FAA3B3 /* 99_Names_Of_Allah.json in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		72728CEE2B3D51B200FAA3B3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */,
 				72728D262B3D52BE00FAA3B3 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		72728D432B3D535600FAA3B3 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				72728D592B3D538800FAA3B3 /* Uthmani.otf in Resources */,
-				72728D5A2B3D538B00FAA3B3 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -642,34 +480,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		72728CC32B3D1FF900FAA3B3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				72574CD72E49F35600BFF138 /* AppIntents.swift in Sources */,
-				72728CE42B3D204C00FAA3B3 /* PrayerList.swift in Sources */,
-				72728CE22B3D204C00FAA3B3 /* PrayerCountdown.swift in Sources */,
-				72827EB02E3D70EC00EBA534 /* SettingsAdhanView.swift in Sources */,
-				720CCE462E3960BB002DD82E /* Globals.swift in Sources */,
-				72728CE72B3D204F00FAA3B3 /* ToolsView.swift in Sources */,
-				72728CE82B3D205200FAA3B3 /* Settings.swift in Sources */,
-				728E2EED2E6E048300F2C24C /* SettingsAdhan.swift in Sources */,
-				72728CEB2B3D209E00FAA3B3 /* OtherView.swift in Sources */,
-				72574CCE2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */,
-				72F969882D701C550046661E /* ConditionalStyle.swift in Sources */,
-				72537C212F04340600829F59 /* AdhanStructs.swift in Sources */,
-				72728CE12B3D204C00FAA3B3 /* AdhanView.swift in Sources */,
-				72728CCA2B3D1FF900FAA3B3 /* Al-AdhanApp.swift in Sources */,
-				72728CE32B3D204C00FAA3B3 /* QiblaView.swift in Sources */,
-				72728CDE2B3D204200FAA3B3 /* LaunchScreen.swift in Sources */,
-				72728CE92B3D205200FAA3B3 /* SettingsView.swift in Sources */,
-				72F969872D701C520046661E /* DismissKeyboard.swift in Sources */,
-				72657D462E3EB6C700D8F41B /* ArabicLetterView.swift in Sources */,
-				72657D472E3EB6C700D8F41B /* Arabic.swift in Sources */,
-				72657D482E3EB6C700D8F41B /* ArabicView.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		72728CEC2B3D51B200FAA3B3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -694,39 +504,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		72728D412B3D535600FAA3B3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				72574CCD2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */,
-				72574CD42E49F35600BFF138 /* AppIntents.swift in Sources */,
-				72537C232F0434C500829F59 /* AdhanStructs.swift in Sources */,
-				72657D4D2E3EB6D200D8F41B /* Arabic.swift in Sources */,
-				728E2EEE2E6E048300F2C24C /* SettingsAdhan.swift in Sources */,
-				72728D582B3D538400FAA3B3 /* Settings.swift in Sources */,
-				720CCE442E3960BB002DD82E /* Globals.swift in Sources */,
-				72728D4A2B3D535600FAA3B3 /* Complication.swift in Sources */,
-				72728D572B3D538100FAA3B3 /* PrayersProvider.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		72728CD32B3D1FFA00FAA3B3 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 72728CC62B3D1FF900FAA3B3 /* Watch */;
-			targetProxy = 72728CD22B3D1FFA00FAA3B3 /* PBXContainerItemProxy */;
-		};
 		72728CFE2B3D51B300FAA3B3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 72728CEF2B3D51B200FAA3B3 /* Widget */;
 			targetProxy = 72728CFD2B3D51B300FAA3B3 /* PBXContainerItemProxy */;
-		};
-		72728D4F2B3D535700FAA3B3 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 72728D442B3D535600FAA3B3 /* Complication */;
-			targetProxy = 72728D4E2B3D535700FAA3B3 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -868,6 +652,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Main.plist";
@@ -888,7 +673,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times";
+				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -904,6 +689,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Main.plist";
@@ -924,79 +710,11 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times";
+				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		72728CD62B3D1FFA00FAA3B3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon Watch";
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Resources/Info-Main.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.Quran.Elmallah.Prayer-Times";
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times.watchkitapp";
-				PRODUCT_NAME = "Al-Adhan";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 9.0;
-			};
-			name = Debug;
-		};
-		72728CD72B3D1FFA00FAA3B3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon Watch";
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Resources/Info-Main.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.Quran.Elmallah.Prayer-Times";
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times.watchkitapp";
-				PRODUCT_NAME = "Al-Adhan";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
 		};
@@ -1008,6 +726,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
@@ -1019,7 +738,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times.Widget";
+				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1036,6 +755,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
@@ -1047,72 +767,12 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times.Widget";
+				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		72728D522B3D535700FAA3B3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
-				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Resources/Info-Widget.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times.watchkitapp.Complication1";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 9.0;
-			};
-			name = Debug;
-		};
-		72728D532B3D535700FAA3B3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
-				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Resources/Info-Widget.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MARKETING_VERSION = 2.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Prayer-Times.watchkitapp.Complication1";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
 		};
@@ -1137,29 +797,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		72728CD52B3D1FFA00FAA3B3 /* Build configuration list for PBXNativeTarget "Watch" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				72728CD62B3D1FFA00FAA3B3 /* Debug */,
-				72728CD72B3D1FFA00FAA3B3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		72728D002B3D51B300FAA3B3 /* Build configuration list for PBXNativeTarget "Widget" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				72728D012B3D51B300FAA3B3 /* Debug */,
 				72728D022B3D51B300FAA3B3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		72728D512B3D535700FAA3B3 /* Build configuration list for PBXNativeTarget "Complication" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				72728D522B3D535700FAA3B3 /* Debug */,
-				72728D532B3D535700FAA3B3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1179,14 +821,6 @@
 			productName = Adhan;
 		};
 		72C30E8E2BCC649400F54570 /* Adhan */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Adhan;
-		};
-		72C30E902BCC649C00F54570 /* Adhan */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Adhan;
-		};
-		72C30E922BCC64A600F54570 /* Adhan */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Adhan;
 		};

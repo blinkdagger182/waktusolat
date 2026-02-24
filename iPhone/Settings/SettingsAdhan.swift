@@ -1,5 +1,4 @@
 import SwiftUI
-import Adhan
 import CoreLocation
 import UserNotifications
 import WidgetKit
@@ -265,23 +264,51 @@ extension Settings {
         }
     }
     
-    private static let calcParams: [String: CalculationParameters] = {
-        let map: [(String, CalculationMethod)] = [
-            ("Muslim World League", .muslimWorldLeague),
-            ("Moonsight Committee", .moonsightingCommittee),
-            ("Umm Al-Qura",         .ummAlQura),
-            ("Egypt",               .egyptian),
-            ("Dubai",               .dubai),
-            ("Kuwait",              .kuwait),
-            ("Qatar",               .qatar),
-            ("Turkey",              .turkey),
-            ("Tehran",              .tehran),
-            ("Karachi",             .karachi),
-            ("Singapore",           .singapore),
-            ("North America",       .northAmerica)
-        ]
-        return Dictionary(uniqueKeysWithValues: map.map { ($0.0, $0.1.params) })
-    }()
+    private struct GPSPrayerDay: Codable {
+        let day: Int
+        let fajr: TimeInterval
+        let syuruk: TimeInterval
+        let dhuhr: TimeInterval
+        let asr: TimeInterval
+        let maghrib: TimeInterval
+        let isha: TimeInterval
+    }
+
+    private struct GPSMonthResponse: Codable {
+        let zone: String
+        let year: Int
+        let monthNumber: Int
+        let prayers: [GPSPrayerDay]
+
+        enum CodingKeys: String, CodingKey {
+            case zone
+            case year
+            case monthNumber = "month_number"
+            case prayers
+        }
+    }
+
+    private enum GPSAPIError: LocalizedError {
+        case invalidURL
+        case badHTTPStatus(Int)
+        case noMonthData
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidURL:
+                return "Invalid GPS endpoint URL."
+            case .badHTTPStatus(let status):
+                return "GPS API returned HTTP \(status)."
+            case .noMonthData:
+                return "No cached month data available."
+            }
+        }
+    }
+
+    private static let gpsAPIBase = "https://api.waktusolat.app/v2/solat/gps"
+    private static let appGroupId = "group.app.riskcreatives.waktu"
+    private static let monthCacheKey = "waktusolat.gps.month.cache.v1"
+    private static var monthCacheInMemory: GPSMonthResponse?
     
     private struct NotifPrefs {
         let enabled: ReferenceWritableKeyPath<Settings, Bool>
@@ -319,74 +346,138 @@ extension Settings {
             sunnahAfter: p.sunnahA
         )
     }
-    
-    /// Ultra‑fast prayer generator. Returns `nil` if location is not valid.
-    func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
-        guard let here = currentLocation, here.latitude != 1000, here.longitude != 1000 else { return nil }
 
-        var params = Self.calcParams[prayerCalculation] ?? Self.calcParams["Muslim World League"]!
-        params.madhab = hanafiMadhab ? Madhab.hanafi : Madhab.shafi
+    private func appGroupStore() -> UserDefaults? {
+        UserDefaults(suiteName: Self.appGroupId)
+    }
 
-        let comps = Self.gregorian.dateComponents([.year, .month, .day], from: date)
+    private func normalizeCoordinate(_ value: Double) -> String {
+        String(format: "%.4f", value)
+    }
 
-        guard let raw = PrayerTimes(
-                coordinates: Coordinates(latitude: here.latitude, longitude: here.longitude),
-                date: comps,
-                calculationParameters: params
-        )
-        else { return nil }
+    private func gpsURL(latitude: Double, longitude: Double) -> URL? {
+        URL(string: "\(Self.gpsAPIBase)/\(normalizeCoordinate(latitude))/\(normalizeCoordinate(longitude))")
+    }
 
-        @inline(__always) func off(_ d: Date, by m: Int) -> Date {
-            d.addingTimeInterval(Double(m) * 60)
+    private func decodeMonthCache(from data: Data) -> GPSMonthResponse? {
+        try? JSONDecoder().decode(GPSMonthResponse.self, from: data)
+    }
+
+    private func loadMonthCache() -> GPSMonthResponse? {
+        if let inMemory = Self.monthCacheInMemory {
+            return inMemory
+        }
+        guard let data = appGroupStore()?.data(forKey: Self.monthCacheKey),
+              let cached = decodeMonthCache(from: data) else {
+            return nil
+        }
+        Self.monthCacheInMemory = cached
+        return cached
+    }
+
+    private func saveMonthCache(_ month: GPSMonthResponse) {
+        Self.monthCacheInMemory = month
+        guard let data = try? JSONEncoder().encode(month) else { return }
+        appGroupStore()?.setValue(data, forKey: Self.monthCacheKey)
+    }
+
+    private func isSameYearMonth(_ date: Date, as month: GPSMonthResponse) -> Bool {
+        let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+        return comps.year == month.year && comps.month == month.monthNumber
+    }
+
+    private func dayPayload(for date: Date) -> GPSPrayerDay? {
+        guard let month = loadMonthCache(),
+              isSameYearMonth(date, as: month) else {
+            return nil
+        }
+        let day = Self.gregorian.component(.day, from: date)
+        return month.prayers.first(where: { $0.day == day })
+    }
+
+    private func dateFromUnix(_ value: TimeInterval) -> Date {
+        Date(timeIntervalSince1970: value)
+    }
+
+    private func off(_ date: Date, by minutes: Int) -> Date {
+        date.addingTimeInterval(Double(minutes) * 60)
+    }
+
+    @MainActor
+    private func fetchMonthFromAPI(latitude: Double, longitude: Double) async throws {
+        guard let url = gpsURL(latitude: latitude, longitude: longitude) else {
+            throw GPSAPIError.invalidURL
         }
 
-        let fajr     = off(raw.fajr,     by: offsetFajr)
-        let sunrise  = off(raw.sunrise,  by: offsetSunrise)
-        let dhuhr    = off(raw.dhuhr,    by: offsetDhuhr)
-        let asr      = off(raw.asr,      by: offsetAsr)
-        let maghrib  = off(raw.maghrib,  by: offsetMaghrib)
-        let isha     = off(raw.isha,     by: offsetIsha)
-        let dhAsr    = off(raw.dhuhr,    by: offsetDhurhAsr)
-        let mgIsha   = off(raw.maghrib,  by: offsetMaghribIsha)
+        let (data, response) = try await URLSession.shared.data(from: url)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard status == 200 else {
+            throw GPSAPIError.badHTTPStatus(status)
+        }
+
+        let decoded = try JSONDecoder().decode(GPSMonthResponse.self, from: data)
+        saveMonthCache(decoded)
+    }
+    
+    /// Uses cached GPS endpoint month payload. Returns nil when cache is missing.
+    func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
+        guard let day = dayPayload(for: date) else { return nil }
+
+        let baseFajr = dateFromUnix(day.fajr)
+        let baseSunrise = dateFromUnix(day.syuruk)
+        let baseDhuhr = dateFromUnix(day.dhuhr)
+        let baseAsr = dateFromUnix(day.asr)
+        let baseMaghrib = dateFromUnix(day.maghrib)
+        let baseIsha = dateFromUnix(day.isha)
+
+        let fajr = off(baseFajr, by: offsetFajr)
+        let sunrise = off(baseSunrise, by: offsetSunrise)
+        let dhuhr = off(baseDhuhr, by: offsetDhuhr)
+        let asr = off(baseAsr, by: offsetAsr)
+        let maghrib = off(baseMaghrib, by: offsetMaghrib)
+        let isha = off(baseIsha, by: offsetIsha)
+        let dhAsr = off(baseDhuhr, by: offsetDhurhAsr)
+        let mgIsha = off(baseMaghrib, by: offsetMaghribIsha)
 
         let isFriday = Self.gregorian.component(.weekday, from: date) == 6
 
         if fullPrayers || !travelingMode {
             var list: [Prayer] = [
-                prayer(from: "Fajr",    time: fajr),
-                prayer(from: "Sunrise", time: sunrise)
+                prayer(from: "Fajr", time: fajr),
+                prayer(from: "Sunrise", time: sunrise),
             ]
 
-            // Dhuhr / Jumuah switch
             if isFriday {
                 list.append(
-                    Prayer(nameArabic: "الجُمُعَة",
-                           nameTransliteration: "Jumuah",
-                           nameEnglish: "Friday",
-                           time: dhuhr,
-                           image: "sun.max.fill",
-                           rakah: "2",
-                           sunnahBefore: "0",
-                           sunnahAfter: "2 and 2")
+                    Prayer(
+                        nameArabic: "الجُمُعَة",
+                        nameTransliteration: "Jumuah",
+                        nameEnglish: "Friday",
+                        time: dhuhr,
+                        image: "sun.max.fill",
+                        rakah: "2",
+                        sunnahBefore: "0",
+                        sunnahAfter: "2 and 2"
+                    )
                 )
             } else {
                 list.append(prayer(from: "Dhuhr", time: dhuhr))
             }
 
             list += [
-                prayer(from: "Asr",     time: asr),
+                prayer(from: "Asr", time: asr),
                 prayer(from: "Maghrib", time: maghrib),
-                prayer(from: "Isha",    time: isha)
+                prayer(from: "Isha", time: isha),
             ]
             return list
-        } else {
-            return [
-                prayer(from: "Fajr",    time: fajr),
-                prayer(from: "Sunrise", time: sunrise),
-                prayer(from: "Dhuhr/Asr",   time: dhAsr),
-                prayer(from: "Maghrib/Isha",   time: mgIsha)
-            ]
         }
+
+        return [
+            prayer(from: "Fajr", time: fajr),
+            prayer(from: "Sunrise", time: sunrise),
+            prayer(from: "Dhuhr/Asr", time: dhAsr),
+            prayer(from: "Maghrib/Isha", time: mgIsha),
+        ]
     }
 
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, calledFrom: StaticString = #function, completion: (() -> Void)? = nil) {
@@ -418,25 +509,59 @@ extension Settings {
         let staleCity  = stored?.city != currentLocation?.city
         let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
         let emptyList  = stored?.prayers.isEmpty ?? true
-        let needsFetch = force || stored == nil || staleCity || staleDate || emptyList
+        let missingCacheForToday = dayPayload(for: today) == nil
+        let needsFetch = force || stored == nil || staleCity || staleDate || emptyList || missingCacheForToday
         
         if needsFetch {
-            logger.debug("Fetching prayer times – caller: \(calledFrom)")
-            
-            let todayPrayers  = getPrayerTimes(for: today) ?? []
-            let fullPrayers   = getPrayerTimes(for: today, fullPrayers: true) ?? []
-            
-            prayers = Prayers(
-                day: today,
-                city: currentLocation!.city,
-                prayers: todayPrayers,
-                fullPrayers: fullPrayers,
-                setNotification: false
-            )
-            
-            schedulePrayerTimeNotifications()
-            printAllScheduledNotifications()
-            WidgetCenter.shared.reloadAllTimelines()
+            if isWidget {
+                logger.debug("Widget context detected; using cached prayersData only")
+                if let todayPrayers = getPrayerTimes(for: today),
+                   let fullPrayers = getPrayerTimes(for: today, fullPrayers: true) {
+                    prayers = Prayers(
+                        day: today,
+                        city: loc.city,
+                        prayers: todayPrayers,
+                        fullPrayers: fullPrayers,
+                        setNotification: false
+                    )
+                }
+                updateCurrentAndNextPrayer()
+                completion?()
+                return
+            }
+
+            logger.debug("Fetching prayer times from GPS API – caller: \(calledFrom)")
+
+            Task { @MainActor in
+                do {
+                    try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude)
+                    logger.debug("GPS API prayer month fetched successfully")
+                } catch {
+                    logger.error("GPS API fetch failed. Falling back to cached prayers data: \(error.localizedDescription)")
+                }
+
+                let todayPrayers = getPrayerTimes(for: today)
+                let fullPrayers = getPrayerTimes(for: today, fullPrayers: true)
+
+                if let todayPrayers, let fullPrayers {
+                    prayers = Prayers(
+                        day: today,
+                        city: loc.city,
+                        prayers: todayPrayers,
+                        fullPrayers: fullPrayers,
+                        setNotification: false
+                    )
+                } else if prayers == nil {
+                    logger.error("\(GPSAPIError.noMonthData.localizedDescription ?? "No cached month data available.")")
+                }
+
+                schedulePrayerTimeNotifications()
+                printAllScheduledNotifications()
+                WidgetCenter.shared.reloadAllTimelines()
+                updateCurrentAndNextPrayer()
+                completion?()
+            }
+            return
         } else if notification {
             schedulePrayerTimeNotifications()
             printAllScheduledNotifications()

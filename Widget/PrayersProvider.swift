@@ -2,7 +2,7 @@ import SwiftUI
 import WidgetKit
 
 struct PrayersProvider: TimelineProvider {
-    private let store   = UserDefaults(suiteName: "group.com.PrayerTimes.AppGroup")
+    private let store   = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
     private let settings = Settings.shared
 
     func placeholder(in context: Context) -> PrayersEntry { makeEntry() }

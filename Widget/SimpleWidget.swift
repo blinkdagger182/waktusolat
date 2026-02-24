@@ -79,6 +79,7 @@ struct SimpleWidget: Widget {
         StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
             if #available(iOS 17.0, *) {
                 SimpleEntryView(entry: entry)
+                    .containerBackground(for: .widget) { Color.clear }
             } else {
                 SimpleEntryView(entry: entry)
                     .padding()

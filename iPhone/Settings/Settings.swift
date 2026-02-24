@@ -7,7 +7,7 @@ let logger = Logger(subsystem: "com.Quran.Elmallah.Prayer-Times", category: "Al-
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
-    private let appGroupUserDefaults = UserDefaults(suiteName: "group.com.PrayerTimes.AppGroup")
+    private let appGroupUserDefaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
     
     static let encoder: JSONEncoder = {
         let enc = JSONEncoder()

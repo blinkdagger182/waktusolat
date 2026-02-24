@@ -49,7 +49,12 @@ struct LockScreen4Widget: Widget {
         #if os(iOS)
         if #available(iOS 16, *) {
             return StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
-                LockScreen4EntryView(entry: entry)
+                if #available(iOS 17.0, *) {
+                    LockScreen4EntryView(entry: entry)
+                        .containerBackground(for: .widget) { Color.clear }
+                } else {
+                    LockScreen4EntryView(entry: entry)
+                }
             }
             .supportedFamilies([.accessoryRectangular])
             .configurationDisplayName("Last 3 Prayer Times")
