@@ -2,6 +2,7 @@ import SwiftUI
 import WidgetKit
 
 private struct PrayerMiniGraph: View {
+    @Environment(\.colorScheme) private var colorScheme
     let tint: Color
     let dotCount: Int
     let activeDotIndex: Int
@@ -72,6 +73,9 @@ private struct PrayerMiniGraph: View {
             ]
             let stops = Array(allStops.prefix(markers.count))
             let passedProgress = stops[min(clampedActiveIndex, max(stops.count - 1, 0))]
+            let baseLineColor = colorScheme == .light ? Color.black.opacity(0.42) : Color.white.opacity(0.68)
+            let activeLineColor = colorScheme == .light ? Color.black.opacity(0.90) : Color.white.opacity(0.95)
+            let futureDotStrokeColor = colorScheme == .light ? Color.black.opacity(0.55) : Color.white.opacity(0.72)
 
             let curve = Path { path in
                 path.move(to: p0)
@@ -82,20 +86,20 @@ private struct PrayerMiniGraph: View {
 
             ZStack {
                 curve
-                    .stroke(Color.white.opacity(0.28), style: .init(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                    .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
 
                 curve
                     .trim(from: 0, to: passedProgress)
-                    .stroke(Color.white.opacity(0.95), style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+                    .stroke(activeLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
 
                 ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
                     let isReached = index <= clampedActiveIndex
                     Circle()
-                        .fill(isReached ? Color.white.opacity(0.95) : Color.clear)
+                        .fill(isReached ? activeLineColor : Color.clear)
                         .overlay(
                             Circle().stroke(
-                                isReached ? Color.white.opacity(0.95) : Color.white.opacity(0.45),
-                                lineWidth: 1.6
+                                isReached ? activeLineColor : futureDotStrokeColor,
+                                lineWidth: 1.8
                             )
                         )
                         .frame(
