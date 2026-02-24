@@ -552,7 +552,7 @@ extension Settings {
                         setNotification: false
                     )
                 } else if prayers == nil {
-                    logger.error("\(GPSAPIError.noMonthData.localizedDescription ?? "No cached month data available.")")
+                    logger.error("\(GPSAPIError.noMonthData.localizedDescription)")
                 }
 
                 schedulePrayerTimeNotifications()
