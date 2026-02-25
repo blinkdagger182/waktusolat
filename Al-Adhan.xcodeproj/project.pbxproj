@@ -14,6 +14,7 @@
 		720DEC682D2456FF006EA342 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720DEC642D2456FF006EA342 /* CreditsView.swift */; };
 		722BBD382F0997DB004F3659 /* AdhanSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722BBD372F0997DB004F3659 /* AdhanSheet.swift */; };
 		72537C1E2F04338E00829F59 /* AppReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1D2F04338E00829F59 /* AppReview.swift */; };
+		72F4D8E42F4D9B6400A1B2C3 /* AppVersionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F4D8E32F4D9B6400A1B2C3 /* AppVersionGate.swift */; };
 		72537C202F04340600829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
 		72537C222F0434C500829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
 		72574CCC2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
@@ -97,6 +98,7 @@
 		722A7F882D421F5F0040DC9C /* adhan-swift-main */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "adhan-swift-main"; sourceTree = "<group>"; };
 		722BBD372F0997DB004F3659 /* AdhanSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanSheet.swift; sourceTree = "<group>"; };
 		72537C1D2F04338E00829F59 /* AppReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReview.swift; sourceTree = "<group>"; };
+		72F4D8E32F4D9B6400A1B2C3 /* AppVersionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Versioning/AppVersionGate.swift; sourceTree = "<group>"; };
 		72537C1F2F04340600829F59 /* AdhanStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanStructs.swift; sourceTree = "<group>"; };
 		72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanShortcuts.swift; sourceTree = "<group>"; };
 		72574CD32E49F35600BFF138 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
@@ -206,6 +208,7 @@
 				72728C952B3D18E500FAA3B3 /* Al-AdhanApp.swift */,
 				72CCAE612D42CDAD00871A6A /* AppDelegate.swift */,
 				72537C1D2F04338E00829F59 /* AppReview.swift */,
+				72F4D8E32F4D9B6400A1B2C3 /* AppVersionGate.swift */,
 				72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */,
 				722BBD372F0997DB004F3659 /* AdhanSheet.swift */,
 				72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */,
@@ -468,6 +471,7 @@
 				72CCAE622D42CDAD00871A6A /* AppDelegate.swift in Sources */,
 				72827EAF2E3D70EC00EBA534 /* SettingsAdhanView.swift in Sources */,
 				72537C1E2F04338E00829F59 /* AppReview.swift in Sources */,
+				72F4D8E42F4D9B6400A1B2C3 /* AppVersionGate.swift in Sources */,
 				72CCAE602D42CD8A00871A6A /* MapView.swift in Sources */,
 				72657D492E3EB6C700D8F41B /* ArabicLetterView.swift in Sources */,
 				72657D4A2E3EB6C700D8F41B /* Arabic.swift in Sources */,

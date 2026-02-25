@@ -19,6 +19,12 @@ private struct VersionConfig: Codable {
 }
 
 private struct AppVersionGateModifier: ViewModifier {
+    private enum UpdateModalKind: String, Identifiable {
+        case soft
+        case force
+        var id: String { rawValue }
+    }
+
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
 
@@ -31,14 +37,18 @@ private struct AppVersionGateModifier: ViewModifier {
     @State private var updateURL: URL?
     @State private var softMessage: String?
     @State private var forceMessage: String?
-    @State private var showSoftUpdateAlert = false
-    @State private var showForceUpdateScreen = false
+    @State private var activeModal: UpdateModalKind?
 
     // Host this file publicly (GitHub raw, Cloudflare Pages, etc.).
     // You can override this by adding VersionCheckConfigURL in Info-Main.plist.
     private let defaultConfigURL = "https://raw.githubusercontent.com/blinkdagger182/waktusolat/main/version-check.json"
+    #if DEBUG
+    private let cacheTTL: TimeInterval = 0
+    private let softPromptCooldown: TimeInterval = 0
+    #else
     private let cacheTTL: TimeInterval = 60 * 60 * 24
     private let softPromptCooldown: TimeInterval = 60 * 60 * 24
+    #endif
 
     func body(content: Content) -> some View {
         content
@@ -48,35 +58,26 @@ private struct AppVersionGateModifier: ViewModifier {
                     runCheckIfNeeded(force: false)
                 }
             }
-            .alert("Update Available", isPresented: $showSoftUpdateAlert) {
-                Button("Later", role: .cancel) { }
-                Button("Update Now") {
-                    if let updateURL { openURL(updateURL) }
+            .overlay {
+                if let mode = activeModal {
+                    UpdatePromptModal(
+                        isForce: mode == .force,
+                        title: mode == .force ? "Update Required" : "New Update Is Available",
+                        message: mode == .force
+                            ? (forceMessage ?? "Please update Waktu to continue.")
+                            : (softMessage ?? "A newer version of Waktu is available."),
+                        onUpdate: {
+                            if let updateURL {
+                                openURL(updateURL)
+                            }
+                        },
+                        onDismiss: {
+                            activeModal = nil
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(10)
                 }
-            } message: {
-                Text(softMessage ?? "A newer version is available.")
-            }
-            .fullScreenCover(isPresented: $showForceUpdateScreen) {
-                VStack(spacing: 16) {
-                    Text("Update Required")
-                        .font(.title2.bold())
-                    Text(forceMessage ?? "Please update to continue using the app.")
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 24)
-
-                    Button {
-                        if let updateURL { openURL(updateURL) }
-                    } label: {
-                        Text("Update Now")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.horizontal, 24)
-                }
-                .interactiveDismissDisabled(true)
             }
     }
 
@@ -143,17 +144,16 @@ private struct AppVersionGateModifier: ViewModifier {
 
         if isVersion(installed, lowerThan: config.minSupportedVersion) {
             forceMessage = config.forceMessage ?? "A new version is required to continue."
-            showForceUpdateScreen = true
-            showSoftUpdateAlert = false
+            activeModal = .force
             return
         }
 
         if isVersion(installed, lowerThan: config.latestVersion) {
             softMessage = config.softMessage ?? "A newer version is available."
-            if !showForceUpdateScreen && shouldShowSoftPrompt(for: config.latestVersion) {
+            if activeModal != .force && shouldShowSoftPrompt(for: config.latestVersion) {
                 lastSoftPromptVersion = config.latestVersion
                 lastSoftPromptTime = Date().timeIntervalSince1970
-                showSoftUpdateAlert = true
+                activeModal = .soft
             }
         }
     }
@@ -176,6 +176,112 @@ private struct AppVersionGateModifier: ViewModifier {
             if lv > rv { return false }
         }
         return false
+    }
+}
+
+private struct UpdatePromptModal: View {
+    let isForce: Bool
+    let title: String
+    let message: String
+    let onUpdate: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if !isForce {
+                        onDismiss()
+                    }
+                }
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 16) {
+                    if !isForce {
+                        HStack {
+                            Spacer()
+                            Button(action: onDismiss) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .padding(10)
+                                    .background(Color.white.opacity(0.12), in: Circle())
+                            }
+                        }
+                    }
+
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 64, height: 64)
+
+                        Image("CurrentAppIcon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 34, height: 34)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .padding(.top, isForce ? 0 : -8)
+
+                    Text(title.uppercased())
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white.opacity(0.75))
+                        .tracking(1.0)
+
+                    Text("Update your application to the latest version")
+                        .font(.title3.bold())
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+
+                    Text(message)
+                        .font(.footnote)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white.opacity(0.82))
+                        .padding(.horizontal, 8)
+
+                    Button(action: onUpdate) {
+                        Text("Update Now")
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.blue, Color.purple],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            )
+                    }
+                    .padding(.top, 4)
+
+                    if !isForce {
+                        Button("Not now", action: onDismiss)
+                            .font(.footnote.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(.top, 2)
+                    }
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(Color(white: 0.10).opacity(0.92))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+        }
     }
 }
 

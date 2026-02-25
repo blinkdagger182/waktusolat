@@ -41,8 +41,10 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
         }
     }
 
-    func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
-        self.customerInfo = customerInfo
+    nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
+        Task { @MainActor [weak self] in
+            self?.customerInfo = customerInfo
+        }
     }
 
     func refreshCustomerInfo() async {
@@ -71,12 +73,14 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
 
     func restorePurchases() {
         Purchases.shared.restorePurchases { [weak self] info, error in
-            guard let self else { return }
-            if let error {
-                self.lastErrorMessage = error.localizedDescription
-                return
+            Task { @MainActor in
+                guard let self else { return }
+                if let error {
+                    self.lastErrorMessage = error.localizedDescription
+                    return
+                }
+                self.customerInfo = info
             }
-            self.customerInfo = info
         }
     }
 

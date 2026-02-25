@@ -74,9 +74,13 @@ struct AlAdhanApp: App {
             .animation(.easeInOut, value: isLaunching)
             .animation(.easeInOut, value: settings.firstLaunch)
             .appReviewPrompt()
+            .appVersionGate()
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
+                }
+                if !settings.firstLaunch {
+                    settings.requestLocationAuthorization()
                 }
             }
         }
@@ -95,6 +99,11 @@ struct AlAdhanApp: App {
         .onChange(of: settings.hijriOffset) { _ in
             settings.updateDates()
             WidgetCenter.shared.reloadAllTimelines()
+        }
+        .onChange(of: settings.firstLaunch) { isFirstLaunch in
+            if !isFirstLaunch {
+                settings.requestLocationAuthorization()
+            }
         }
     }
 }

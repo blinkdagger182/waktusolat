@@ -49,7 +49,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         super.init()
         Self.locationManager.delegate = self
-        requestLocationAuthorization()
     }
     
     func hapticFeedback() {
