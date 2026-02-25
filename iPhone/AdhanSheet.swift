@@ -12,12 +12,12 @@ struct AdhanSetupSheet: View {
                         .font(.title3.bold())
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Prayer times depend on the calculation method, and choosing the wrong one can make Fajr and Isha noticeably off.")
+                        Text("Prayer times are sourced from the Waktu Solat API, and this app currently supports Malaysia only.")
                         
                         Text("""
-                            • You should probably choose the method used in your region (for example, North America, Egypt, etc.).
-                            • If your country isn’t listed or you’re unsure, a global method like Muslim World League is a safe choice.
-                            • It’s best to check with your local mosque to see which method they follow.
+                            • The app is currently optimized for Malaysia prayer times.
+                            • Calculation is fixed to Malaysia for consistency across app and widgets.
+                            • If you are outside Malaysia, support for additional regions will be added later.
                             """
                         )
                         .foregroundColor(.secondary)
@@ -25,7 +25,7 @@ struct AdhanSetupSheet: View {
                     .font(.footnote)
                     .multilineTextAlignment(.leading)
                     
-                    Text("After this, take a moment to review the rest of the settings to customize notifications, traveling mode, offsets, and other preferences (including Quran settings).")
+                    Text("After this, take a moment to review your notification settings and appearance preferences.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
 
@@ -33,24 +33,15 @@ struct AdhanSetupSheet: View {
 
                 Section(header: Text("PRAYER CALCULATION")) {
                     VStack(alignment: .leading) {
-                        Picker("Calculation", selection: $settings.prayerCalculation.animation(.easeInOut)) {
-                            ForEach(calculationOptions, id: \.self) { option in
-                                Text(option).tag(option)
-                            }
+                        HStack {
+                            Text("Calculation")
+                            Spacer()
+                            Text("Malaysia")
+                                .foregroundColor(.secondary)
                         }
+                        .font(.subheadline)
 
-                        Text("Fajr and Isha can vary significantly by method, especially at higher latitudes.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
-
-                    VStack(alignment: .leading) {
-                        Toggle("Use Hanafi Calculation for Asr", isOn: $settings.hanafiMadhab.animation(.easeInOut))
-                            .font(.subheadline)
-                            .tint(settings.accentColor.color)
-
-                        Text("The Hanafi madhab sets Asr later than other schools of thought. Enable this only if you follow the Hanafi method.")
+                        Text("Malaysia prayer times are currently the only supported calculation mode.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
@@ -58,7 +49,7 @@ struct AdhanSetupSheet: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Adhan Setup")
+            .navigationTitle("Waktu Solat Setup")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -67,6 +58,11 @@ struct AdhanSetupSheet: View {
                         dismiss()
                     }
                 }
+            }
+            .onAppear {
+                // Keep an internal compatible value while UI is Malaysia-only.
+                settings.prayerCalculation = "Singapore"
+                settings.hanafiMadhab = false
             }
         }
     }

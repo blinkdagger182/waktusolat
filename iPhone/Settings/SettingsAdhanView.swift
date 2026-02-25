@@ -34,24 +34,15 @@ struct SettingsAdhanView: View {
             
             Section(header: Text("PRAYER CALCULATION")) {
                 VStack(alignment: .leading) {
-                    Picker("Calculation", selection: $settings.prayerCalculation.animation(.easeInOut)) {
-                        ForEach(calculationOptions, id: \.self) { option in
-                            Text(option).tag(option)
-                        }
+                    HStack {
+                        Text("Calculation")
+                        Spacer()
+                        Text("Malaysia")
+                            .foregroundColor(.secondary)
                     }
+                    .font(.subheadline)
                     
-                    Text("Fajr and Isha timings vary by calculation method. If available, use location-based calculations; for example, in North America, the North America method is recommended. Otherwise, choose the Muslim World League or another global option.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                }
-                
-                VStack(alignment: .leading) {
-                    Toggle("Use Hanafi Calculation for Asr", isOn: $settings.hanafiMadhab.animation(.easeInOut))
-                        .font(.subheadline)
-                        .tint(settings.accentColor.color)
-                    
-                    Text("The Hanafi madhab sets Asr later than other schools of thought. Enable this only if you follow the Hanafi method.")
+                    Text("Prayer times are currently supported for Malaysia only, and calculation is fixed to Malaysia for consistency.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
@@ -84,7 +75,7 @@ struct SettingsAdhanView: View {
                 
                 Toggle("Traveling Mode Turns on Automatically", isOn: $settings.travelAutomatic.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor.color)
+                    .tint(settings.accentColor.toggleTint)
                 #endif
                 
                 VStack(alignment: .leading) {
@@ -94,7 +85,7 @@ struct SettingsAdhanView: View {
                         set: { settings.travelingModeManuallyToggled = true; settings.travelingMode = $0 }
                     ).animation(.easeInOut))
                         .font(.subheadline)
-                        .tint(settings.accentColor.color)
+                        .tint(settings.accentColor.toggleTint)
                         .disabled(settings.travelAutomatic)
                     
                     Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
@@ -107,7 +98,7 @@ struct SettingsAdhanView: View {
                         set: { settings.travelingModeManuallyToggled = true; settings.travelingMode = $0 }
                     ).animation(.easeInOut))
                         .font(.subheadline)
-                        .tint(settings.accentColor.color)
+                        .tint(settings.accentColor.toggleTint)
                     #endif
                 }
             }
@@ -118,6 +109,11 @@ struct SettingsAdhanView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Waktu Solat Settings")
+        .onAppear {
+            // Keep an internal compatible value while UI is Malaysia-only.
+            settings.prayerCalculation = "Singapore"
+            settings.hanafiMadhab = false
+        }
         .onChange(of: settings.homeLocation) { _ in
             settings.fetchPrayerTimes() {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -202,21 +198,6 @@ struct SettingsAdhanView: View {
         }
     }
 }
-
-let calculationOptions: [String] = [
-    "Muslim World League",
-    "Moonsight Committee",
-    "Umm Al-Qura",
-    "Egypt",
-    "Dubai",
-    "Kuwait",
-    "Qatar",
-    "Turkey",
-    "Tehran",
-    "Karachi",
-    "Singapore",
-    "North America"
-]
 
 struct PrayerOffsetsView: View {
     @EnvironmentObject var settings: Settings
@@ -608,7 +589,7 @@ struct MoreNotificationView: View {
                     }
                 ).animation(.easeInOut))
                 .font(.subheadline)
-                .tint(settings.accentColor.color)
+                .tint(settings.accentColor.toggleTint)
                 
                 if settings.naggingMode {
                     Picker("Starting Time", selection: $settings.naggingStartOffset.animation(.easeInOut)) {
@@ -670,7 +651,7 @@ struct MoreNotificationView: View {
                             }
                         ).animation(.easeInOut))
                     }
-                    .tint(settings.accentColor.color)
+                    .tint(settings.accentColor.toggleTint)
                 }
             }
             
@@ -697,7 +678,7 @@ struct MoreNotificationView: View {
                         }
                     ).animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor.color)
+                    .tint(settings.accentColor.toggleTint)
                     
                     Stepper(value: Binding(
                         get: { settings.preNotificationFajr },

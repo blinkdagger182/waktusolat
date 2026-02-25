@@ -31,7 +31,7 @@ struct AlAdhanApp: App {
                         AdhanView()
                             .tabItem {
                                 Image(systemName: "safari")
-                                Text("Adhan")
+                                Text("Azan")
                             }
 
                         SettingsView()

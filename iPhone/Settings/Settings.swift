@@ -22,7 +22,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }()
     
     private override init() {
-        self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "yellow") ?? .yellow
+        self.accentColor = AccentColor.fromStoredValue(appGroupUserDefaults?.string(forKey: "accentColor"))
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false

@@ -733,6 +733,7 @@ extension Settings {
         logger.debug("Scheduling prayer time notifications")
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
         
         if dateNotifications {
             for event in specialEvents {

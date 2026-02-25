@@ -32,7 +32,7 @@ struct PrayersProvider: TimelineProvider {
             settings.currentLocation = loc
         }
 
-        settings.accentColor      = AccentColor(rawValue: store?.string(forKey: "accentColor") ?? "") ?? .yellow
+        settings.accentColor      = AccentColor.fromStoredValue(store?.string(forKey: "accentColor"))
         settings.travelingMode    = store?.bool(forKey: "travelingMode") ?? false
         settings.hanafiMadhab     = store?.bool(forKey: "hanafiMadhab") ?? false
         settings.prayerCalculation = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"

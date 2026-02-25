@@ -2,6 +2,18 @@ import SwiftUI
 
 struct SplashScreen: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var systemColorScheme
+
+    private var currentColorScheme: ColorScheme {
+        settings.colorScheme ?? systemColorScheme
+    }
+
+    private var continueTextColor: Color {
+        if settings.accentColor == .adaptive {
+            return currentColorScheme == .dark ? .black : .white
+        }
+        return .primary
+    }
             
     var body: some View {
         NavigationView {
@@ -38,7 +50,7 @@ struct SplashScreen: View {
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal)
                             .background(settings.accentColor.color)
-                            .foregroundColor(.primary)
+                            .foregroundColor(continueTextColor)
                             .cornerRadius(24)
                     }
                     
@@ -46,7 +58,7 @@ struct SplashScreen: View {
                 }
                 .padding(.horizontal, 10)
             }
-            .navigationTitle("Assalamu Alaikum")
+            .navigationTitle("Assalamualaikum")
         }
         .navigationViewStyle(.stack)
     }

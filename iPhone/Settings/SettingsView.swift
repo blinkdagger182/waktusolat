@@ -15,7 +15,7 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
     @Published private(set) var offerings: Offerings?
     @Published var lastErrorMessage: String?
 
-    private let apiKey = "test_kdNvcsFclxyoDNAcKheRkdWLCbV"
+    private let apiKey = "appl_QOZtAKefwKDyLWNlFADoOQkLgcl"
     let entitlementID = "buy_me_kopi"
     private(set) var isConfigured = false
 
@@ -56,6 +56,10 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
     func refreshOfferings() async {
         do {
             offerings = try await Purchases.shared.offerings()
+            #if DEBUG
+            let ids = offerings?.all.keys.sorted() ?? []
+            print("RevenueCat offerings:", ids, "current:", offerings?.current?.identifier ?? "nil")
+            #endif
         } catch {
             lastErrorMessage = error.localizedDescription
         }
@@ -105,6 +109,7 @@ struct SettingsView: View {
     
     @State private var showingCredits = false
     @State private var showingPaywall = false
+    private let paywallOfferingIdentifier = "Waktu Donation"
 
     var body: some View {
         NavigationView {
@@ -140,7 +145,15 @@ struct SettingsView: View {
                 Section(header: Text("SUPPORT")) {
                     Button {
                         settings.hapticFeedback()
-                        showingPaywall = true
+                        Task {
+                            await revenueCat.refreshOfferings()
+                            if revenueCat.offerings?.all[paywallOfferingIdentifier] != nil {
+                                showingPaywall = true
+                            } else {
+                                let available = revenueCat.offerings?.all.keys.sorted().joined(separator: ", ") ?? "none"
+                                revenueCat.lastErrorMessage = "Offering '\(paywallOfferingIdentifier)' not found. Available offerings: \(available)"
+                            }
+                        }
                     } label: {
                         Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
                             .foregroundColor(settings.accentColor.color)
@@ -174,7 +187,18 @@ struct SettingsView: View {
     @ViewBuilder
     private var paywallSheet: some View {
         #if canImport(RevenueCatUI)
-        PaywallView(displayCloseButton: true)
+        if let selectedOffering = revenueCat.offerings?.all[paywallOfferingIdentifier] {
+            PaywallView(offering: selectedOffering, displayCloseButton: true)
+        } else {
+            NavigationView {
+                Text("Offering '\(paywallOfferingIdentifier)' was not returned by RevenueCat.")
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .navigationTitle("Support")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        }
         #else
         NavigationView {
             Text("RevenueCatUI not installed.")
@@ -238,6 +262,7 @@ struct SettingsAppearanceView: View {
         VStack(alignment: .leading) {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)
+                .tint(settings.accentColor.toggleTint)
             
             Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting applies everywhere in the app except here in Settings.")
                 .font(.caption)
@@ -249,6 +274,7 @@ struct SettingsAppearanceView: View {
         VStack(alignment: .leading) {
             Toggle("Haptic Feedback", isOn: $settings.hapticOn.animation(.easeInOut))
                 .font(.subheadline)
+                .tint(settings.accentColor.toggleTint)
         }
     }
 }

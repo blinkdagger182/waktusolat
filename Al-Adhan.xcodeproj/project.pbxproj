@@ -663,7 +663,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Main.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
+				INFOPLIST_KEY_CFBundleDisplayName = Waktu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
@@ -700,7 +700,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Main.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
+				INFOPLIST_KEY_CFBundleDisplayName = Waktu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
@@ -736,7 +736,7 @@
 				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Widget.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
+				INFOPLIST_KEY_CFBundleDisplayName = Waktu;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -765,7 +765,7 @@
 				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-Widget.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Al-Adhan";
+				INFOPLIST_KEY_CFBundleDisplayName = Waktu;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
