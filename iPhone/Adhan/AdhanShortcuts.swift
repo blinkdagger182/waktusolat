@@ -21,7 +21,7 @@ struct WhenIsPrayerIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         guard let list = Settings.shared.getPrayerTimes(for: Date(), fullPrayers: true), !list.isEmpty else {
-            let msg = "Prayer times aren’t available yet. Open Al-Adhan to refresh."
+            let msg = "Prayer times aren’t available yet. Open Waktu Solat to refresh."
             return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
         }
 
@@ -71,7 +71,7 @@ struct CurrentPrayerIntent: AppIntent {
             }
         }
 
-        let msg = "No current prayer determined yet. Open Al-Adhan to refresh prayer times."
+        let msg = "No current prayer determined yet. Open Waktu Solat to refresh prayer times."
         return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
     }
 }
@@ -97,7 +97,7 @@ struct NextPrayerIntent: AppIntent {
             }
         }
 
-        let msg = "No upcoming prayer found. Open Al-Adhan to refresh prayer times."
+        let msg = "No upcoming prayer found. Open Waktu Solat to refresh prayer times."
         return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
     }
 }

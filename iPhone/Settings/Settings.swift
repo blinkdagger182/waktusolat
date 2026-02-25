@@ -3,7 +3,7 @@ import os
 import Adhan
 import CoreLocation
 
-let logger = Logger(subsystem: "com.Quran.Elmallah.Prayer-Times", category: "Al-Adhan")
+let logger = Logger(subsystem: "app.riskcreatives.waktu", category: "Waktu Solat")
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()

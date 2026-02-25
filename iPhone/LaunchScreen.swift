@@ -57,7 +57,7 @@ struct LaunchScreen: View {
                         .padding(.bottom, -1)
                     #endif
 
-                    Image("Al-Adhan")
+                    Image("CurrentAppIcon")
                         .resizable()
                         .scaledToFit()
                         .cornerRadius(24)
@@ -65,7 +65,7 @@ struct LaunchScreen: View {
                         .padding()
 
                     #if !os(watchOS)
-                    Text("Al-Adhan")
+                    Text("Waktu Solat")
                         .font(.custom("Avenir", size: 30))
                         .foregroundColor(settings.accentColor.color)
                         .padding(.top, -1)

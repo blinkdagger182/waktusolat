@@ -1,7 +1,107 @@
 import SwiftUI
+#if canImport(RevenueCat)
+import RevenueCat
+#endif
+#if canImport(RevenueCatUI)
+import RevenueCatUI
+#endif
+
+#if canImport(RevenueCat)
+@MainActor
+final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
+    static let shared = RevenueCatManager()
+
+    @Published private(set) var customerInfo: CustomerInfo?
+    @Published private(set) var offerings: Offerings?
+    @Published var lastErrorMessage: String?
+
+    private let apiKey = "test_kdNvcsFclxyoDNAcKheRkdWLCbV"
+    let entitlementID = "buy_me_kopi"
+    private(set) var isConfigured = false
+
+    private override init() {
+        super.init()
+    }
+
+    func configure() {
+        guard !isConfigured else { return }
+        #if DEBUG
+        Purchases.logLevel = .debug
+        #else
+        Purchases.logLevel = .warn
+        #endif
+
+        Purchases.configure(withAPIKey: apiKey)
+        Purchases.shared.delegate = self
+        isConfigured = true
+
+        Task {
+            await refreshCustomerInfo()
+            await refreshOfferings()
+        }
+    }
+
+    func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
+        self.customerInfo = customerInfo
+    }
+
+    func refreshCustomerInfo() async {
+        do {
+            customerInfo = try await Purchases.shared.customerInfo()
+        } catch {
+            lastErrorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshOfferings() async {
+        do {
+            offerings = try await Purchases.shared.offerings()
+        } catch {
+            lastErrorMessage = error.localizedDescription
+        }
+    }
+
+    var hasBuyMeKopi: Bool {
+        customerInfo?.entitlements[entitlementID]?.isActive == true
+    }
+
+    func restorePurchases() {
+        Purchases.shared.restorePurchases { [weak self] info, error in
+            guard let self else { return }
+            if let error {
+                self.lastErrorMessage = error.localizedDescription
+                return
+            }
+            self.customerInfo = info
+        }
+    }
+
+    func clearLastError() {
+        lastErrorMessage = nil
+    }
+}
+#else
+@MainActor
+final class RevenueCatManager: NSObject, ObservableObject {
+    static let shared = RevenueCatManager()
+    @Published var lastErrorMessage: String?
+    let entitlementID = "buy_me_kopi"
+    var hasBuyMeKopi: Bool { false }
+
+    func configure() {
+        lastErrorMessage = "RevenueCat SDK not available in this build."
+    }
+
+    func refreshCustomerInfo() async {}
+    func refreshOfferings() async {}
+    func restorePurchases() {}
+    func clearLastError() { lastErrorMessage = nil }
+}
+#endif
 
 struct SettingsView: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
     
     @State private var showingCredits = false
     @State private var showingPaywall = false
@@ -51,23 +151,38 @@ struct SettingsView: View {
             .applyConditionalListStyle(defaultView: true)
         }
         .navigationViewStyle(.stack)
+        .task {
+            revenueCat.configure()
+            await revenueCat.refreshCustomerInfo()
+            await revenueCat.refreshOfferings()
+        }
         .sheet(isPresented: $showingPaywall) {
-            NavigationView {
-                VStack(spacing: 16) {
-                    Image(systemName: "cup.and.saucer.fill")
-                        .font(.system(size: 42))
-                        .foregroundColor(settings.accentColor.color)
-                    Text("Buy Me a Coffee")
-                        .font(.title2.bold())
-                    Text("Paywall placeholder.\nPayment wiring will be added next.")
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                }
-                .padding(24)
+            paywallSheet
+        }
+        .alert("Purchase Error", isPresented: Binding(
+            get: { revenueCat.lastErrorMessage != nil },
+            set: { if !$0 { revenueCat.clearLastError() } }
+        )) {
+            Button("OK", role: .cancel) {
+                revenueCat.clearLastError()
+            }
+        } message: {
+            Text(revenueCat.lastErrorMessage ?? "Unknown error")
+        }
+    }
+
+    @ViewBuilder
+    private var paywallSheet: some View {
+        #if canImport(RevenueCatUI)
+        PaywallView(displayCloseButton: true)
+        #else
+        NavigationView {
+            Text("RevenueCatUI not installed.")
+                .foregroundColor(.secondary)
                 .navigationTitle("Support")
                 .navigationBarTitleDisplayMode(.inline)
-            }
         }
+        #endif
     }
 }
 

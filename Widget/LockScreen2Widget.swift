@@ -44,7 +44,7 @@ private struct PrayerMiniGraph: View {
             let sixMarkers: [CGPoint] = [p0, m1, p1, p2, m3, p3]
             let markers: [CGPoint] = Array(sixMarkers.prefix(min(max(clampedDots, 2), sixMarkers.count)))
             let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
-            let clampedActiveIndex = min(max(activeDotIndex, 0), max(markers.count - 1, 0))
+            let clampedActiveIndex = min(max(activeDotIndex, -1), max(markers.count - 1, -1))
 
             let segmentLength: (CGPoint, CGPoint, CGPoint, CGPoint) -> CGFloat = { a, b, c, d in
                 var total: CGFloat = 0
@@ -72,7 +72,9 @@ private struct PrayerMiniGraph: View {
                 1
             ]
             let stops = Array(allStops.prefix(markers.count))
-            let passedProgress = stops[min(clampedActiveIndex, max(stops.count - 1, 0))]
+            let passedProgress = clampedActiveIndex >= 0
+                ? stops[min(clampedActiveIndex, max(stops.count - 1, 0))]
+                : 0
             let baseLineColor = colorScheme == .light ? Color.black.opacity(0.42) : Color.white.opacity(0.68)
             let activeLineColor = colorScheme == .light ? Color.black.opacity(0.90) : Color.white.opacity(0.95)
             let futureDotStrokeColor = colorScheme == .light ? Color.black.opacity(0.55) : Color.white.opacity(0.72)
@@ -127,7 +129,7 @@ struct LockScreen2EntryView: View {
     private func activeIndex(in prayers: [Prayer]) -> Int {
         guard !prayers.isEmpty else { return 0 }
         let now = Date()
-        var idx = 0
+        var idx = -1
         for (i, prayer) in prayers.enumerated() where now >= prayer.time {
             idx = i
         }

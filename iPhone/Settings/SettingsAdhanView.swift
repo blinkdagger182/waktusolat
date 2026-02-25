@@ -117,7 +117,7 @@ struct SettingsAdhanView: View {
             #endif
         }
         .applyConditionalListStyle(defaultView: true)
-        .navigationTitle("Al-Adhan Settings")
+        .navigationTitle("Waktu Solat Settings")
         .onChange(of: settings.homeLocation) { _ in
             settings.fetchPrayerTimes() {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -193,9 +193,9 @@ struct SettingsAdhanView: View {
         } message: {
             switch showAlert {
             case .travelTurnOnAutomatic:
-                Text("Al-Adhan has automatically detected that you are traveling, so your prayers will be shortened.")
+                Text("Waktu Solat has automatically detected that you are traveling, so your prayers will be shortened.")
             case .travelTurnOffAutomatic:
-                Text("Al-Adhan has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
+                Text("Waktu Solat has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
             case .none:
                 EmptyView()
             }

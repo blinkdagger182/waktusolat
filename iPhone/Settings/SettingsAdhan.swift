@@ -151,7 +151,7 @@ extension Settings {
         }
     }
     
-    private static let travelingNotificationId = "Al-Adhan.TravelingMode"
+    private static let travelingNotificationId = "WaktuSolat.TravelingMode"
 
     func checkIfTraveling() {
         guard Bundle.main.bundleIdentifier?.contains("Widget") != true,
@@ -174,7 +174,7 @@ extension Settings {
                 travelTurnOnAutomatic  = true
                 #if !os(watchOS)
                 let content = UNMutableNotificationContent()
-                content.title = "Al-Adhan"
+                content.title = "Waktu Solat"
                 content.body  = "Traveling mode automatically turned on at \(currentLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -189,7 +189,7 @@ extension Settings {
                 travelTurnOffAutomatic = true
                 #if !os(watchOS)
                 let content = UNMutableNotificationContent()
-                content.title = "Al-Adhan"
+                content.title = "Waktu Solat"
                 content.body  = "Traveling mode automatically turned off at \(currentLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -710,7 +710,7 @@ extension Settings {
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
 
         let content = UNMutableNotificationContent()
-        content.title = "Al-Adhan"
+        content.title = "Waktu Solat"
         content.body  = "Please open the app to refresh today’s prayer times and notifications."
         content.sound = .default
 
@@ -824,7 +824,7 @@ extension Settings {
         guard triggerTime > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Al-Adhan"
+        content.title = "Waktu Solat"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = .default
 
@@ -856,7 +856,7 @@ extension Settings {
             }
             
             let content = UNMutableNotificationContent()
-            content.title = "Al-Adhan"
+            content.title = "Waktu Solat"
             content.body = "\(titleText) (\(eventSubTitle))"
             content.sound = .default
             

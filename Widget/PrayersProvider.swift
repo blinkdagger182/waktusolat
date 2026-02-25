@@ -13,7 +13,11 @@ struct PrayersProvider: TimelineProvider {
 
     func getTimeline(in ctx: Context, completion: @escaping (Timeline<PrayersEntry>)->Void) {
         let entry = makeEntry()
-        let refresh = entry.nextPrayer?.time ?? Date().addingTimeInterval(30 * 60)
+        let now = Date()
+        let cal = Calendar.current
+        let nextMidnight = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now) ?? now)
+        let nextPrayerRefresh = entry.nextPrayer?.time ?? now.addingTimeInterval(30 * 60)
+        let refresh = min(nextPrayerRefresh, nextMidnight)
         completion(Timeline(entries: [entry], policy: .after(refresh)))
     }
 

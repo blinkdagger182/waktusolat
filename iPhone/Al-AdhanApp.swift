@@ -6,6 +6,7 @@ import StoreKit
 struct AlAdhanApp: App {
     @StateObject private var settings = Settings.shared
     @StateObject private var namesData = NamesViewModel.shared
+    @StateObject private var revenueCat = RevenueCatManager.shared
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
@@ -13,6 +14,10 @@ struct AlAdhanApp: App {
     @State var showAdhanSheet: Bool = false
     
     @State private var isLaunching = true
+
+    init() {
+        RevenueCatManager.shared.configure()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -61,6 +66,7 @@ struct AlAdhanApp: App {
             //.statusBarHidden(true)
             .environmentObject(settings)
             .environmentObject(namesData)
+            .environmentObject(revenueCat)
             .accentColor(settings.accentColor.color)
             .tint(settings.accentColor.color)
             .preferredColorScheme(settings.colorScheme)

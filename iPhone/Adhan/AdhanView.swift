@@ -191,7 +191,7 @@ struct AdhanView: View {
                     prayerTimeRefresh(force: false)
                 }
             }
-            .navigationTitle("Al-Adhan")
+            .navigationTitle("Waktu Solat")
             #if !os(watchOS)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -281,9 +281,9 @@ struct AdhanView: View {
         } message: {
             switch showAlert {
             case .travelTurnOnAutomatic:
-                Text("Al-Adhan has automatically detected that you are traveling, so your prayers will be shortened.")
+                Text("Waktu Solat has automatically detected that you are traveling, so your prayers will be shortened.")
             case .travelTurnOffAutomatic:
-                Text("Al-Adhan has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
+                Text("Waktu Solat has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
             case .locationAlert:
                 Text("Please go to Settings and enable location services to accurately determine prayer times.")
             case .notificationAlert:

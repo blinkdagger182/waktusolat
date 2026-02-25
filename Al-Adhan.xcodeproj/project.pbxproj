@@ -61,6 +61,8 @@
 		72CCAE662D42CE0000871A6A /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE652D42CE0000871A6A /* SearchBar.swift */; };
 		72CCAE682D42CE2B00871A6A /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE672D42CE2B00871A6A /* DismissKeyboard.swift */; };
 		72D0BCCB2D7AE99600B7E4F5 /* Prayers2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */; };
+		FCB183172F4D506300249966 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183162F4D506300249966 /* RevenueCat */; };
+		FCB183192F4D506300249966 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183182F4D506300249966 /* RevenueCatUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -149,7 +151,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FCB183172F4D506300249966 /* RevenueCat in Frameworks */,
 				72C30E8D2BCC648400F54570 /* Adhan in Frameworks */,
+				FCB183192F4D506300249966 /* RevenueCatUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -356,6 +360,8 @@
 			name = iPhone;
 			packageProductDependencies = (
 				72C30E8C2BCC648400F54570 /* Adhan */,
+				FCB183162F4D506300249966 /* RevenueCat */,
+				FCB183182F4D506300249966 /* RevenueCatUI */,
 			);
 			productName = "Prayer Times";
 			productReference = 72728C922B3D18E500FAA3B3 /* iPhone.app */;
@@ -409,6 +415,7 @@
 			mainGroup = 72728C892B3D18E500FAA3B3;
 			packageReferences = (
 				72728CA52B3D196B00FAA3B3 /* XCLocalSwiftPackageReference "adhan-swift-main" */,
+				FCB183152F4D506300249966 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 72728C932B3D18E500FAA3B3 /* Products */;
@@ -672,7 +679,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.2.2;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -709,7 +716,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.2.2;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -737,7 +744,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.2.2;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -766,7 +773,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.2.2;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -815,6 +822,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		FCB183152F4D506300249966 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.59.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		72C30E8C2BCC648400F54570 /* Adhan */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -823,6 +841,16 @@
 		72C30E8E2BCC649400F54570 /* Adhan */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Adhan;
+		};
+		FCB183162F4D506300249966 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCB183152F4D506300249966 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
+		};
+		FCB183182F4D506300249966 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCB183152F4D506300249966 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCatUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
