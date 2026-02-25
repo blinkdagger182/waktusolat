@@ -24,6 +24,8 @@ private struct AppVersionGateModifier: ViewModifier {
 
     @AppStorage("versionCheckLastFetchTime") private var lastFetchTime: Double = 0
     @AppStorage("versionCheckCachedPayload") private var cachedPayload: String = ""
+    @AppStorage("versionCheckLastSoftPromptVersion") private var lastSoftPromptVersion: String = ""
+    @AppStorage("versionCheckLastSoftPromptTime") private var lastSoftPromptTime: Double = 0
 
     @State private var isChecking = false
     @State private var updateURL: URL?
@@ -36,6 +38,7 @@ private struct AppVersionGateModifier: ViewModifier {
     // You can override this by adding VersionCheckConfigURL in Info-Main.plist.
     private let defaultConfigURL = "https://raw.githubusercontent.com/blinkdagger182/waktusolat/main/version-check.json"
     private let cacheTTL: TimeInterval = 60 * 60 * 24
+    private let softPromptCooldown: TimeInterval = 60 * 60 * 24
 
     func body(content: Content) -> some View {
         content
@@ -147,10 +150,19 @@ private struct AppVersionGateModifier: ViewModifier {
 
         if isVersion(installed, lowerThan: config.latestVersion) {
             softMessage = config.softMessage ?? "A newer version is available."
-            if !showForceUpdateScreen {
+            if !showForceUpdateScreen && shouldShowSoftPrompt(for: config.latestVersion) {
+                lastSoftPromptVersion = config.latestVersion
+                lastSoftPromptTime = Date().timeIntervalSince1970
                 showSoftUpdateAlert = true
             }
         }
+    }
+
+    private func shouldShowSoftPrompt(for latestVersion: String) -> Bool {
+        if lastSoftPromptVersion != latestVersion {
+            return true
+        }
+        return Date().timeIntervalSince1970 - lastSoftPromptTime >= softPromptCooldown
     }
 
     private func isVersion(_ lhs: String, lowerThan rhs: String) -> Bool {
