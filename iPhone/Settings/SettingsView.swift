@@ -114,7 +114,7 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text("CREDITS")) {
-                    Text("Made by developer from Risk Creatives, and https://api.waktusolat.app/ (Waktu Solat Project).")
+                    Text("Made by developers at Risk Creatives, powered by the Waktu Solat Project API.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                     

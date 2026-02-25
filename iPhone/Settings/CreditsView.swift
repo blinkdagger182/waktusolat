@@ -13,17 +13,18 @@ struct CreditsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .padding(.vertical, 6)
 
-                    Text("Made by developer from Risk Creatives.")
+                    Text("Made by developers at Risk Creatives.")
                         .font(.headline)
                     if let url = URL(string: "https://api.waktusolat.app/") {
-                        Link("Powered by Waktu Solat Project API", destination: url)
+                        Link("Powered by the Waktu Solat Project API", destination: url)
                             .foregroundColor(settings.accentColor.color)
                     }
                 }
 
                 Section {
                     Text("""
-                    This fork focuses on a clean prayer-time experience with minimal UI and widget-first usability.
+                    We built Waktu Solat to stay free, simple, and genuinely useful every day.
+                    The goal is a clean widget and app experience that gently reminds us of prayer times, without clutter.
                     """)
                         .font(.body)
                         .multilineTextAlignment(.leading)
