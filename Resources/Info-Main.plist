@@ -6,6 +6,8 @@
 	<array>
 		<string>com.Quran.Elmallah.Prayer-Times.fetchPrayerTimes</string>
 	</array>
+	<key>VersionCheckConfigURL</key>
+	<string>https://raw.githubusercontent.com/blinkdagger182/waktusolat/main/version-check.json</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Uthmani.otf</string>
