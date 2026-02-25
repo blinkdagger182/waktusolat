@@ -205,9 +205,7 @@ struct AdhanView: View {
                 }
             }
             .sheet(isPresented: $showingSettingsSheet) {
-                NavigationView {
-                    SettingsAdhanView(showNotifications: true)
-                }
+                SettingsView()
             }
             #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)

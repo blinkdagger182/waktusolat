@@ -28,13 +28,7 @@ struct AlAdhanApp: App {
                                 Image(systemName: "safari")
                                 Text("Adhan")
                             }
-                        
-                        OtherView()
-                            .tabItem {
-                                Image(systemName: "moon.stars")
-                                Text("Tools")
-                            }
-                        
+
                         SettingsView()
                             .tabItem {
                                 Image(systemName: "gearshape")

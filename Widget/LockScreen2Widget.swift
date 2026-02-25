@@ -111,7 +111,7 @@ private struct PrayerMiniGraph: View {
                 }
             }
         }
-        .frame(height: 16)
+        .frame(height: 20)
     }
 }
 
@@ -135,7 +135,7 @@ struct LockScreen2EntryView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
                     .font(.caption)
@@ -155,7 +155,7 @@ struct LockScreen2EntryView: View {
 
                     Spacer(minLength: 0)
 
-                    Text(nextPrayer.time, style: .timer)
+                    Text(nextPrayer.time, style: .time)
                         .font(.headline.monospacedDigit())
                         .foregroundStyle(.primary)
                         .lineLimit(1)
@@ -168,23 +168,9 @@ struct LockScreen2EntryView: View {
                         .lineLimit(1)
                 }
 
-                HStack(spacing: 6) {
-                    if !entry.currentCity.isEmpty {
-                        Image(systemName: "location.fill")
-                            .font(.caption2)
-                        Text(entry.currentCity)
-                            .lineLimit(1)
-                    }
-
-                    Spacer(minLength: 4)
-
-                    Text("Next \(nextPrayer.time, style: .time)")
-                        .lineLimit(1)
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .multilineTextAlignment(.leading)
         .lineLimit(2)
         .minimumScaleFactor(0.5)

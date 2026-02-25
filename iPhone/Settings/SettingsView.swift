@@ -4,63 +4,17 @@ struct SettingsView: View {
     @EnvironmentObject var settings: Settings
     
     @State private var showingCredits = false
+    @State private var showingPaywall = false
 
     var body: some View {
         NavigationView {
             List {
-                #if !os(watchOS)
-                Section(header: Text("NOTIFICATIONS")) {
-                    NavigationLink(destination: NotificationView()) {
-                        Label("Notification Settings", systemImage: "bell.badge")
-                    }
-                    .accentColor(settings.accentColor.color)
-                }
-                
-                Section(header: Text("MANUAL OFFSETS")) {
-                    NavigationLink(destination: {
-                        List {
-                            Section(header: Text("HIJRI OFFSET")) {
-                                Stepper("Hijri Offset: \(settings.hijriOffset) days", value: $settings.hijriOffset, in: -3...3)
-                                    .font(.subheadline)
-                                
-                                if let hijriDate = settings.hijriDate {
-                                    Text("English: \(hijriDate.english)")
-                                        .foregroundColor(settings.accentColor.color)
-                                        .font(.subheadline)
-                                    
-                                    Text("Arabic: \(hijriDate.arabic)")
-                                        .foregroundColor(settings.accentColor.color)
-                                        .font(.subheadline)
-                                }
-                            }
-                            .onAppear {
-                                settings.fetchPrayerTimes()
-                            }
-                            
-                            PrayerOffsetsView()
-                        }
-                        .applyConditionalListStyle(defaultView: true)
-                        .navigationTitle("Manual Offset Settings")
-                    }) {
-                        Label("Manual Offset Settings", systemImage: "slider.horizontal.3")
-                    }
-                    .accentColor(settings.accentColor.color)
-                }
-                #endif
-                
-                Section(header: Text("AL-ADHAN")) {
-                    NavigationLink(destination: SettingsAdhanView(showNotifications: false)) {
-                        Label("Prayer Settings", systemImage: "safari")
-                    }
-                    .accentColor(settings.accentColor.color)
-                }
-                                
                 Section(header: Text("APPEARANCE")) {
                     SettingsAppearanceView()
                 }
                 
                 Section(header: Text("CREDITS")) {
-                    Text("Made by Abubakr Elmallah, who was a 17-year-old high school student when this app was made.\n\nSpecial thanks to my parents and to Mr. Joe Silvey, my English teacher and Muslim Student Association Advisor.")
+                    Text("Made by developer from Risk Creatives, and https://api.waktusolat.app/ (Waktu Solat Project).")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                     
@@ -77,127 +31,43 @@ struct SettingsView: View {
                     .sheet(isPresented: $showingCredits) {
                         CreditsView()
                     }
-                    
-                    Button(action: {
-                        settings.hapticFeedback()
-                        
-                        withAnimation(.smooth()) {
-                            if let url = URL(string: "itms-apps://itunes.apple.com/app/id6449729655?action=write-review") {
-                                UIApplication.shared.open(url)
-                            }
-                        }
-                    }) {
-                        Label("Leave a Review", systemImage: "star.bubble.fill")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                    .contextMenu {
-                        Button(action: {
-                            settings.hapticFeedback()
-                            
-                            UIPasteboard.general.string = "itms-apps://itunes.apple.com/app/id6449729655?action=write-review"
-                        }) {
-                            HStack {
-                                Image(systemName: "doc.on.doc")
-                                Text("Copy Website")
-                            }
-                        }
-                    }
-                    
-                    Button(action: {
-                        settings.hapticFeedback()
-                        
-                        withAnimation(.smooth()) {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                            }
-                        }
-                    }) {
-                        Label("Open App Settings", systemImage: "gearshape.fill")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
                     #endif
                     
-                    HStack {
-                        Text("Website: ")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.leading)
-                            .frame(width: glyphWidth)
-                        
-                        if let url = URL(string: "https://abubakrelmallah.com/") {
-                            Link("abubakrelmallah.com", destination: url)
-                                .font(.subheadline)
-                                .foregroundColor(settings.accentColor.color)
-                                .multilineTextAlignment(.leading)
-                                .padding(.leading, -4)
-                        }
-                    }
-                    #if !os(watchOS)
-                    .contextMenu {
-                        Button(action: {
-                            UIPasteboard.general.string = "abubakrelmallah.com"
-                        }) {
-                            HStack {
-                                Image(systemName: "doc.on.doc")
-                                Text("Copy Website")
-                            }
-                        }
-                    }
-                    #endif
-                    
-                    HStack {
-                        Text("Contact: ")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.leading)
-                            .frame(width: glyphWidth)
-                        
-                        Text("ammelmallah@icloud.com")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                            .multilineTextAlignment(.leading)
-                            .padding(.leading, -4)
-                    }
-                    #if !os(watchOS)
-                    .contextMenu {
-                        Button(action: {
-                            UIPasteboard.general.string = "ammelmallah@icloud.com"
-                        }) {
-                            HStack {
-                                Image(systemName: "doc.on.doc")
-                                Text("Copy Email")
-                            }
-                        }
-                    }
-                    #endif
-                    
-                    VersionNumber(width: glyphWidth)
+                    VersionNumber()
                         .font(.subheadline)
                 }
-                
-                AlIslamAppsSection()
+
+                Section(header: Text("SUPPORT")) {
+                    Button {
+                        settings.hapticFeedback()
+                        showingPaywall = true
+                    } label: {
+                        Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                }
             }
             .navigationTitle("Settings")
             .applyConditionalListStyle(defaultView: true)
         }
         .navigationViewStyle(.stack)
-    }
-    
-    private func columnWidth(for textStyle: UIFont.TextStyle, extra: CGFloat = 4, sample: String? = nil, fontName: String? = nil) -> CGFloat {
-        let sampleString = (sample ?? "M") as NSString
-        let font: UIFont
-
-        if let fontName = fontName, let customFont = UIFont(name: fontName, size: UIFont.preferredFont(forTextStyle: textStyle).pointSize) {
-            font = customFont
-        } else {
-            font = UIFont.preferredFont(forTextStyle: textStyle)
+        .sheet(isPresented: $showingPaywall) {
+            NavigationView {
+                VStack(spacing: 16) {
+                    Image(systemName: "cup.and.saucer.fill")
+                        .font(.system(size: 42))
+                        .foregroundColor(settings.accentColor.color)
+                    Text("Buy Me a Coffee")
+                        .font(.title2.bold())
+                    Text("Paywall placeholder.\nPayment wiring will be added next.")
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.secondary)
+                }
+                .padding(24)
+                .navigationTitle("Support")
+                .navigationBarTitleDisplayMode(.inline)
+            }
         }
-
-        return ceil(sampleString.size(withAttributes: [.font: font]).width) + extra
-    }
-
-    private var glyphWidth: CGFloat {
-        columnWidth(for: .subheadline, extra: 0, sample: "Contact: ")
     }
 }
 
