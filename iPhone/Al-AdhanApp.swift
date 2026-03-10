@@ -1,6 +1,7 @@
 import SwiftUI
 import WidgetKit
 import StoreKit
+import AVFoundation
 
 @main
 struct AlAdhanApp: App {
@@ -158,21 +159,23 @@ private struct QuranVerseDetailsModal: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var settings: Settings
 
     @State private var isLoading = true
     @State private var details: QuranVerseDetails?
     @State private var errorMessage: String?
+    @State private var player: AVPlayer?
+    @State private var currentAudioURL: String?
+    @State private var playbackEndObserver: NSObjectProtocol?
+    @State private var isAudioLoading = false
+    @State private var isPlaying = false
+    @State private var audioErrorMessage: String?
+    @State private var didFinishPlayback = false
 
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    colors: colorScheme == .dark
-                        ? [Color(red: 0.02, green: 0.08, blue: 0.10), Color(red: 0.06, green: 0.14, blue: 0.12), Color(red: 0.04, green: 0.08, blue: 0.14)]
-                        : [Color(red: 0.93, green: 0.98, blue: 0.96), Color(red: 0.96, green: 0.99, blue: 1.0), Color(red: 0.94, green: 0.95, blue: 1.0)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                themeBackgroundGradient
                 .ignoresSafeArea()
 
                 Group {
@@ -185,6 +188,7 @@ private struct QuranVerseDetailsModal: View {
                                 verseHeader(details)
                                 verseCard(details)
                                 metadataGrid(details)
+                                footerSource
                             }
                             .padding(16)
                             .frame(maxWidth: 620)
@@ -213,6 +217,9 @@ private struct QuranVerseDetailsModal: View {
         }
         .task(id: reference) {
             await loadVerseDetails()
+        }
+        .onDisappear {
+            stopPlayback()
         }
     }
 
@@ -243,6 +250,34 @@ private struct QuranVerseDetailsModal: View {
                 .lineSpacing(3)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.82))
                 .fixedSize(horizontal: false, vertical: true)
+
+            if let audioURL = details.audioURL, !audioURL.isEmpty {
+                HStack(spacing: 10) {
+                    Button(action: { togglePlayback(audioURL: audioURL) }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: isAudioLoading ? "hourglass" : (isPlaying ? "pause.fill" : "play.fill"))
+                            Text(isAudioLoading ? "Loading audio..." : (isPlaying ? "Pause Recitation" : "Play Recitation"))
+                                .fontWeight(.semibold)
+                        }
+                        .font(.footnote)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isAudioLoading)
+
+                    if let audioErrorMessage {
+                        Text(audioErrorMessage)
+                            .font(.caption2)
+                            .foregroundStyle(.red.opacity(0.9))
+                            .lineLimit(2)
+                    }
+                }
+            }
         }
         .padding(16)
         .background(cardBackground)
@@ -307,6 +342,52 @@ private struct QuranVerseDetailsModal: View {
         colorScheme == .dark ? Color.white.opacity(0.16) : Color.black.opacity(0.08)
     }
 
+    private var themeBackgroundGradient: LinearGradient {
+        let accent = settings.accentColor.color
+        if colorScheme == .dark {
+            return LinearGradient(
+                colors: [
+                    accent.opacity(0.30),
+                    Color.black.opacity(0.90),
+                    accent.opacity(0.22)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+        return LinearGradient(
+            colors: [
+                accent.opacity(0.20),
+                Color.white,
+                accent.opacity(0.15)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var footerSource: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Divider()
+                .overlay(colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.10))
+            Text("Source")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.70) : Color.black.opacity(0.60))
+            Text("Verse details and recitation are fetched live from AlQuran Cloud.")
+                .font(.caption)
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.82) : Color.black.opacity(0.72))
+            Text("Text edition: en.asad • Audio edition: ar.alafasy")
+                .font(.caption2)
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.62) : Color.black.opacity(0.54))
+            HStack(spacing: 12) {
+                Link("API Docs", destination: URL(string: "https://alquran.cloud/api")!)
+                Link("Open Verse Endpoint", destination: URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/en.asad")!)
+            }
+            .font(.caption2.weight(.semibold))
+        }
+        .padding(.top, 4)
+    }
+
     @MainActor
     private func loadVerseDetails() async {
         isLoading = true
@@ -321,6 +402,81 @@ private struct QuranVerseDetailsModal: View {
 
         isLoading = false
     }
+
+    @MainActor
+    private func togglePlayback(audioURL: String) {
+        audioErrorMessage = nil
+
+        if currentAudioURL == audioURL, let player {
+            if isPlaying {
+                player.pause()
+                isPlaying = false
+            } else {
+                let restartAndPlay = {
+                    player.play()
+                    isPlaying = true
+                    didFinishPlayback = false
+                }
+
+                if didFinishPlayback {
+                    player.seek(to: .zero) { _ in
+                        restartAndPlay()
+                    }
+                } else {
+                    restartAndPlay()
+                }
+            }
+            return
+        }
+
+        guard let url = URL(string: audioURL) else {
+            audioErrorMessage = "Invalid audio URL."
+            return
+        }
+
+        stopPlayback()
+        isAudioLoading = true
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+            try session.setActive(true)
+        } catch {
+            audioErrorMessage = "Audio session failed."
+        }
+
+        let newPlayer = AVPlayer(url: url)
+        player = newPlayer
+        currentAudioURL = audioURL
+
+        playbackEndObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: newPlayer.currentItem,
+            queue: .main
+        ) { _ in
+            isPlaying = false
+            didFinishPlayback = true
+        }
+
+        newPlayer.play()
+        isPlaying = true
+        isAudioLoading = false
+        didFinishPlayback = false
+    }
+
+    private func stopPlayback() {
+        player?.pause()
+        player = nil
+        currentAudioURL = nil
+        isPlaying = false
+        isAudioLoading = false
+        didFinishPlayback = false
+        if let observer = playbackEndObserver {
+            NotificationCenter.default.removeObserver(observer)
+            playbackEndObserver = nil
+        }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
 }
 
 private struct QuranVerseDetails {
@@ -333,6 +489,7 @@ private struct QuranVerseDetails {
     let juz: Int?
     let page: Int?
     let hizbQuarter: Int?
+    let audioURL: String?
 
     var displayReference: String { "\(surahNameEnglish) \(reference)" }
 }
@@ -356,7 +513,8 @@ private enum QuranVerseAPI {
             revelationType: en.data.surah.revelationType,
             juz: en.data.juz,
             page: en.data.page,
-            hizbQuarter: en.data.hizbQuarter
+            hizbQuarter: en.data.hizbQuarter,
+            audioURL: ar?.data.audio ?? ar?.data.audioSecondary?.first
         )
     }
 
@@ -406,6 +564,8 @@ private struct QuranEditionAyahData: Decodable {
     let juz: Int?
     let page: Int?
     let hizbQuarter: Int?
+    let audio: String?
+    let audioSecondary: [String]?
     let surah: QuranEditionSurahData
 }
 
