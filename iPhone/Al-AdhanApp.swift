@@ -308,13 +308,13 @@ private struct MarketingModalConfig: Codable {
                 title: "Daily Quran Widget",
                 subtitle: "One inspiring ayah every day.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg"
+                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg?v=2"
             ),
             DailyQuranIntroSlide(
                 title: "Tap For Full Verse",
                 subtitle: "Open Waktu to see full details and translation.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9655.jpg"
+                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9655.jpg?v=2"
             )
         ]
     )
@@ -346,6 +346,8 @@ private struct DailyQuranIntroSlideCard: View {
                         image
                             .resizable()
                             .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            .clipped()
                     default:
                         fallbackGradient
                     }
@@ -354,6 +356,8 @@ private struct DailyQuranIntroSlideCard: View {
                 Image(uiImage: bundledImage)
                     .resizable()
                     .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .clipped()
             } else {
                 fallbackGradient
             }
