@@ -308,13 +308,13 @@ private struct MarketingModalConfig: Codable {
                 title: "Daily Quran Widget",
                 subtitle: "One inspiring ayah every day.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg?v=2"
+                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9665.jpg?v=3"
             ),
             DailyQuranIntroSlide(
                 title: "Tap For Full Verse",
                 subtitle: "Open Waktu to see full details and translation.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9655.jpg?v=2"
+                imageURL: "https://blinkdagger182.github.io/waktusolat/images/ayat_recitation.png?v=3"
             )
         ]
     )
@@ -338,50 +338,58 @@ private struct DailyQuranIntroSlideCard: View {
     let slide: DailyQuranIntroSlide
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            if let remoteURL = slide.imageURL, let url = URL(string: remoteURL) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                            .clipped()
-                    default:
-                        fallbackGradient
-                    }
-                }
-            } else if let bundledImage = loadBundledImage(named: slide.imageAsset) {
-                Image(uiImage: bundledImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        GeometryReader { geo in
+            let size = geo.size
+
+            ZStack(alignment: .bottomLeading) {
+                imageBackground
+                    .frame(width: size.width, height: size.height, alignment: .center)
                     .clipped()
-            } else {
-                fallbackGradient
-            }
 
-            LinearGradient(
-                colors: [Color.black.opacity(0.02), Color.black.opacity(0.44)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                LinearGradient(
+                    colors: [Color.black.opacity(0.02), Color.black.opacity(0.44)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(width: size.width, height: size.height)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(slide.title)
-                    .font(.headline.weight(.semibold))
-                    .foregroundColor(.white)
-                Text(slide.subtitle)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.92))
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(slide.title)
+                        .font(.headline.weight(.semibold))
+                        .foregroundColor(.white)
+                    Text(slide.subtitle)
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.92))
+                        .lineLimit(2)
+                }
+                .padding(14)
             }
-            .padding(14)
+            .frame(width: size.width, height: size.height)
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var imageBackground: some View {
+        if let remoteURL = slide.imageURL, let url = URL(string: remoteURL) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                default:
+                    fallbackGradient
+                }
+            }
+        } else if let bundledImage = loadBundledImage(named: slide.imageAsset) {
+            Image(uiImage: bundledImage)
+                .resizable()
+                .scaledToFill()
+        } else {
+            fallbackGradient
+        }
     }
 
     private var fallbackGradient: some View {
