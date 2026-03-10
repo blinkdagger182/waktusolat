@@ -3,6 +3,10 @@ import WidgetKit
 import StoreKit
 import AVFoundation
 
+extension Notification.Name {
+    static let debugShowDailyQuranWidgetIntro = Notification.Name("debugShowDailyQuranWidgetIntro")
+}
+
 @main
 struct AlAdhanApp: App {
     @StateObject private var settings = Settings.shared
@@ -12,7 +16,9 @@ struct AlAdhanApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     @AppStorage("firstLaunchSheet") var firstLaunchSheet: Bool = true
+    @AppStorage("didShowDailyQuranWidgetIntroV1") private var didShowDailyQuranWidgetIntro = false
     @State var showAdhanSheet: Bool = false
+    @State private var showDailyQuranWidgetIntro = false
     
     @State private var isLaunching = true
     @State private var quranDeepLink: QuranDeepLinkPayload?
@@ -49,12 +55,15 @@ struct AlAdhanApp: App {
                                     showAdhanSheet = true
                                 }
                             }
+                        } else {
+                            presentDailyQuranWidgetIntroIfNeeded()
                         }
                     }
                     .sheet(
                         isPresented: $showAdhanSheet,
                         onDismiss: {
                             firstLaunchSheet = false
+                            presentDailyQuranWidgetIntroIfNeeded()
                         }) {
                         AdhanSetupSheet()
                             .environmentObject(settings)
@@ -86,6 +95,19 @@ struct AlAdhanApp: App {
                     .environmentObject(settings)
                     .preferredColorScheme(settings.colorScheme)
             }
+            .overlay {
+                if showDailyQuranWidgetIntro {
+                    DailyQuranWidgetIntroModal(
+                        onDismiss: {
+                            showDailyQuranWidgetIntro = false
+                            didShowDailyQuranWidgetIntro = true
+                        }
+                    )
+                    .environmentObject(settings)
+                    .transition(.opacity)
+                    .zIndex(20)
+                }
+            }
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
@@ -93,6 +115,9 @@ struct AlAdhanApp: App {
                 if !settings.firstLaunch {
                     settings.requestLocationAuthorization()
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .debugShowDailyQuranWidgetIntro)) { _ in
+                showDailyQuranWidgetIntro = true
             }
         }
         .onChange(of: settings.accentColor) { _ in
@@ -114,7 +139,20 @@ struct AlAdhanApp: App {
         .onChange(of: settings.firstLaunch) { isFirstLaunch in
             if !isFirstLaunch {
                 settings.requestLocationAuthorization()
+                presentDailyQuranWidgetIntroIfNeeded()
             }
+        }
+    }
+
+    private func presentDailyQuranWidgetIntroIfNeeded() {
+        guard !didShowDailyQuranWidgetIntro else { return }
+        guard !settings.firstLaunch else { return }
+        guard !showAdhanSheet else { return }
+        guard !showDailyQuranWidgetIntro else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            guard !didShowDailyQuranWidgetIntro else { return }
+            showDailyQuranWidgetIntro = true
         }
     }
 }
@@ -122,6 +160,262 @@ struct AlAdhanApp: App {
 private struct QuranDeepLinkPayload: Identifiable {
     let reference: String
     var id: String { reference }
+}
+
+private struct DailyQuranWidgetIntroModal: View {
+    let onDismiss: () -> Void
+
+    @State private var selectedIndex = 0
+    @State private var config = MarketingModalConfig.defaultValue
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.46)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onDismiss()
+                }
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 64, height: 64)
+
+                        Image("CurrentAppIcon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 34, height: 34)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .padding(.top, -8)
+
+                    Text("NEW WIDGET AVAILABLE")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white.opacity(0.75))
+                        .tracking(1.0)
+
+                    Text(config.title)
+                        .font(.title3.bold())
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+
+                    TabView(selection: $selectedIndex) {
+                        ForEach(Array(config.slides.enumerated()), id: \.offset) { index, slide in
+                            DailyQuranIntroSlideCard(slide: slide)
+                                .tag(index)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                    .tabViewStyle(.page(indexDisplayMode: .always))
+
+                    Text(config.subtitle)
+                        .font(.footnote)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white.opacity(0.82))
+                        .padding(.horizontal, 8)
+
+                    Button(action: onDismiss) {
+                        Text(config.ctaText)
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color("lightPink"), Color("hotPink")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            )
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(Color(white: 0.10).opacity(0.92))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .onTapGesture {
+                    // Swallow taps inside modal content; dismiss only via background or CTA.
+                }
+            }
+        }
+        .task {
+            await loadRemoteConfig()
+        }
+    }
+
+    private func loadRemoteConfig() async {
+        let url = MarketingModalConfigURLResolver.resolve()
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let decoded = try JSONDecoder().decode(MarketingModalConfig.self, from: data)
+            guard !decoded.slides.isEmpty else { return }
+            config = decoded
+        } catch {
+            // Keep local default config when remote source is unavailable.
+        }
+    }
+}
+
+private enum MarketingModalConfigURLResolver {
+    private static let defaultURL = "https://blinkdagger182.github.io/waktusolat/marketing-modal.json"
+
+    static func resolve() -> URL {
+        if let fromInfo = Bundle.main.object(forInfoDictionaryKey: "MarketingModalConfigURL") as? String,
+           let url = URL(string: fromInfo),
+           !fromInfo.isEmpty {
+            return url
+        }
+        return URL(string: defaultURL)!
+    }
+}
+
+private struct MarketingModalConfig: Codable {
+    let title: String
+    let subtitle: String
+    let ctaText: String
+    let slides: [DailyQuranIntroSlide]
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case subtitle
+        case ctaText = "cta_text"
+        case slides
+    }
+
+    static let defaultValue = MarketingModalConfig(
+        title: "Daily Quran Inspiration",
+        subtitle: "Add it from Lock Screen > Customize > Widgets > Waktu",
+        ctaText: "Got it",
+        slides: [
+            DailyQuranIntroSlide(
+                title: "Daily Quran Widget",
+                subtitle: "One inspiring ayah every day.",
+                imageAsset: "IMG_9643.jpg",
+                imageURL: nil
+            ),
+            DailyQuranIntroSlide(
+                title: "Tap For Full Verse",
+                subtitle: "Open Waktu to see full details and translation.",
+                imageAsset: "DailyQuranIntroSlide2",
+                imageURL: nil
+            )
+        ]
+    )
+}
+
+private struct DailyQuranIntroSlide: Codable {
+    let title: String
+    let subtitle: String
+    let imageAsset: String?
+    let imageURL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case subtitle
+        case imageAsset = "image_asset"
+        case imageURL = "image_url"
+    }
+}
+
+private struct DailyQuranIntroSlideCard: View {
+    let slide: DailyQuranIntroSlide
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            if let remoteURL = slide.imageURL, let url = URL(string: remoteURL) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    default:
+                        fallbackGradient
+                    }
+                }
+            } else if let bundledImage = loadBundledImage(named: slide.imageAsset) {
+                Image(uiImage: bundledImage)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                fallbackGradient
+            }
+
+            LinearGradient(
+                colors: [Color.black.opacity(0.02), Color.black.opacity(0.44)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(slide.title)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.white)
+                Text(slide.subtitle)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.92))
+                    .lineLimit(2)
+            }
+            .padding(14)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var fallbackGradient: some View {
+        LinearGradient(
+            colors: [
+                Color("lightPink").opacity(0.75),
+                Color("hotPink").opacity(0.85)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private func loadBundledImage(named: String?) -> UIImage? {
+        guard let named, !named.isEmpty else { return nil }
+
+        if let image = UIImage(named: named) {
+            return image
+        }
+
+        let nsName = named as NSString
+        let base = nsName.deletingPathExtension
+        let ext = nsName.pathExtension
+        if !base.isEmpty, !ext.isEmpty,
+           let url = Bundle.main.url(forResource: base, withExtension: ext),
+           let image = UIImage(contentsOfFile: url.path) {
+            return image
+        }
+
+        let exts = ["png", "jpg", "jpeg", "webp", "heic"]
+        for ext in exts {
+            if let url = Bundle.main.url(forResource: named, withExtension: ext),
+               let image = UIImage(contentsOfFile: url.path) {
+                return image
+            }
+        }
+        return nil
+    }
 }
 
 private enum QuranDeepLinkParser {

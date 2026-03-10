@@ -3,31 +3,46 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Waktu - Support & Privacy</title>
+  <title>Waktu Marketing Modal Config</title>
   <style>
-    :root { --bg:#0b1020; --card:#131a2f; --text:#f2f5ff; --muted:#a8b3d1; --accent:#59c06a; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:linear-gradient(160deg,#0b1020,#17213f); color:var(--text); }
-    .wrap { max-width:760px; margin:0 auto; padding:40px 20px; }
-    .card { background:rgba(19,26,47,.88); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; backdrop-filter: blur(6px); }
-    h1 { margin:0 0 8px; font-size:32px; }
-    p { color:var(--muted); line-height:1.6; }
-    .links { display:grid; gap:12px; margin-top:20px; }
-    a { display:block; padding:14px 16px; border-radius:12px; background:rgba(89,192,106,.14); border:1px solid rgba(89,192,106,.35); color:#dfffe5; text-decoration:none; font-weight:600; }
-    .small { margin-top:18px; font-size:13px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; margin: 40px auto; max-width: 900px; padding: 0 16px; background: #0f1115; color: #f3f5f7; }
+    a { color: #7ec8ff; }
+    pre { background: #171b22; border: 1px solid #2b3442; border-radius: 10px; padding: 16px; overflow: auto; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .muted { color: #b4bfcd; }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="card">
-      <h1>Waktu</h1>
-      <p>Official support and policy pages for Waktu.</p>
-      <div class="links">
-        <a href="/waktusolat/support.html">Support</a>
-        <a href="/waktusolat/privacy-policy.html">Privacy Policy</a>
-      </div>
-      <p class="small">Made by developers at Risk Creatives.</p>
-    </section>
-  </main>
+  <h1>Waktu Marketing Modal Config</h1>
+  <p class="muted">Host this folder via GitHub Pages. The app reads <code>/marketing-modal.json</code>.</p>
+
+  <h2>Live URL</h2>
+  <p><a href="./marketing-modal.json">marketing-modal.json</a></p>
+
+  <h2>JSON Format</h2>
+  <pre><code>{
+  "title": "Daily Quran Inspiration",
+  "subtitle": "Add it from Lock Screen > Customize > Widgets > Waktu",
+  "cta_text": "Got it",
+  "slides": [
+    {
+      "title": "Daily Quran Widget",
+      "subtitle": "One inspiring ayah every day.",
+      "image_url": "https://your-domain/path/slide-1.jpg"
+    },
+    {
+      "title": "Tap For Full Verse",
+      "subtitle": "Open Waktu to see full details and translation.",
+      "image_url": "https://your-domain/path/slide-2.jpg"
+    }
+  ]
+}</code></pre>
+
+  <h2>Notes</h2>
+  <ul>
+    <li>Use <code>image_url</code> for remote images.</li>
+    <li>Use <code>image_asset</code> only for bundled app images.</li>
+    <li>At least one slide is required.</li>
+  </ul>
 </body>
 </html>

@@ -1,0 +1,17 @@
+{
+  "title": "Daily Quran Inspiration",
+  "subtitle": "Add it from Lock Screen > Customize > Widgets > Waktu",
+  "cta_text": "Got it",
+  "slides": [
+    {
+      "title": "Daily Quran Widget",
+      "subtitle": "One inspiring ayah every day.",
+      "image_url": "https://blinkdagger182.github.io/waktusolat/images/IMG_9643.jpg"
+    },
+    {
+      "title": "Tap For Full Verse",
+      "subtitle": "Open Waktu to see full details and translation.",
+      "image_url": "https://blinkdagger182.github.io/waktusolat/images/daily-quran-slide-2.jpg"
+    }
+  ]
+}

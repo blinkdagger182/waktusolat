@@ -41,7 +41,7 @@ private struct AppVersionGateModifier: ViewModifier {
 
     // Host this file publicly (GitHub raw, Cloudflare Pages, etc.).
     // You can override this by adding VersionCheckConfigURL in Info-Main.plist.
-    private let defaultConfigURL = "https://raw.githubusercontent.com/blinkdagger182/waktusolat/main/version-check.json"
+    private let defaultConfigURL = "https://blinkdagger182.github.io/waktusolat/version-check.json"
     #if DEBUG
     private let cacheTTL: TimeInterval = 0
     private let softPromptCooldown: TimeInterval = 0
