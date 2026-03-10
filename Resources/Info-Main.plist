@@ -17,5 +17,16 @@
 		<string>fetch</string>
 		<string>processing</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.riskcreatives.waktu</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>waktu</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

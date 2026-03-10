@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000012F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
+		A10000022F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
 		7205C1F02D797535001D4979 /* LockScreen3Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EE2D797535001D4979 /* LockScreen3Widget.swift */; };
 		7205C1F12D797535001D4979 /* LockScreen4Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EF2D797535001D4979 /* LockScreen4Widget.swift */; };
 		720CCE432E3960BB002DD82E /* Globals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE422E3960BB002DD82E /* Globals.swift */; };
@@ -93,6 +95,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A10000002F70000100ABCDEF /* quotes.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = quotes.json; sourceTree = "<group>"; };
 		7205C1EE2D797535001D4979 /* LockScreen3Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen3Widget.swift; sourceTree = "<group>"; };
 		7205C1EF2D797535001D4979 /* LockScreen4Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen4Widget.swift; sourceTree = "<group>"; };
 		720CCE422E3960BB002DD82E /* Globals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Globals.swift; sourceTree = "<group>"; };
@@ -301,6 +304,7 @@
 			isa = PBXGroup;
 			children = (
 				72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */,
+				A10000002F70000100ABCDEF /* quotes.json */,
 			);
 			path = JSONs;
 			sourceTree = "<group>";
@@ -443,6 +447,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000012F70000100ABCDEF /* quotes.json in Resources */,
 				72728CAE2B3D198300FAA3B3 /* 99_Names_Of_Allah.json in Resources */,
 				72728CA42B3D191F00FAA3B3 /* Uthmani.otf in Resources */,
 				72728C9A2B3D18E600FAA3B3 /* Assets.xcassets in Resources */,
@@ -453,6 +458,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000022F70000100ABCDEF /* quotes.json in Resources */,
 				72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */,
 				72728D262B3D52BE00FAA3B3 /* Assets.xcassets in Resources */,
 			);
