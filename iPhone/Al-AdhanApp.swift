@@ -261,9 +261,16 @@ private struct DailyQuranWidgetIntroModal: View {
     }
 
     private func loadRemoteConfig() async {
-        let url = MarketingModalConfigURLResolver.resolve()
+        let url = MarketingModalConfigURLResolver.resolveNoCacheURL()
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.timeoutInterval = 12
+            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+
+            let session = URLSession(configuration: .ephemeral)
+            let (data, _) = try await session.data(for: request)
             let decoded = try JSONDecoder().decode(MarketingModalConfig.self, from: data)
             guard !decoded.slides.isEmpty else { return }
             config = decoded
@@ -283,6 +290,17 @@ private enum MarketingModalConfigURLResolver {
             return url
         }
         return URL(string: defaultURL)!
+    }
+
+    static func resolveNoCacheURL() -> URL {
+        let url = resolve()
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        var items = components.queryItems ?? []
+        let stamp = String(Int(Date().timeIntervalSince1970 / 60))
+        items.removeAll(where: { $0.name == "_nocache" })
+        items.append(URLQueryItem(name: "_nocache", value: stamp))
+        components.queryItems = items
+        return components.url ?? url
     }
 }
 
@@ -372,7 +390,7 @@ private struct DailyQuranIntroSlideCard: View {
 
     @ViewBuilder
     private var imageBackground: some View {
-        if let remoteURL = slide.imageURL, let url = URL(string: remoteURL) {
+        if let remoteURL = slide.imageURL, let url = cacheBustedImageURL(remoteURL) {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let image):
@@ -401,6 +419,16 @@ private struct DailyQuranIntroSlideCard: View {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+
+    private func cacheBustedImageURL(_ raw: String) -> URL? {
+        guard var components = URLComponents(string: raw) else { return URL(string: raw) }
+        var items = components.queryItems ?? []
+        let stamp = String(Int(Date().timeIntervalSince1970 / 60))
+        items.removeAll(where: { $0.name == "_nocache" })
+        items.append(URLQueryItem(name: "_nocache", value: stamp))
+        components.queryItems = items
+        return components.url
     }
 
     private func loadBundledImage(named: String?) -> UIImage? {
