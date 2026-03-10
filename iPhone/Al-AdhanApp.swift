@@ -326,13 +326,13 @@ private struct MarketingModalConfig: Codable {
                 title: "Daily Quran Widget",
                 subtitle: "One inspiring ayah every day.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9665.jpg?v=3"
+                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg?v=4"
             ),
             DailyQuranIntroSlide(
                 title: "Tap For Full Verse",
                 subtitle: "Open Waktu to see full details and translation.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/ayat_recitation.png?v=3"
+                imageURL: "https://blinkdagger182.github.io/waktusolat/images/ayat-recitation.png?v=4"
             )
         ]
     )
