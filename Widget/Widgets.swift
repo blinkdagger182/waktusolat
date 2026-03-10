@@ -5,6 +5,8 @@ import WidgetKit
 struct Widgets: WidgetBundle {
     var body: some Widget {
         SimpleWidget()
+        GraphicPrayerWidget()
+        // GraphicPrayerSquareWidget() // Temporarily disabled for App Store submission
         CountdownWidget()
         Prayers2Widget()
         PrayersWidget()
@@ -14,6 +16,7 @@ struct Widgets: WidgetBundle {
             LockScreen2Widget()
             LockScreen3Widget()
             LockScreen4Widget()
+            LockScreenVerseWidget()
         }
         #endif
     }

@@ -461,6 +461,15 @@ struct PrayerList: View {
                     DatePicker("Showing prayers for", selection: $selectedDate.animation(.easeInOut), displayedComponents: .date)
                         .datePickerStyle(DefaultDatePickerStyle())
                         .padding(4)
+
+                    if settings.changedDate && !settings.isDateSupportedByJAKIM(selectedDate) {
+                        Text("Prayer times are sourced from JAKIM via Waktu Solat API. At the moment, only the \(settings.supportedJAKIMYear) schedule is published, so this selected date is outside the available range.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
+                    }
                     
                     if !calendar.isDate(selectedDate, inSameDayAs: Date()) {
                         Text("Show prayers for today")
@@ -476,13 +485,19 @@ struct PrayerList: View {
                     }
                 }
                 .onChange(of: selectedDate) { value in
-                    settings.datePrayers = settings.getPrayerTimes(for: value) ?? []
-                    settings.dateFullPrayers = settings.getPrayerTimes(for: value, fullPrayers: true) ?? []
-                    
                     let calendar = Calendar.current
-                    
-                    if !calendar.isDate(value, inSameDayAs: Date()) {
-                        settings.changedDate = true
+
+                    settings.changedDate = !calendar.isDate(value, inSameDayAs: Date())
+
+                    if settings.changedDate {
+                        if settings.isDateSupportedByJAKIM(value) {
+                            Task { @MainActor in
+                                await settings.refreshDatePrayers(for: value)
+                            }
+                        } else {
+                            settings.datePrayers = []
+                            settings.dateFullPrayers = []
+                        }
                     }
                 }
                 #endif

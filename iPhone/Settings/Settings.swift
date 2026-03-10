@@ -2,8 +2,49 @@ import SwiftUI
 import os
 import Adhan
 import CoreLocation
+#if os(iOS)
+import UIKit
+import WidgetKit
+#endif
 
 let logger = Logger(subsystem: "app.riskcreatives.waktu", category: "Waktu Solat")
+
+enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
+    case subuh
+    case syuruk
+    case zuhur
+    case asar
+    case maghrib
+    case isyak
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .subuh: return "Subuh"
+        case .syuruk: return "Syuruk"
+        case .zuhur: return "Zuhur"
+        case .asar: return "Asar"
+        case .maghrib: return "Maghrib"
+        case .isyak: return "Isyak"
+        }
+    }
+
+    var defaultAssetName: String {
+        switch self {
+        case .subuh: return "SubuhWidgetBackground"
+        case .syuruk: return "SyurukWidgetBackground"
+        case .zuhur: return "ZuhurWidgetBackground"
+        case .asar: return "AsarWidgetBackground"
+        case .maghrib: return "MaghribWidgetBackground"
+        case .isyak: return "IsyakWidgetBackground"
+        }
+    }
+
+    var storageFileName: String {
+        "aura-custom-background-\(rawValue).jpg"
+    }
+}
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
@@ -49,6 +90,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         super.init()
         Self.locationManager.delegate = self
+        #if os(iOS)
+        refreshCustomAuraBackgroundState()
+        #endif
     }
     
     func hapticFeedback() {
@@ -350,6 +394,8 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @AppStorage("fontArabic") var fontArabic: String = "KFGQPCUthmanicScriptHAFS"
 
+    @Published var auraBackgroundVersion: Int = 0
+
     func toggleLetterFavorite(letterData: LetterData) {
         withAnimation {
             if isLetterFavorite(letterData: letterData) {
@@ -385,4 +431,98 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             return "system"
         }
     }
+
+    #if os(iOS)
+    private func auraContainerURL() -> URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: "group.app.riskcreatives.waktu")
+    }
+
+    func customAuraBackgroundURL(for key: AuraPrayerBackgroundKey) -> URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: "group.app.riskcreatives.waktu")?
+            .appendingPathComponent(key.storageFileName)
+    }
+
+    func refreshCustomAuraBackgroundState() {
+        auraBackgroundVersion += 1
+    }
+
+    func hasCustomAuraBackground(for key: AuraPrayerBackgroundKey) -> Bool {
+        guard let url = customAuraBackgroundURL(for: key) else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    func customAuraBackgroundImage(for key: AuraPrayerBackgroundKey) -> UIImage? {
+        guard
+            let url = customAuraBackgroundURL(for: key),
+            FileManager.default.fileExists(atPath: url.path),
+            let data = try? Data(contentsOf: url)
+        else {
+            return nil
+        }
+        return UIImage(data: data)
+    }
+
+    @discardableResult
+    func saveCustomAuraBackground(_ image: UIImage, for key: AuraPrayerBackgroundKey, compressionQuality: CGFloat = 0.88) -> Bool {
+        guard
+            let containerURL = auraContainerURL(),
+            let data = image.jpegData(compressionQuality: compressionQuality)
+        else {
+            return false
+        }
+
+        do {
+            let url = containerURL.appendingPathComponent(key.storageFileName)
+            try data.write(to: url, options: [.atomic])
+            refreshCustomAuraBackgroundState()
+            WidgetCenter.shared.reloadTimelines(ofKind: "GraphicPrayerWidget")
+            WidgetCenter.shared.reloadTimelines(ofKind: "GraphicPrayerSquareWidget")
+            return true
+        } catch {
+            logger.error("Failed to save custom aura background: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    func removeCustomAuraBackground(for key: AuraPrayerBackgroundKey) {
+        guard let url = customAuraBackgroundURL(for: key) else { return }
+        if FileManager.default.fileExists(atPath: url.path) {
+            try? FileManager.default.removeItem(at: url)
+        }
+        refreshCustomAuraBackgroundState()
+        WidgetCenter.shared.reloadTimelines(ofKind: "GraphicPrayerWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: "GraphicPrayerSquareWidget")
+    }
+
+    @discardableResult
+    func applyCustomAuraBackgroundToAll(from sourceKey: AuraPrayerBackgroundKey, compressionQuality: CGFloat = 0.88) -> Bool {
+        guard
+            let sourceImage = customAuraBackgroundImage(for: sourceKey),
+            let containerURL = auraContainerURL(),
+            let data = sourceImage.jpegData(compressionQuality: compressionQuality)
+        else {
+            return false
+        }
+
+        var didWrite = false
+        for key in AuraPrayerBackgroundKey.allCases {
+            let url = containerURL.appendingPathComponent(key.storageFileName)
+            do {
+                try data.write(to: url, options: [.atomic])
+                didWrite = true
+            } catch {
+                logger.error("Failed applying custom aura background to \(key.rawValue): \(error.localizedDescription)")
+            }
+        }
+
+        if didWrite {
+            refreshCustomAuraBackgroundState()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+
+        return didWrite
+    }
+    #endif
 }

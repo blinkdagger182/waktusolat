@@ -14,7 +14,6 @@
 		720DEC682D2456FF006EA342 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720DEC642D2456FF006EA342 /* CreditsView.swift */; };
 		722BBD382F0997DB004F3659 /* AdhanSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722BBD372F0997DB004F3659 /* AdhanSheet.swift */; };
 		72537C1E2F04338E00829F59 /* AppReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1D2F04338E00829F59 /* AppReview.swift */; };
-		72F4D8E42F4D9B6400A1B2C3 /* AppVersionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F4D8E32F4D9B6400A1B2C3 /* AppVersionGate.swift */; };
 		72537C202F04340600829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
 		72537C222F0434C500829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
 		72574CCC2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
@@ -49,6 +48,7 @@
 		72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
 		72728D262B3D52BE00FAA3B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72728C992B3D18E600FAA3B3 /* Assets.xcassets */; };
 		72728D282B3D52C400FAA3B3 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CC12B3D1AA300FAA3B3 /* Settings.swift */; };
+		72728D2A2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D2B2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift */; };
 		72827EAF2E3D70EC00EBA534 /* SettingsAdhanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72827EAE2E3D70EC00EBA534 /* SettingsAdhanView.swift */; };
 		728E2EEB2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
 		728E2EEC2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
@@ -62,8 +62,10 @@
 		72CCAE662D42CE0000871A6A /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE652D42CE0000871A6A /* SearchBar.swift */; };
 		72CCAE682D42CE2B00871A6A /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE672D42CE2B00871A6A /* DismissKeyboard.swift */; };
 		72D0BCCB2D7AE99600B7E4F5 /* Prayers2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */; };
+		72F4D8E42F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */; };
 		FCB183172F4D506300249966 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183162F4D506300249966 /* RevenueCat */; };
 		FCB183192F4D506300249966 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183182F4D506300249966 /* RevenueCatUI */; };
+		FCB1831C2F5DE11500249966 /* Inject in Frameworks */ = {isa = PBXBuildFile; productRef = FCB1831B2F5DE11500249966 /* Inject */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,7 +100,6 @@
 		722A7F882D421F5F0040DC9C /* adhan-swift-main */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "adhan-swift-main"; sourceTree = "<group>"; };
 		722BBD372F0997DB004F3659 /* AdhanSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanSheet.swift; sourceTree = "<group>"; };
 		72537C1D2F04338E00829F59 /* AppReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReview.swift; sourceTree = "<group>"; };
-		72F4D8E32F4D9B6400A1B2C3 /* AppVersionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Versioning/AppVersionGate.swift; sourceTree = "<group>"; };
 		72537C1F2F04340600829F59 /* AdhanStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanStructs.swift; sourceTree = "<group>"; };
 		72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanShortcuts.swift; sourceTree = "<group>"; };
 		72574CD32E49F35600BFF138 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
@@ -132,6 +133,7 @@
 		72728D072B3D523700FAA3B3 /* CountdownWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownWidget.swift; sourceTree = "<group>"; };
 		72728D092B3D524600FAA3B3 /* LockScreen1Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen1Widget.swift; sourceTree = "<group>"; };
 		72728D0B2B3D525300FAA3B3 /* LockScreen2Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen2Widget.swift; sourceTree = "<group>"; };
+		72728D2B2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphicPrayerWidget.swift; sourceTree = "<group>"; };
 		72728D452B3D535600FAA3B3 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Complication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		72728D492B3D535600FAA3B3 /* Complication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Complication.swift; sourceTree = "<group>"; };
 		72827EAE2E3D70EC00EBA534 /* SettingsAdhanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAdhanView.swift; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 		72CCAE892D42D55B00871A6A /* Info-Main.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Main.plist"; sourceTree = "<group>"; };
 		72CCAE8E2D42D86A00871A6A /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prayers2Widget.swift; sourceTree = "<group>"; };
+		72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Versioning/AppVersionGate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -156,6 +159,7 @@
 				FCB183172F4D506300249966 /* RevenueCat in Frameworks */,
 				72C30E8D2BCC648400F54570 /* Adhan in Frameworks */,
 				FCB183192F4D506300249966 /* RevenueCatUI in Frameworks */,
+				FCB1831C2F5DE11500249966 /* Inject in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -208,7 +212,7 @@
 				72728C952B3D18E500FAA3B3 /* Al-AdhanApp.swift */,
 				72CCAE612D42CDAD00871A6A /* AppDelegate.swift */,
 				72537C1D2F04338E00829F59 /* AppReview.swift */,
-				72F4D8E32F4D9B6400A1B2C3 /* AppVersionGate.swift */,
+				72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */,
 				72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */,
 				722BBD372F0997DB004F3659 /* AdhanSheet.swift */,
 				72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */,
@@ -276,6 +280,7 @@
 				72728D072B3D523700FAA3B3 /* CountdownWidget.swift */,
 				72728CF82B3D51B200FAA3B3 /* PrayersWidget.swift */,
 				72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */,
+				72728D2B2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift */,
 				72728D092B3D524600FAA3B3 /* LockScreen1Widget.swift */,
 				72728D0B2B3D525300FAA3B3 /* LockScreen2Widget.swift */,
 				7205C1EE2D797535001D4979 /* LockScreen3Widget.swift */,
@@ -365,6 +370,7 @@
 				72C30E8C2BCC648400F54570 /* Adhan */,
 				FCB183162F4D506300249966 /* RevenueCat */,
 				FCB183182F4D506300249966 /* RevenueCatUI */,
+				FCB1831B2F5DE11500249966 /* Inject */,
 			);
 			productName = "Prayer Times";
 			productReference = 72728C922B3D18E500FAA3B3 /* iPhone.app */;
@@ -419,6 +425,7 @@
 			packageReferences = (
 				72728CA52B3D196B00FAA3B3 /* XCLocalSwiftPackageReference "adhan-swift-main" */,
 				FCB183152F4D506300249966 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+				FCB1831A2F5DE11500249966 /* XCRemoteSwiftPackageReference "Inject" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 72728C932B3D18E500FAA3B3 /* Products */;
@@ -471,7 +478,7 @@
 				72CCAE622D42CDAD00871A6A /* AppDelegate.swift in Sources */,
 				72827EAF2E3D70EC00EBA534 /* SettingsAdhanView.swift in Sources */,
 				72537C1E2F04338E00829F59 /* AppReview.swift in Sources */,
-				72F4D8E42F4D9B6400A1B2C3 /* AppVersionGate.swift in Sources */,
+				72F4D8E42F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift in Sources */,
 				72CCAE602D42CD8A00871A6A /* MapView.swift in Sources */,
 				72657D492E3EB6C700D8F41B /* ArabicLetterView.swift in Sources */,
 				72657D4A2E3EB6C700D8F41B /* Arabic.swift in Sources */,
@@ -500,6 +507,7 @@
 				72574CCF2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */,
 				72728CF72B3D51B200FAA3B3 /* Widgets.swift in Sources */,
 				72728D082B3D523700FAA3B3 /* CountdownWidget.swift in Sources */,
+				72728D2A2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift in Sources */,
 				72537C222F0434C500829F59 /* AdhanStructs.swift in Sources */,
 				72728D0A2B3D524600FAA3B3 /* LockScreen1Widget.swift in Sources */,
 				72728D0C2B3D525300FAA3B3 /* LockScreen2Widget.swift in Sources */,
@@ -686,9 +694,11 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -723,9 +733,11 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -835,6 +847,14 @@
 				minimumVersion = 5.59.2;
 			};
 		};
+		FCB1831A2F5DE11500249966 /* XCRemoteSwiftPackageReference "Inject" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/krzysztofzablocki/Inject";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -855,6 +875,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FCB183152F4D506300249966 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
 			productName = RevenueCatUI;
+		};
+		FCB1831B2F5DE11500249966 /* Inject */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCB1831A2F5DE11500249966 /* XCRemoteSwiftPackageReference "Inject" */;
+			productName = Inject;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

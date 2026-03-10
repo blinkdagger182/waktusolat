@@ -70,3 +70,51 @@ struct LockScreen4Widget: Widget {
         #endif
     }
 }
+
+struct LockScreenVerseEntryView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("As-Saff 61:10-11")
+                .font(.system(size: 16, weight: .bold, design: .serif))
+                .foregroundStyle(Color(red: 0.93, green: 0.76, blue: 0.43))
+                .lineLimit(1)
+
+            Text("Shall I guide you to a transaction that will save you from a painful punishment?")
+                .font(.system(size: 12, weight: .semibold, design: .serif))
+                .foregroundStyle(Color(red: 0.95, green: 0.83, blue: 0.57))
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .multilineTextAlignment(.leading)
+    }
+}
+
+struct LockScreenVerseWidget: Widget {
+    let kind: String = "LockScreenVerseWidget"
+
+    var body: some WidgetConfiguration {
+        #if os(iOS)
+        if #available(iOS 16, *) {
+            return StaticConfiguration(kind: kind, provider: PrayersProvider()) { _ in
+                if #available(iOS 17.0, *) {
+                    LockScreenVerseEntryView()
+                        .containerBackground(for: .widget) { Color.clear }
+                } else {
+                    LockScreenVerseEntryView()
+                }
+            }
+            .supportedFamilies([.accessoryRectangular])
+            .configurationDisplayName("Verse Reminder")
+            .description("Shows a hardcoded Quran verse snippet.")
+        } else {
+            return StaticConfiguration(kind: kind, provider: PrayersProvider()) { _ in
+                LockScreenVerseEntryView()
+            }
+            .supportedFamilies([.systemSmall])
+            .configurationDisplayName("Verse Reminder")
+            .description("Shows a hardcoded Quran verse snippet.")
+        }
+        #endif
+    }
+}

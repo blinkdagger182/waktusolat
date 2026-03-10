@@ -52,6 +52,8 @@ private struct AppVersionGateModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .blur(radius: activeModal == nil ? 0 : 1.5)
+            .animation(.easeInOut(duration: 0.18), value: activeModal != nil)
             .onAppear { runCheckIfNeeded(force: false) }
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
@@ -188,8 +190,7 @@ private struct UpdatePromptModal: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.35)
-                .background(.ultraThinMaterial)
+            Color.black.opacity(0.46)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {

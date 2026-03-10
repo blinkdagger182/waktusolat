@@ -27,11 +27,6 @@ extension Settings {
         case .authorizedAlways, .authorizedWhenInUse:
             showLocationAlert = false
             mgr.requestLocation()
-            #if !os(watchOS)
-            mgr.startMonitoringSignificantLocationChanges()
-            #else
-            mgr.startUpdatingLocation()
-            #endif
             
         case .denied where !locationNeverAskAgain:
             showLocationAlert = true
@@ -73,14 +68,8 @@ extension Settings {
     func requestLocationAuthorization() {
         switch Self.locationManager.authorizationStatus {
         case .notDetermined:
-            Self.locationManager.requestAlwaysAuthorization()
+            Self.locationManager.requestWhenInUseAuthorization()
         case .authorizedAlways, .authorizedWhenInUse:
-            #if !os(watchOS)
-            Self.locationManager.startMonitoringSignificantLocationChanges()
-            #else
-            Self.locationManager.startUpdatingLocation()
-            #endif
-
             Self.locationManager.requestLocation()
         default:
             break
@@ -307,8 +296,10 @@ extension Settings {
 
     private static let gpsAPIBase = "https://api.waktusolat.app/v2/solat/gps"
     private static let appGroupId = "group.app.riskcreatives.waktu"
-    private static let monthCacheKey = "waktusolat.gps.month.cache.v1"
-    private static var monthCacheInMemory: GPSMonthResponse?
+    private static let jakimSupportedYear = 2026
+    private static let legacyMonthCacheKey = "waktusolat.gps.month.cache.v1"
+    private static let monthCacheKeyPrefix = "waktusolat.gps.month.cache.v2."
+    private static var monthCacheInMemory: [String: GPSMonthResponse] = [:]
     
     private struct NotifPrefs {
         let enabled: ReferenceWritableKeyPath<Settings, Bool>
@@ -355,30 +346,67 @@ extension Settings {
         String(format: "%.4f", value)
     }
 
-    private func gpsURL(latitude: Double, longitude: Double) -> URL? {
-        URL(string: "\(Self.gpsAPIBase)/\(normalizeCoordinate(latitude))/\(normalizeCoordinate(longitude))")
+    private func gpsURL(latitude: Double, longitude: Double, for date: Date? = nil) -> URL? {
+        guard var components = URLComponents(string: "\(Self.gpsAPIBase)/\(normalizeCoordinate(latitude))/\(normalizeCoordinate(longitude))") else {
+            return nil
+        }
+
+        if let date {
+            let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+            guard let year = comps.year, let month = comps.month else {
+                return nil
+            }
+            components.queryItems = [
+                URLQueryItem(name: "year", value: String(year)),
+                URLQueryItem(name: "month", value: String(month))
+            ]
+        }
+
+        return components.url
     }
 
     private func decodeMonthCache(from data: Data) -> GPSMonthResponse? {
         try? JSONDecoder().decode(GPSMonthResponse.self, from: data)
     }
 
-    private func loadMonthCache() -> GPSMonthResponse? {
-        if let inMemory = Self.monthCacheInMemory {
+    private func monthCacheKey(for year: Int, month: Int) -> String {
+        "\(Self.monthCacheKeyPrefix)\(year)-\(String(format: "%02d", month))"
+    }
+
+    private func loadMonthCache(for date: Date) -> GPSMonthResponse? {
+        let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+        guard let year = comps.year, let month = comps.month else { return nil }
+
+        let key = monthCacheKey(for: year, month: month)
+        if let inMemory = Self.monthCacheInMemory[key] {
             return inMemory
         }
-        guard let data = appGroupStore()?.data(forKey: Self.monthCacheKey),
-              let cached = decodeMonthCache(from: data) else {
-            return nil
+
+        if let data = appGroupStore()?.data(forKey: key),
+           let cached = decodeMonthCache(from: data) {
+            Self.monthCacheInMemory[key] = cached
+            return cached
         }
-        Self.monthCacheInMemory = cached
-        return cached
+
+        // One-time compatibility fallback with legacy single-month cache.
+        if let legacyData = appGroupStore()?.data(forKey: Self.legacyMonthCacheKey),
+           let legacy = decodeMonthCache(from: legacyData),
+           legacy.year == year,
+           legacy.monthNumber == month {
+            saveMonthCache(legacy)
+            return legacy
+        }
+
+        return nil
     }
 
     private func saveMonthCache(_ month: GPSMonthResponse) {
-        Self.monthCacheInMemory = month
+        let key = monthCacheKey(for: month.year, month: month.monthNumber)
+        Self.monthCacheInMemory[key] = month
         guard let data = try? JSONEncoder().encode(month) else { return }
-        appGroupStore()?.setValue(data, forKey: Self.monthCacheKey)
+        appGroupStore()?.setValue(data, forKey: key)
+        // Keep legacy key warm for compatibility with existing widget/app installs.
+        appGroupStore()?.setValue(data, forKey: Self.legacyMonthCacheKey)
     }
 
     private func isSameYearMonth(_ date: Date, as month: GPSMonthResponse) -> Bool {
@@ -387,12 +415,20 @@ extension Settings {
     }
 
     private func dayPayload(for date: Date) -> GPSPrayerDay? {
-        guard let month = loadMonthCache(),
+        guard let month = loadMonthCache(for: date),
               isSameYearMonth(date, as: month) else {
             return nil
         }
         let day = Self.gregorian.component(.day, from: date)
         return month.prayers.first(where: { $0.day == day })
+    }
+
+    func isDateSupportedByJAKIM(_ date: Date) -> Bool {
+        Self.gregorian.component(.year, from: date) == Self.jakimSupportedYear
+    }
+
+    var supportedJAKIMYear: Int {
+        Self.jakimSupportedYear
     }
 
     private func dateFromUnix(_ value: TimeInterval) -> Date {
@@ -404,8 +440,8 @@ extension Settings {
     }
 
     @MainActor
-    private func fetchMonthFromAPI(latitude: Double, longitude: Double) async throws {
-        guard let url = gpsURL(latitude: latitude, longitude: longitude) else {
+    private func fetchMonthFromAPI(latitude: Double, longitude: Double, for date: Date? = nil) async throws {
+        guard let url = gpsURL(latitude: latitude, longitude: longitude, for: date) else {
             throw GPSAPIError.invalidURL
         }
 
@@ -480,6 +516,30 @@ extension Settings {
         ]
     }
 
+    @MainActor
+    func refreshDatePrayers(for date: Date) async {
+        guard isDateSupportedByJAKIM(date) else {
+            datePrayers = []
+            dateFullPrayers = []
+            return
+        }
+
+        if dayPayload(for: date) == nil,
+           let loc = currentLocation,
+           loc.latitude != 1000,
+           loc.longitude != 1000,
+           Bundle.main.bundleIdentifier?.contains("Widget") != true {
+            do {
+                try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude, for: date)
+            } catch {
+                logger.error("Date prayer refresh fetch failed: \(error.localizedDescription)")
+            }
+        }
+
+        datePrayers = getPrayerTimes(for: date) ?? []
+        dateFullPrayers = getPrayerTimes(for: date, fullPrayers: true) ?? []
+    }
+
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, calledFrom: StaticString = #function, completion: (() -> Void)? = nil) {
         updateDates()
         
@@ -534,7 +594,7 @@ extension Settings {
 
             Task { @MainActor in
                 do {
-                    try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude)
+                    try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude, for: today)
                     logger.debug("GPS API prayer month fetched successfully")
                 } catch {
                     logger.error("GPS API fetch failed. Falling back to cached prayers data: \(error.localizedDescription)")
