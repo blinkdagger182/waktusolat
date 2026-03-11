@@ -175,7 +175,7 @@ struct CountdownEntryView: View {
                             )
 
                             HStack {
-                                Text(currentPrayer.nameTransliteration)
+                                Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
                                     .font(.title3.weight(.semibold))
                                     .foregroundColor(entry.accentColor.color)
                                     .lineLimit(1)
@@ -188,7 +188,7 @@ struct CountdownEntryView: View {
 
                                 Spacer(minLength: 4)
 
-                                Text(nextPrayer.nameTransliteration)
+                                Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                                     .font(.title3.weight(.semibold))
                                     .lineLimit(1)
                             }
@@ -219,7 +219,7 @@ struct CountdownEntryView: View {
                             }
 
                             HStack {
-                                Text(currentPrayer.nameTransliteration)
+                                Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
                                     .font(.headline)
                                     .foregroundColor(entry.accentColor.color)
                                     .lineLimit(1)
@@ -230,7 +230,7 @@ struct CountdownEntryView: View {
                             }
 
                             HStack {
-                                Text("Next \(nextPrayer.nameTransliteration)")
+                                Text("Next \(widgetPrayerDisplayName(nextPrayer.nameTransliteration))")
                                 Spacer()
                                 Text(nextPrayer.time, style: .time)
                             }

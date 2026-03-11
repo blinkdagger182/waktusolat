@@ -42,11 +42,11 @@ struct SimpleEntryView: View {
                             Image(systemName: currentPrayer.image)
                                 .font(.title2)
                             
-                            Text(currentPrayer.nameTransliteration)
+                            Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
                                 .font(.headline)
                                 .padding(.vertical, 1)
                         }
-                        .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                        .foregroundColor(widgetIsShurooq(currentPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
                         .padding(.bottom, -4)
                         
                         HStack {
@@ -55,10 +55,10 @@ struct SimpleEntryView: View {
                             Image(systemName: nextPrayer.image)
                                 .padding(.horizontal, -6)
                             
-                            Text(nextPrayer.nameTransliteration)
+                            Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                         }
                         .font(.caption2)
-                        .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                        .foregroundColor(widgetIsShurooq(nextPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
                         .padding(.vertical, 1)
                         
                         Text("Starts at \(nextPrayer.time, style: .time)")

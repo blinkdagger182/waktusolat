@@ -108,6 +108,10 @@ private func resolvedDisplayPrayer(for entry: PrayersEntry) -> Prayer? {
     return nil
 }
 
+private func auraDisplayPrayerName(_ name: String) -> String {
+    widgetPrayerDisplayName(name)
+}
+
 private struct GraphicPrayerEntryView: View {
     var entry: PrayersProvider.Entry
 
@@ -180,7 +184,7 @@ private struct GraphicPrayerEntryView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "moon.stars.fill")
                             .font(.headline)
-                        Text(prayer.nameTransliteration)
+                        Text(auraDisplayPrayerName(prayer.nameTransliteration))
                             .font(.title2.weight(.bold))
                     }
                     .foregroundColor(.white)
@@ -265,7 +269,7 @@ private struct GraphicPrayerSquareEntryView: View {
         }
         .overlay(alignment: .bottomLeading) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(entry.prayerName)
+                Text(auraDisplayPrayerName(entry.prayerName))
                     .font(.headline.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)

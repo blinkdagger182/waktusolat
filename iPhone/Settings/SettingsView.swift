@@ -2,6 +2,8 @@ import SwiftUI
 #if os(iOS)
 import UIKit
 import PhotosUI
+import WebKit
+import AudioToolbox
 #endif
 #if DEBUG && canImport(Inject)
 import Inject
@@ -137,74 +139,104 @@ struct SettingsView: View {
     
     @State private var showingCredits = false
     @State private var showingPaywall = false
+    @State private var showDonationCelebration = false
+    @State private var hasInitializedEntitlementState = false
+    @State private var lastKnownDonationState = false
     private let paywallOfferingIdentifier = "Waktu Donation"
 
     var body: some View {
-        NavigationView {
-            List {
-                Section(header: Text("APPEARANCE")) {
-                    SettingsAppearanceView()
-                }
-                
-                Section(header: Text("CREDITS")) {
-                    Text("Made by developers at Risk Creatives, powered by the Waktu Solat Project API.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                    
-                    #if !os(watchOS)
-                    Button(action: {
-                        settings.hapticFeedback()
-                        
-                        showingCredits = true
-                    }) {
-                        Label("View Credits", systemImage: "scroll.fill")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                    .sheet(isPresented: $showingCredits) {
-                        CreditsView()
-                    }
-                    #endif
-                    
-                    VersionNumber()
-                        .font(.subheadline)
-                }
-
-                Section(header: Text("SUPPORT")) {
-                    Button {
-                        settings.hapticFeedback()
-                        Task {
-                            await revenueCat.refreshOfferings()
-                            if revenueCat.offerings?.all[paywallOfferingIdentifier] != nil {
-                                showingPaywall = true
-                            } else {
-                                let available = revenueCat.offerings?.all.keys.sorted().joined(separator: ", ") ?? "none"
-                                revenueCat.lastErrorMessage = "Offering '\(paywallOfferingIdentifier)' not found. Available offerings: \(available)"
-                            }
+        ZStack {
+            NavigationView {
+                List {
+                    /*
+                    Section(header: Text("PROFILE")) {
+                        NavigationLink {
+                            SettingsProfileView()
+                        } label: {
+                            Label("Profile", systemImage: "person.crop.circle")
+                                .foregroundColor(settings.accentColor.color)
                         }
-                    } label: {
-                        Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
-                            .foregroundColor(settings.accentColor.color)
                     }
-                }
+                    */
 
-                Section(header: Text("WIDGETS")) {
-                    NavigationLink {
-                        WidgetPreviewDebugView()
-                    } label: {
-                        Label("Aura Backgrounds (6 Waktu)", systemImage: "rectangle.grid.1x2")
-                            .foregroundColor(settings.accentColor.color)
+                    Section(header: Text("APPEARANCE")) {
+                        SettingsAppearanceView()
+                    }
+                    
+                    Section(header: Text("CREDITS")) {
+                        Text("Made by developers at Risk Creatives, powered by the Waktu Solat Project API.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        
+                        #if !os(watchOS)
+                        Button(action: {
+                            settings.hapticFeedback()
+                            
+                            showingCredits = true
+                        }) {
+                            Label("View Credits", systemImage: "scroll.fill")
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                        .sheet(isPresented: $showingCredits) {
+                            CreditsView()
+                        }
+                        #endif
+                        
+                        VersionNumber()
+                            .font(.subheadline)
+                    }
+
+                    Section(header: Text("SUPPORT")) {
+                        Button {
+                            settings.hapticFeedback()
+                            Task {
+                                await revenueCat.refreshOfferings()
+                                if revenueCat.offerings?.all[paywallOfferingIdentifier] != nil {
+                                    showingPaywall = true
+                                } else {
+                                    let available = revenueCat.offerings?.all.keys.sorted().joined(separator: ", ") ?? "none"
+                                    revenueCat.lastErrorMessage = "Offering '\(paywallOfferingIdentifier)' not found. Available offerings: \(available)"
+                                }
+                            }
+                        } label: {
+                            Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+
+                    Section(header: Text("WIDGETS")) {
+                        NavigationLink {
+                            WidgetPreviewDebugView()
+                        } label: {
+                            Label("Aura Backgrounds (6 Waktu)", systemImage: "rectangle.grid.1x2")
+                                .foregroundColor(settings.accentColor.color)
+                        }
                     }
                 }
+                .navigationTitle("Settings")
+                .applyConditionalListStyle(defaultView: true)
             }
-            .navigationTitle("Settings")
-            .applyConditionalListStyle(defaultView: true)
+            .navigationViewStyle(.stack)
+
+            if showDonationCelebration {
+                DonationCelebrationOverlay()
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.96)), removal: .opacity))
+                    .zIndex(1)
+            }
         }
-        .navigationViewStyle(.stack)
         .task {
             revenueCat.configure()
             await revenueCat.refreshCustomerInfo()
             await revenueCat.refreshOfferings()
+            lastKnownDonationState = revenueCat.hasBuyMeKopi
+            hasInitializedEntitlementState = true
+        }
+        .onChange(of: revenueCat.hasBuyMeKopi) { newValue in
+            if hasInitializedEntitlementState, newValue, !lastKnownDonationState {
+                handleDonationCompleted()
+            }
+            lastKnownDonationState = newValue
         }
         .sheet(isPresented: $showingPaywall) {
             paywallSheet
@@ -221,11 +253,42 @@ struct SettingsView: View {
         }
     }
 
+    private func handleDonationCompleted() {
+        showingPaywall = false
+        playDonationSuccessEffects()
+
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+            showDonationCelebration = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                showDonationCelebration = false
+            }
+        }
+    }
+
+    private func playDonationSuccessEffects() {
+        #if os(iOS)
+        let haptic = UINotificationFeedbackGenerator()
+        haptic.prepare()
+        haptic.notificationOccurred(.success)
+        settings.hapticFeedback()
+        AudioServicesPlaySystemSound(1025)
+        #endif
+    }
+
     @ViewBuilder
     private var paywallSheet: some View {
         #if canImport(RevenueCatUI)
         if let selectedOffering = revenueCat.offerings?.all[paywallOfferingIdentifier] {
             PaywallView(offering: selectedOffering, displayCloseButton: true)
+                .onPurchaseCompleted { _ in
+                    handleDonationCompleted()
+                }
+                .onRestoreCompleted { _ in
+                    handleDonationCompleted()
+                }
         } else {
             NavigationView {
                 Text("Offering '\(paywallOfferingIdentifier)' was not returned by RevenueCat.")
@@ -246,6 +309,210 @@ struct SettingsView: View {
         #endif
     }
 }
+
+private struct DonationCelebrationOverlay: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.orange.opacity(0.22),
+                    Color.yellow.opacity(0.2),
+                    Color.green.opacity(0.18)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            if !reduceMotion {
+                ConfettiBurstView()
+                    .ignoresSafeArea()
+            }
+
+            VStack(spacing: 12) {
+                Image(systemName: "hands.sparkles.fill")
+                    .font(.system(size: 44, weight: .bold))
+                    .foregroundStyle(.yellow, .orange)
+                    .scaleEffect(pulse ? 1.08 : 0.92)
+
+                Text("Donation Successful")
+                    .font(.system(size: 28, weight: .black, design: .rounded))
+                    .foregroundStyle(.primary)
+
+                Text("JazakAllah Khair. Your support keeps this app alive.")
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 28)
+            }
+            .padding(.vertical, 28)
+            .frame(maxWidth: 360)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .shadow(color: .orange.opacity(0.25), radius: 24, x: 0, y: 12)
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                pulse = true
+            }
+        }
+    }
+}
+
+private struct ConfettiBurstView: View {
+    @State private var animate = false
+    private let pieces = Array(0..<36)
+    private let colors: [Color] = [.yellow, .orange, .green, .blue, .pink, .mint]
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(pieces, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(colors[index % colors.count])
+                        .frame(width: 6, height: 12)
+                        .rotationEffect(.degrees(animate ? Double.random(in: 240...720) : 0))
+                        .position(
+                            x: animate ? CGFloat.random(in: 0...geometry.size.width) : geometry.size.width / 2,
+                            y: animate ? geometry.size.height + 40 : -20
+                        )
+                        .opacity(animate ? 0.95 : 0)
+                        .animation(
+                            .easeOut(duration: Double.random(in: 1.2...2.0))
+                            .delay(Double(index) * 0.015),
+                            value: animate
+                        )
+                }
+            }
+        }
+        .onAppear { animate = true }
+    }
+}
+
+private struct SettingsProfileView: View {
+    @EnvironmentObject var settings: Settings
+    private let cannyRequestURL = URL(string: "https://risk-creatives-enterprise.canny.io/feature-requests")
+
+    var body: some View {
+        List {
+            Section(header: Text("PROFILE")) {
+                NavigationLink {
+                    SettingsWebContainerView(
+                        title: "Request a Feature",
+                        url: cannyRequestURL
+                    )
+                } label: {
+                    Label("Request a feature", systemImage: "lightbulb")
+                        .foregroundColor(settings.accentColor.color)
+                }
+
+                NavigationLink {
+                    SettingsComingSoonView(
+                        title: "Roadmap",
+                        message: "Roadmap is coming soon."
+                    )
+                } label: {
+                    Label("Roadmap", systemImage: "map")
+                        .foregroundColor(settings.accentColor.color)
+                }
+
+                NavigationLink {
+                    SettingsComingSoonView(
+                        title: "What's New",
+                        message: "What's new updates are coming soon."
+                    )
+                } label: {
+                    Label("What's new", systemImage: "sparkles")
+                        .foregroundColor(settings.accentColor.color)
+                }
+            }
+        }
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.inline)
+        .applyConditionalListStyle(defaultView: true)
+    }
+}
+
+private struct SettingsComingSoonView: View {
+    let title: String
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "clock.badge.exclamationmark")
+                .font(.system(size: 28))
+                .foregroundStyle(.secondary)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct SettingsWebContainerView: View {
+    let title: String
+    let url: URL?
+
+    var body: some View {
+        Group {
+            if let url {
+                CannyWebView(url: url)
+            } else {
+                VStack(spacing: 10) {
+                    Image(systemName: "network.slash")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.secondary)
+                    Text("Request form URL is not configured yet.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemGroupedBackground))
+            }
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#if os(iOS)
+private struct CannyWebView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.allowsBackForwardNavigationGestures = true
+        webView.scrollView.keyboardDismissMode = .onDrag
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        if uiView.url != url {
+            uiView.load(URLRequest(url: url))
+        }
+    }
+}
+#else
+private struct CannyWebView: View {
+    let url: URL
+
+    var body: some View {
+        Text("Web view is only available on iOS.")
+            .foregroundStyle(.secondary)
+    }
+}
+#endif
 
 struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings

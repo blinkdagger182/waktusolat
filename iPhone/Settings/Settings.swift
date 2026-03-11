@@ -21,12 +21,12 @@ enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .subuh: return "Subuh"
-        case .syuruk: return "Syuruk"
-        case .zuhur: return "Zuhur"
-        case .asar: return "Asar"
+        case .subuh: return "Fajr"
+        case .syuruk: return "Shurooq"
+        case .zuhur: return "Dhuhr"
+        case .asar: return "Asr"
         case .maghrib: return "Maghrib"
-        case .isyak: return "Isyak"
+        case .isyak: return "Isha"
         }
     }
 

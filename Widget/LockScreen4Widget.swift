@@ -23,7 +23,7 @@ struct LockScreen4EntryView: View {
                             .font(.caption)
                             .frame(width: 10, alignment: .center)
                         
-                        Text(prayer.nameTransliteration)
+                        Text(widgetPrayerDisplayName(prayer.nameTransliteration))
                             .fontWeight(.bold)
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)

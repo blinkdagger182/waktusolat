@@ -5,29 +5,35 @@ struct LockScreen1EntryView: View {
     var entry: PrayersProvider.Entry
 
     var body: some View {
-        VStack(alignment: .center, spacing: 4) {
+        VStack(alignment: .center, spacing: 3) {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
                     .font(.caption)
             } else if let nextPrayer = entry.nextPrayer {
-                HStack {
+                HStack(spacing: 2) {
                     if !nextPrayer.nameTransliteration.contains("/") {
                         Image(systemName: nextPrayer.image)
-                            .font(.caption)
-                            .padding(.trailing, -4)
+                            .font(.system(size: 9, weight: .semibold))
                     }
-                    
-                    Text(nextPrayer.nameTransliteration)
-                        .font(.headline)
+
+                    Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.2)
+                        .allowsTightening(true)
+                        .layoutPriority(1)
                 }
-                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .center)
                 
                 Text(nextPrayer.time, style: .time)
-                    .font(.caption2)
+                    .font(.system(.caption, design: .rounded).weight(.bold))
+                    .monospacedDigit()
                     .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
         }
-        .minimumScaleFactor(0.5)
+        .multilineTextAlignment(.center)
+        .minimumScaleFactor(0.7)
     }
 }
 

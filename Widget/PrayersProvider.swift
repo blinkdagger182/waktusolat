@@ -126,3 +126,26 @@ struct PrayersEntry: TimelineEntry {
     let nextPrayer: Prayer?
     let hijriOffset: Int
 }
+
+func widgetPrayerDisplayName(_ raw: String) -> String {
+    switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+    case "subuh":
+        return "Fajr"
+    case "syuruk", "shurooq":
+        return "Shurooq"
+    case "zuhur", "dhuhr":
+        return "Dhuhr"
+    case "asar", "asr":
+        return "Asr"
+    case "isyak", "isya", "isha":
+        return "Isha"
+    case "maghrib":
+        return "Maghrib"
+    default:
+        return raw
+    }
+}
+
+func widgetIsShurooq(_ raw: String) -> Bool {
+    widgetPrayerDisplayName(raw).lowercased() == "shurooq"
+}

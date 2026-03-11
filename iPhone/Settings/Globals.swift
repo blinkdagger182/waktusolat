@@ -3,7 +3,7 @@ import SwiftUI
 enum AccentColor: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 
-    case adaptive, red, orange, yellow, green, blue, indigo, cyan, teal, mint, purple, brown
+    case adaptive, red, orange, yellow, green, blue, indigo, cyan, teal, mint, purple, brown, lightPink, hotPink
 
     var color: Color {
         switch self {
@@ -19,6 +19,8 @@ enum AccentColor: String, CaseIterable, Identifiable {
         case .mint: return .mint
         case .purple: return .purple
         case .brown: return .brown
+        case .lightPink: return Color(red: 1.0, green: 182.0 / 255.0, blue: 193.0 / 255.0) // #ffb6c1
+        case .hotPink: return Color(red: 1.0, green: 105.0 / 255.0, blue: 180.0 / 255.0)   // #ff69b4
         }
     }
 
@@ -32,7 +34,9 @@ enum AccentColor: String, CaseIterable, Identifiable {
     static func fromStoredValue(_ raw: String?) -> AccentColor {
         guard let raw else { return .adaptive }
         switch raw {
-        case "pink", "white", "default":
+        case "pink":
+            return .hotPink
+        case "white", "default":
             return .adaptive
         default:
             return AccentColor(rawValue: raw) ?? .adaptive

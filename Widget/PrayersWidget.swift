@@ -79,7 +79,7 @@ struct PrayersEntryView: View {
                                         .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                                         .padding(.trailing, -5)
                                     
-                                    Text(prayer.nameTransliteration)
+                                    Text(widgetPrayerDisplayName(prayer.nameTransliteration))
                                         .font(.subheadline)
                                         .fontWeight(.bold)
                                         .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
@@ -105,7 +105,7 @@ struct PrayersEntryView: View {
                                         .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                                         .padding(.trailing, -5)
                                     
-                                    Text(prayer.nameTransliteration)
+                                    Text(widgetPrayerDisplayName(prayer.nameTransliteration))
                                         .font(.subheadline)
                                         .fontWeight(.bold)
                                         .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
@@ -138,11 +138,11 @@ struct PrayersEntryView: View {
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
                                         .frame(width: 22, height: 22)
-                                        .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                        .foregroundColor(widgetIsShurooq(currentPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
                                     
-                                    Text(currentPrayer.nameTransliteration)
+                                    Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
                                         .font(.title3)
-                                        .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                        .foregroundColor(widgetIsShurooq(currentPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
                                     
                                     Spacer()
                                     
@@ -160,15 +160,15 @@ struct PrayersEntryView: View {
                                         Text("Starts at \(nextPrayer.time, style: .time)")
                                             .font(.caption)
                                         
-                                        Text(nextPrayer.nameTransliteration)
+                                        Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                                             .font(.title3)
-                                            .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                            .foregroundColor(widgetIsShurooq(nextPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
                                         
                                         Image(systemName: nextPrayer.image)
                                             .resizable()
                                             .aspectRatio(contentMode: .fit)
                                             .frame(width: 22, height: 22)
-                                            .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                            .foregroundColor(widgetIsShurooq(nextPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
                                     }
                                     .padding(.top, -8)
                                 }

@@ -150,7 +150,7 @@ struct LockScreen2EntryView: View {
                 )
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(currentPrayer.nameTransliteration)
+                    Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
                         .font(.headline.weight(.semibold))
                         .foregroundColor(entry.accentColor.color)
                         .lineLimit(1)
@@ -164,7 +164,7 @@ struct LockScreen2EntryView: View {
 
                     Spacer(minLength: 0)
 
-                    Text(nextPrayer.nameTransliteration)
+                    Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                         .font(.headline.weight(.semibold))
                         .foregroundColor(.primary)
                         .lineLimit(1)

@@ -194,6 +194,17 @@ struct AdhanView: View {
             .navigationTitle("Waktu Solat")
             #if !os(watchOS)
             .toolbar {
+                #if DEBUG
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        NotificationCenter.default.post(name: .debugShowDailyQuranWidgetIntro, object: nil)
+                    } label: {
+                        Image(systemName: "ladybug")
+                    }
+                    .accessibilityLabel("Debug: Show Daily Quran Intro")
+                }
+                #endif
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         settings.hapticFeedback()
