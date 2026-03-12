@@ -138,6 +138,7 @@ struct SettingsView: View {
     @EnvironmentObject var revenueCat: RevenueCatManager
     
     @State private var showingCredits = false
+    @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
     @State private var showDonationCelebration = false
     @State private var hasInitializedEntitlementState = false
@@ -161,6 +162,16 @@ struct SettingsView: View {
 
                     Section(header: Text("APPEARANCE")) {
                         SettingsAppearanceView()
+                    }
+
+                    Section(header: Text("PRAYER")) {
+                        Button {
+                            settings.hapticFeedback()
+                            showingAdhanSetup = true
+                        } label: {
+                            Label("Waktu Solat Setup", systemImage: "moon.stars.fill")
+                                .foregroundColor(settings.accentColor.color)
+                        }
                     }
                     
                     Section(header: Text("CREDITS")) {
@@ -240,6 +251,13 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingPaywall) {
             paywallSheet
+        }
+        .sheet(isPresented: $showingAdhanSetup) {
+            AdhanSetupSheet()
+                .environmentObject(settings)
+                .accentColor(settings.accentColor.color)
+                .tint(settings.accentColor.color)
+                .preferredColorScheme(settings.colorScheme)
         }
         .alert("Purchase Error", isPresented: Binding(
             get: { revenueCat.lastErrorMessage != nil },
@@ -852,9 +870,49 @@ private struct WidgetPreviewDebugView: View {
         )
     }
 
+    private var regionModeTitle: String {
+        switch settings.prayerRegionDebugOverride {
+        case 1:
+            return "Force Malaysia API"
+        case 2:
+            return "Force Global (Adhan)"
+        default:
+            return settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
+                ? "Auto: Malaysia API"
+                : "Auto: Global (Adhan)"
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Prayer Region Debug")
+                        .font(.headline)
+
+                    Picker("Prayer Region Debug", selection: $settings.prayerRegionDebugOverride) {
+                        Text("Auto").tag(0)
+                        Text("Malaysia").tag(1)
+                        Text("Global").tag(2)
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(regionModeTitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    if let location = settings.currentLocation {
+                        Text("Current location: \(location.city)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(.secondarySystemGroupedBackground))
+                )
+
                 ForEach(waktuCards) { card in
                     #if os(iOS)
                     ZStack(alignment: .top) {

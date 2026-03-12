@@ -67,7 +67,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
-        self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Muslim World League"
+        self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Auto (By Location)"
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
@@ -297,7 +297,11 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
     @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false
-    
+    // 0: Auto detect by coordinates, 1: Force Malaysia API, 2: Force coordinate-based Adhan.
+    @AppStorage("prayerRegionDebugOverride") var prayerRegionDebugOverride: Int = 0 {
+        didSet { self.fetchPrayerTimes(force: true) }
+    }
+
     @AppStorage("naggingMode") var naggingMode: Bool = false {
         didSet { self.fetchPrayerTimes(notification: true) }
     }

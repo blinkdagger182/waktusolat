@@ -37,12 +37,14 @@ struct SettingsAdhanView: View {
                     HStack {
                         Text("Calculation")
                         Spacer()
-                        Text("Malaysia")
+                        Text(settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation) ? "Malaysian Prayer Times/ Jakim" : settings.prayerCalculation)
                             .foregroundColor(.secondary)
                     }
                     .font(.subheadline)
                     
-                    Text("Prayer times are currently supported for Malaysia only, and calculation is fixed to Malaysia for consistency.")
+                    Text(settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
+                         ? "Using official Malaysian Prayer Times/ Jakim timings."
+                         : "Using AlAdhan API for your selected calculation method.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
@@ -110,9 +112,11 @@ struct SettingsAdhanView: View {
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Waktu Solat Settings")
         .onAppear {
-            // Keep an internal compatible value while UI is Malaysia-only.
-            settings.prayerCalculation = "Singapore"
-            settings.hanafiMadhab = false
+            // Keep Malaysia path unchanged while allowing non-Malaysia coordinate calculation.
+            if settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation) {
+                settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+                settings.hanafiMadhab = false
+            }
         }
         .onChange(of: settings.homeLocation) { _ in
             settings.fetchPrayerTimes() {

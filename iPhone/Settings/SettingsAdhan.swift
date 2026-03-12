@@ -2,6 +2,7 @@ import SwiftUI
 import CoreLocation
 import UserNotifications
 import WidgetKit
+import Adhan
 
 extension Settings {
     static let locationManager: CLLocationManager = {
@@ -114,10 +115,16 @@ extension Settings {
                 if let r = region { return r }
                 return "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))"
             }()
+            let countryCode = placemark.isoCountryCode?.uppercased()
 
-            if newCity != currentLocation?.city {
+            if newCity != currentLocation?.city || countryCode != currentLocation?.countryCode {
                 withAnimation {
-                    currentLocation = Location(city: newCity, latitude: latitude, longitude: longitude)
+                    currentLocation = Location(
+                        city: newCity,
+                        latitude: latitude,
+                        longitude: longitude,
+                        countryCode: countryCode
+                    )
                     WidgetCenter.shared.reloadAllTimelines()
                 }
             }
@@ -129,7 +136,7 @@ extension Settings {
             guard attempt + 1 < maxAttempts else {
                 withAnimation {
                     currentLocation = Location(city: "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))",
-                                               latitude: latitude, longitude: longitude)
+                                               latitude: latitude, longitude: longitude, countryCode: nil)
                     WidgetCenter.shared.reloadAllTimelines()
                 }
                 return
@@ -277,6 +284,48 @@ extension Settings {
         }
     }
 
+    private struct AlAdhanTimings: Codable {
+        let fajr: String
+        let sunrise: String
+        let dhuhr: String
+        let asr: String
+        let maghrib: String
+        let isha: String
+
+        enum CodingKeys: String, CodingKey {
+            case fajr = "Fajr"
+            case sunrise = "Sunrise"
+            case dhuhr = "Dhuhr"
+            case asr = "Asr"
+            case maghrib = "Maghrib"
+            case isha = "Isha"
+        }
+    }
+
+    private struct AlAdhanGregorianDate: Codable {
+        let date: String
+    }
+
+    private struct AlAdhanDate: Codable {
+        let gregorian: AlAdhanGregorianDate
+    }
+
+    private struct AlAdhanMeta: Codable {
+        let timezone: String?
+    }
+
+    private struct AlAdhanDayResponse: Codable {
+        let timings: AlAdhanTimings
+        let date: AlAdhanDate
+        let meta: AlAdhanMeta?
+    }
+
+    private struct AlAdhanMonthResponse: Codable {
+        let code: Int
+        let status: String
+        let data: [AlAdhanDayResponse]
+    }
+
     private enum GPSAPIError: LocalizedError {
         case invalidURL
         case badHTTPStatus(Int)
@@ -294,12 +343,35 @@ extension Settings {
         }
     }
 
+    private enum AlAdhanAPIError: LocalizedError {
+        case invalidURL
+        case badHTTPStatus(Int)
+        case apiError(Int, String)
+        case noMonthData
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidURL:
+                return "Invalid AlAdhan endpoint URL."
+            case .badHTTPStatus(let status):
+                return "AlAdhan API returned HTTP \(status)."
+            case .apiError(let code, let status):
+                return "AlAdhan API error \(code): \(status)"
+            case .noMonthData:
+                return "No cached AlAdhan month data available."
+            }
+        }
+    }
+
     private static let gpsAPIBase = "https://api.waktusolat.app/v2/solat/gps"
+    private static let alAdhanAPIBase = "https://api.aladhan.com/v1/calendar"
     private static let appGroupId = "group.app.riskcreatives.waktu"
     private static let jakimSupportedYear = 2026
     private static let legacyMonthCacheKey = "waktusolat.gps.month.cache.v1"
     private static let monthCacheKeyPrefix = "waktusolat.gps.month.cache.v2."
     private static var monthCacheInMemory: [String: GPSMonthResponse] = [:]
+    private static let alAdhanMonthCacheKeyPrefix = "aladhan.month.cache.v1."
+    private static var alAdhanMonthCacheInMemory: [String: AlAdhanMonthResponse] = [:]
     
     private struct NotifPrefs {
         let enabled: ReferenceWritableKeyPath<Settings, Bool>
@@ -423,8 +495,262 @@ extension Settings {
         return month.prayers.first(where: { $0.day == day })
     }
 
+    static let globalCalculationMethods: [String] = [
+        "Auto (By Location)",
+        "Jafari / Shia Ithna-Ashari",
+        "University of Islamic Sciences, Karachi",
+        "Islamic Society of North America",
+        "Muslim World League",
+        "Umm Al-Qura University, Makkah",
+        "Egyptian General Authority of Survey",
+        "Institute of Geophysics, University of Tehran",
+        "Gulf Region",
+        "Kuwait",
+        "Qatar",
+        "Majlis Ugama Islam Singapura, Singapore",
+        "Union Organization islamic de France",
+        "Diyanet İşleri Başkanlığı, Turkey",
+        "Spiritual Administration of Muslims of Russia",
+        "Moonsighting Committee Worldwide",
+        "Dubai (experimental)",
+        "Jabatan Kemajuan Islam Malaysia (JAKIM)",
+        "Tunisia",
+        "Algeria",
+        "KEMENAG - Kementerian Agama Republik Indonesia",
+        "Morocco",
+        "Comunidade Islamica de Lisboa",
+        "Ministry of Awqaf, Islamic Affairs and Holy Places, Jordan"
+    ]
+
+    private func alAdhanMethodId(for selection: String) -> Int {
+        switch selection {
+        case "Auto (By Location)": return recommendedAlAdhanMethodId(countryCode: currentLocation?.countryCode)
+        case "Jafari / Shia Ithna-Ashari": return 0
+        case "University of Islamic Sciences, Karachi", "Karachi": return 1
+        case "Islamic Society of North America", "North America": return 2
+        case "Muslim World League": return 3
+        case "Umm Al-Qura University, Makkah", "Umm Al-Qura": return 4
+        case "Egyptian General Authority of Survey", "Egyptian": return 5
+        case "Institute of Geophysics, University of Tehran", "Tehran": return 7
+        case "Gulf Region": return 8
+        case "Kuwait": return 9
+        case "Qatar": return 10
+        case "Majlis Ugama Islam Singapura, Singapore", "Singapore": return 11
+        case "Union Organization islamic de France": return 12
+        case "Diyanet İşleri Başkanlığı, Turkey", "Turkey": return 13
+        case "Spiritual Administration of Muslims of Russia": return 14
+        case "Moonsighting Committee Worldwide", "Moonsighting Committee": return 15
+        case "Dubai (experimental)", "Dubai": return 16
+        case "Jabatan Kemajuan Islam Malaysia (JAKIM)": return 17
+        case "Tunisia": return 18
+        case "Algeria": return 19
+        case "KEMENAG - Kementerian Agama Republik Indonesia": return 20
+        case "Morocco": return 21
+        case "Comunidade Islamica de Lisboa": return 22
+        case "Ministry of Awqaf, Islamic Affairs and Holy Places, Jordan": return 23
+        default: return 3
+        }
+    }
+
+    private func recommendedAlAdhanMethodId(countryCode: String?) -> Int {
+        guard let countryCode else { return 3 }
+        switch countryCode.uppercased() {
+        case "MY": return 17
+        case "SG": return 11
+        case "ID": return 20
+        case "TR": return 13
+        case "FR": return 12
+        case "RU": return 14
+        case "AE": return 16
+        case "KW": return 9
+        case "QA": return 10
+        case "TN": return 18
+        case "DZ": return 19
+        case "MA": return 21
+        case "PT": return 22
+        case "JO": return 23
+        case "US", "CA": return 2
+        case "GB": return 15
+        case "SA": return 4
+        case "EG": return 5
+        case "PK": return 1
+        case "IR": return 7
+        case "BH", "OM": return 8
+        default: return 3
+        }
+    }
+
+    private func effectiveAlAdhanMethodId(for location: Location?) -> Int {
+        if prayerCalculation == "Auto (By Location)" {
+            return recommendedAlAdhanMethodId(countryCode: location?.countryCode)
+        }
+        return alAdhanMethodId(for: prayerCalculation)
+    }
+
+    private func alAdhanURL(
+        latitude: Double,
+        longitude: Double,
+        year: Int,
+        month: Int,
+        methodId: Int,
+        school: Int
+    ) -> URL? {
+        guard var components = URLComponents(string: "\(Self.alAdhanAPIBase)/\(year)/\(month)") else {
+            return nil
+        }
+
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "latitude", value: normalizeCoordinate(latitude)),
+            URLQueryItem(name: "longitude", value: normalizeCoordinate(longitude)),
+            URLQueryItem(name: "method", value: String(methodId)),
+            URLQueryItem(name: "school", value: String(school)),
+            URLQueryItem(name: "latitudeAdjustmentMethod", value: "3")
+        ]
+        if methodId == 15 {
+            queryItems.append(URLQueryItem(name: "shafaq", value: "general"))
+        }
+        components.queryItems = queryItems
+        return components.url
+    }
+
+    private func alAdhanMonthCacheKey(
+        year: Int,
+        month: Int,
+        latitude: Double,
+        longitude: Double,
+        methodId: Int,
+        school: Int
+    ) -> String {
+        let lat = normalizeCoordinate(latitude)
+        let lon = normalizeCoordinate(longitude)
+        return "\(Self.alAdhanMonthCacheKeyPrefix)\(year)-\(String(format: "%02d", month)).\(lat).\(lon).m\(methodId).s\(school)"
+    }
+
+    private func loadAlAdhanMonthCache(
+        for date: Date,
+        latitude: Double,
+        longitude: Double,
+        methodId: Int,
+        school: Int
+    ) -> AlAdhanMonthResponse? {
+        let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+        guard let year = comps.year, let month = comps.month else { return nil }
+        let key = alAdhanMonthCacheKey(
+            year: year,
+            month: month,
+            latitude: latitude,
+            longitude: longitude,
+            methodId: methodId,
+            school: school
+        )
+
+        if let inMemory = Self.alAdhanMonthCacheInMemory[key] {
+            return inMemory
+        }
+        guard let data = appGroupStore()?.data(forKey: key),
+              let cached = try? JSONDecoder().decode(AlAdhanMonthResponse.self, from: data) else {
+            return nil
+        }
+        Self.alAdhanMonthCacheInMemory[key] = cached
+        return cached
+    }
+
+    private func saveAlAdhanMonthCache(
+        _ monthResponse: AlAdhanMonthResponse,
+        date: Date,
+        latitude: Double,
+        longitude: Double,
+        methodId: Int,
+        school: Int
+    ) {
+        let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+        guard let year = comps.year, let month = comps.month else { return }
+        let key = alAdhanMonthCacheKey(
+            year: year,
+            month: month,
+            latitude: latitude,
+            longitude: longitude,
+            methodId: methodId,
+            school: school
+        )
+        Self.alAdhanMonthCacheInMemory[key] = monthResponse
+        guard let data = try? JSONEncoder().encode(monthResponse) else { return }
+        appGroupStore()?.setValue(data, forKey: key)
+    }
+
+    private func alAdhanDayPayload(
+        for date: Date,
+        latitude: Double,
+        longitude: Double,
+        methodId: Int,
+        school: Int
+    ) -> AlAdhanDayResponse? {
+        guard let monthResponse = loadAlAdhanMonthCache(
+            for: date,
+            latitude: latitude,
+            longitude: longitude,
+            methodId: methodId,
+            school: school
+        ) else {
+            return nil
+        }
+
+        let day = Self.gregorian.component(.day, from: date)
+        return monthResponse.data.first { payload in
+            let parts = payload.date.gregorian.date.split(separator: "-")
+            guard let dayPart = parts.first, let payloadDay = Int(dayPart) else { return false }
+            return payloadDay == day
+        }
+    }
+
+    private func hasAlAdhanDayPayload(for date: Date, location: Location) -> Bool {
+        let methodId = effectiveAlAdhanMethodId(for: location)
+        let school = hanafiMadhab ? 1 : 0
+        return alAdhanDayPayload(
+            for: date,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            methodId: methodId,
+            school: school
+        ) != nil
+    }
+
+    private func isLikelyMalaysiaCoordinate(latitude: Double, longitude: Double) -> Bool {
+        // Peninsular Malaysia
+        let west = (latitude >= 0.7 && latitude <= 7.6) && (longitude >= 99.5 && longitude <= 104.7)
+        // East Malaysia (Sabah/Sarawak/Labuan)
+        let east = (latitude >= 0.7 && latitude <= 7.6) && (longitude >= 109.4 && longitude <= 119.4)
+        return west || east
+    }
+
+    private var isJAKIMMethodSelected: Bool {
+        let normalized = prayerCalculation.lowercased()
+        return normalized.contains("jakim") || normalized == "malaysian prayer times/ jakim"
+    }
+
+    func shouldUseMalaysiaPrayerAPI(for location: Location?) -> Bool {
+        // Explicit method selection should always respect JAKIM/Malaysia API,
+        // even when debug override was previously forced to Global.
+        if isJAKIMMethodSelected {
+            return true
+        }
+
+        switch prayerRegionDebugOverride {
+        case 1:
+            return true
+        case 2:
+            return false
+        default:
+            break
+        }
+
+        guard let location else { return true }
+        return isLikelyMalaysiaCoordinate(latitude: location.latitude, longitude: location.longitude)
+    }
+
     func isDateSupportedByJAKIM(_ date: Date) -> Bool {
-        Self.gregorian.component(.year, from: date) == Self.jakimSupportedYear
+        guard shouldUseMalaysiaPrayerAPI(for: currentLocation) else { return true }
+        return Self.gregorian.component(.year, from: date) == Self.jakimSupportedYear
     }
 
     var supportedJAKIMYear: Int {
@@ -437,6 +763,109 @@ extension Settings {
 
     private func off(_ date: Date, by minutes: Int) -> Date {
         date.addingTimeInterval(Double(minutes) * 60)
+    }
+
+    private func fallbackCalculationMethod(for location: Location?) -> CalculationMethod {
+        switch effectiveAlAdhanMethodId(for: location) {
+        case 1: return .karachi
+        case 2: return .northAmerica
+        case 3: return .muslimWorldLeague
+        case 4: return .ummAlQura
+        case 5: return .egyptian
+        case 7: return .tehran
+        case 8: return .dubai
+        case 9: return .kuwait
+        case 10: return .qatar
+        case 11: return .singapore
+        case 12: return .muslimWorldLeague
+        case 13: return .turkey
+        case 14: return .muslimWorldLeague
+        case 15: return .moonsightingCommittee
+        case 16: return .dubai
+        case 17: return .singapore
+        case 18: return .muslimWorldLeague
+        case 19: return .muslimWorldLeague
+        case 20: return .singapore
+        case 21: return .muslimWorldLeague
+        case 22: return .muslimWorldLeague
+        case 23: return .muslimWorldLeague
+        case 0, 6, 99:
+            return .muslimWorldLeague
+        default:
+            return .muslimWorldLeague
+        }
+    }
+
+    private func getCoordinatePrayerTimes(for date: Date, location: Location, fullPrayers: Bool = false) -> [Prayer]? {
+        var params = fallbackCalculationMethod(for: location).params
+        params.madhab = hanafiMadhab ? .hanafi : .shafi
+
+        let components = Self.gregorian.dateComponents([.year, .month, .day], from: date)
+        let coordinates = Coordinates(latitude: location.latitude, longitude: location.longitude)
+
+        guard let computed = PrayerTimes(
+            coordinates: coordinates,
+            date: components,
+            calculationParameters: params
+        ) else {
+            return nil
+        }
+
+        let baseFajr = computed.fajr
+        let baseSunrise = computed.sunrise
+        let baseDhuhr = computed.dhuhr
+        let baseAsr = computed.asr
+        let baseMaghrib = computed.maghrib
+        let baseIsha = computed.isha
+
+        let fajr = off(baseFajr, by: offsetFajr)
+        let sunrise = off(baseSunrise, by: offsetSunrise)
+        let dhuhr = off(baseDhuhr, by: offsetDhuhr)
+        let asr = off(baseAsr, by: offsetAsr)
+        let maghrib = off(baseMaghrib, by: offsetMaghrib)
+        let isha = off(baseIsha, by: offsetIsha)
+        let dhAsr = off(baseDhuhr, by: offsetDhurhAsr)
+        let mgIsha = off(baseMaghrib, by: offsetMaghribIsha)
+
+        let isFriday = Self.gregorian.component(.weekday, from: date) == 6
+
+        if fullPrayers || !travelingMode {
+            var list: [Prayer] = [
+                prayer(from: "Fajr", time: fajr),
+                prayer(from: "Sunrise", time: sunrise),
+            ]
+
+            if isFriday {
+                list.append(
+                    Prayer(
+                        nameArabic: "الجُمُعَة",
+                        nameTransliteration: "Jumuah",
+                        nameEnglish: "Friday",
+                        time: dhuhr,
+                        image: "sun.max.fill",
+                        rakah: "2",
+                        sunnahBefore: "0",
+                        sunnahAfter: "2 and 2"
+                    )
+                )
+            } else {
+                list.append(prayer(from: "Dhuhr", time: dhuhr))
+            }
+
+            list += [
+                prayer(from: "Asr", time: asr),
+                prayer(from: "Maghrib", time: maghrib),
+                prayer(from: "Isha", time: isha),
+            ]
+            return list
+        }
+
+        return [
+            prayer(from: "Fajr", time: fajr),
+            prayer(from: "Sunrise", time: sunrise),
+            prayer(from: "Dhuhr/Asr", time: dhAsr),
+            prayer(from: "Maghrib/Isha", time: mgIsha),
+        ]
     }
 
     @MainActor
@@ -454,9 +883,152 @@ extension Settings {
         let decoded = try JSONDecoder().decode(GPSMonthResponse.self, from: data)
         saveMonthCache(decoded)
     }
+
+    @MainActor
+    private func fetchMonthFromAlAdhan(latitude: Double, longitude: Double, for date: Date) async throws {
+        let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+        guard let year = comps.year, let month = comps.month else {
+            throw AlAdhanAPIError.invalidURL
+        }
+        let methodId = effectiveAlAdhanMethodId(for: currentLocation)
+        let school = hanafiMadhab ? 1 : 0
+
+        guard let url = alAdhanURL(
+            latitude: latitude,
+            longitude: longitude,
+            year: year,
+            month: month,
+            methodId: methodId,
+            school: school
+        ) else {
+            throw AlAdhanAPIError.invalidURL
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard status == 200 else {
+            throw AlAdhanAPIError.badHTTPStatus(status)
+        }
+
+        let decoded = try JSONDecoder().decode(AlAdhanMonthResponse.self, from: data)
+        guard decoded.code == 200 else {
+            throw AlAdhanAPIError.apiError(decoded.code, decoded.status)
+        }
+
+        saveAlAdhanMonthCache(
+            decoded,
+            date: date,
+            latitude: latitude,
+            longitude: longitude,
+            methodId: methodId,
+            school: school
+        )
+    }
+
+    private func parseAlAdhanTime(_ raw: String, on date: Date, timezone: String?) -> Date? {
+        let clean = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard clean.count >= 5 else { return nil }
+        let hhmm = String(clean.prefix(5))
+        let parts = hhmm.split(separator: ":")
+        guard parts.count == 2,
+              let hour = Int(parts[0]),
+              let minute = Int(parts[1]) else {
+            return nil
+        }
+
+        var calendar = Self.gregorian
+        calendar.timeZone = timezone.flatMap(TimeZone.init(identifier:)) ?? .current
+        var comps = calendar.dateComponents([.year, .month, .day], from: date)
+        comps.hour = hour
+        comps.minute = minute
+        comps.second = 0
+        return calendar.date(from: comps)
+    }
+
+    private func getAlAdhanPrayerTimes(for date: Date, location: Location, fullPrayers: Bool = false) -> [Prayer]? {
+        let methodId = effectiveAlAdhanMethodId(for: location)
+        let school = hanafiMadhab ? 1 : 0
+        guard let dayResponse = alAdhanDayPayload(
+            for: date,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            methodId: methodId,
+            school: school
+        ) else {
+            return nil
+        }
+
+        let timezone = dayResponse.meta?.timezone
+        guard
+            let baseFajr = parseAlAdhanTime(dayResponse.timings.fajr, on: date, timezone: timezone),
+            let baseSunrise = parseAlAdhanTime(dayResponse.timings.sunrise, on: date, timezone: timezone),
+            let baseDhuhr = parseAlAdhanTime(dayResponse.timings.dhuhr, on: date, timezone: timezone),
+            let baseAsr = parseAlAdhanTime(dayResponse.timings.asr, on: date, timezone: timezone),
+            let baseMaghrib = parseAlAdhanTime(dayResponse.timings.maghrib, on: date, timezone: timezone),
+            let baseIsha = parseAlAdhanTime(dayResponse.timings.isha, on: date, timezone: timezone)
+        else {
+            return nil
+        }
+
+        let fajr = off(baseFajr, by: offsetFajr)
+        let sunrise = off(baseSunrise, by: offsetSunrise)
+        let dhuhr = off(baseDhuhr, by: offsetDhuhr)
+        let asr = off(baseAsr, by: offsetAsr)
+        let maghrib = off(baseMaghrib, by: offsetMaghrib)
+        let isha = off(baseIsha, by: offsetIsha)
+        let dhAsr = off(baseDhuhr, by: offsetDhurhAsr)
+        let mgIsha = off(baseMaghrib, by: offsetMaghribIsha)
+
+        let isFriday = Self.gregorian.component(.weekday, from: date) == 6
+
+        if fullPrayers || !travelingMode {
+            var list: [Prayer] = [
+                prayer(from: "Fajr", time: fajr),
+                prayer(from: "Sunrise", time: sunrise),
+            ]
+
+            if isFriday {
+                list.append(
+                    Prayer(
+                        nameArabic: "الجُمُعَة",
+                        nameTransliteration: "Jumuah",
+                        nameEnglish: "Friday",
+                        time: dhuhr,
+                        image: "sun.max.fill",
+                        rakah: "2",
+                        sunnahBefore: "0",
+                        sunnahAfter: "2 and 2"
+                    )
+                )
+            } else {
+                list.append(prayer(from: "Dhuhr", time: dhuhr))
+            }
+
+            list += [
+                prayer(from: "Asr", time: asr),
+                prayer(from: "Maghrib", time: maghrib),
+                prayer(from: "Isha", time: isha),
+            ]
+            return list
+        }
+
+        return [
+            prayer(from: "Fajr", time: fajr),
+            prayer(from: "Sunrise", time: sunrise),
+            prayer(from: "Dhuhr/Asr", time: dhAsr),
+            prayer(from: "Maghrib/Isha", time: mgIsha),
+        ]
+    }
     
     /// Uses cached GPS endpoint month payload. Returns nil when cache is missing.
     func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
+        if let location = currentLocation, !shouldUseMalaysiaPrayerAPI(for: location) {
+            if let apiBacked = getAlAdhanPrayerTimes(for: date, location: location, fullPrayers: fullPrayers) {
+                return apiBacked
+            }
+            return getCoordinatePrayerTimes(for: date, location: location, fullPrayers: fullPrayers)
+        }
+
         guard let day = dayPayload(for: date) else { return nil }
 
         let baseFajr = dateFromUnix(day.fajr)
@@ -518,19 +1090,32 @@ extension Settings {
 
     @MainActor
     func refreshDatePrayers(for date: Date) async {
+        let usesMalaysiaPipeline = shouldUseMalaysiaPrayerAPI(for: currentLocation)
+
         guard isDateSupportedByJAKIM(date) else {
             datePrayers = []
             dateFullPrayers = []
             return
         }
 
-        if dayPayload(for: date) == nil,
-           let loc = currentLocation,
+        if let loc = currentLocation,
            loc.latitude != 1000,
            loc.longitude != 1000,
            Bundle.main.bundleIdentifier?.contains("Widget") != true {
+            let missingDayData = usesMalaysiaPipeline
+                ? (dayPayload(for: date) == nil)
+                : !hasAlAdhanDayPayload(for: date, location: loc)
+            guard missingDayData else {
+                datePrayers = getPrayerTimes(for: date) ?? []
+                dateFullPrayers = getPrayerTimes(for: date, fullPrayers: true) ?? []
+                return
+            }
             do {
-                try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude, for: date)
+                if usesMalaysiaPipeline {
+                    try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude, for: date)
+                } else {
+                    try await fetchMonthFromAlAdhan(latitude: loc.latitude, longitude: loc.longitude, for: date)
+                }
             } catch {
                 logger.error("Date prayer refresh fetch failed: \(error.localizedDescription)")
             }
@@ -569,8 +1154,13 @@ extension Settings {
         let staleCity  = stored?.city != currentLocation?.city
         let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
         let emptyList  = stored?.prayers.isEmpty ?? true
-        let missingCacheForToday = dayPayload(for: today) == nil
-        let needsFetch = force || stored == nil || staleCity || staleDate || emptyList || missingCacheForToday
+        let usesMalaysiaPipeline = shouldUseMalaysiaPrayerAPI(for: loc)
+        let missingCacheForToday = usesMalaysiaPipeline
+            ? (dayPayload(for: today) == nil)
+            : !hasAlAdhanDayPayload(for: today, location: loc)
+        let needsRefresh = force || stored == nil || staleCity || staleDate || emptyList
+        let needsNetworkFetch = force || missingCacheForToday
+        let needsFetch = needsRefresh || needsNetworkFetch
         
         if needsFetch {
             if isWidget {
@@ -590,14 +1180,59 @@ extension Settings {
                 return
             }
 
-            logger.debug("Fetching prayer times from GPS API – caller: \(calledFrom)")
+            if !usesMalaysiaPipeline {
+                if needsNetworkFetch {
+                    logger.debug("Fetching prayer times from AlAdhan API – caller: \(calledFrom)")
+                } else {
+                    logger.debug("Using cached AlAdhan month data – caller: \(calledFrom)")
+                }
+
+                Task { @MainActor in
+                    if needsNetworkFetch {
+                        do {
+                            try await fetchMonthFromAlAdhan(latitude: loc.latitude, longitude: loc.longitude, for: today)
+                            logger.debug("AlAdhan API prayer month fetched successfully")
+                        } catch {
+                            logger.error("AlAdhan API fetch failed. Falling back to local Adhan calculation: \(error.localizedDescription)")
+                        }
+                    }
+
+                    let todayPrayers = getPrayerTimes(for: today)
+                    let fullPrayers = getPrayerTimes(for: today, fullPrayers: true)
+
+                    if let todayPrayers, let fullPrayers {
+                        prayers = Prayers(
+                            day: today,
+                            city: loc.city,
+                            prayers: todayPrayers,
+                            fullPrayers: fullPrayers,
+                            setNotification: false
+                        )
+                    }
+
+                    schedulePrayerTimeNotifications()
+                    printAllScheduledNotifications()
+                    WidgetCenter.shared.reloadAllTimelines()
+                    updateCurrentAndNextPrayer()
+                    completion?()
+                }
+                return
+            }
+
+            if needsNetworkFetch {
+                logger.debug("Fetching prayer times from GPS API – caller: \(calledFrom)")
+            } else {
+                logger.debug("Using cached GPS month data – caller: \(calledFrom)")
+            }
 
             Task { @MainActor in
-                do {
-                    try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude, for: today)
-                    logger.debug("GPS API prayer month fetched successfully")
-                } catch {
-                    logger.error("GPS API fetch failed. Falling back to cached prayers data: \(error.localizedDescription)")
+                if needsNetworkFetch {
+                    do {
+                        try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude, for: today)
+                        logger.debug("GPS API prayer month fetched successfully")
+                    } catch {
+                        logger.error("GPS API fetch failed. Falling back to cached prayers data: \(error.localizedDescription)")
+                    }
                 }
 
                 let todayPrayers = getPrayerTimes(for: today)

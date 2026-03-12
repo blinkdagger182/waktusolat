@@ -5,6 +5,7 @@ struct Location: Codable, Equatable {
     var city: String
     let latitude: Double
     let longitude: Double
+    var countryCode: String? = nil
     
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: self.latitude, longitude: self.longitude)
