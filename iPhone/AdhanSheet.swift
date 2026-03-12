@@ -3,8 +3,11 @@ import SwiftUI
 struct AdhanSetupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var settings: Settings
+    @AppStorage("waktuZoneModeSelection") private var waktuZoneModeSelection: Int = 0
     
     private let globalCalculationMethods: [String] = Settings.globalCalculationMethods
+    @State private var malaysiaZones: [MalaysiaZoneInfo] = []
+    @State private var autoDetectedZoneCode: String = ""
     
     private var isGlobalDebugForced: Bool {
         settings.prayerRegionDebugOverride == 2
@@ -12,6 +15,136 @@ struct AdhanSetupSheet: View {
     
     private var shouldShowGlobalMethodDropdown: Bool {
         isGlobalDebugForced || !settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
+    }
+    
+    private var selectedCalculationDescription: String {
+        switch settings.prayerCalculation {
+        case "Auto (By Location)":
+            return "Automatically selects a recommended calculation authority based on your detected country."
+        case "Jafari / Shia Ithna-Ashari":
+            return "Uses the Jafari (Shia Ithna-Ashari) calculation convention."
+        case "University of Islamic Sciences, Karachi":
+            return "Applies the Karachi method, commonly used in parts of South Asia."
+        case "Islamic Society of North America":
+            return "Uses ISNA parameters, commonly used in North America."
+        case "Muslim World League":
+            return "Uses Muslim World League parameters, widely adopted internationally."
+        case "Umm Al-Qura University, Makkah":
+            return "Uses Umm Al-Qura convention from Makkah, Saudi Arabia."
+        case "Egyptian General Authority of Survey":
+            return "Uses Egyptian General Authority of Survey parameters."
+        case "Institute of Geophysics, University of Tehran":
+            return "Uses Tehran University of Geophysics calculation parameters."
+        case "Gulf Region":
+            return "Uses parameters commonly adopted in Gulf countries."
+        case "Kuwait":
+            return "Uses Kuwait prayer time calculation parameters."
+        case "Qatar":
+            return "Uses Qatar prayer time calculation parameters."
+        case "Majlis Ugama Islam Singapura, Singapore":
+            return "Uses MUIS (Singapore) prayer time calculation parameters."
+        case "Union Organization islamic de France":
+            return "Uses UOIF calculation parameters used by some communities in France."
+        case "Diyanet İşleri Başkanlığı, Turkey":
+            return "Uses Diyanet (Turkey) prayer time calculation parameters."
+        case "Spiritual Administration of Muslims of Russia":
+            return "Uses prayer time parameters from Russia’s Muslim administration."
+        case "Moonsighting Committee Worldwide":
+            return "Uses Moonsighting Committee Worldwide method with shafaq set to general."
+        case "Dubai (experimental)":
+            return "Uses Dubai calculation parameters (experimental)."
+        case "Jabatan Kemajuan Islam Malaysia (JAKIM)":
+            return "Uses JAKIM via Malaysian Prayer Times API."
+        case "Tunisia":
+            return "Uses Tunisia prayer time calculation parameters."
+        case "Algeria":
+            return "Uses Algeria prayer time calculation parameters."
+        case "KEMENAG - Kementerian Agama Republik Indonesia":
+            return "Uses Indonesia KEMENAG prayer time calculation parameters."
+        case "Morocco":
+            return "Uses Morocco prayer time calculation parameters."
+        case "Comunidade Islamica de Lisboa":
+            return "Uses Comunidade Islamica de Lisboa prayer time parameters."
+        case "Ministry of Awqaf, Islamic Affairs and Holy Places, Jordan":
+            return "Uses Jordan Ministry of Awqaf prayer time calculation parameters."
+        default:
+            return "Uses the selected prayer time calculation method for your location."
+        }
+    }
+    
+    private struct MalaysiaZoneInfo: Decodable, Identifiable {
+        let jakimCode: String
+        let negeri: String
+        let daerah: String
+        var id: String { jakimCode }
+    }
+    
+    private var selectedMalaysiaZoneLabel: String {
+        let zone = settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !zone.isEmpty else { return "Auto (GPS)" }
+        guard let info = malaysiaZones.first(where: { $0.jakimCode.uppercased() == zone }) else {
+            return zone
+        }
+        return "\(info.jakimCode) · \(info.negeri) · \(info.daerah)"
+    }
+    
+    private var autoDetectedZoneLabel: String {
+        let zone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !zone.isEmpty else { return "Detecting..." }
+        guard let info = malaysiaZones.first(where: { $0.jakimCode.uppercased() == zone }) else {
+            return zone
+        }
+        return "\(info.jakimCode) · \(info.negeri) · \(info.daerah)"
+    }
+    
+    @MainActor
+    private func loadMalaysiaZonesIfNeeded() async {
+        guard malaysiaZones.isEmpty else { return }
+        guard let url = URL(string: "https://api.waktusolat.app/zones") else { return }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            guard status == 200 else { return }
+            let decoded = try JSONDecoder().decode([MalaysiaZoneInfo].self, from: data)
+            malaysiaZones = decoded.sorted { $0.jakimCode < $1.jakimCode }
+        } catch {
+            // Keep silent in debug UI; manual code entry is not needed with fallback Auto.
+        }
+    }
+    
+    @MainActor
+    private func refreshAutoDetectedZone() async {
+        guard let location = settings.currentLocation else {
+            autoDetectedZoneCode = ""
+            return
+        }
+        let lat = String(format: "%.4f", location.latitude)
+        let lon = String(format: "%.4f", location.longitude)
+        guard let url = URL(string: "https://api.waktusolat.app/zones/\(lat)/\(lon)") else {
+            return
+        }
+
+        struct ZoneLookupResponse: Decodable {
+            let zone: String?
+            let jakimCode: String?
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            guard status == 200 else { return }
+            let decoded = try JSONDecoder().decode(ZoneLookupResponse.self, from: data)
+            autoDetectedZoneCode = (decoded.zone ?? decoded.jakimCode ?? "").uppercased()
+            if waktuZoneModeSelection == 1,
+               settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               !autoDetectedZoneCode.isEmpty {
+                settings.debugMalaysiaZoneCode = autoDetectedZoneCode
+                settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+                settings.hanafiMadhab = false
+            }
+        } catch {
+            // Keep silent for setup UI.
+        }
     }
 
     var body: some View {
@@ -58,12 +191,12 @@ struct AdhanSetupSheet: View {
                             HStack {
                                 Text("Calculation")
                                 Spacer()
-                                Text("Malaysian Prayer Times/ Jakim")
+                                Text("Malaysian Prayer Times/ JAKIM")
                                     .foregroundColor(.secondary)
                             }
                             .font(.subheadline)
 
-                            Text("Malaysian Prayer Times/ Jakim is currently the only supported calculation mode.")
+                            Text(selectedCalculationDescription)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
@@ -99,22 +232,145 @@ struct AdhanSetupSheet: View {
                                 .frame(maxWidth: 220, alignment: .trailing)
                             }
                             .font(.subheadline)
+
+                            Text(selectedCalculationDescription)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 2)
                         }
                     }
                 }
 
-                Section(header: Text("DEBUG")) {
+                Section(header: Text(debugSectionTitle)) {
+                    #if DEBUG
                     Picker("Region Override", selection: $settings.prayerRegionDebugOverride) {
                         Text("Auto").tag(0)
                         Text("Malaysia").tag(1)
                         Text("Global").tag(2)
                     }
                     .pickerStyle(.segmented)
+                    
+                    Picker("Mode", selection: releaseWaktuModeBinding) {
+                        Text("Auto").tag(0)
+                        Text("Manual").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    HStack {
+                        Text("Location")
+                        Spacer()
+                        Text(settings.currentLocation?.city ?? "Unknown")
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .truncationMode(.tail)
+                    }
+                    .font(.subheadline)
 
-                    Text("Use this to test Malaysia (Malaysian Prayer Times/ Jakim) and global coordinate-based Adhan behavior without changing physical location.")
+                    Text("Location is read-only. Use Waktu Zone in Manual mode for testing.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+
+                    Text("Use this to test Malaysia (Malaysian Prayer Times/ JAKIM) and global coordinate-based Adhan behavior without changing physical location.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
+                    #endif
+                    
+                    #if !DEBUG
+                    Picker("Mode", selection: releaseWaktuModeBinding) {
+                        Text("Auto").tag(0)
+                        Text("Manual").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    HStack {
+                        Text("Location")
+                        Spacer()
+                        Text(settings.currentLocation?.city ?? "Unknown")
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                    .font(.subheadline)
+
+                    if releaseWaktuModeBinding.wrappedValue == 1 {
+                        Text("Manual mode lets you select a specific Waktu Zone from Malaysian Prayer Times API.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    } else {
+                        Text("Auto mode uses your current location and keeps Waktu Zone selection disabled.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    }
+                    #endif
+
+                    if releaseWaktuModeBinding.wrappedValue == 0 {
+                        HStack {
+                            Text("Waktu Zone")
+                            Spacer()
+                            Text(autoDetectedZoneLabel)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                                .truncationMode(.tail)
+                        }
+                        .font(.subheadline)
+                    } else {
+                        HStack {
+                            Text("Waktu Zone")
+                            Spacer()
+                            Menu {
+                                Button {
+                                    settings.debugMalaysiaZoneCode = ""
+                                } label: {
+                                    HStack {
+                                        Text("Auto (GPS)")
+                                        if settings.debugMalaysiaZoneCode.isEmpty {
+                                            Spacer()
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+
+                                ForEach(malaysiaZones) { zone in
+                                    Button {
+                                        settings.debugMalaysiaZoneCode = zone.jakimCode
+                                        settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+                                        settings.hanafiMadhab = false
+                                    } label: {
+                                        HStack {
+                                            Text("\(zone.jakimCode) · \(zone.negeri) · \(zone.daerah)")
+                                            if settings.debugMalaysiaZoneCode.uppercased() == zone.jakimCode.uppercased() {
+                                                Spacer()
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(selectedMalaysiaZoneLabel)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.75)
+                                        .truncationMode(.tail)
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption2)
+                                }
+                                .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: 220, alignment: .trailing)
+                        }
+                        .font(.subheadline)
+                    }
+
+                    Text("When selected, prayer times use Malaysian Prayer Times API by explicit zone (/v2/solat/{zone}).")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
                 }
             }
             .listStyle(.insetGrouped)
@@ -141,7 +397,47 @@ struct AdhanSetupSheet: View {
             .onChange(of: settings.prayerCalculation) { _ in
                 settings.fetchPrayerTimes(force: true)
             }
+            .task {
+                await loadMalaysiaZonesIfNeeded()
+                await refreshAutoDetectedZone()
+            }
+            .onChange(of: settings.currentLocation?.latitude) { _ in
+                Task { await refreshAutoDetectedZone() }
+            }
+            .onChange(of: settings.currentLocation?.longitude) { _ in
+                Task { await refreshAutoDetectedZone() }
+            }
         }
+    }
+    
+    private var debugSectionTitle: String {
+        #if DEBUG
+        return "DEBUG"
+        #else
+        return "WAKTU MODE"
+        #endif
+    }
+
+    private var releaseWaktuModeBinding: Binding<Int> {
+        Binding(
+            get: { waktuZoneModeSelection },
+            set: { newValue in
+                waktuZoneModeSelection = newValue
+                let detectedZone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                if newValue == 0 {
+                    settings.debugMalaysiaZoneCode = ""
+                } else if settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                          !detectedZone.isEmpty {
+                    settings.debugMalaysiaZoneCode = detectedZone
+                    settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+                    settings.hanafiMadhab = false
+                } else if settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Task { @MainActor in
+                        await refreshAutoDetectedZone()
+                    }
+                }
+            }
+        )
     }
 }
 

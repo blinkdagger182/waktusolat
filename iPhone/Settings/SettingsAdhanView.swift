@@ -37,13 +37,13 @@ struct SettingsAdhanView: View {
                     HStack {
                         Text("Calculation")
                         Spacer()
-                        Text(settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation) ? "Malaysian Prayer Times/ Jakim" : settings.prayerCalculation)
+                        Text(settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation) ? "Malaysian Prayer Times/ JAKIM" : settings.prayerCalculation)
                             .foregroundColor(.secondary)
                     }
                     .font(.subheadline)
                     
                     Text(settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
-                         ? "Using official Malaysian Prayer Times/ Jakim timings."
+                         ? "Using official Malaysian Prayer Times/ JAKIM timings."
                          : "Using AlAdhan API for your selected calculation method.")
                         .font(.caption)
                         .foregroundColor(.secondary)

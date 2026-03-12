@@ -301,6 +301,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("prayerRegionDebugOverride") var prayerRegionDebugOverride: Int = 0 {
         didSet { self.fetchPrayerTimes(force: true) }
     }
+    // DEBUG helper: when set, Malaysia prayer times are fetched by explicit JAKIM zone via /v2/solat/{zone}.
+    @AppStorage("debugMalaysiaZoneCode") var debugMalaysiaZoneCode: String = "" {
+        didSet { self.fetchPrayerTimes(force: true) }
+    }
 
     @AppStorage("naggingMode") var naggingMode: Bool = false {
         didSet { self.fetchPrayerTimes(notification: true) }

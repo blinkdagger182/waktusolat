@@ -149,6 +149,16 @@ struct SettingsView: View {
         ZStack {
             NavigationView {
                 List {
+                    Section(header: Text("PRAYER")) {
+                        Button {
+                            settings.hapticFeedback()
+                            showingAdhanSetup = true
+                        } label: {
+                            Label("Waktu Solat Setup", systemImage: "moon.stars.fill")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+
                     /*
                     Section(header: Text("PROFILE")) {
                         NavigationLink {
@@ -162,16 +172,6 @@ struct SettingsView: View {
 
                     Section(header: Text("APPEARANCE")) {
                         SettingsAppearanceView()
-                    }
-
-                    Section(header: Text("PRAYER")) {
-                        Button {
-                            settings.hapticFeedback()
-                            showingAdhanSetup = true
-                        } label: {
-                            Label("Waktu Solat Setup", systemImage: "moon.stars.fill")
-                                .foregroundColor(settings.accentColor.color)
-                        }
                     }
                     
                     Section(header: Text("CREDITS")) {
@@ -216,7 +216,8 @@ struct SettingsView: View {
                         }
                     }
 
-                    Section(header: Text("WIDGETS")) {
+                    #if DEBUG
+                    Section(header: Text("Debug: WIDGETS")) {
                         NavigationLink {
                             WidgetPreviewDebugView()
                         } label: {
@@ -224,6 +225,7 @@ struct SettingsView: View {
                                 .foregroundColor(settings.accentColor.color)
                         }
                     }
+                    #endif
                 }
                 .navigationTitle("Settings")
                 .applyConditionalListStyle(defaultView: true)

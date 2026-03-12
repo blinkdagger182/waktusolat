@@ -364,6 +364,7 @@ extension Settings {
     }
 
     private static let gpsAPIBase = "https://api.waktusolat.app/v2/solat/gps"
+    private static let malaysiaZoneAPIBase = "https://api.waktusolat.app/v2/solat"
     private static let alAdhanAPIBase = "https://api.aladhan.com/v1/calendar"
     private static let appGroupId = "group.app.riskcreatives.waktu"
     private static let jakimSupportedYear = 2026
@@ -420,6 +421,27 @@ extension Settings {
 
     private func gpsURL(latitude: Double, longitude: Double, for date: Date? = nil) -> URL? {
         guard var components = URLComponents(string: "\(Self.gpsAPIBase)/\(normalizeCoordinate(latitude))/\(normalizeCoordinate(longitude))") else {
+            return nil
+        }
+
+        if let date {
+            let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+            guard let year = comps.year, let month = comps.month else {
+                return nil
+            }
+            components.queryItems = [
+                URLQueryItem(name: "year", value: String(year)),
+                URLQueryItem(name: "month", value: String(month))
+            ]
+        }
+
+        return components.url
+    }
+    
+    private func malaysiaZoneURL(zone: String, for date: Date? = nil) -> URL? {
+        let normalizedZone = zone.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !normalizedZone.isEmpty,
+              var components = URLComponents(string: "\(Self.malaysiaZoneAPIBase)/\(normalizedZone)") else {
             return nil
         }
 
@@ -727,8 +749,17 @@ extension Settings {
         let normalized = prayerCalculation.lowercased()
         return normalized.contains("jakim") || normalized == "malaysian prayer times/ jakim"
     }
+    
+    private var debugMalaysiaZoneOverride: String? {
+        let trimmed = debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed.uppercased()
+    }
 
     func shouldUseMalaysiaPrayerAPI(for location: Location?) -> Bool {
+        if debugMalaysiaZoneOverride != nil {
+            return true
+        }
+
         // Explicit method selection should always respect JAKIM/Malaysia API,
         // even when debug override was previously forced to Global.
         if isJAKIMMethodSelected {
@@ -870,6 +901,22 @@ extension Settings {
 
     @MainActor
     private func fetchMonthFromAPI(latitude: Double, longitude: Double, for date: Date? = nil) async throws {
+        if let zone = debugMalaysiaZoneOverride {
+            guard let url = malaysiaZoneURL(zone: zone, for: date) else {
+                throw GPSAPIError.invalidURL
+            }
+
+            let (data, response) = try await URLSession.shared.data(from: url)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            guard status == 200 else {
+                throw GPSAPIError.badHTTPStatus(status)
+            }
+
+            let decoded = try JSONDecoder().decode(GPSMonthResponse.self, from: data)
+            saveMonthCache(decoded)
+            return
+        }
+
         guard let url = gpsURL(latitude: latitude, longitude: longitude, for: date) else {
             throw GPSAPIError.invalidURL
         }
