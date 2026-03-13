@@ -362,6 +362,9 @@ private struct QuranSurahDetailsView: View {
     @State private var details: QuranSurahDetails?
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var pendingRestoreAyah: Int?
+    @State private var didRestorePosition = false
+    @State private var lastSavedAyah: Int?
 
     private var quranArabicFontName: String {
         let candidates = [
@@ -423,66 +426,106 @@ private struct QuranSurahDetailsView: View {
                 }
                 .padding()
             } else if let details {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 14) {
-                        Text("\(details.englishName) (\(details.arabicName))")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 14) {
+                            Text("\(details.englishName) (\(details.arabicName))")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Text("Surah \(details.number) • \(details.ayahs.count) ayahs")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            Text("Surah \(details.number) • \(details.ayahs.count) ayahs")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
 
-                        Divider()
+                            Divider()
 
-                        ForEach(details.ayahs) { ayah in
-                            let isDailyAyah = dailyAyahNumber == ayah.numberInSurah
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("\(ayah.numberInSurah)")
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(.secondary)
-
-                                Text(ayah.arabicText)
-                                    .font(.custom(quranArabicFontName, size: 30))
-                                    .frame(maxWidth: .infinity, alignment: .trailing)
-                                    .multilineTextAlignment(.trailing)
-
-                                if let english = ayah.englishText, !english.isEmpty {
-                                    Text(english)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.primary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }
-                            .padding(12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color.primary.opacity(0.04))
-                            )
-                            .overlay {
-                                if isDailyAyah {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(settings.accentColor.color, lineWidth: 2)
-                                }
-                            }
-                            .overlay(alignment: .topLeading) {
-                                if isDailyAyah {
-                                    Text("Daily Ayat")
+                            ForEach(details.ayahs) { ayah in
+                                let isDailyAyah = dailyAyahNumber == ayah.numberInSurah
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("\(ayah.numberInSurah)")
                                         .font(.caption2.weight(.bold))
-                                        .foregroundColor(dailyAyahTagTextColor)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(
-                                            Capsule(style: .continuous)
-                                                .fill(settings.accentColor.color)
-                                        )
-                                        .padding(.leading, 10)
-                                        .offset(y: -10)
+                                        .foregroundStyle(.secondary)
+
+                                    Text(ayah.arabicText)
+                                        .font(.custom(quranArabicFontName, size: 30))
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                        .multilineTextAlignment(.trailing)
+
+                                    if let english = ayah.englishText, !english.isEmpty {
+                                        Text(english)
+                                            .font(.subheadline)
+                                            .foregroundStyle(.primary)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
                                 }
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.primary.opacity(0.04))
+                                )
+                                .overlay {
+                                    if isDailyAyah {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(settings.accentColor.color, lineWidth: 2)
+                                    }
+                                }
+                                .overlay(alignment: .topLeading) {
+                                    if isDailyAyah {
+                                        Text("Daily Ayat")
+                                            .font(.caption2.weight(.bold))
+                                            .foregroundColor(dailyAyahTagTextColor)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(
+                                                Capsule(style: .continuous)
+                                                    .fill(settings.accentColor.color)
+                                            )
+                                            .padding(.leading, 10)
+                                            .offset(y: -10)
+                                    }
+                                }
+                                .id(ayah.numberInSurah)
+                                .background(
+                                    GeometryReader { geo in
+                                        Color.clear.preference(
+                                            key: AyahMinYPreferenceKey.self,
+                                            value: [ayah.numberInSurah: geo.frame(in: .named("surahScrollView")).minY]
+                                        )
+                                    }
+                                )
                             }
                         }
+                        .padding()
                     }
-                    .padding()
+                    .coordinateSpace(name: "surahScrollView")
+                    .onAppear {
+                        guard !didRestorePosition else { return }
+                        let target = pendingRestoreAyah ?? dailyAyahNumber
+                        guard let target else {
+                            didRestorePosition = true
+                            return
+                        }
+                        DispatchQueue.main.async {
+                            proxy.scrollTo(target, anchor: .top)
+                            didRestorePosition = true
+                        }
+                    }
+                    .onPreferenceChange(AyahMinYPreferenceKey.self) { positions in
+                        guard didRestorePosition, !positions.isEmpty else { return }
+                        // Prefer the ayah touching/crossing the top edge (more accurate resume point).
+                        let topBoundary: CGFloat = 0
+                        let atOrAboveTop = positions.filter { $0.value <= topBoundary + 1 }
+                        let trackedAyah: Int?
+                        if let crossingTop = atOrAboveTop.max(by: { $0.value < $1.value }) {
+                            trackedAyah = crossingTop.key
+                        } else {
+                            trackedAyah = positions.min(by: { $0.value < $1.value })?.key
+                        }
+                        guard let trackedAyah else { return }
+                        guard trackedAyah != lastSavedAyah else { return }
+                        lastSavedAyah = trackedAyah
+                        saveLastReadAyah(trackedAyah, for: surahNumber)
+                    }
                 }
             } else {
                 Text("Loading Surah \(surahNumber)...")
@@ -498,6 +541,9 @@ private struct QuranSurahDetailsView: View {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+        pendingRestoreAyah = loadLastReadAyah(for: surahNumber)
+        didRestorePosition = false
+        lastSavedAyah = pendingRestoreAyah
 
         do {
             details = try await QuranSurahAPI.fetchSurahDetails(surahNumber: surahNumber)
@@ -510,6 +556,28 @@ private struct QuranSurahDetailsView: View {
                 errorMessage = "Unable to load this surah right now. \(reason)"
             }
         }
+    }
+
+    private func storageKey(for surahNumber: Int) -> String {
+        "fullSurahLastReadAyahV1.\(surahNumber)"
+    }
+
+    private func loadLastReadAyah(for surahNumber: Int) -> Int? {
+        let ayah = UserDefaults.standard.integer(forKey: storageKey(for: surahNumber))
+        return ayah > 0 ? ayah : nil
+    }
+
+    private func saveLastReadAyah(_ ayahNumber: Int, for surahNumber: Int) {
+        guard ayahNumber > 0 else { return }
+        UserDefaults.standard.set(ayahNumber, forKey: storageKey(for: surahNumber))
+    }
+}
+
+private struct AyahMinYPreferenceKey: PreferenceKey {
+    static var defaultValue: [Int: CGFloat] = [:]
+
+    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
 
