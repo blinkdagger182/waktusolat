@@ -119,8 +119,8 @@ struct AdhanSetupSheet: View {
             autoDetectedZoneCode = ""
             return
         }
-        let lat = String(format: "%.4f", location.latitude)
-        let lon = String(format: "%.4f", location.longitude)
+        let lat = String(format: "%.6f", location.latitude)
+        let lon = String(format: "%.6f", location.longitude)
         guard let url = URL(string: "https://api.waktusolat.app/zones/\(lat)/\(lon)") else {
             return
         }

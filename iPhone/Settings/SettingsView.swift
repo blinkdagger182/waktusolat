@@ -241,6 +241,13 @@ struct SettingsView: View {
                             Label("Aura Backgrounds (6 Waktu)", systemImage: "rectangle.grid.1x2")
                                 .foregroundColor(settings.accentColor.color)
                         }
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowSupportPromoToast, object: nil)
+                        } label: {
+                            Label("Trigger Support Toast", systemImage: "heart.bubble.fill")
+                                .foregroundColor(settings.accentColor.color)
+                        }
                     }
                     #endif
                 }
@@ -286,6 +293,9 @@ struct SettingsView: View {
             }
         } message: {
             Text(revenueCat.lastErrorMessage ?? "Unknown error")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openSupportDonationPaywall)) { _ in
+            openDonationPaywall()
         }
     }
 

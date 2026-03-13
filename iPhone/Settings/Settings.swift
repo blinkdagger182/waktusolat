@@ -63,6 +63,10 @@ enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
     private let appGroupUserDefaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+    #if os(iOS)
+    var liveActivitySyncTimer: Timer?
+    var liveActivityLifecycleObservers: [NSObjectProtocol] = []
+    #endif
     
     static let encoder: JSONEncoder = {
         let enc = JSONEncoder()
@@ -106,6 +110,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         Self.locationManager.delegate = self
         #if os(iOS)
         refreshCustomAuraBackgroundState()
+        configureLiveActivitySyncLifecycle()
         #endif
     }
     

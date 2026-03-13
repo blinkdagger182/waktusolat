@@ -3,6 +3,9 @@ import CoreLocation
 import UserNotifications
 import WidgetKit
 import Adhan
+#if os(iOS)
+import UIKit
+#endif
 #if os(iOS) && canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -38,11 +41,9 @@ final class PrayerLiveActivityCoordinator {
     func sync(
         nextPrayer: Prayer?,
         city: String?,
-        isFeatureEnabled: Bool,
-        isPrayerNotificationEnabled: Bool
+        isFeatureEnabled: Bool
     ) {
         guard isFeatureEnabled,
-              isPrayerNotificationEnabled,
               ActivityAuthorizationInfo().areActivitiesEnabled,
               let nextPrayer,
               let city,
@@ -65,24 +66,16 @@ final class PrayerLiveActivityCoordinator {
 
         if let existing = Activity<PrayerLiveActivityAttributes>.activities.first {
             Task {
-                if #available(iOS 16.2, *) {
-                    let content = ActivityContent(state: state, staleDate: nextPrayer.time)
-                    await existing.update(content)
-                } else {
-                    await existing.update(using: state)
-                }
+                let content = ActivityContent(state: state, staleDate: nextPrayer.time)
+                await existing.update(content)
             }
             return
         }
 
         let attributes = PrayerLiveActivityAttributes(activityID: "next-prayer")
         do {
-            if #available(iOS 16.2, *) {
-                let content = ActivityContent(state: state, staleDate: nextPrayer.time)
-                _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
-            } else {
-                _ = try Activity.request(attributes: attributes, contentState: state, pushType: nil)
-            }
+            let content = ActivityContent(state: state, staleDate: nextPrayer.time)
+            _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
         } catch {
             logger.debug("Live Activity request failed: \(error.localizedDescription)")
         }
@@ -130,6 +123,9 @@ extension Settings {
     private static let oneMile: CLLocationDistance = 1609.34   // m
     private static let halfMile: CLLocationDistance = 500      // m
     private static let maxAge: TimeInterval = 180              // s
+    private static let maxAcceptableAccuracyKnownLocation: CLLocationAccuracy = 800
+    private static let maxAcceptableAccuracyFirstFix: CLLocationAccuracy = 1500
+    private static let minCoordinateUpdateDistance: CLLocationDistance = 300
     
     private static let travelThresholdM: CLLocationDistance = 48 * oneMile   // ≈ 77 112 m
     
@@ -153,16 +149,23 @@ extension Settings {
     
     // MAIN LOCATION CALLBACK
     func locationManager(_ mgr: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
-        guard let loc = locs.last else { return }
+        let candidates = locs
+            .filter { $0.horizontalAccuracy > 0 }
+            .filter { abs($0.timestamp.timeIntervalSinceNow) <= 300 }
+            .sorted { $0.horizontalAccuracy < $1.horizontalAccuracy }
 
-        let isValid = loc.horizontalAccuracy > 0
-        let isFresh = abs(loc.timestamp.timeIntervalSinceNow) <= 300
-        guard isValid && isFresh else { return }
+        guard let loc = candidates.first else { return }
+
+        let maxAccuracy = (currentLocation == nil)
+            ? Self.maxAcceptableAccuracyFirstFix
+            : Self.maxAcceptableAccuracyKnownLocation
+        guard loc.horizontalAccuracy <= maxAccuracy else { return }
 
         if let cur = currentLocation {
             let prev = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
             let distance = prev.distance(from: loc)
-            if distance < Self.halfMile { return }
+            let minimumMovement = max(250, min(Self.halfMile, loc.horizontalAccuracy * 1.5))
+            if distance < minimumMovement { return }
         }
 
         Task { @MainActor in
@@ -228,7 +231,15 @@ extension Settings {
             }()
             let countryCode = placemark.isoCountryCode?.uppercased()
 
-            if newCity != currentLocation?.city || countryCode != currentLocation?.countryCode {
+            let movedEnoughForCoordinateUpdate: Bool = {
+                guard let currentLocation else { return true }
+                let previous = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
+                return previous.distance(from: location) >= Self.minCoordinateUpdateDistance
+            }()
+
+            if newCity != currentLocation?.city
+                || countryCode != currentLocation?.countryCode
+                || movedEnoughForCoordinateUpdate {
                 withAnimation {
                     currentLocation = Location(
                         city: newCity,
@@ -1506,20 +1517,113 @@ extension Settings {
             let next = nextPrayer
             let city = currentLocation?.city
             let enabled = liveNextPrayerEnabled
-            let notifEnabled = isNotificationEnabled(for: nextPrayer)
             let prayerEnabled = isLiveActivityPrayerEnabled(for: nextPrayer)
             let inWindow = isWithinLiveActivityLeadWindow(for: nextPrayer)
             Task { @MainActor in
                 PrayerLiveActivityCoordinator.shared.sync(
                     nextPrayer: next,
                     city: city,
-                    isFeatureEnabled: enabled && prayerEnabled && inWindow,
-                    isPrayerNotificationEnabled: notifEnabled
+                    isFeatureEnabled: enabled && prayerEnabled && inWindow
                 )
             }
         }
         #endif
     }
+
+    #if os(iOS)
+    func configureLiveActivitySyncLifecycle() {
+        guard liveActivityLifecycleObservers.isEmpty else { return }
+
+        let center = NotificationCenter.default
+        liveActivityLifecycleObservers = [
+            center.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.startLiveActivitySyncTimer()
+                self?.updateCurrentAndNextPrayer()
+            },
+            center.addObserver(
+                forName: UIApplication.didEnterBackgroundNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.stopLiveActivitySyncTimer()
+            },
+            center.addObserver(
+                forName: UIApplication.significantTimeChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.updateCurrentAndNextPrayer()
+            },
+            center.addObserver(
+                forName: .NSCalendarDayChanged,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.updateCurrentAndNextPrayer()
+            }
+        ]
+
+        startLiveActivitySyncTimer()
+    }
+
+    private func nextLiveActivitySyncInterval() -> TimeInterval {
+        guard liveNextPrayerEnabled,
+              let prayer = nextPrayer,
+              isLiveActivityPrayerEnabled(for: prayer) else {
+            return 300
+        }
+
+        let now = Date()
+        let leadMinutes = max(0, liveActivityLeadMinutes)
+        let threshold = prayer.time.addingTimeInterval(-Double(leadMinutes) * 60)
+        let secondsToThreshold = threshold.timeIntervalSince(now)
+        let secondsToPrayer = prayer.time.timeIntervalSince(now)
+
+        if secondsToPrayer <= 0 {
+            return 30
+        }
+
+        if secondsToThreshold > 3600 {
+            return 300
+        }
+        if secondsToThreshold > 900 {
+            return 120
+        }
+        if secondsToThreshold > 300 {
+            return 60
+        }
+        if secondsToThreshold > 0 {
+            return 30
+        }
+
+        // Already inside lead window.
+        if secondsToPrayer > 300 {
+            return 30
+        }
+        return 15
+    }
+
+    private func startLiveActivitySyncTimer() {
+        stopLiveActivitySyncTimer()
+        let interval = nextLiveActivitySyncInterval()
+        liveActivitySyncTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            self?.updateCurrentAndNextPrayer()
+            self?.startLiveActivitySyncTimer()
+        }
+        if let timer = liveActivitySyncTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
+    }
+
+    private func stopLiveActivitySyncTimer() {
+        liveActivitySyncTimer?.invalidate()
+        liveActivitySyncTimer = nil
+    }
+    #endif
 
     func startDebugLiveNextPrayerActivity(durationMinutes: Int = 2) {
         #if DEBUG && os(iOS) && canImport(ActivityKit)

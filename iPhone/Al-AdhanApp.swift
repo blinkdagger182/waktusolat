@@ -6,10 +6,19 @@ import UIKit
 
 extension Notification.Name {
     static let debugShowDailyQuranWidgetIntro = Notification.Name("debugShowDailyQuranWidgetIntro")
+    static let debugShowSupportPromoToast = Notification.Name("debugShowSupportPromoToast")
+    static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
 }
 
 @main
 struct AlAdhanApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+
+    private enum AppTab: Hashable {
+        case adhan
+        case settings
+    }
+
     @StateObject private var settings = Settings.shared
     @StateObject private var namesData = NamesViewModel.shared
     @StateObject private var revenueCat = RevenueCatManager.shared
@@ -23,11 +32,15 @@ struct AlAdhanApp: App {
     
     @State private var isLaunching = true
     @State private var quranDeepLink: QuranDeepLinkPayload?
+    @State private var selectedTab: AppTab = .adhan
+    @State private var showSupportPromoToast = false
+    @State private var supportPromoMessage = ""
 
     init() {
         RevenueCatManager.shared.configure()
         let defaults = UserDefaults.standard
         defaults.set(defaults.integer(forKey: "appLaunchCountV1") + 1, forKey: "appLaunchCountV1")
+        Self.updateSupportPromoUsageStats(using: defaults)
     }
 
     var body: some Scene {
@@ -38,18 +51,20 @@ struct AlAdhanApp: App {
                 } else if settings.firstLaunch {
                     SplashScreen()
                 } else {
-                    TabView {
+                    TabView(selection: $selectedTab) {
                         AdhanView()
                             .tabItem {
                                 Image(systemName: "safari")
                                 Text("Azan")
                             }
+                            .tag(AppTab.adhan)
 
                         SettingsView()
                             .tabItem {
                                 Image(systemName: "gearshape")
                                 Text("Settings")
                             }
+                            .tag(AppTab.settings)
                     }
                     .onAppear {
                         if firstLaunchSheet {
@@ -60,6 +75,7 @@ struct AlAdhanApp: App {
                             }
                         } else {
                             presentDailyQuranWidgetIntroIfNeeded()
+                            presentSupportPromoToastIfNeeded()
                         }
                     }
                     .sheet(
@@ -67,6 +83,7 @@ struct AlAdhanApp: App {
                         onDismiss: {
                             firstLaunchSheet = false
                             presentDailyQuranWidgetIntroIfNeeded()
+                            presentSupportPromoToastIfNeeded()
                         }) {
                         AdhanSetupSheet()
                             .environmentObject(settings)
@@ -111,6 +128,30 @@ struct AlAdhanApp: App {
                     .zIndex(20)
                 }
             }
+            .overlay(alignment: .top) {
+                if showSupportPromoToast {
+                    SupportPromoToast(
+                        message: supportPromoMessage,
+                        onSupport: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showSupportPromoToast = false
+                            }
+                            selectedTab = .settings
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+                            }
+                        },
+                        onDismiss: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showSupportPromoToast = false
+                            }
+                        }
+                    )
+                    .padding(.top, 10)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(19)
+                }
+            }
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
@@ -121,6 +162,13 @@ struct AlAdhanApp: App {
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugShowDailyQuranWidgetIntro)) { _ in
                 showDailyQuranWidgetIntro = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToast)) { _ in
+                guard !isLaunching else { return }
+                supportPromoMessage = "Debug trigger. Enjoying Waktu? Support the devs."
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+                    showSupportPromoToast = true
+                }
             }
         }
         .onChange(of: settings.accentColor) { _ in
@@ -143,6 +191,12 @@ struct AlAdhanApp: App {
             if !isFirstLaunch {
                 settings.requestLocationAuthorization()
                 presentDailyQuranWidgetIntroIfNeeded()
+                presentSupportPromoToastIfNeeded()
+            }
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active, !settings.firstLaunch {
+                settings.requestLocationAuthorization()
             }
         }
     }
@@ -158,11 +212,120 @@ struct AlAdhanApp: App {
             showDailyQuranWidgetIntro = true
         }
     }
+
+    private static func updateSupportPromoUsageStats(using defaults: UserDefaults) {
+        let calendar = Calendar(identifier: .gregorian)
+        let dayStart = calendar.startOfDay(for: Date())
+        let dayStamp = dayStart.timeIntervalSince1970
+        let lastDayStamp = defaults.double(forKey: "supportPromoLastActiveDayStampV1")
+
+        guard dayStamp != lastDayStamp else { return }
+
+        let previousStreak = defaults.integer(forKey: "supportPromoActiveDayStreakV1")
+        let streak: Int
+
+        let lastDayDate = Date(timeIntervalSince1970: lastDayStamp)
+        if lastDayStamp > 0,
+           let expectedNext = calendar.date(byAdding: .day, value: 1, to: lastDayDate),
+           calendar.isDate(expectedNext, inSameDayAs: dayStart) {
+            streak = previousStreak + 1
+        } else {
+            streak = 1
+        }
+
+        defaults.set(dayStamp, forKey: "supportPromoLastActiveDayStampV1")
+        defaults.set(streak, forKey: "supportPromoActiveDayStreakV1")
+    }
+
+    private func presentSupportPromoToastIfNeeded() {
+        guard !isLaunching else { return }
+        guard !settings.firstLaunch else { return }
+        guard !showAdhanSheet else { return }
+        guard !showDailyQuranWidgetIntro else { return }
+        guard !showSupportPromoToast else { return }
+
+        let defaults = UserDefaults.standard
+        let launchCount = defaults.integer(forKey: "appLaunchCountV1")
+        let streak = defaults.integer(forKey: "supportPromoActiveDayStreakV1")
+        var shownTriggers = Set(defaults.stringArray(forKey: "supportPromoShownTriggersV1") ?? [])
+        var trigger: String?
+
+        if streak >= 7 && !shownTriggers.contains("streak-7") {
+            trigger = "streak-7"
+            supportPromoMessage = "7-day streak. Enjoying Waktu? Support the devs."
+        } else if (launchCount == 5 || launchCount == 6) && !shownTriggers.contains("launch-\(launchCount)") {
+            trigger = "launch-\(launchCount)"
+            supportPromoMessage = "Love Waktu so far? Support the devs with a coffee."
+        }
+
+        guard let trigger else { return }
+
+        shownTriggers.insert(trigger)
+        defaults.set(Array(shownTriggers), forKey: "supportPromoShownTriggersV1")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            guard !showDailyQuranWidgetIntro else { return }
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+                showSupportPromoToast = true
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+                guard showSupportPromoToast else { return }
+                withAnimation(.easeOut(duration: 0.25)) {
+                    showSupportPromoToast = false
+                }
+            }
+        }
+    }
 }
 
 private struct QuranDeepLinkPayload: Identifiable {
     let reference: String
     var id: String { reference }
+}
+
+private struct SupportPromoToast: View {
+    let message: String
+    let onSupport: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "heart.fill")
+                .foregroundStyle(.pink)
+                .font(.subheadline.weight(.bold))
+
+            Text(message)
+                .font(.subheadline)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            Spacer(minLength: 4)
+
+            Button("Support") {
+                onSupport()
+            }
+            .font(.caption.weight(.semibold))
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 8)
+        .padding(.horizontal, 14)
+    }
 }
 
 private struct DailyQuranWidgetIntroModal: View {
@@ -891,7 +1054,7 @@ private struct QuranVerseDetailsModal: View {
     }
 
     private func shareCaption(details: QuranVerseDetails, variant: QuranShareVariant) -> String {
-        let appLink = "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493?platform=iphone"
+        let appLink = "https://apps.apple.com/us/app/waktu-prayer-times-widgets/id6759585564"
         let referenceLine = "Surah \(details.surahNameEnglish) (\(details.reference))"
         switch variant {
         case .fullVerse:

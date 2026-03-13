@@ -177,7 +177,7 @@ struct AlIslamAppsSection: View {
                     #endif
                 
                 HStack(spacing: spacing) {
-                    if let url = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493") {
+                    if let url = URL(string: "https://apps.apple.com/us/app/waktu-prayer-times-widgets/id6759585564") {
                         Card(title: "Al-Adhan", url: url)
                     }
                     if let url = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655") {
@@ -221,8 +221,9 @@ private struct Card: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
+                    .multilineTextAlignment(.center)
                     .padding(.top, 4)
                 #endif
             }

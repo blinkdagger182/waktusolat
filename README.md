@@ -6,9 +6,9 @@ Discover **Al-Adhan**: A free, beginner-friendly Islamic prayer times app featur
 
 Created by **Abubakr Elmallah**, who was a **17-year-old** in high school when this app was published on the App Store on **December 31, 2023**.
 
-[**Download Al-Adhan on the App Store here**](https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493?platform=iphone)
+[**Download Waktu on the App Store here**](https://apps.apple.com/us/app/waktu-prayer-times-widgets/id6759585564)
 
-<a href="https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493?platform=iphone">
+<a href="https://apps.apple.com/us/app/waktu-prayer-times-widgets/id6759585564">
   <img src="Resources/Logo.jpg" alt="Logo" width="120" style="border-radius:10px;"/>
 </a>
 
