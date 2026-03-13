@@ -1,5 +1,8 @@
 import SwiftUI
 import UserNotifications
+#if os(iOS)
+import AVFoundation
+#endif
 
 struct SettingsAdhanView: View {
     @EnvironmentObject var settings: Settings
@@ -315,6 +318,19 @@ struct NotificationView: View {
                         .font(.subheadline)
                 }
             }
+
+            Section(header: Text("NOTIFICATION SOUND")) {
+                NavigationLink(destination: NotificationSoundSelectionView()) {
+                    HStack {
+                        Label("Notification Sound", systemImage: "speaker.wave.2.fill")
+                            .font(.subheadline)
+                        Spacer()
+                        Text(settings.notificationSoundOption.title)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         }
         .task { await refresh() }
         .onAppear { requestAuthorizationAndFetchPrayerTimes() }
@@ -522,6 +538,59 @@ struct NotificationView: View {
         @unknown default:
             requestAccessAlertMessage = "Unable to change notification settings."
         }
+    }
+}
+
+struct NotificationSoundSelectionView: View {
+    @EnvironmentObject var settings: Settings
+    #if os(iOS)
+    @State private var previewPlayer: AVAudioPlayer?
+    #endif
+
+    private func playPreviewIfNeeded(for option: NotificationSoundOption) {
+        #if os(iOS)
+        guard option == .azan,
+              let url = Bundle.main.url(forResource: "azan_waktu", withExtension: "mp3")
+        else {
+            previewPlayer?.stop()
+            previewPlayer = nil
+            return
+        }
+        do {
+            previewPlayer = try AVAudioPlayer(contentsOf: url)
+            previewPlayer?.prepareToPlay()
+            previewPlayer?.play()
+        } catch {
+            previewPlayer = nil
+        }
+        #endif
+    }
+
+    var body: some View {
+        List {
+            Section(header: Text("ALERT NOTIFICATION SOUND")) {
+                ForEach(NotificationSoundOption.allCases) { option in
+                    Button {
+                        settings.hapticFeedback()
+                        settings.setNotificationSoundOption(option)
+                        playPreviewIfNeeded(for: option)
+                    } label: {
+                        HStack {
+                            Text(option.title)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if settings.notificationSoundOption == option {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(settings.accentColor.color)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .applyConditionalListStyle(defaultView: true)
+        .navigationTitle("Notification Sound")
     }
 }
 

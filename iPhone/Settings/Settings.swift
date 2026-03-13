@@ -9,6 +9,20 @@ import WidgetKit
 
 let logger = Logger(subsystem: "app.riskcreatives.waktu", category: "Waktu Solat")
 
+enum NotificationSoundOption: String, CaseIterable, Identifiable {
+    case iosDefault = "ios_default"
+    case azan = "azan"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .iosDefault: return "iOS Default"
+        case .azan: return "Azan"
+        }
+    }
+}
+
 enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
     case subuh
     case syuruk
@@ -294,6 +308,28 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         willSet { objectWillChange.send() }
     }
     @AppStorage("showNotificationAlert") var showNotificationAlert: Bool = false
+    @AppStorage("notificationSoundOptionRaw") var notificationSoundOptionRaw: String = NotificationSoundOption.iosDefault.rawValue {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+
+    var notificationSoundOption: NotificationSoundOption {
+        get {
+            switch notificationSoundOptionRaw {
+            case NotificationSoundOption.iosDefault.rawValue:
+                return .iosDefault
+            case "allahuakbar_only", "full_azan", NotificationSoundOption.azan.rawValue:
+                return .azan
+            default:
+                return .iosDefault
+            }
+        }
+        set { setNotificationSoundOption(newValue) }
+    }
+
+    func setNotificationSoundOption(_ option: NotificationSoundOption) {
+        objectWillChange.send()
+        notificationSoundOptionRaw = option.rawValue
+    }
     
     @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
     @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false

@@ -1,13 +1,23 @@
 import SwiftUI
 
+private struct DailyQuranCachedQuote: Codable {
+    let dayKey: String
+    let reference: String
+    let text: String
+    let surahName: String
+}
+
 struct AdhanView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var namesData: NamesViewModel
+    @Environment(\.openURL) private var openURL
     
     @Environment(\.scenePhase) private var scenePhase
     
     @State private var showingSettingsSheet = false
     @State private var showBigQibla = false
+    @State private var showDailyQuranAccordion = false
+    @State private var dailyQuranQuote: DailyQuranCachedQuote?
     
     @State private var showAlert: AlertType?
     enum AlertType: Identifiable {
@@ -41,9 +51,66 @@ struct AdhanView: View {
         }
     }
 
+    private func loadDailyQuranQuote() {
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        guard
+            let data = defaults?.data(forKey: "dailyInspirationCachedQuoteV1"),
+            let cached = try? JSONDecoder().decode(DailyQuranCachedQuote.self, from: data)
+        else {
+            dailyQuranQuote = nil
+            return
+        }
+        dailyQuranQuote = cached
+    }
+
+    private func openDailyQuranModal() {
+        guard let reference = dailyQuranQuote?.reference else { return }
+        var components = URLComponents()
+        components.scheme = "waktu"
+        components.host = "quran"
+        components.queryItems = [URLQueryItem(name: "reference", value: reference)]
+        if let url = components.url {
+            openURL(url)
+        }
+    }
+
     var body: some View {
         NavigationView {
             List {
+//                Section(header: settings.defaultView ? Text("DAILY QURAN") : nil) {
+//                    DisclosureGroup(isExpanded: $showDailyQuranAccordion) {
+//                        if let quote = dailyQuranQuote {
+//                            Button(action: openDailyQuranModal) {
+//                                VStack(alignment: .leading, spacing: 6) {
+//                                    Text(quote.text)
+//                                        .font(.footnote.weight(.semibold))
+//                                        .multilineTextAlignment(.leading)
+//                                        .foregroundColor(.primary)
+//                                        .frame(maxWidth: .infinity, alignment: .leading)
+//                                    Text("\(quote.surahName) \(quote.reference)")
+//                                        .font(.caption)
+//                                        .foregroundColor(.secondary)
+//                                        .frame(maxWidth: .infinity, alignment: .leading)
+//                                }
+//                                .padding(.vertical, 4)
+//                            }
+//                            .buttonStyle(.plain)
+//                        } else {
+//                            Text("Open the Daily Quran lock screen widget once to load today’s summary here.")
+//                                .font(.caption)
+//                                .foregroundColor(.secondary)
+//                        }
+//                    } label: {
+//                        HStack(spacing: 10) {
+//                            Image(systemName: "book.closed.fill")
+//                                .foregroundColor(settings.accentColor.color)
+//                            Text("Daily Quran")
+//                                .font(.subheadline.weight(.semibold))
+//                                .foregroundColor(.primary)
+//                        }
+//                    }
+//                }
+
                 Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
                     if let hijriDate = settings.hijriDate {
                         #if !os(watchOS)
@@ -185,10 +252,12 @@ struct AdhanView: View {
             }
             .onAppear {
                 prayerTimeRefresh(force: false)
+                loadDailyQuranQuote()
             }
             .onChange(of: scenePhase) { newScenePhase in
                 if newScenePhase == .active {
                     prayerTimeRefresh(force: false)
+                    loadDailyQuranQuote()
                 }
             }
             .navigationTitle("Waktu Solat")

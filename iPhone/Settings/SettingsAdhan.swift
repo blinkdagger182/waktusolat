@@ -1751,6 +1751,32 @@ extension Settings {
         }
     }
 
+    private func availableSoundName(candidates: [String]) -> UNNotificationSoundName? {
+        for name in candidates {
+            let ns = name as NSString
+            let base = ns.deletingPathExtension
+            let ext = ns.pathExtension
+            guard !base.isEmpty, !ext.isEmpty else { continue }
+            if Bundle.main.url(forResource: base, withExtension: ext) != nil {
+                return UNNotificationSoundName(rawValue: name)
+            }
+        }
+        return nil
+    }
+
+    private func prayerNotificationSound() -> UNNotificationSound {
+        switch notificationSoundOption {
+        case .iosDefault:
+            return .default
+        case .azan:
+            let candidates = ["azan_waktu.mp3"]
+            if let name = availableSoundName(candidates: candidates) {
+                return UNNotificationSound(named: name)
+            }
+            return .default
+        }
+    }
+
     func scheduleNotification(for prayer: Prayer, preNotificationTime minutes: Int?, city: String, using center: UNUserNotificationCenter = .current()) {
         let triggerTime: Date = {
             if let m = minutes, m != 0 {
@@ -1764,7 +1790,7 @@ extension Settings {
         let content = UNMutableNotificationContent()
         content.title = "Waktu Solat"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
-        content.sound = .default
+        content.sound = prayerNotificationSound()
 
         let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
