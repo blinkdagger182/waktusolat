@@ -300,6 +300,33 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("liveNextPrayerEnabled") var liveNextPrayerEnabled: Bool = false {
         didSet { self.fetchPrayerTimes(force: false) }
     }
+    @AppStorage("liveActivityLeadMinutes") var liveActivityLeadMinutes: Int = 30 {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivityFajrEnabled") var liveActivityFajrEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivitySunriseEnabled") var liveActivitySunriseEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivityDhuhrEnabled") var liveActivityDhuhrEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivityAsrEnabled") var liveActivityAsrEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivityMaghribEnabled") var liveActivityMaghribEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivityIshaEnabled") var liveActivityIshaEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivityDhuhrAsrEnabled") var liveActivityDhuhrAsrEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
+    @AppStorage("liveActivityMaghribIshaEnabled") var liveActivityMaghribIshaEnabled: Bool = true {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
     // 0: Auto detect by coordinates, 1: Force Malaysia API, 2: Force coordinate-based Adhan.
     @AppStorage("prayerRegionDebugOverride") var prayerRegionDebugOverride: Int = 0 {
         didSet { self.fetchPrayerTimes(force: true) }

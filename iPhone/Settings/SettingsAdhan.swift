@@ -903,10 +903,6 @@ extension Settings {
         Date(timeIntervalSince1970: value)
     }
 
-    private func off(_ date: Date, by minutes: Int) -> Date {
-        date.addingTimeInterval(Double(minutes) * 60)
-    }
-
     private func fallbackCalculationMethod(for location: Location?) -> CalculationMethod {
         switch effectiveAlAdhanMethodId(for: location) {
         case 1: return .karachi
@@ -960,14 +956,14 @@ extension Settings {
         let baseMaghrib = computed.maghrib
         let baseIsha = computed.isha
 
-        let fajr = off(baseFajr, by: offsetFajr)
-        let sunrise = off(baseSunrise, by: offsetSunrise)
-        let dhuhr = off(baseDhuhr, by: offsetDhuhr)
-        let asr = off(baseAsr, by: offsetAsr)
-        let maghrib = off(baseMaghrib, by: offsetMaghrib)
-        let isha = off(baseIsha, by: offsetIsha)
-        let dhAsr = off(baseDhuhr, by: offsetDhurhAsr)
-        let mgIsha = off(baseMaghrib, by: offsetMaghribIsha)
+        let fajr = baseFajr
+        let sunrise = baseSunrise
+        let dhuhr = baseDhuhr
+        let asr = baseAsr
+        let maghrib = baseMaghrib
+        let isha = baseIsha
+        let dhAsr = baseDhuhr
+        let mgIsha = baseMaghrib
 
         let isFriday = Self.gregorian.component(.weekday, from: date) == 6
 
@@ -1128,14 +1124,14 @@ extension Settings {
             return nil
         }
 
-        let fajr = off(baseFajr, by: offsetFajr)
-        let sunrise = off(baseSunrise, by: offsetSunrise)
-        let dhuhr = off(baseDhuhr, by: offsetDhuhr)
-        let asr = off(baseAsr, by: offsetAsr)
-        let maghrib = off(baseMaghrib, by: offsetMaghrib)
-        let isha = off(baseIsha, by: offsetIsha)
-        let dhAsr = off(baseDhuhr, by: offsetDhurhAsr)
-        let mgIsha = off(baseMaghrib, by: offsetMaghribIsha)
+        let fajr = baseFajr
+        let sunrise = baseSunrise
+        let dhuhr = baseDhuhr
+        let asr = baseAsr
+        let maghrib = baseMaghrib
+        let isha = baseIsha
+        let dhAsr = baseDhuhr
+        let mgIsha = baseMaghrib
 
         let isFriday = Self.gregorian.component(.weekday, from: date) == 6
 
@@ -1196,14 +1192,14 @@ extension Settings {
         let baseMaghrib = dateFromUnix(day.maghrib)
         let baseIsha = dateFromUnix(day.isha)
 
-        let fajr = off(baseFajr, by: offsetFajr)
-        let sunrise = off(baseSunrise, by: offsetSunrise)
-        let dhuhr = off(baseDhuhr, by: offsetDhuhr)
-        let asr = off(baseAsr, by: offsetAsr)
-        let maghrib = off(baseMaghrib, by: offsetMaghrib)
-        let isha = off(baseIsha, by: offsetIsha)
-        let dhAsr = off(baseDhuhr, by: offsetDhurhAsr)
-        let mgIsha = off(baseMaghrib, by: offsetMaghribIsha)
+        let fajr = baseFajr
+        let sunrise = baseSunrise
+        let dhuhr = baseDhuhr
+        let asr = baseAsr
+        let maghrib = baseMaghrib
+        let isha = baseIsha
+        let dhAsr = baseDhuhr
+        let mgIsha = baseMaghrib
 
         let isFriday = Self.gregorian.component(.weekday, from: date) == 6
 
@@ -1473,6 +1469,37 @@ extension Settings {
         }
     }
 
+    private func isLiveActivityPrayerEnabled(for prayer: Prayer?) -> Bool {
+        guard let prayer else { return false }
+        switch prayer.nameTransliteration {
+        case "Fajr":
+            return liveActivityFajrEnabled
+        case "Shurooq":
+            return liveActivitySunriseEnabled
+        case "Dhuhr", "Jumuah":
+            return liveActivityDhuhrEnabled
+        case "Asr":
+            return liveActivityAsrEnabled
+        case "Maghrib":
+            return liveActivityMaghribEnabled
+        case "Isha":
+            return liveActivityIshaEnabled
+        case "Dhuhr/Asr":
+            return liveActivityDhuhrAsrEnabled
+        case "Maghrib/Isha":
+            return liveActivityMaghribIshaEnabled
+        default:
+            return false
+        }
+    }
+
+    private func isWithinLiveActivityLeadWindow(for prayer: Prayer?) -> Bool {
+        guard let prayer else { return false }
+        let leadMinutes = max(0, liveActivityLeadMinutes)
+        let threshold = prayer.time.addingTimeInterval(-Double(leadMinutes) * 60)
+        return Date() >= threshold
+    }
+
     private func syncLiveNextPrayerActivity() {
         #if os(iOS) && canImport(ActivityKit)
         if #available(iOS 16.2, *) {
@@ -1480,11 +1507,13 @@ extension Settings {
             let city = currentLocation?.city
             let enabled = liveNextPrayerEnabled
             let notifEnabled = isNotificationEnabled(for: nextPrayer)
+            let prayerEnabled = isLiveActivityPrayerEnabled(for: nextPrayer)
+            let inWindow = isWithinLiveActivityLeadWindow(for: nextPrayer)
             Task { @MainActor in
                 PrayerLiveActivityCoordinator.shared.sync(
                     nextPrayer: next,
                     city: city,
-                    isFeatureEnabled: enabled,
+                    isFeatureEnabled: enabled && prayerEnabled && inWindow,
                     isPrayerNotificationEnabled: notifEnabled
                 )
             }

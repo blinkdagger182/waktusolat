@@ -39,6 +39,14 @@ struct SettingsAdhanView: View {
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
 
+                    if settings.liveNextPrayerEnabled {
+                        NavigationLink(destination: LiveActivitySettingsView()) {
+                            Label("Live Activity Options", systemImage: "slider.horizontal.3")
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+
                     #if DEBUG
                     if #available(iOS 16.2, *) {
                         Button {
@@ -129,9 +137,6 @@ struct SettingsAdhanView: View {
                 }
             }
             
-            #if !os(watchOS)
-            PrayerOffsetsView()
-            #endif
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Waktu Solat Settings")
@@ -227,104 +232,57 @@ struct SettingsAdhanView: View {
     }
 }
 
-struct PrayerOffsetsView: View {
+struct LiveActivitySettingsView: View {
     @EnvironmentObject var settings: Settings
-    
+
+    private let leadMinuteOptions: [Int] = [
+        1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60
+    ]
+
     var body: some View {
-        Section(header: Text("PRAYER OFFSETS")) {
-            Stepper(value: $settings.offsetFajr, in: -10...10) {
-                HStack {
-                    Text("Fajr")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetFajr) min")
-                        .foregroundColor(.primary)
+        List {
+            Section(header: Text("LIVE ACTIVITY TIMING")) {
+                Picker("Show Before Prayer", selection: $settings.liveActivityLeadMinutes) {
+                    ForEach(leadMinuteOptions, id: \.self) { minute in
+                        Text("\(minute) minute\(minute == 1 ? "" : "s")").tag(minute)
+                    }
                 }
+                .pickerStyle(.menu)
+                .font(.subheadline)
+                Text("Live Activity will appear this many minutes before the selected prayer time.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
             }
-            .font(.subheadline)
-            
-            Stepper(value: $settings.offsetSunrise, in: -10...10) {
-                HStack {
-                    Text("Sunrise")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetSunrise) min")
-                        .foregroundColor(.primary)
-                }
+
+            Section(header: Text("LIVE ACTIVITY PRAYERS")) {
+                Toggle("Fajr", isOn: $settings.liveActivityFajrEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
+                Toggle("Shurooq", isOn: $settings.liveActivitySunriseEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
+                Toggle("Dhuhr", isOn: $settings.liveActivityDhuhrEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
+                Toggle("Asr", isOn: $settings.liveActivityAsrEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
+                Toggle("Maghrib", isOn: $settings.liveActivityMaghribEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
+                Toggle("Isha", isOn: $settings.liveActivityIshaEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
             }
-            .font(.subheadline)
-            
-            Stepper(value: $settings.offsetDhuhr, in: -10...10) {
-                HStack {
-                    Text("Dhuhr")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetDhuhr) min")
-                        .foregroundColor(.primary)
-                }
+
+            Section(header: Text("TRAVEL COMBINED PRAYERS")) {
+                Toggle("Combined Traveling Dhuhr and Asr", isOn: $settings.liveActivityDhuhrAsrEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
+                Toggle("Combined Traveling Maghrib and Isha", isOn: $settings.liveActivityMaghribIshaEnabled.animation(.easeInOut))
+                    .tint(settings.accentColor.toggleTint)
+                Text("Used when Traveling Mode combines prayers.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
             }
-            .font(.subheadline)
-            
-            Stepper(value: $settings.offsetAsr, in: -10...10) {
-                HStack {
-                    Text("Asr")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetAsr) min")
-                        .foregroundColor(.primary)
-                }
-            }
-            .font(.subheadline)
-            
-            Stepper(value: $settings.offsetMaghrib, in: -10...10) {
-                HStack {
-                    Text("Maghrib")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetMaghrib) min")
-                        .foregroundColor(.primary)
-                }
-            }
-            .font(.subheadline)
-            
-            Stepper(value: $settings.offsetIsha, in: -10...10) {
-                HStack {
-                    Text("Isha")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetIsha) min")
-                        .foregroundColor(.primary)
-                }
-            }
-            .font(.subheadline)
-            
-            Stepper(value: $settings.offsetDhurhAsr, in: -10...10) {
-                HStack {
-                    Text("Combined Traveling\nDhuhr and Asr")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetDhurhAsr) min")
-                        .foregroundColor(.primary)
-                }
-            }
-            .font(.subheadline)
-            
-            Stepper(value: $settings.offsetMaghribIsha, in: -10...10) {
-                HStack {
-                    Text("Combined Traveling\nMaghrib and Isha")
-                        .foregroundColor(settings.accentColor.color)
-                    Spacer()
-                    Text("\(settings.offsetMaghribIsha) min")
-                        .foregroundColor(.primary)
-                }
-            }
-            .font(.subheadline)
-            
-            Text("Use these offsets to shift the calculated prayer times earlier or later. Negative values move the time earlier, positive values move it later.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.vertical, 2)
         }
+        .applyConditionalListStyle(defaultView: true)
+        .navigationTitle("Live Activity Options")
     }
 }
 
@@ -348,6 +306,7 @@ struct NotificationView: View {
             Section(header: Text("HIJRI CALENDAR")) {
                 Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
                     .font(.subheadline)
+                    .tint(settings.accentColor.toggleTint)
             }
             
             Section(header: Text("PRAYER REMINDERS")) {
@@ -396,7 +355,7 @@ struct NotificationView: View {
 
                 Text(permissionPillText)
                     .font(.caption.weight(.semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(permissionPillTextColor)
                     .padding(.vertical, 6)
                     .padding(.horizontal, 10)
                     .background(Capsule().fill(permissionPillColor))
@@ -454,13 +413,22 @@ struct NotificationView: View {
         guard let status = notifSettings?.authorizationStatus else { return .secondary }
         switch status {
         case .authorized, .provisional, .ephemeral:
-            return settings.accentColor.color
+            return settings.accentColor.toggleTint
         case .denied:
             return .red
         case .notDetermined:
             return .orange
         @unknown default:
             return .secondary
+        }
+    }
+
+    private var permissionPillTextColor: Color {
+        switch settings.accentColor {
+        case .adaptive, .yellow, .mint, .lightPink:
+            return .black
+        default:
+            return .white
         }
     }
     
@@ -563,6 +531,10 @@ struct MoreNotificationView: View {
     @Environment(\.scenePhase) private var scenePhase
     
     @State private var showAlert: Bool = false
+
+    private var notificationPageToggleTint: Color {
+        settings.accentColor == .adaptive ? Color.white : settings.accentColor.toggleTint
+    }
     
     private func turnOffNaggingModeIfAllOff() {
         if !settings.naggingFajr &&
@@ -617,7 +589,7 @@ struct MoreNotificationView: View {
                     }
                 ).animation(.easeInOut))
                 .font(.subheadline)
-                .tint(settings.accentColor.toggleTint)
+                .tint(notificationPageToggleTint)
                 
                 if settings.naggingMode {
                     Picker("Starting Time", selection: $settings.naggingStartOffset.animation(.easeInOut)) {
@@ -679,7 +651,7 @@ struct MoreNotificationView: View {
                             }
                         ).animation(.easeInOut))
                     }
-                    .tint(settings.accentColor.toggleTint)
+                    .tint(notificationPageToggleTint)
                 }
             }
             
@@ -706,7 +678,7 @@ struct MoreNotificationView: View {
                         }
                     ).animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor.toggleTint)
+                    .tint(notificationPageToggleTint)
                     
                     Stepper(value: Binding(
                         get: { settings.preNotificationFajr },
@@ -808,10 +780,15 @@ struct NotificationSettingsSection: View {
     @Binding var preNotificationTime: Int
     @Binding var isNotificationOn: Bool
 
+    private var notificationPageToggleTint: Color {
+        settings.accentColor == .adaptive ? Color.white : settings.accentColor.toggleTint
+    }
+
     var body: some View {
         Section(header: Text(prayerName.uppercased())) {
             Toggle("Notification", isOn: $isNotificationOn.animation(.easeInOut))
                 .font(.subheadline)
+                .tint(notificationPageToggleTint)
             
             if isNotificationOn {
                 Stepper(value: $preNotificationTime.animation(.easeInOut), in: 0...30, step: 5) {

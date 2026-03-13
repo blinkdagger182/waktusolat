@@ -827,17 +827,19 @@ private struct QuranVerseDetailsModal: View {
                     details: details,
                     colorScheme: colorScheme,
                     accent: settings.accentColor.color,
-                    summaryText: lockScreenStyleSummary(details.englishText)
+                    summaryText: lockScreenSummaryText(details: details)
                 )
             )
         }
 
         let size: CGSize = {
             switch variant {
-            case .summary:
-                return CGSize(width: 900, height: 1100)
-            case .fullVerse, .englishTranslation:
+            case .fullVerse:
                 return CGSize(width: 1080, height: 1350)
+            case .englishTranslation:
+                return CGSize(width: 780, height: 780)
+            case .summary:
+                return CGSize(width: 780, height: 780)
             }
         }()
 
@@ -845,9 +847,14 @@ private struct QuranVerseDetailsModal: View {
             rootView: card
                 .frame(width: size.width, height: size.height)
                 .clipped()
+                .ignoresSafeArea()
         )
         controller.view.bounds = CGRect(origin: .zero, size: size)
         controller.view.backgroundColor = .clear
+        controller.view.insetsLayoutMarginsFromSafeArea = false
+        controller.view.layoutMargins = .zero
+        controller.view.setNeedsLayout()
+        controller.view.layoutIfNeeded()
 
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
@@ -863,12 +870,28 @@ private struct QuranVerseDetailsModal: View {
         return String(cleaned.prefix(maxLen)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
     }
 
-    private func lockScreenStyleSummary(_ text: String) -> String {
-        summarizedVerse(text, maxLen: 90)
+    private func lockScreenSummaryText(details: QuranVerseDetails) -> String {
+        let normalizedPrimary = details.englishText
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let referenceLabel = "\(details.surahNameEnglish) \(details.reference)"
+
+        let isLockScreenSafe = normalizedPrimary.count <= 90
+            && referenceLabel.count <= 24
+            && (normalizedPrimary.count + referenceLabel.count) <= 120
+        if isLockScreenSafe {
+            return normalizedPrimary
+        }
+
+        if let fallback = LockScreenSummaryFallback.text(for: details.reference) {
+            return fallback
+        }
+
+        return summarizedVerse(normalizedPrimary, maxLen: 90)
     }
 
     private func shareCaption(details: QuranVerseDetails, variant: QuranShareVariant) -> String {
-        let appLink = "https://blinkdagger182.github.io/waktusolat/"
+        let appLink = "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493?platform=iphone"
         let referenceLine = "Surah \(details.surahNameEnglish) (\(details.reference))"
         switch variant {
         case .fullVerse:
@@ -876,21 +899,21 @@ private struct QuranVerseDetailsModal: View {
 Quran reflection from \(referenceLine).
 \(details.englishText)
 
-Read more in Waktu: \(appLink)
+Get Waktu on the App Store: \(appLink)
 """
         case .englishTranslation:
             return """
 English translation from \(referenceLine).
 \(details.englishText)
 
-Read more in Waktu: \(appLink)
+Get Waktu on the App Store: \(appLink)
 """
         case .summary:
             return """
 Quran reflection from \(referenceLine).
-Summary: \(lockScreenStyleSummary(details.englishText))
+Summary: \(lockScreenSummaryText(details: details))
 
-Read more in Waktu: \(appLink)
+Get Waktu on the App Store: \(appLink)
 """
         }
     }
@@ -1150,20 +1173,23 @@ private struct DailyQuranSharePreviewCard: View {
                         .stroke(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08), lineWidth: 2)
                 )
 
-                Spacer()
-
                 HStack {
                     Text(details.reference)
                         .font(.system(size: 24, weight: .semibold, design: .rounded))
                     Spacer()
-                    Text("Waktu")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                    HStack(spacing: 6) {
+                        Image(systemName: "moon.stars.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                        Text("Waktu")
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                    }
                 }
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.black.opacity(0.66))
             }
             .padding(42)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
 }
 
@@ -1191,14 +1217,7 @@ private struct DailyQuranEnglishTranslationSharePreviewCard: View {
     private var footerColor: Color { isDark ? Color.white.opacity(0.76) : Color.black.opacity(0.66) }
     private var cardFill: Color { isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.9) }
     private var cardStroke: Color { isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.08) }
-    private var englishFontSize: CGFloat {
-        switch englishLength {
-        case 0..<120: return 32
-        case 120..<220: return 28
-        case 220..<320: return 24
-        default: return 21
-        }
-    }
+    private var englishFontSize: CGFloat { QuranShareTypography.bodyFontSize(for: englishLength) }
 
     var body: some View {
         ZStack {
@@ -1216,7 +1235,7 @@ private struct DailyQuranEnglishTranslationSharePreviewCard: View {
 
                 Text("“\(details.englishText)”")
                     .font(.system(size: englishFontSize, weight: .semibold, design: .rounded))
-                    .lineSpacing(8)
+                    .lineSpacing(6)
                     .foregroundStyle(bodyColor)
                     .padding(30)
                     .background(
@@ -1228,20 +1247,23 @@ private struct DailyQuranEnglishTranslationSharePreviewCard: View {
                             .stroke(cardStroke, lineWidth: 2)
                     )
 
-                Spacer()
-
                 HStack {
                     Text(details.reference)
                         .font(.system(size: 24, weight: .semibold, design: .rounded))
                     Spacer()
-                    Text("Waktu")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                    HStack(spacing: 6) {
+                        Image(systemName: "moon.stars.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                        Text("Waktu")
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                    }
                 }
                 .foregroundStyle(footerColor)
             }
-            .padding(42)
+            .padding(34)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
 }
 
@@ -1253,6 +1275,10 @@ private struct DailyQuranSummarySharePreviewCard: View {
 
     private var summaryReferenceLine: String {
         "\(details.surahNameEnglish) \(details.reference),"
+    }
+
+    private var summaryFontSize: CGFloat {
+        min(QuranShareTypography.bodyFontSize(for: details.englishText.count), 24)
     }
 
     var body: some View {
@@ -1267,21 +1293,19 @@ private struct DailyQuranSummarySharePreviewCard: View {
                 endPoint: .bottomTrailing
             )
 
-            VStack(alignment: .leading, spacing: 26) {
+            VStack(alignment: .leading, spacing: 18) {
                 Text("Daily Quran")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.92))
 
-                Spacer()
-
                 VStack(alignment: .leading, spacing: 14) {
                     Text(summaryReferenceLine)
-                        .font(.system(size: 33, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .semibold, design: .rounded))
                         .lineSpacing(6)
                         .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.85))
                     Text(summaryText)
-                        .font(.system(size: 35, weight: .semibold, design: .rounded))
-                        .lineSpacing(9)
+                        .font(.system(size: summaryFontSize, weight: .semibold, design: .rounded))
+                        .lineSpacing(4)
                         .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.94) : Color.black.opacity(0.83))
                 }
                 .padding(30)
@@ -1293,21 +1317,72 @@ private struct DailyQuranSummarySharePreviewCard: View {
                     RoundedRectangle(cornerRadius: 30, style: .continuous)
                         .stroke(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08), lineWidth: 2)
                 )
-
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack {
                     Text(details.reference)
                         .font(.system(size: 28, weight: .semibold, design: .rounded))
                     Spacer()
-                    Text("Waktu")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                    HStack(spacing: 6) {
+                        Image(systemName: "moon.stars.fill")
+                            .font(.system(size: 24, weight: .semibold))
+                        Text("Waktu")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                    }
                 }
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.black.opacity(0.66))
             }
-            .padding(56)
+            .padding(28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+    }
+}
+
+private enum QuranShareTypography {
+    static func bodyFontSize(for length: Int) -> CGFloat {
+        switch length {
+        case 0..<120: return 30
+        case 120..<220: return 26
+        case 220..<320: return 23
+        default: return 21
+        }
+    }
+}
+
+private enum LockScreenSummaryFallback {
+    private struct Row: Decodable {
+        let reference: String
+        let ayat: String
+    }
+
+    private static let byReference: [String: String] = {
+        let possibleURLs: [URL?] = [
+            Bundle.main.url(forResource: "quotes", withExtension: "json"),
+            Bundle.main.url(forResource: "quotes", withExtension: "json", subdirectory: "Resources"),
+            Bundle.main.url(forResource: "quotes", withExtension: "json", subdirectory: "Resources/JSONs")
+        ]
+
+        guard let fileURL = possibleURLs.compactMap({ $0 }).first,
+              let data = try? Data(contentsOf: fileURL),
+              let payload = try? JSONDecoder().decode([Row].self, from: data)
+        else {
+            return [:]
+        }
+
+        var mapped: [String: String] = [:]
+        for row in payload {
+            let text = row.ayat
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { continue }
+            mapped[row.reference] = text
+        }
+        return mapped
+    }()
+
+    static func text(for reference: String) -> String? {
+        byReference[reference]
     }
 }
 
