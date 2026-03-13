@@ -28,6 +28,30 @@ struct SettingsAdhanView: View {
                     NavigationLink(destination: NotificationView()) {
                         Label("Notification Settings", systemImage: "bell.badge")
                     }
+                    
+                    #if os(iOS)
+                    Toggle("Live Next Prayer Activity", isOn: $settings.liveNextPrayerEnabled.animation(.easeInOut))
+                        .font(.subheadline)
+                        .tint(settings.accentColor.toggleTint)
+                    
+                    Text("Shows a live countdown to the next prayer on the Lock Screen when that prayer notification is enabled.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+
+                    #if DEBUG
+                    if #available(iOS 16.2, *) {
+                        Button {
+                            settings.hapticFeedback()
+                            settings.startDebugLiveNextPrayerActivity(durationMinutes: 2)
+                        } label: {
+                            Label("Start Test Live Activity (2 min)", systemImage: "timer")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                        .font(.subheadline)
+                    }
+                    #endif
+                    #endif
                 }
             }
             #endif

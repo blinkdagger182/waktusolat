@@ -2,6 +2,7 @@ import SwiftUI
 import WidgetKit
 import StoreKit
 import AVFoundation
+import UIKit
 
 extension Notification.Name {
     static let debugShowDailyQuranWidgetIntro = Notification.Name("debugShowDailyQuranWidgetIntro")
@@ -25,6 +26,8 @@ struct AlAdhanApp: App {
 
     init() {
         RevenueCatManager.shared.configure()
+        let defaults = UserDefaults.standard
+        defaults.set(defaults.integer(forKey: "appLaunchCountV1") + 1, forKey: "appLaunchCountV1")
     }
 
     var body: some Scene {
@@ -505,6 +508,27 @@ private struct QuranVerseDetailsModal: View {
     @State private var isPlaying = false
     @State private var audioErrorMessage: String?
     @State private var didFinishPlayback = false
+    @State private var showShareSheet = false
+    @State private var shareItems: [Any] = []
+    @State private var showSharePreview = false
+
+    private var quranArabicFontName: String {
+        let candidates = [
+            settings.fontArabic,
+            "KFGQPCUthmanicScriptHAFS",
+            "Uthmani",
+            "KFGQPC Uthmanic Script HAFS",
+            "UthmanicHafs1 Ver09",
+            "AmiriQuran-Regular",
+            "Amiri Quran"
+        ]
+        for name in candidates where !name.isEmpty {
+            if UIFont(name: name, size: 36) != nil {
+                return name
+            }
+        }
+        return settings.fontArabic
+    }
 
     var body: some View {
         NavigationView {
@@ -547,6 +571,12 @@ private struct QuranVerseDetailsModal: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: presentSharePreview) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(details == nil || isLoading)
+                }
             }
         }
         .task(id: reference) {
@@ -554,6 +584,22 @@ private struct QuranVerseDetailsModal: View {
         }
         .onDisappear {
             stopPlayback()
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ActivityShareSheet(activityItems: shareItems)
+        }
+        .sheet(isPresented: $showSharePreview) {
+            if let details {
+                QuranSharePreviewSheet(
+                    colorScheme: colorScheme,
+                    previewImageFor: { variant in
+                        renderSharePreview(details: details, variant: variant)
+                    },
+                    onShare: { variant in
+                        shareSelectedVariant(variant, details: details)
+                    }
+                )
+            }
         }
     }
 
@@ -564,7 +610,7 @@ private struct QuranVerseDetailsModal: View {
                 .foregroundStyle(colorScheme == .dark ? .white : .black)
 
             Text("\(details.surahNameArabic) • \(details.reference)")
-                .font(.subheadline.weight(.medium))
+                .font(.custom(quranArabicFontName, size: 18))
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.78) : Color.black.opacity(0.64))
         }
     }
@@ -573,8 +619,9 @@ private struct QuranVerseDetailsModal: View {
         VStack(alignment: .leading, spacing: 14) {
             if let arabic = details.arabicText, !arabic.isEmpty {
                 Text(arabic)
-                    .font(.system(size: 28, weight: .medium, design: .serif))
+                    .font(.custom(quranArabicFontName, size: 36))
                     .multilineTextAlignment(.trailing)
+                    .lineSpacing(10)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.9))
             }
@@ -737,6 +784,117 @@ private struct QuranVerseDetailsModal: View {
         isLoading = false
     }
 
+    private func presentSharePreview() {
+        guard details != nil else { return }
+        showSharePreview = true
+    }
+
+    @MainActor
+    private func shareSelectedVariant(_ variant: QuranShareVariant, details: QuranVerseDetails) {
+        let previewImage = renderSharePreview(details: details, variant: variant)
+        let caption = shareCaption(details: details, variant: variant)
+        shareItems = [previewImage, caption]
+        showSharePreview = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            showShareSheet = true
+        }
+    }
+
+    @MainActor
+    private func renderSharePreview(details: QuranVerseDetails, variant: QuranShareVariant) -> UIImage {
+        let card: AnyView
+        switch variant {
+        case .fullVerse:
+            card = AnyView(
+                DailyQuranSharePreviewCard(
+                    details: details,
+                    colorScheme: colorScheme,
+                    accent: settings.accentColor.color,
+                    quranArabicFontName: quranArabicFontName
+                )
+            )
+        case .englishTranslation:
+            card = AnyView(
+                DailyQuranEnglishTranslationSharePreviewCard(
+                    details: details,
+                    colorScheme: colorScheme,
+                    accent: settings.accentColor.color
+                )
+            )
+        case .summary:
+            card = AnyView(
+                DailyQuranSummarySharePreviewCard(
+                    details: details,
+                    colorScheme: colorScheme,
+                    accent: settings.accentColor.color,
+                    summaryText: lockScreenStyleSummary(details.englishText)
+                )
+            )
+        }
+
+        let size: CGSize = {
+            switch variant {
+            case .summary:
+                return CGSize(width: 900, height: 1100)
+            case .fullVerse, .englishTranslation:
+                return CGSize(width: 1080, height: 1350)
+            }
+        }()
+
+        let controller = UIHostingController(
+            rootView: card
+                .frame(width: size.width, height: size.height)
+                .clipped()
+        )
+        controller.view.bounds = CGRect(origin: .zero, size: size)
+        controller.view.backgroundColor = .clear
+
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+        }
+    }
+
+    private func summarizedVerse(_ text: String, maxLen: Int) -> String {
+        let cleaned = text
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleaned.count > maxLen else { return cleaned }
+        return String(cleaned.prefix(maxLen)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
+    }
+
+    private func lockScreenStyleSummary(_ text: String) -> String {
+        summarizedVerse(text, maxLen: 90)
+    }
+
+    private func shareCaption(details: QuranVerseDetails, variant: QuranShareVariant) -> String {
+        let appLink = "https://blinkdagger182.github.io/waktusolat/"
+        let referenceLine = "Surah \(details.surahNameEnglish) (\(details.reference))"
+        switch variant {
+        case .fullVerse:
+            return """
+Quran reflection from \(referenceLine).
+\(details.englishText)
+
+Read more in Waktu: \(appLink)
+"""
+        case .englishTranslation:
+            return """
+English translation from \(referenceLine).
+\(details.englishText)
+
+Read more in Waktu: \(appLink)
+"""
+        case .summary:
+            return """
+Quran reflection from \(referenceLine).
+Summary: \(lockScreenStyleSummary(details.englishText))
+
+Read more in Waktu: \(appLink)
+"""
+        }
+    }
+
     @MainActor
     private func togglePlayback(audioURL: String) {
         audioErrorMessage = nil
@@ -810,6 +968,346 @@ private struct QuranVerseDetailsModal: View {
             playbackEndObserver = nil
         }
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+}
+
+private struct ActivityShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+private enum QuranShareVariant: Int, CaseIterable, Identifiable {
+    case fullVerse
+    case englishTranslation
+    case summary
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .fullVerse: return "Full Verse"
+        case .englishTranslation: return "English Translation"
+        case .summary: return "Summary"
+        }
+    }
+}
+
+private struct QuranSharePreviewSheet: View {
+    let colorScheme: ColorScheme
+    let previewImageFor: (QuranShareVariant) -> UIImage
+    let onShare: (QuranShareVariant) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedVariant: QuranShareVariant = .fullVerse
+    @State private var previewFull: UIImage?
+    @State private var previewEnglish: UIImage?
+    @State private var previewSummary: UIImage?
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 14) {
+                if let previewFull, let previewEnglish, let previewSummary {
+                    TabView(selection: $selectedVariant) {
+                        previewImageCard(previewFull)
+                            .tag(QuranShareVariant.fullVerse)
+                        previewImageCard(previewEnglish)
+                            .tag(QuranShareVariant.englishTranslation)
+                        previewImageCard(previewSummary)
+                            .tag(QuranShareVariant.summary)
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+                } else {
+                    ProgressView("Preparing previews...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+
+                Button(action: { onShare(selectedVariant) }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("Share \(selectedVariant.title)")
+                            .fontWeight(.semibold)
+                    }
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+            }
+            .navigationTitle("Share Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
+        }
+        .onAppear {
+            if previewFull == nil { previewFull = previewImageFor(.fullVerse) }
+            if previewEnglish == nil { previewEnglish = previewImageFor(.englishTranslation) }
+            if previewSummary == nil { previewSummary = previewImageFor(.summary) }
+        }
+    }
+
+    @ViewBuilder
+    private func previewImageCard(_ image: UIImage) -> some View {
+        Image(uiImage: image)
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
+            )
+            .padding(.horizontal, 14)
+            .padding(.top, 6)
+    }
+}
+
+private struct DailyQuranSharePreviewCard: View {
+    let details: QuranVerseDetails
+    let colorScheme: ColorScheme
+    let accent: Color
+    let quranArabicFontName: String
+
+    private var arabicLength: Int { details.arabicText?.count ?? 0 }
+    private var englishLength: Int { details.englishText.count }
+
+    private var arabicFontSize: CGFloat {
+        switch arabicLength {
+        case 0..<90: return 58
+        case 90..<150: return 50
+        case 150..<220: return 45
+        default: return 40
+        }
+    }
+
+    private var englishFontSize: CGFloat {
+        switch englishLength {
+        case 0..<120: return 30
+        case 120..<220: return 26
+        case 220..<320: return 23
+        default: return 21
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    accent.opacity(colorScheme == .dark ? 0.28 : 0.18),
+                    colorScheme == .dark ? Color.black : Color.white,
+                    accent.opacity(colorScheme == .dark ? 0.20 : 0.14)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Daily Quran")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.92))
+                    Text("\(details.surahNameArabic) • \(details.reference)")
+                        .font(.custom(quranArabicFontName, size: 30))
+                        .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.72) : Color.black.opacity(0.62))
+                }
+
+                VStack(alignment: .leading, spacing: 16) {
+                    if let arabic = details.arabicText, !arabic.isEmpty {
+                        Text(arabic)
+                            .font(.custom(quranArabicFontName, size: arabicFontSize))
+                            .lineSpacing(11)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.97) : Color.black.opacity(0.93))
+                    }
+
+                    Text("“\(details.englishText)”")
+                        .font(.system(size: englishFontSize, weight: .semibold, design: .rounded))
+                        .lineSpacing(6)
+                        .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.82))
+                }
+                .padding(28)
+                .background(
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                        .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.white.opacity(0.9))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                        .stroke(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08), lineWidth: 2)
+                )
+
+                Spacer()
+
+                HStack {
+                    Text(details.reference)
+                        .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    Spacer()
+                    Text("Waktu")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.black.opacity(0.66))
+            }
+            .padding(42)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct DailyQuranEnglishTranslationSharePreviewCard: View {
+    let details: QuranVerseDetails
+    let colorScheme: ColorScheme
+    let accent: Color
+
+    private var englishLength: Int { details.englishText.count }
+    private var isDark: Bool { colorScheme == .dark }
+    private var backgroundGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                accent.opacity(isDark ? 0.28 : 0.18),
+                isDark ? Color.black : Color.white,
+                accent.opacity(isDark ? 0.20 : 0.14)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    private var titleColor: Color { isDark ? Color.white.opacity(0.96) : Color.black.opacity(0.92) }
+    private var subtitleColor: Color { isDark ? Color.white.opacity(0.72) : Color.black.opacity(0.62) }
+    private var bodyColor: Color { isDark ? Color.white.opacity(0.92) : Color.black.opacity(0.83) }
+    private var footerColor: Color { isDark ? Color.white.opacity(0.76) : Color.black.opacity(0.66) }
+    private var cardFill: Color { isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.9) }
+    private var cardStroke: Color { isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.08) }
+    private var englishFontSize: CGFloat {
+        switch englishLength {
+        case 0..<120: return 32
+        case 120..<220: return 28
+        case 220..<320: return 24
+        default: return 21
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            backgroundGradient
+
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("English Translation")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(titleColor)
+                    Text("Surah \(details.surahNameEnglish) • \(details.reference)")
+                        .font(.system(size: 24, weight: .semibold, design: .rounded))
+                        .foregroundStyle(subtitleColor)
+                }
+
+                Text("“\(details.englishText)”")
+                    .font(.system(size: englishFontSize, weight: .semibold, design: .rounded))
+                    .lineSpacing(8)
+                    .foregroundStyle(bodyColor)
+                    .padding(30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .fill(cardFill)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .stroke(cardStroke, lineWidth: 2)
+                    )
+
+                Spacer()
+
+                HStack {
+                    Text(details.reference)
+                        .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    Spacer()
+                    Text("Waktu")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(footerColor)
+            }
+            .padding(42)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct DailyQuranSummarySharePreviewCard: View {
+    let details: QuranVerseDetails
+    let colorScheme: ColorScheme
+    let accent: Color
+    let summaryText: String
+
+    private var summaryReferenceLine: String {
+        "\(details.surahNameEnglish) \(details.reference),"
+    }
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    accent.opacity(colorScheme == .dark ? 0.28 : 0.18),
+                    colorScheme == .dark ? Color.black : Color.white,
+                    accent.opacity(colorScheme == .dark ? 0.20 : 0.14)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(alignment: .leading, spacing: 26) {
+                Text("Daily Quran")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.92))
+
+                Spacer()
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(summaryReferenceLine)
+                        .font(.system(size: 33, weight: .bold, design: .rounded))
+                        .lineSpacing(6)
+                        .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.85))
+                    Text(summaryText)
+                        .font(.system(size: 35, weight: .semibold, design: .rounded))
+                        .lineSpacing(9)
+                        .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.94) : Color.black.opacity(0.83))
+                }
+                .padding(30)
+                .background(
+                    RoundedRectangle(cornerRadius: 30, style: .continuous)
+                        .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.white.opacity(0.9))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 30, style: .continuous)
+                        .stroke(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08), lineWidth: 2)
+                )
+
+                Spacer()
+
+                HStack {
+                    Text(details.reference)
+                        .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    Spacer()
+                    Text("Waktu")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.black.opacity(0.66))
+            }
+            .padding(56)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

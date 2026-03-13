@@ -297,6 +297,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
     @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false
+    @AppStorage("liveNextPrayerEnabled") var liveNextPrayerEnabled: Bool = false {
+        didSet { self.fetchPrayerTimes(force: false) }
+    }
     // 0: Auto detect by coordinates, 1: Force Malaysia API, 2: Force coordinate-based Adhan.
     @AppStorage("prayerRegionDebugOverride") var prayerRegionDebugOverride: Int = 0 {
         didSet { self.fetchPrayerTimes(force: true) }

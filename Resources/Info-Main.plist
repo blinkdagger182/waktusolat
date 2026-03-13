@@ -10,6 +10,8 @@
 	<string>https://blinkdagger182.github.io/waktusolat/version-check.json</string>
 	<key>MarketingModalConfigURL</key>
 	<string>https://blinkdagger182.github.io/waktusolat/marketing-modal.json</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Uthmani.otf</string>

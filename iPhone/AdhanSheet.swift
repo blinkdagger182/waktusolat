@@ -1,5 +1,12 @@
 import SwiftUI
 
+fileprivate struct MalaysiaZoneInfo: Decodable, Identifiable {
+    let jakimCode: String
+    let negeri: String
+    let daerah: String
+    var id: String { jakimCode }
+}
+
 struct AdhanSetupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var settings: Settings
@@ -8,6 +15,7 @@ struct AdhanSetupSheet: View {
     private let globalCalculationMethods: [String] = Settings.globalCalculationMethods
     @State private var malaysiaZones: [MalaysiaZoneInfo] = []
     @State private var autoDetectedZoneCode: String = ""
+    @State private var showingWaktuZoneReference = false
     
     private var isGlobalDebugForced: Bool {
         settings.prayerRegionDebugOverride == 2
@@ -70,13 +78,6 @@ struct AdhanSetupSheet: View {
         default:
             return "Uses the selected prayer time calculation method for your location."
         }
-    }
-    
-    private struct MalaysiaZoneInfo: Decodable, Identifiable {
-        let jakimCode: String
-        let negeri: String
-        let daerah: String
-        var id: String { jakimCode }
     }
     
     private var selectedMalaysiaZoneLabel: String {
@@ -310,7 +311,17 @@ struct AdhanSetupSheet: View {
 
                     if releaseWaktuModeBinding.wrappedValue == 0 {
                         HStack {
-                            Text("Waktu Zone")
+                            HStack(spacing: 6) {
+                                Text("Waktu Zone")
+                                Button {
+                                    showingWaktuZoneReference = true
+                                } label: {
+                                    Image(systemName: "info.circle")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundColor(.secondary)
+                            }
                             Spacer()
                             Text(autoDetectedZoneLabel)
                                 .foregroundColor(.secondary)
@@ -321,7 +332,17 @@ struct AdhanSetupSheet: View {
                         .font(.subheadline)
                     } else {
                         HStack {
-                            Text("Waktu Zone")
+                            HStack(spacing: 6) {
+                                Text("Waktu Zone")
+                                Button {
+                                    showingWaktuZoneReference = true
+                                } label: {
+                                    Image(systemName: "info.circle")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundColor(.secondary)
+                            }
                             Spacer()
                             Menu {
                                 Button {
@@ -367,7 +388,7 @@ struct AdhanSetupSheet: View {
                         .font(.subheadline)
                     }
 
-                    Text("When selected, prayer times use Malaysian Prayer Times API by explicit zone (/v2/solat/{zone}).")
+                    Text("Auto matches your location to a Waktu Zone. Manual lets you choose a specific Waktu Zone from Malaysian Prayer Times API.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
@@ -407,15 +428,15 @@ struct AdhanSetupSheet: View {
             .onChange(of: settings.currentLocation?.longitude) { _ in
                 Task { await refreshAutoDetectedZone() }
             }
+            .sheet(isPresented: $showingWaktuZoneReference) {
+                WaktuZoneReferenceView(zones: malaysiaZones)
+                    .preferredColorScheme(settings.colorScheme)
+            }
         }
     }
     
     private var debugSectionTitle: String {
-        #if DEBUG
-        return "DEBUG"
-        #else
-        return "WAKTU MODE"
-        #endif
+        return "PRAYER MODE"
     }
 
     private var releaseWaktuModeBinding: Binding<Int> {
@@ -438,6 +459,40 @@ struct AdhanSetupSheet: View {
                 }
             }
         )
+    }
+}
+
+private struct WaktuZoneReferenceView: View {
+    @Environment(\.dismiss) private var dismiss
+    let zones: [MalaysiaZoneInfo]
+
+    var body: some View {
+        NavigationView {
+            List {
+                if zones.isEmpty {
+                    Text("Loading Waktu Zone list...")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(zones) { zone in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(zone.jakimCode) · \(zone.negeri)")
+                                .font(.subheadline.weight(.semibold))
+                            Text(zone.daerah)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+            }
+            .navigationTitle("Waktu Zones")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
 

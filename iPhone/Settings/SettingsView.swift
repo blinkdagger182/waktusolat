@@ -136,6 +136,8 @@ final class RevenueCatManager: NSObject, ObservableObject {
 struct SettingsView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
+    @AppStorage("donationSuccessCount") private var donationSuccessCount: Int = 0
+    @AppStorage("appLaunchCountV1") private var appLaunchCount: Int = 0
     
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
@@ -155,6 +157,14 @@ struct SettingsView: View {
                             showingAdhanSetup = true
                         } label: {
                             Label("Waktu Solat Setup", systemImage: "moon.stars.fill")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+
+                        NavigationLink {
+                            SettingsAdhanView(showNotifications: true)
+                                .environmentObject(settings)
+                        } label: {
+                            Label("Waktu Solat Settings", systemImage: "bell.and.waves.left.and.right")
                                 .foregroundColor(settings.accentColor.color)
                         }
                     }
@@ -200,19 +210,26 @@ struct SettingsView: View {
 
                     Section(header: Text("SUPPORT")) {
                         Button {
-                            settings.hapticFeedback()
-                            Task {
-                                await revenueCat.refreshOfferings()
-                                if revenueCat.offerings?.all[paywallOfferingIdentifier] != nil {
-                                    showingPaywall = true
-                                } else {
-                                    let available = revenueCat.offerings?.all.keys.sorted().joined(separator: ", ") ?? "none"
-                                    revenueCat.lastErrorMessage = "Offering '\(paywallOfferingIdentifier)' not found. Available offerings: \(available)"
-                                }
-                            }
+                            openDonationPaywall()
                         } label: {
                             Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
                                 .foregroundColor(settings.accentColor.color)
+                        }
+
+                        if donationSuccessCount > 0 {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(donationImpactMessage)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                HStack {
+                                    Spacer()
+                                    Button(donationImpactCTA) {
+                                        openDonationPaywall()
+                                    }
+                                    .font(.caption2.weight(.semibold))
+                                    Spacer()
+                                }
+                            }
                         }
                     }
 
@@ -246,9 +263,8 @@ struct SettingsView: View {
             hasInitializedEntitlementState = true
         }
         .onChange(of: revenueCat.hasBuyMeKopi) { newValue in
-            if hasInitializedEntitlementState, newValue, !lastKnownDonationState {
-                handleDonationCompleted()
-            }
+            // Keep entitlement state in sync, but do not trigger celebration here.
+            // Celebration is intentionally limited to fresh purchases only.
             lastKnownDonationState = newValue
         }
         .sheet(isPresented: $showingPaywall) {
@@ -273,12 +289,18 @@ struct SettingsView: View {
         }
     }
 
-    private func handleDonationCompleted() {
+    private func handleDonationCompleted(countDonation: Bool) {
+        if countDonation {
+            donationSuccessCount += 1
+        }
         showingPaywall = false
         playDonationSuccessEffects()
 
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-            showDonationCelebration = true
+        // Delay a little so celebration is visible after paywall dismissal in TestFlight/App Store builds.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                showDonationCelebration = true
+            }
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
@@ -298,16 +320,76 @@ struct SettingsView: View {
         #endif
     }
 
+    private func openDonationPaywall() {
+        settings.hapticFeedback()
+        Task {
+            await revenueCat.refreshOfferings()
+            if revenueCat.offerings?.all[paywallOfferingIdentifier] != nil {
+                showingPaywall = true
+            } else {
+                let available = revenueCat.offerings?.all.keys.sorted().joined(separator: ", ") ?? "none"
+                revenueCat.lastErrorMessage = "Offering '\(paywallOfferingIdentifier)' not found. Available offerings: \(available)"
+            }
+        }
+    }
+    
+    private var donationImpactMessage: String {
+        let count = max(donationSuccessCount, 0)
+        let style = max(appLaunchCount, 0) % 6
+
+        switch style {
+        case 0:
+            return "You helped run the server for \(count) extra \(count == 1 ? "day" : "days")."
+        case 1:
+            let hours = count * 2
+            return "You bought enough coffee to keep the developer awake for \(hours) \(hours == 1 ? "hour" : "hours")."
+        case 2:
+            let qaHours = Double(count) * 0.75
+            return String(format: "Your support funded %.2f extra hours of prayer-time accuracy checks.", qaHours)
+        case 3:
+            let widgets = Double(count) * 0.125
+            return String(format: "You helped add %.3f widget to the app ecosystem.", widgets)
+        case 4:
+            let sessions = count * 5
+            return "You gave the team around \(sessions) extra focus sessions to improve the app."
+        default:
+            let fixes = count * 4
+            return "You helped fund about \(fixes) extra fixes and quality improvements."
+        }
+    }
+
+    private var donationImpactCTA: String {
+        switch max(appLaunchCount, 0) % 6 {
+        case 0:
+            return "Add more server hours"
+        case 1:
+            return "Add more awake hours"
+        case 2:
+            return "Support accuracy checks"
+        case 3:
+            return "Help add more widgets"
+        case 4:
+            return "Support app improvements"
+        default:
+            return "Support more fixes"
+        }
+    }
+
     @ViewBuilder
     private var paywallSheet: some View {
         #if canImport(RevenueCatUI)
         if let selectedOffering = revenueCat.offerings?.all[paywallOfferingIdentifier] {
             PaywallView(offering: selectedOffering, displayCloseButton: true)
                 .onPurchaseCompleted { _ in
-                    handleDonationCompleted()
+                    DispatchQueue.main.async {
+                        handleDonationCompleted(countDonation: true)
+                    }
                 }
                 .onRestoreCompleted { _ in
-                    handleDonationCompleted()
+                    DispatchQueue.main.async {
+                        // Restore should not trigger celebration or increment counter.
+                        showingPaywall = false
+                    }
                 }
         } else {
             NavigationView {

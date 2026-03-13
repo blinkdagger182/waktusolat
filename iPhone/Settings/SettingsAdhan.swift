@@ -3,6 +3,117 @@ import CoreLocation
 import UserNotifications
 import WidgetKit
 import Adhan
+#if os(iOS) && canImport(ActivityKit)
+import ActivityKit
+#endif
+
+#if os(iOS) && canImport(ActivityKit)
+@available(iOS 16.2, *)
+struct PrayerLiveActivityAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        var prayerName: String
+        var city: String
+        var prayerTime: Date
+        var startedAt: Date
+    }
+
+    var activityID: String
+}
+
+@available(iOS 16.2, *)
+@MainActor
+final class PrayerLiveActivityCoordinator {
+    static let shared = PrayerLiveActivityCoordinator()
+    private var startedAtByPrayerKey: [String: Date] = [:]
+    private init() {}
+
+    private func endAll() {
+        for activity in Activity<PrayerLiveActivityAttributes>.activities {
+            Task {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
+
+    func sync(
+        nextPrayer: Prayer?,
+        city: String?,
+        isFeatureEnabled: Bool,
+        isPrayerNotificationEnabled: Bool
+    ) {
+        guard isFeatureEnabled,
+              isPrayerNotificationEnabled,
+              ActivityAuthorizationInfo().areActivitiesEnabled,
+              let nextPrayer,
+              let city,
+              !city.isEmpty else {
+            startedAtByPrayerKey.removeAll()
+            endAll()
+            return
+        }
+
+        let prayerKey = "\(nextPrayer.nameTransliteration)|\(Int(nextPrayer.time.timeIntervalSince1970))"
+        let startedAt = startedAtByPrayerKey[prayerKey] ?? Date()
+        startedAtByPrayerKey = [prayerKey: startedAt]
+
+        let state = PrayerLiveActivityAttributes.ContentState(
+            prayerName: nextPrayer.nameTransliteration,
+            city: city,
+            prayerTime: nextPrayer.time,
+            startedAt: startedAt
+        )
+
+        if let existing = Activity<PrayerLiveActivityAttributes>.activities.first {
+            Task {
+                if #available(iOS 16.2, *) {
+                    let content = ActivityContent(state: state, staleDate: nextPrayer.time)
+                    await existing.update(content)
+                } else {
+                    await existing.update(using: state)
+                }
+            }
+            return
+        }
+
+        let attributes = PrayerLiveActivityAttributes(activityID: "next-prayer")
+        do {
+            if #available(iOS 16.2, *) {
+                let content = ActivityContent(state: state, staleDate: nextPrayer.time)
+                _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
+            } else {
+                _ = try Activity.request(attributes: attributes, contentState: state, pushType: nil)
+            }
+        } catch {
+            logger.debug("Live Activity request failed: \(error.localizedDescription)")
+        }
+    }
+
+    func startDebugActivity(city: String, durationMinutes: Int = 2) {
+        let now = Date()
+        let end = Calendar.current.date(byAdding: .minute, value: max(1, durationMinutes), to: now) ?? now.addingTimeInterval(120)
+        let state = PrayerLiveActivityAttributes.ContentState(
+            prayerName: "Test Prayer",
+            city: city,
+            prayerTime: end,
+            startedAt: now
+        )
+
+        let attributes = PrayerLiveActivityAttributes(activityID: "next-prayer")
+        do {
+            let content = ActivityContent(state: state, staleDate: end)
+            if let existing = Activity<PrayerLiveActivityAttributes>.activities.first {
+                Task {
+                    await existing.update(content)
+                }
+            } else {
+                _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
+            }
+        } catch {
+            logger.debug("Debug Live Activity request failed: \(error.localizedDescription)")
+        }
+    }
+}
+#endif
 
 extension Settings {
     static let locationManager: CLLocationManager = {
@@ -1317,6 +1428,7 @@ extension Settings {
     private func updateCurrentAndNextPrayer() {
         guard let p = prayers?.prayers, !p.isEmpty else {
             logger.debug("No prayer list to compute current/next")
+            syncLiveNextPrayerActivity()
             return
         }
 
@@ -1337,6 +1449,60 @@ extension Settings {
                 nextPrayer = nil
             }
         }
+
+        syncLiveNextPrayerActivity()
+    }
+
+    private func isNotificationEnabled(for prayer: Prayer?) -> Bool {
+        guard let prayer else { return false }
+        switch prayer.nameTransliteration {
+        case "Fajr":
+            return notificationFajr
+        case "Shurooq":
+            return notificationSunrise
+        case "Dhuhr", "Jumuah", "Dhuhr/Asr":
+            return notificationDhuhr
+        case "Asr":
+            return notificationAsr
+        case "Maghrib", "Maghrib/Isha":
+            return notificationMaghrib
+        case "Isha":
+            return notificationIsha
+        default:
+            return false
+        }
+    }
+
+    private func syncLiveNextPrayerActivity() {
+        #if os(iOS) && canImport(ActivityKit)
+        if #available(iOS 16.2, *) {
+            let next = nextPrayer
+            let city = currentLocation?.city
+            let enabled = liveNextPrayerEnabled
+            let notifEnabled = isNotificationEnabled(for: nextPrayer)
+            Task { @MainActor in
+                PrayerLiveActivityCoordinator.shared.sync(
+                    nextPrayer: next,
+                    city: city,
+                    isFeatureEnabled: enabled,
+                    isPrayerNotificationEnabled: notifEnabled
+                )
+            }
+        }
+        #endif
+    }
+
+    func startDebugLiveNextPrayerActivity(durationMinutes: Int = 2) {
+        #if DEBUG && os(iOS) && canImport(ActivityKit)
+        guard #available(iOS 16.2, *) else { return }
+        let city = currentLocation?.city ?? "Current Location"
+        Task { @MainActor in
+            PrayerLiveActivityCoordinator.shared.startDebugActivity(
+                city: city,
+                durationMinutes: durationMinutes
+            )
+        }
+        #endif
     }
     
     @MainActor
