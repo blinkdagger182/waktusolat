@@ -769,6 +769,24 @@ private struct QuranVerseDetailsModal: View {
                         .padding()
                     }
                 }
+
+                if showSharePreview, let details {
+                    QuranSharePreviewOverlay(
+                        previewImageFor: { variant in
+                            renderSharePreview(details: details, variant: variant)
+                        },
+                        onShare: { variant in
+                            shareSelectedVariant(variant, details: details)
+                        },
+                        onClose: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showSharePreview = false
+                            }
+                        }
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .zIndex(10)
+                }
             }
             .navigationTitle("Daily Quran")
             .navigationBarTitleDisplayMode(.inline)
@@ -792,19 +810,6 @@ private struct QuranVerseDetailsModal: View {
         }
         .sheet(isPresented: $showShareSheet) {
             ActivityShareSheet(activityItems: shareItems)
-        }
-        .sheet(isPresented: $showSharePreview) {
-            if let details {
-                QuranSharePreviewSheet(
-                    colorScheme: colorScheme,
-                    previewImageFor: { variant in
-                        renderSharePreview(details: details, variant: variant)
-                    },
-                    onShare: { variant in
-                        shareSelectedVariant(variant, details: details)
-                    }
-                )
-            }
         }
     }
 
@@ -991,7 +996,9 @@ private struct QuranVerseDetailsModal: View {
 
     private func presentSharePreview() {
         guard details != nil else { return }
-        showSharePreview = true
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showSharePreview = true
+        }
     }
 
     @MainActor
@@ -1225,61 +1232,97 @@ private enum QuranShareVariant: Int, CaseIterable, Identifiable {
     }
 }
 
-private struct QuranSharePreviewSheet: View {
-    let colorScheme: ColorScheme
+private struct QuranSharePreviewOverlay: View {
     let previewImageFor: (QuranShareVariant) -> UIImage
     let onShare: (QuranShareVariant) -> Void
+    let onClose: () -> Void
 
-    @Environment(\.dismiss) private var dismiss
     @State private var selectedVariant: QuranShareVariant = .fullVerse
     @State private var previewFull: UIImage?
     @State private var previewEnglish: UIImage?
     @State private var previewSummary: UIImage?
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 14) {
-                if let previewFull, let previewEnglish, let previewSummary {
-                    TabView(selection: $selectedVariant) {
-                        previewImageCard(previewFull)
-                            .tag(QuranShareVariant.fullVerse)
-                        previewImageCard(previewEnglish)
-                            .tag(QuranShareVariant.englishTranslation)
-                        previewImageCard(previewSummary)
-                            .tag(QuranShareVariant.summary)
-                    }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
-                } else {
-                    ProgressView("Preparing previews...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ZStack {
+            Color.black.opacity(0.46)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onClose()
                 }
 
-                Button(action: { onShare(selectedVariant) }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("Share \(selectedVariant.title)")
-                            .fontWeight(.semibold)
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 14) {
+                    HStack {
+                        Text("Share Preview")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white.opacity(0.9))
+                                .padding(8)
+                                .background(Color.white.opacity(0.12), in: Circle())
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
-                    )
+
+                    if let previewFull, let previewEnglish, let previewSummary {
+                        TabView(selection: $selectedVariant) {
+                            previewImageCard(previewFull)
+                                .tag(QuranShareVariant.fullVerse)
+                            previewImageCard(previewEnglish)
+                                .tag(QuranShareVariant.englishTranslation)
+                            previewImageCard(previewSummary)
+                                .tag(QuranShareVariant.summary)
+                        }
+                        .frame(height: 420)
+                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+                    } else {
+                        ProgressView("Preparing previews...")
+                            .frame(maxWidth: .infinity, minHeight: 280)
+                    }
+
+                    Button(action: { onShare(selectedVariant) }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share \(selectedVariant.title)")
+                                .fontWeight(.semibold)
+                        }
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color("lightPink"), Color("hotPink")],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(Color(white: 0.10).opacity(0.94))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
                 .padding(.horizontal, 16)
-                .padding(.bottom, 10)
+                .padding(.bottom, 16)
+                .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .onTapGesture { }
             }
-            .navigationTitle("Share Preview")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                }
-            }
-            .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
         }
         .onAppear {
             if previewFull == nil { previewFull = previewImageFor(.fullVerse) }
@@ -1297,7 +1340,7 @@ private struct QuranSharePreviewSheet: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
             )
             .padding(.horizontal, 14)
             .padding(.top, 6)

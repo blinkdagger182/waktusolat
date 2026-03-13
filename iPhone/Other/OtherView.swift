@@ -1,6 +1,6 @@
 import SwiftUI
 #if os(iOS)
-import WebKit
+import UIKit
 #endif
 
 private struct DailyQuranCachedQuote: Codable {
@@ -10,12 +10,17 @@ private struct DailyQuranCachedQuote: Codable {
     let surahName: String
 }
 
+private struct FullSurahSelection: Identifiable {
+    let surahNumber: Int
+    let ayahNumber: Int?
+    var id: String { "\(surahNumber):\(ayahNumber ?? 0)" }
+}
+
 struct OtherView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
     @State private var dailyQuranQuote: DailyQuranCachedQuote?
-    @State private var fullSurahURL: URL?
-    @State private var showFullSurahWebView = false
+    @State private var selectedFullSurah: FullSurahSelection?
 
     private func loadDailyQuranQuote() {
         let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
@@ -39,21 +44,26 @@ struct OtherView: View {
         openURL(url)
     }
 
-    private func surahNumber(from reference: String) -> Int? {
-        guard let first = reference.split(separator: ":").first,
+    private func parseReference(_ reference: String) -> (surah: Int, ayah: Int?)? {
+        let parts = reference.split(separator: ":")
+        guard let first = parts.first,
               let surah = Int(first),
               (1...114).contains(surah) else {
             return nil
         }
-        return surah
+        let ayah: Int?
+        if parts.count > 1, let parsedAyah = Int(parts[1]), parsedAyah > 0 {
+            ayah = parsedAyah
+        } else {
+            ayah = nil
+        }
+        return (surah, ayah)
     }
 
-    private func openFullSurahWebView() {
+    private func openFullSurahSheet() {
         guard let reference = dailyQuranQuote?.reference,
-              let surah = surahNumber(from: reference),
-              let url = URL(string: "https://quran.com/\(surah)") else { return }
-        fullSurahURL = url
-        showFullSurahWebView = true
+              let parsed = parseReference(reference) else { return }
+        selectedFullSurah = FullSurahSelection(surahNumber: parsed.surah, ayahNumber: parsed.ayah)
     }
     
     var body: some View {
@@ -82,7 +92,7 @@ struct OtherView: View {
                             .buttonStyle(.plain)
 
                             Button("Read Full Surah") {
-                                openFullSurahWebView()
+                                openFullSurahSheet()
                             }
                             .font(.footnote.weight(.semibold))
                             .foregroundColor(settings.accentColor.color)
@@ -92,20 +102,6 @@ struct OtherView: View {
                         Text("Open the Daily Quran widget once to load today’s verse here.")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                    }
-                }
-                .sheet(isPresented: $showFullSurahWebView) {
-                    NavigationView {
-                        QuranWebContainerView(url: fullSurahURL)
-                            .navigationTitle("Full Surah")
-                            .navigationBarTitleDisplayMode(.inline)
-                            .toolbar {
-                                ToolbarItem(placement: .navigationBarTrailing) {
-                                    Button("Done") {
-                                        showFullSurahWebView = false
-                                    }
-                                }
-                            }
                     }
                 }
 
@@ -208,6 +204,24 @@ struct OtherView: View {
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle("Resources")
             .onAppear(perform: loadDailyQuranQuote)
+            .sheet(item: $selectedFullSurah) { selection in
+                NavigationView {
+                    QuranSurahDetailsView(
+                        surahNumber: selection.surahNumber,
+                        dailyAyahNumber: selection.ayahNumber
+                    )
+                        .environmentObject(settings)
+                        .navigationTitle("Full Surah")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") {
+                                    selectedFullSurah = nil
+                                }
+                            }
+                        }
+                }
+            }
             
             ArabicView()
         }
@@ -340,59 +354,293 @@ private struct Card: View {
     }
 }
 
-private struct QuranWebContainerView: View {
-    let url: URL?
+private struct QuranSurahDetailsView: View {
+    let surahNumber: Int
+    let dailyAyahNumber: Int?
+
+    @EnvironmentObject private var settings: Settings
+    @State private var details: QuranSurahDetails?
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    private var quranArabicFontName: String {
+        let candidates = [
+            settings.fontArabic,
+            "KFGQPCUthmanicScriptHAFS",
+            "Uthmani",
+            "KFGQPC Uthmanic Script HAFS",
+            "UthmanicHafs1 Ver09",
+            "AmiriQuran-Regular",
+            "Amiri Quran"
+        ]
+        #if os(iOS)
+        for name in candidates where !name.isEmpty {
+            if UIFont(name: name, size: 28) != nil {
+                return name
+            }
+        }
+        #endif
+        return settings.fontArabic
+    }
+
+    private var dailyAyahTagTextColor: Color {
+        #if os(iOS)
+        let ui = UIColor(settings.accentColor.color)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard ui.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            return .white
+        }
+        let luminance = (0.299 * red) + (0.587 * green) + (0.114 * blue)
+        return luminance > 0.62 ? .black : .white
+        #else
+        return .white
+        #endif
+    }
 
     var body: some View {
+        content(surahNumber: surahNumber)
+        .task(id: surahNumber) {
+            await loadSurah(surahNumber: surahNumber)
+        }
+    }
+
+    private func content(surahNumber: Int) -> some View {
         Group {
-            if let url {
-                QuranWebView(url: url)
-            } else {
+            if isLoading {
+                ProgressView("Loading Surah \(surahNumber)...")
+            } else if let errorMessage {
                 VStack(spacing: 10) {
-                    Image(systemName: "network.slash")
+                    Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 28))
-                        .foregroundStyle(.secondary)
-                    Text("Unable to open the full surah link.")
+                        .foregroundStyle(.orange)
+                    Text(errorMessage)
                         .font(.subheadline)
+                        .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                #if os(iOS)
-                .background(Color(.systemGroupedBackground))
-                #endif
+                .padding()
+            } else if let details {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 14) {
+                        Text("\(details.englishName) (\(details.arabicName))")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text("Surah \(details.number) • \(details.ayahs.count) ayahs")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        Divider()
+
+                        ForEach(details.ayahs) { ayah in
+                            let isDailyAyah = dailyAyahNumber == ayah.numberInSurah
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("\(ayah.numberInSurah)")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(.secondary)
+
+                                Text(ayah.arabicText)
+                                    .font(.custom(quranArabicFontName, size: 30))
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .multilineTextAlignment(.trailing)
+
+                                if let english = ayah.englishText, !english.isEmpty {
+                                    Text(english)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.primary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color.primary.opacity(0.04))
+                            )
+                            .overlay {
+                                if isDailyAyah {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(settings.accentColor.color, lineWidth: 2)
+                                }
+                            }
+                            .overlay(alignment: .topLeading) {
+                                if isDailyAyah {
+                                    Text("Daily Ayat")
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundColor(dailyAyahTagTextColor)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(
+                                            Capsule(style: .continuous)
+                                                .fill(settings.accentColor.color)
+                                        )
+                                        .padding(.leading, 10)
+                                        .offset(y: -10)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                }
+            } else {
+                Text("Loading Surah \(surahNumber)...")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding()
+            }
+        }
+    }
+
+    @MainActor
+    private func loadSurah(surahNumber: Int) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            details = try await QuranSurahAPI.fetchSurahDetails(surahNumber: surahNumber)
+        } catch {
+            details = nil
+            let reason = error.localizedDescription
+            if reason.isEmpty || reason == "The operation couldn’t be completed." {
+                errorMessage = "Unable to load this surah right now. Please try again."
+            } else {
+                errorMessage = "Unable to load this surah right now. \(reason)"
             }
         }
     }
 }
 
-#if os(iOS)
-private struct QuranWebView: UIViewRepresentable {
-    let url: URL
+private struct QuranSurahDetails {
+    struct Ayah: Identifiable {
+        let numberInSurah: Int
+        let arabicText: String
+        let englishText: String?
 
-    func makeUIView(context: Context) -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.allowsBackForwardNavigationGestures = true
-        webView.scrollView.keyboardDismissMode = .onDrag
-        return webView
+        var id: Int { numberInSurah }
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        if uiView.url != url {
-            uiView.load(URLRequest(url: url))
+    let number: Int
+    let englishName: String
+    let arabicName: String
+    let ayahs: [Ayah]
+}
+
+private enum QuranSurahAPI {
+    static func fetchSurahDetails(surahNumber: Int) async throws -> QuranSurahDetails {
+        guard (1...114).contains(surahNumber) else {
+            throw QuranSurahAPIError.invalidURL
         }
-    }
-}
-#else
-private struct QuranWebView: View {
-    let url: URL
 
-    var body: some View {
-        Text("Web view is only available on iOS.")
-            .foregroundStyle(.secondary)
+        async let arabicEdition = fetchEdition(surahNumber: surahNumber, edition: "ar.alafasy")
+        async let englishEdition = fetchEdition(surahNumber: surahNumber, edition: "en.asad")
+        let (arabic, english) = try await (arabicEdition, englishEdition)
+
+        let englishByAyah = Dictionary(
+            uniqueKeysWithValues: english.ayahs.map { ($0.numberInSurah, $0.text) }
+        )
+
+        let mergedAyahs = arabic.ayahs.map {
+            QuranSurahDetails.Ayah(
+                numberInSurah: $0.numberInSurah,
+                arabicText: $0.text,
+                englishText: englishByAyah[$0.numberInSurah]
+            )
+        }
+
+        return QuranSurahDetails(
+            number: arabic.surah.number,
+            englishName: arabic.surah.englishName,
+            arabicName: arabic.surah.name,
+            ayahs: mergedAyahs
+        )
+    }
+
+    private static func fetchEdition(surahNumber: Int, edition: String) async throws -> QuranSurahEditionData {
+        guard let url = URL(string: "https://api.alquran.cloud/v1/surah/\(surahNumber)/\(edition)") else {
+            throw QuranSurahAPIError.invalidURL
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw QuranSurahAPIError.badResponse
+        }
+
+        let decoded = try JSONDecoder().decode(QuranSurahEditionResponse.self, from: data)
+        if let code = decoded.code, code != 200 {
+            throw QuranSurahAPIError.badResponse
+        }
+        return decoded.data
     }
 }
-#endif
+
+private enum QuranSurahAPIError: Error {
+    case invalidURL
+    case badResponse
+}
+
+private struct QuranSurahEditionResponse: Decodable {
+    let code: Int?
+    let data: QuranSurahEditionData
+
+    private enum CodingKeys: String, CodingKey {
+        case code
+        case data
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let intCode = try? c.decode(Int.self, forKey: .code) {
+            code = intCode
+        } else if let stringCode = try? c.decode(String.self, forKey: .code),
+                  let intCode = Int(stringCode) {
+            code = intCode
+        } else {
+            code = nil
+        }
+        data = try c.decode(QuranSurahEditionData.self, forKey: .data)
+    }
+}
+
+private struct QuranSurahEditionData: Decodable {
+    let surah: QuranSurahMeta
+    let ayahs: [QuranSurahAyah]
+
+    private enum CodingKeys: String, CodingKey {
+        case surah
+        case ayahs
+        case number
+        case name
+        case englishName
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let nestedSurah = try? c.decode(QuranSurahMeta.self, forKey: .surah) {
+            surah = nestedSurah
+        } else {
+            surah = QuranSurahMeta(
+                number: try c.decode(Int.self, forKey: .number),
+                name: try c.decode(String.self, forKey: .name),
+                englishName: try c.decode(String.self, forKey: .englishName)
+            )
+        }
+        ayahs = try c.decode([QuranSurahAyah].self, forKey: .ayahs)
+    }
+}
+
+private struct QuranSurahMeta: Decodable {
+    let number: Int
+    let name: String
+    let englishName: String
+}
+
+private struct QuranSurahAyah: Decodable {
+    let numberInSurah: Int
+    let text: String
+}
 
 #Preview {
     OtherView()
