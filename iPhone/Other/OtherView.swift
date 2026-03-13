@@ -1,11 +1,115 @@
 import SwiftUI
+#if os(iOS)
+import WebKit
+#endif
+
+private struct DailyQuranCachedQuote: Codable {
+    let dayKey: String
+    let reference: String
+    let text: String
+    let surahName: String
+}
 
 struct OtherView: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.openURL) private var openURL
+    @State private var dailyQuranQuote: DailyQuranCachedQuote?
+    @State private var fullSurahURL: URL?
+    @State private var showFullSurahWebView = false
+
+    private func loadDailyQuranQuote() {
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        guard
+            let data = defaults?.data(forKey: "dailyInspirationCachedQuoteV1"),
+            let cached = try? JSONDecoder().decode(DailyQuranCachedQuote.self, from: data)
+        else {
+            dailyQuranQuote = nil
+            return
+        }
+        dailyQuranQuote = cached
+    }
+
+    private func openDailyQuranModal() {
+        guard let reference = dailyQuranQuote?.reference else { return }
+        var components = URLComponents()
+        components.scheme = "waktu"
+        components.host = "quran"
+        components.queryItems = [URLQueryItem(name: "reference", value: reference)]
+        guard let url = components.url else { return }
+        openURL(url)
+    }
+
+    private func surahNumber(from reference: String) -> Int? {
+        guard let first = reference.split(separator: ":").first,
+              let surah = Int(first),
+              (1...114).contains(surah) else {
+            return nil
+        }
+        return surah
+    }
+
+    private func openFullSurahWebView() {
+        guard let reference = dailyQuranQuote?.reference,
+              let surah = surahNumber(from: reference),
+              let url = URL(string: "https://quran.com/\(surah)") else { return }
+        fullSurahURL = url
+        showFullSurahWebView = true
+    }
     
     var body: some View {
         NavigationView {
             List {
+                Section(header: Text("DAILY QURAN")) {
+                    if let quote = dailyQuranQuote {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button(action: openDailyQuranModal) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "book.closed.fill")
+                                            .foregroundColor(settings.accentColor.color)
+                                        Text("\(quote.surahName) \(quote.reference)")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundColor(.primary)
+                                    }
+                                    Text(quote.text)
+                                        .font(.footnote)
+                                        .multilineTextAlignment(.leading)
+                                        .foregroundColor(.secondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .padding(.vertical, 4)
+                            }
+                            .buttonStyle(.plain)
+
+                            Button("Read Full Surah") {
+                                openFullSurahWebView()
+                            }
+                            .font(.footnote.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                            .buttonStyle(.plain)
+                        }
+                    } else {
+                        Text("Open the Daily Quran widget once to load today’s verse here.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .sheet(isPresented: $showFullSurahWebView) {
+                    NavigationView {
+                        QuranWebContainerView(url: fullSurahURL)
+                            .navigationTitle("Full Surah")
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .navigationBarTrailing) {
+                                    Button("Done") {
+                                        showFullSurahWebView = false
+                                    }
+                                }
+                            }
+                    }
+                }
+
+                #if false
                 Section(header: Text("ISLAMIC RESOURCES")) {
                     NavigationLink(destination: ArabicView()) {
                         Label(
@@ -93,13 +197,17 @@ struct OtherView: View {
                         .accentColor(settings.accentColor.color)
                     }
                 }
+                #endif
                 
                 ProphetQuote()
                 
+                #if false
                 AlIslamAppsSection()
+                #endif
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
-            .navigationTitle("Tools")
+            .navigationTitle("Resources")
+            .onAppear(perform: loadDailyQuranQuote)
             
             ArabicView()
         }
@@ -231,6 +339,60 @@ private struct Card: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
+
+private struct QuranWebContainerView: View {
+    let url: URL?
+
+    var body: some View {
+        Group {
+            if let url {
+                QuranWebView(url: url)
+            } else {
+                VStack(spacing: 10) {
+                    Image(systemName: "network.slash")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.secondary)
+                    Text("Unable to open the full surah link.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                #if os(iOS)
+                .background(Color(.systemGroupedBackground))
+                #endif
+            }
+        }
+    }
+}
+
+#if os(iOS)
+private struct QuranWebView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.allowsBackForwardNavigationGestures = true
+        webView.scrollView.keyboardDismissMode = .onDrag
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        if uiView.url != url {
+            uiView.load(URLRequest(url: url))
+        }
+    }
+}
+#else
+private struct QuranWebView: View {
+    let url: URL
+
+    var body: some View {
+        Text("Web view is only available on iOS.")
+            .foregroundStyle(.secondary)
+    }
+}
+#endif
 
 #Preview {
     OtherView()

@@ -2,6 +2,7 @@ import SwiftUI
 import UserNotifications
 #if os(iOS)
 import AVFoundation
+import AudioToolbox
 #endif
 
 struct SettingsAdhanView: View {
@@ -67,6 +68,7 @@ struct SettingsAdhanView: View {
             }
             #endif
             
+            #if false
             Section(header: Text("PRAYER CALCULATION")) {
                 VStack(alignment: .leading) {
                     HStack {
@@ -139,6 +141,7 @@ struct SettingsAdhanView: View {
                     #endif
                 }
             }
+            #endif
             
         }
         .applyConditionalListStyle(defaultView: true)
@@ -263,7 +266,7 @@ struct LiveActivitySettingsView: View {
                     .tint(settings.accentColor.toggleTint)
                 Toggle("Shurooq", isOn: $settings.liveActivitySunriseEnabled.animation(.easeInOut))
                     .tint(settings.accentColor.toggleTint)
-                Toggle("Dhuhr", isOn: $settings.liveActivityDhuhrEnabled.animation(.easeInOut))
+                Toggle("Dhuhr (Jumuah)", isOn: $settings.liveActivityDhuhrEnabled.animation(.easeInOut))
                     .tint(settings.accentColor.toggleTint)
                 Toggle("Asr", isOn: $settings.liveActivityAsrEnabled.animation(.easeInOut))
                     .tint(settings.accentColor.toggleTint)
@@ -273,6 +276,7 @@ struct LiveActivitySettingsView: View {
                     .tint(settings.accentColor.toggleTint)
             }
 
+            #if false
             Section(header: Text("TRAVEL COMBINED PRAYERS")) {
                 Toggle("Combined Traveling Dhuhr and Asr", isOn: $settings.liveActivityDhuhrAsrEnabled.animation(.easeInOut))
                     .tint(settings.accentColor.toggleTint)
@@ -283,6 +287,7 @@ struct LiveActivitySettingsView: View {
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)
             }
+            #endif
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Live Activity Options")
@@ -297,6 +302,9 @@ struct NotificationView: View {
     @State private var showAlert: Bool = false
     @State private var notifSettings: UNNotificationSettings?
     @State private var requestAccessAlertMessage: String?
+    #if os(iOS)
+    @State private var previewPlayer: AVAudioPlayer?
+    #endif
     
     var body: some View {
         List {
@@ -306,6 +314,7 @@ struct NotificationView: View {
             }
             #endif
             
+            #if false
             Section(header: Text("HIJRI CALENDAR")) {
                 Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
                     .font(.subheadline)
@@ -318,18 +327,26 @@ struct NotificationView: View {
                         .font(.subheadline)
                 }
             }
+            #endif
 
             Section(header: Text("NOTIFICATION SOUND")) {
-                NavigationLink(destination: NotificationSoundSelectionView()) {
-                    HStack {
-                        Label("Notification Sound", systemImage: "speaker.wave.2.fill")
-                            .font(.subheadline)
-                        Spacer()
-                        Text(settings.notificationSoundOption.title)
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
+                Picker(
+                    selection: Binding(
+                        get: { settings.notificationSoundOption },
+                        set: {
+                            settings.setNotificationSoundOption($0)
+                            playPreviewIfNeeded(for: $0)
+                        }
+                    )
+                ) {
+                    ForEach(NotificationSoundOption.allCases) { option in
+                        Text(option.title).tag(option)
                     }
+                } label: {
+                    Label("Notification Sound", systemImage: "speaker.wave.2.fill")
+                        .font(.subheadline)
                 }
+                .pickerStyle(.menu)
             }
         }
         .task { await refresh() }
@@ -357,6 +374,30 @@ struct NotificationView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Notification Settings")
+    }
+
+    private func playPreviewIfNeeded(for option: NotificationSoundOption) {
+        #if os(iOS)
+        switch option {
+        case .azan:
+            guard let url = Bundle.main.url(forResource: "azan_waktu", withExtension: "mp3") else {
+                previewPlayer?.stop()
+                previewPlayer = nil
+                return
+            }
+            do {
+                previewPlayer = try AVAudioPlayer(contentsOf: url)
+                previewPlayer?.prepareToPlay()
+                previewPlayer?.play()
+            } catch {
+                previewPlayer = nil
+            }
+        case .iosDefault:
+            previewPlayer?.stop()
+            previewPlayer = nil
+            AudioServicesPlaySystemSound(1007)
+        }
+        #endif
     }
     
     #if !os(watchOS)

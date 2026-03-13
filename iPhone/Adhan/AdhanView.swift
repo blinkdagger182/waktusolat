@@ -265,12 +265,42 @@ struct AdhanView: View {
             .toolbar {
                 #if DEBUG
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        NotificationCenter.default.post(name: .debugShowDailyQuranWidgetIntro, object: nil)
+                    Menu {
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowDailyQuranWidgetIntro, object: nil)
+                        } label: {
+                            Label("Show Daily Quran Intro", systemImage: "book")
+                        }
+
+                        Divider()
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "generic")
+                        } label: {
+                            Label("Donation Toast (Generic)", systemImage: "heart.bubble")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "launch-5")
+                        } label: {
+                            Label("Donation Toast (Launch 5)", systemImage: "5.circle")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "launch-6")
+                        } label: {
+                            Label("Donation Toast (Launch 6)", systemImage: "6.circle")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "streak-7")
+                        } label: {
+                            Label("Donation Toast (Streak 7)", systemImage: "flame")
+                        }
                     } label: {
                         Image(systemName: "ladybug")
                     }
-                    .accessibilityLabel("Debug: Show Daily Quran Intro")
+                    .accessibilityLabel("Debug options")
                 }
                 #endif
 

@@ -7,6 +7,7 @@ import UIKit
 extension Notification.Name {
     static let debugShowDailyQuranWidgetIntro = Notification.Name("debugShowDailyQuranWidgetIntro")
     static let debugShowSupportPromoToast = Notification.Name("debugShowSupportPromoToast")
+    static let debugShowSupportPromoToastVariant = Notification.Name("debugShowSupportPromoToastVariant")
     static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
 }
 
@@ -16,6 +17,7 @@ struct AlAdhanApp: App {
 
     private enum AppTab: Hashable {
         case adhan
+        case tools
         case settings
     }
 
@@ -35,6 +37,7 @@ struct AlAdhanApp: App {
     @State private var selectedTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
     @State private var supportPromoMessage = ""
+    @State private var supportPromoCountdownStart = Date()
 
     init() {
         RevenueCatManager.shared.configure()
@@ -58,6 +61,13 @@ struct AlAdhanApp: App {
                                 Text("Azan")
                             }
                             .tag(AppTab.adhan)
+
+                        OtherView()
+                            .tabItem {
+                                Image(systemName: "book.closed.fill")
+                                Text("Resources")
+                            }
+                            .tag(AppTab.tools)
 
                         SettingsView()
                             .tabItem {
@@ -132,6 +142,7 @@ struct AlAdhanApp: App {
                 if showSupportPromoToast {
                     SupportPromoToast(
                         message: supportPromoMessage,
+                        countdownStartDate: supportPromoCountdownStart,
                         onSupport: {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showSupportPromoToast = false
@@ -166,6 +177,25 @@ struct AlAdhanApp: App {
             .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToast)) { _ in
                 guard !isLaunching else { return }
                 supportPromoMessage = "Debug trigger. Enjoying Waktu? Support the devs."
+                supportPromoCountdownStart = Date()
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+                    showSupportPromoToast = true
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToastVariant)) { note in
+                guard !isLaunching else { return }
+                let variant = (note.object as? String) ?? "generic"
+                switch variant {
+                case "launch-5":
+                    supportPromoMessage = "Launch #5. Love Waktu so far? Support the devs with a coffee."
+                case "launch-6":
+                    supportPromoMessage = "Launch #6. Love Waktu so far? Support the devs with a coffee."
+                case "streak-7":
+                    supportPromoMessage = "7-day streak. Enjoying Waktu? Support the devs."
+                default:
+                    supportPromoMessage = "Debug trigger. Enjoying Waktu? Support the devs."
+                }
+                supportPromoCountdownStart = Date()
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
                     showSupportPromoToast = true
                 }
@@ -265,15 +295,9 @@ struct AlAdhanApp: App {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             guard !showDailyQuranWidgetIntro else { return }
+            supportPromoCountdownStart = Date()
             withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
                 showSupportPromoToast = true
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
-                guard showSupportPromoToast else { return }
-                withAnimation(.easeOut(duration: 0.25)) {
-                    showSupportPromoToast = false
-                }
             }
         }
     }
@@ -286,8 +310,10 @@ private struct QuranDeepLinkPayload: Identifiable {
 
 private struct SupportPromoToast: View {
     let message: String
+    let countdownStartDate: Date
     let onSupport: () -> Void
     let onDismiss: () -> Void
+    private let autoDismissAfter: TimeInterval = 8
 
     var body: some View {
         HStack(spacing: 10) {
@@ -323,8 +349,24 @@ private struct SupportPromoToast: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         )
+        .overlay(
+            TimelineView(.periodic(from: countdownStartDate, by: 0.05)) { context in
+                let elapsed = max(0, context.date.timeIntervalSince(countdownStartDate))
+                let progress = max(0, min(1, 1 - (elapsed / autoDismissAfter)))
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .inset(by: 1.1)
+                    .trim(from: 0, to: progress)
+                    .stroke(.orange, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+        )
         .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 8)
         .padding(.horizontal, 14)
+        .task(id: countdownStartDate) {
+            try? await Task.sleep(nanoseconds: UInt64(autoDismissAfter * 1_000_000_000))
+            await MainActor.run {
+                onDismiss()
+            }
+        }
     }
 }
 
