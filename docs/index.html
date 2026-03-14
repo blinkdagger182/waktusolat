@@ -120,6 +120,7 @@
     }
     .dot.active { background: var(--accent); }
     .status { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .tiny { font-size: 11px; color: var(--muted); }
     @media (max-width: 900px) {
       .grid { grid-template-columns: 1fr; }
       .actions { grid-template-columns: 1fr; }
@@ -192,6 +193,40 @@
           </ol>
           <p><a href="./marketing-modal.json" target="_blank" rel="noopener">Open current marketing-modal.json</a></p>
         </div>
+
+        <div class="section">
+          <h2>Image Upload (GitHub)</h2>
+          <div class="row two">
+            <div>
+              <label for="gh-owner">Owner</label>
+              <input id="gh-owner" value="blinkdagger182" />
+            </div>
+            <div>
+              <label for="gh-repo">Repo</label>
+              <input id="gh-repo" value="waktusolat" />
+            </div>
+          </div>
+          <div class="row two" style="margin-top: 8px;">
+            <div>
+              <label for="gh-branch">Branch</label>
+              <input id="gh-branch" value="main" />
+            </div>
+            <div>
+              <label for="gh-token">GitHub Token (repo scope)</label>
+              <input id="gh-token" type="password" placeholder="ghp_..." />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <div>
+              <label for="gh-image-file">Image file</label>
+              <input id="gh-image-file" type="file" accept="image/*" />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <button class="btn-soft" id="upload-image">Upload + Use For Current Item</button>
+          </div>
+          <p class="tiny">Uploads to <code>docs/images/</code>, then sets the current item image URL automatically.</p>
+        </div>
       </aside>
     </div>
   </main>
@@ -255,6 +290,11 @@
     const ctaEl = $("cta");
     const slidesEl = $("slides");
     const statusEl = $("status");
+    const ghOwnerEl = $("gh-owner");
+    const ghRepoEl = $("gh-repo");
+    const ghBranchEl = $("gh-branch");
+    const ghTokenEl = $("gh-token");
+    const ghImageFileEl = $("gh-image-file");
 
     let state = structuredClone(defaults);
     let previewIndex = 0;
@@ -402,6 +442,111 @@
       }
     }
 
+    function sanitizeFilename(filename) {
+      const dot = filename.lastIndexOf(".");
+      const ext = dot >= 0 ? filename.slice(dot + 1).toLowerCase() : "png";
+      const base = dot >= 0 ? filename.slice(0, dot) : filename;
+      const safeBase = base
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "") || "banner-image";
+      return `${safeBase}.${ext}`;
+    }
+
+    async function fileToBase64(file) {
+      const buffer = await file.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buffer);
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+      }
+      return btoa(binary);
+    }
+
+    async function getExistingFileSha({ owner, repo, path, branch, token }) {
+      const apiPath = encodeURIComponent(path).replace(/%2F/g, "/");
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${apiPath}?ref=${encodeURIComponent(branch)}`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json"
+        }
+      });
+      if (response.status === 404) return null;
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(`Failed to check existing file (${response.status}): ${message}`);
+      }
+      const data = await response.json();
+      return data.sha || null;
+    }
+
+    async function uploadImageToGitHubAndAssign() {
+      const owner = ghOwnerEl.value.trim();
+      const repo = ghRepoEl.value.trim();
+      const branch = ghBranchEl.value.trim() || "main";
+      const token = ghTokenEl.value.trim();
+      const file = ghImageFileEl.files && ghImageFileEl.files[0];
+
+      if (!owner || !repo) {
+        setStatus("Owner and repo are required.");
+        return;
+      }
+      if (!token) {
+        setStatus("GitHub token is required for upload.");
+        return;
+      }
+      if (!file) {
+        setStatus("Select an image file first.");
+        return;
+      }
+      if (!state.slides.length) {
+        setStatus("No carousel item available.");
+        return;
+      }
+
+      try {
+        setStatus("Uploading image to GitHub...");
+        const filename = sanitizeFilename(file.name);
+        const path = `docs/images/${filename}`;
+        const content = await fileToBase64(file);
+        const existingSha = await getExistingFileSha({ owner, repo, path, branch, token });
+
+        const apiPath = encodeURIComponent(path).replace(/%2F/g, "/");
+        const putResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${apiPath}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: `chore(marketing): upload ${filename}`,
+            content,
+            branch,
+            ...(existingSha ? { sha: existingSha } : {})
+          })
+        });
+
+        if (!putResponse.ok) {
+          const message = await putResponse.text();
+          throw new Error(`Upload failed (${putResponse.status}): ${message}`);
+        }
+
+        const pageURL = `https://${owner}.github.io/${repo}/images/${filename}?v=${Date.now()}`;
+        state.slides[previewIndex].image_url = pageURL;
+        renderSlides();
+        renderPreview();
+        setStatus(`Uploaded and assigned: ${pageURL}`);
+      } catch (error) {
+        setStatus(`Upload failed: ${error.message}`);
+      }
+    }
+
     $("add-slide").addEventListener("click", () => {
       state.slides.push(normalizeSlide());
       previewIndex = state.slides.length - 1;
@@ -434,6 +579,7 @@
     });
 
     $("reload-json").addEventListener("click", loadLiveJSON);
+    $("upload-image").addEventListener("click", uploadImageToGitHubAndAssign);
 
     loadLiveJSON();
   </script>
