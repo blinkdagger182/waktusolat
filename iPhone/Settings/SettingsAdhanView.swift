@@ -55,7 +55,7 @@ struct SettingsAdhanView: View {
                     if #available(iOS 16.2, *) {
                         Button {
                             settings.hapticFeedback()
-                            settings.startDebugLiveNextPrayerActivity(durationMinutes: 2)
+                            settings.startDebugLiveNextPrayerActivity(prayerName: "Test Prayer", minutesUntilPrayer: 2)
                         } label: {
                             Label("Start Test Live Activity (2 min)", systemImage: "timer")
                                 .foregroundColor(settings.accentColor.color)
@@ -241,9 +241,33 @@ struct SettingsAdhanView: View {
 struct LiveActivitySettingsView: View {
     @EnvironmentObject var settings: Settings
 
+    #if DEBUG
+    private enum DebugTimingMode: String, CaseIterable, Identifiable {
+        case relative
+        case absolute
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .relative: return "Minutes from now"
+            case .absolute: return "Exact time"
+            }
+        }
+    }
+    #endif
+
     private let leadMinuteOptions: [Int] = [
         1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60
     ]
+    #if DEBUG
+    @State private var debugTimingMode: DebugTimingMode = .relative
+    @State private var debugMinutesUntilPrayer: Int = 2
+    @State private var debugExactPrayerTime: Date = Date().addingTimeInterval(2 * 60)
+    @State private var debugSelectedPrayerName: String = "Test Prayer"
+    @State private var debugLastStartedTargetTime: Date?
+    private let debugPrayerNames: [String] = [
+        "Test Prayer", "Fajr", "Shurooq", "Dhuhr", "Jumuah", "Asr", "Maghrib", "Isha"
+    ]
+    #endif
 
     var body: some View {
         List {
@@ -286,6 +310,93 @@ struct LiveActivitySettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)
+            }
+            #endif
+
+            #if DEBUG
+            if #available(iOS 16.2, *) {
+                Section(header: Text("DEBUG LIVE ACTIVITY")) {
+                    Picker("Prayer Label", selection: $debugSelectedPrayerName) {
+                        ForEach(debugPrayerNames, id: \.self) { prayer in
+                            Text(prayer).tag(prayer)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Picker("Debug Timing Mode", selection: $debugTimingMode) {
+                        ForEach(DebugTimingMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if debugTimingMode == .relative {
+                        Stepper(
+                            "Minutes Until Prayer: \(debugMinutesUntilPrayer)",
+                            value: $debugMinutesUntilPrayer,
+                            in: 1...180
+                        )
+                    } else {
+                        DatePicker(
+                            "Prayer Time",
+                            selection: $debugExactPrayerTime,
+                            in: Date().addingTimeInterval(60)...Date().addingTimeInterval(24 * 60 * 60),
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                    }
+
+                    Text("Starts a debug Live Activity immediately with your custom countdown so you can test without waiting for the real next prayer.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+
+                    if let target = debugLastStartedTargetTime {
+                        TimelineView(.periodic(from: Date(), by: 1)) { context in
+                            let now = context.date
+                            let remaining = max(0, Int(target.timeIntervalSince(now)))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Now: \(now.formatted(date: .omitted, time: .standard))")
+                                Text("Target: \(target.formatted(date: .abbreviated, time: .standard))")
+                                Text("Remaining: \(remaining)s")
+                            }
+                            .font(.caption.monospacedDigit())
+                            .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+
+                    Button {
+                        settings.hapticFeedback()
+                        if debugTimingMode == .relative {
+                            let target = Calendar.current.date(byAdding: .minute, value: debugMinutesUntilPrayer, to: Date()) ?? Date().addingTimeInterval(Double(debugMinutesUntilPrayer) * 60)
+                            debugLastStartedTargetTime = target
+                            settings.startDebugLiveNextPrayerActivity(
+                                prayerName: debugSelectedPrayerName,
+                                minutesUntilPrayer: debugMinutesUntilPrayer
+                            )
+                        } else {
+                            debugLastStartedTargetTime = debugExactPrayerTime
+                            settings.startDebugLiveNextPrayerActivity(
+                                prayerName: debugSelectedPrayerName,
+                                minutesUntilPrayer: 1,
+                                debugPrayerTime: debugExactPrayerTime
+                            )
+                        }
+                    } label: {
+                        Label("Start Custom Debug Live Activity", systemImage: "play.circle")
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                    .font(.subheadline)
+
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        settings.stopDebugLiveNextPrayerActivity()
+                        debugLastStartedTargetTime = nil
+                    } label: {
+                        Label("Stop Debug Live Activity", systemImage: "stop.circle")
+                    }
+                    .font(.subheadline)
+                }
             }
             #endif
         }

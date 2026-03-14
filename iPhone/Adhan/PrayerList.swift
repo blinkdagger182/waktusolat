@@ -146,6 +146,10 @@ struct PrayerList: View {
                                         .aspectRatio(contentMode: .fit)
                                         .onTapGesture {
                                             settings.hapticFeedback()
+                                            // Tap cycle:
+                                            // bell.slash -> bell (on-time only)
+                                            // bell -> bell.fill (on-time + pre-notification)
+                                            // bell.fill -> bell.slash (off)
                                             
                                             if settings.shouldShowOutlinedBell(prayerTime: prayerTime) {
                                                 switch prayerTime.nameTransliteration {

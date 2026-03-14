@@ -127,18 +127,26 @@ struct NextPrayerLiveActivityWidget: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 6) {
-                        Text("Next in")
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        Text(timerInterval: Date()...context.state.prayerTime, countsDown: true)
-                            .font(.system(.subheadline, design: .rounded).weight(.bold))
+                        LiveActivityCountdownText(
+                            prayerTime: context.state.prayerTime,
+                            reachedText: "It's time for a Prayer",
+                            countdownPrefix: "Next in",
+                            compactReachedText: "Now",
+                            compact: false
+                        )
                     }
                 }
             } compactLeading: {
                 Text("WK")
                     .font(.system(.caption2, design: .rounded).weight(.bold))
             } compactTrailing: {
-                Text(timerInterval: Date()...context.state.prayerTime, countsDown: true)
-                    .font(.system(.caption2, design: .rounded).weight(.semibold))
+                LiveActivityCountdownText(
+                    prayerTime: context.state.prayerTime,
+                    reachedText: "It's time for a Prayer",
+                    countdownPrefix: nil,
+                    compactReachedText: "Now",
+                    compact: true
+                )
             } minimal: {
                 Text("WK")
                     .font(.system(.caption2, design: .rounded).weight(.bold))
@@ -170,30 +178,41 @@ private struct NextPrayerLiveActivityContentView: View {
                 }
 
                 HStack(spacing: 6) {
-                    Text("Next in")
-                        .font(.system(.title3, design: .rounded).weight(.bold))
-                        .foregroundColor(palette.fg.opacity(0.92))
-                    Text(timerInterval: Date()...context.state.prayerTime, countsDown: true)
-                        .font(.system(.title3, design: .rounded).weight(.black))
-                        .foregroundColor(palette.fg)
+                    LiveActivityCountdownText(
+                        prayerTime: context.state.prayerTime,
+                        reachedText: "It's time for a Prayer",
+                        countdownPrefix: "Next in",
+                        compactReachedText: "Now",
+                        compact: false
+                    )
+                    .foregroundColor(palette.fg)
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
 
-                ProgressView(
-                    timerInterval: context.state.startedAt...context.state.prayerTime,
-                    countsDown: false
-                )
-                .progressViewStyle(.linear)
-                .labelsHidden()
-                .tint(palette.progress)
-                .scaleEffect(x: 1, y: 2.2, anchor: .center)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(palette.track)
-                        .frame(height: 14)
-                )
+                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    if timeline.date >= context.state.prayerTime {
+                        Text("It's time for a Prayer")
+                            .font(.system(.headline, design: .rounded).weight(.bold))
+                            .foregroundColor(palette.fg)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        ProgressView(
+                            timerInterval: context.state.startedAt...context.state.prayerTime,
+                            countsDown: false
+                        )
+                        .progressViewStyle(.linear)
+                        .labelsHidden()
+                        .tint(palette.progress)
+                        .scaleEffect(x: 1, y: 2.2, anchor: .center)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(palette.track)
+                                .frame(height: 14)
+                        )
+                    }
+                }
 
                 HStack {
                     Text(LiveActivityTheme.hijriFooterText())
@@ -214,6 +233,36 @@ private struct NextPrayerLiveActivityContentView: View {
         }
         .activityBackgroundTint(palette.bg)
         .activitySystemActionForegroundColor(palette.fg)
+    }
+}
+
+@available(iOSApplicationExtension 16.2, *)
+private struct LiveActivityCountdownText: View {
+    let prayerTime: Date
+    let reachedText: String
+    let countdownPrefix: String?
+    let compactReachedText: String
+    let compact: Bool
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            if timeline.date >= prayerTime {
+                Text(compact ? compactReachedText : reachedText)
+                    .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)
+                                  : .system(.title3, design: .rounded).weight(.bold))
+            } else if let countdownPrefix, !compact {
+                HStack(spacing: 6) {
+                    Text(countdownPrefix)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                    Text(timerInterval: timeline.date...prayerTime, countsDown: true)
+                        .font(.system(.title3, design: .rounded).weight(.black))
+                }
+            } else {
+                Text(timerInterval: timeline.date...prayerTime, countsDown: true)
+                    .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)
+                                  : .system(.subheadline, design: .rounded).weight(.bold))
+            }
+        }
     }
 }
 #endif

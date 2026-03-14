@@ -38,6 +38,11 @@ final class PrayerLiveActivityCoordinator {
         }
     }
 
+    func stopAllActivities() {
+        startedAtByPrayerKey.removeAll()
+        endAll()
+    }
+
     func sync(
         nextPrayer: Prayer?,
         city: String?,
@@ -81,11 +86,16 @@ final class PrayerLiveActivityCoordinator {
         }
     }
 
-    func startDebugActivity(city: String, durationMinutes: Int = 2) {
+    func startDebugActivity(
+        city: String,
+        prayerName: String = "Test Prayer",
+        minutesUntilPrayer: Int = 2,
+        debugPrayerTime: Date? = nil
+    ) {
         let now = Date()
-        let end = Calendar.current.date(byAdding: .minute, value: max(1, durationMinutes), to: now) ?? now.addingTimeInterval(120)
+        let end = debugPrayerTime ?? (Calendar.current.date(byAdding: .minute, value: max(1, minutesUntilPrayer), to: now) ?? now.addingTimeInterval(120))
         let state = PrayerLiveActivityAttributes.ContentState(
-            prayerName: "Test Prayer",
+            prayerName: prayerName,
             city: city,
             prayerTime: end,
             startedAt: now
@@ -103,6 +113,13 @@ final class PrayerLiveActivityCoordinator {
             }
         } catch {
             logger.debug("Debug Live Activity request failed: \(error.localizedDescription)")
+        }
+
+        // Auto-dismiss debug activity shortly after target time to avoid stale/loader states.
+        let autoDismissDelay = max(1, end.timeIntervalSince(now) + 8)
+        Task {
+            try? await Task.sleep(nanoseconds: UInt64(autoDismissDelay * 1_000_000_000))
+            self.stopAllActivities()
         }
     }
 }
@@ -1432,7 +1449,7 @@ extension Settings {
         completion?()
     }
     
-    private func updateCurrentAndNextPrayer() {
+    func updateCurrentAndNextPrayer() {
         guard let p = prayers?.prayers, !p.isEmpty else {
             logger.debug("No prayer list to compute current/next")
             syncLiveNextPrayerActivity()
@@ -1530,6 +1547,24 @@ extension Settings {
         #endif
     }
 
+    /// Best-effort trigger date used by background refresh scheduling to keep
+    /// Live Activity in sync even when the app is not foregrounded.
+    func nextLiveActivityTriggerDate(from now: Date = Date()) -> Date? {
+        guard liveNextPrayerEnabled else { return nil }
+
+        guard
+            let upcoming = prayers?.prayers
+                .sorted(by: { $0.time < $1.time })
+                .first(where: { $0.time > now }),
+            isLiveActivityPrayerEnabled(for: upcoming)
+        else {
+            return nil
+        }
+
+        let leadMinutes = max(0, liveActivityLeadMinutes)
+        return upcoming.time.addingTimeInterval(-Double(leadMinutes) * 60)
+    }
+
     #if os(iOS)
     func configureLiveActivitySyncLifecycle() {
         guard liveActivityLifecycleObservers.isEmpty else { return }
@@ -1625,15 +1660,30 @@ extension Settings {
     }
     #endif
 
-    func startDebugLiveNextPrayerActivity(durationMinutes: Int = 2) {
+    func startDebugLiveNextPrayerActivity(
+        prayerName: String = "Test Prayer",
+        minutesUntilPrayer: Int = 2,
+        debugPrayerTime: Date? = nil
+    ) {
         #if DEBUG && os(iOS) && canImport(ActivityKit)
         guard #available(iOS 16.2, *) else { return }
         let city = currentLocation?.city ?? "Current Location"
         Task { @MainActor in
             PrayerLiveActivityCoordinator.shared.startDebugActivity(
                 city: city,
-                durationMinutes: durationMinutes
+                prayerName: prayerName,
+                minutesUntilPrayer: minutesUntilPrayer,
+                debugPrayerTime: debugPrayerTime
             )
+        }
+        #endif
+    }
+
+    func stopDebugLiveNextPrayerActivity() {
+        #if DEBUG && os(iOS) && canImport(ActivityKit)
+        guard #available(iOS 16.2, *) else { return }
+        Task { @MainActor in
+            PrayerLiveActivityCoordinator.shared.stopAllActivities()
         }
         #endif
     }
@@ -1967,11 +2017,15 @@ extension Settings {
 
     func shouldShowFilledBell(prayerTime: Prayer) -> Bool {
         guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
+        // Filled bell = both notifications are active:
+        // 1) exact prayer-time notification (enabled == true), and
+        // 2) pre-notification before prayer (preMinutes > 0).
         return self[keyPath: prefs.enabled] && self[keyPath: prefs.preMinutes] > 0
     }
 
     func shouldShowOutlinedBell(prayerTime: Prayer) -> Bool {
         guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
+        // Outlined bell = exact prayer-time notification only (no pre-notification).
         return self[keyPath: prefs.enabled] && self[keyPath: prefs.preMinutes] == 0
     }
 }
