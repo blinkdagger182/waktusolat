@@ -160,8 +160,9 @@
           <button class="btn-soft" id="add-slide">+ Add Item</button>
         </div>
 
-        <div class="actions">
+        <div class="actions" style="grid-template-columns: repeat(4, 1fr);">
           <button class="btn-accent" id="copy-json">Copy JSON</button>
+          <button class="btn-soft" id="save-json-github">Save JSON to GitHub</button>
           <button class="btn-soft" id="download-json">Download JSON</button>
           <button class="btn-soft" id="reload-json">Reload Live JSON</button>
         </div>
@@ -499,6 +500,63 @@
       return data.sha || null;
     }
 
+    async function uploadTextFileToGitHub({ owner, repo, branch, token, path, text, message }) {
+      const content = btoa(unescape(encodeURIComponent(text)));
+      const existingSha = await getExistingFileSha({ owner, repo, path, branch, token });
+      const apiPath = encodeURIComponent(path).replace(/%2F/g, "/");
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${apiPath}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message,
+          content,
+          branch,
+          ...(existingSha ? { sha: existingSha } : {})
+        })
+      });
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Save failed (${response.status}): ${err}`);
+      }
+    }
+
+    async function saveJSONToGitHub(showPopup = true) {
+      const owner = ghOwnerEl.value.trim();
+      const repo = ghRepoEl.value.trim();
+      const branch = ghBranchEl.value.trim() || "main";
+      const token = ghTokenEl.value.trim();
+      if (!owner || !repo || !token) {
+        showStatusAndAlert("Owner/repo/token are required to save JSON.");
+        return false;
+      }
+
+      try {
+        setStatus("Saving marketing-modal.json to GitHub...");
+        const jsonText = JSON.stringify(toAppJSON(), null, 2) + "\n";
+        await uploadTextFileToGitHub({
+          owner,
+          repo,
+          branch,
+          token,
+          path: "docs/marketing-modal.json",
+          text: jsonText,
+          message: "chore(marketing): update modal config"
+        });
+        setStatus("Saved docs/marketing-modal.json successfully.");
+        if (showPopup) {
+          window.alert("Saved docs/marketing-modal.json to GitHub.");
+        }
+        return true;
+      } catch (error) {
+        showStatusAndAlert(`JSON save failed: ${error.message}`);
+        return false;
+      }
+    }
+
     async function uploadImageToGitHubAndAssign(index, file) {
       const owner = ghOwnerEl.value.trim();
       const repo = ghRepoEl.value.trim();
@@ -555,7 +613,9 @@
         previewIndex = index;
         renderSlides();
         renderPreview();
-        showStatusAndAlert(`Uploaded and assigned to item ${index + 1}: ${pageURL}`);
+        const saved = await saveJSONToGitHub(false);
+        const extra = saved ? " and JSON saved." : " but JSON not saved yet.";
+        showStatusAndAlert(`Uploaded and assigned to item ${index + 1}: ${pageURL}${extra} GitHub Pages may take 30-90s to serve the new image.`);
       } catch (error) {
         showStatusAndAlert(`Upload failed: ${error.message}`);
       }
@@ -609,6 +669,9 @@
     });
 
     $("reload-json").addEventListener("click", loadLiveJSON);
+    $("save-json-github").addEventListener("click", () => {
+      saveJSONToGitHub(true);
+    });
 
     loadLiveJSON();
   </script>
