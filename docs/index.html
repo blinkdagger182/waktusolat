@@ -217,7 +217,10 @@
               <input id="gh-token" type="password" placeholder="ghp_..." />
             </div>
           </div>
-          <p class="tiny">Use each item's own Upload button below. Files go to <code>docs/images/</code> and the item URL is auto-filled.</p>
+          <div class="row" style="margin-top: 8px;">
+            <button class="btn-soft" id="check-upload-setup" type="button">Check Upload Setup</button>
+          </div>
+          <p class="tiny">Token is required for upload. Use each item's own Upload button below. Files go to <code>docs/images/</code> and the item URL is auto-filled.</p>
         </div>
       </aside>
     </div>
@@ -301,6 +304,11 @@
 
     function setStatus(text) {
       statusEl.textContent = text;
+    }
+
+    function showStatusAndAlert(text) {
+      setStatus(text);
+      window.alert(text);
     }
 
     function normalizeSlide(slide = {}) {
@@ -498,19 +506,19 @@
       const token = ghTokenEl.value.trim();
 
       if (!owner || !repo) {
-        setStatus("Owner and repo are required.");
+        showStatusAndAlert("Owner and repo are required.");
         return;
       }
       if (!token) {
-        setStatus("GitHub token is required for upload.");
+        showStatusAndAlert("GitHub token is required for upload.");
         return;
       }
       if (!file) {
-        setStatus("Select an image file first.");
+        showStatusAndAlert("Select an image file first.");
         return;
       }
       if (typeof index !== "number" || index < 0 || index >= state.slides.length) {
-        setStatus("Invalid carousel item.");
+        showStatusAndAlert("Invalid carousel item.");
         return;
       }
 
@@ -547,11 +555,27 @@
         previewIndex = index;
         renderSlides();
         renderPreview();
-        setStatus(`Uploaded and assigned to item ${index + 1}: ${pageURL}`);
+        showStatusAndAlert(`Uploaded and assigned to item ${index + 1}: ${pageURL}`);
       } catch (error) {
-        setStatus(`Upload failed: ${error.message}`);
+        showStatusAndAlert(`Upload failed: ${error.message}`);
       }
     }
+
+    $("check-upload-setup").addEventListener("click", () => {
+      const owner = ghOwnerEl.value.trim();
+      const repo = ghRepoEl.value.trim();
+      const branch = ghBranchEl.value.trim() || "main";
+      const token = ghTokenEl.value.trim();
+      if (!owner || !repo || !branch) {
+        showStatusAndAlert("Owner, repo, and branch are required.");
+        return;
+      }
+      if (!token) {
+        showStatusAndAlert("GitHub token is missing. Add token, then upload.");
+        return;
+      }
+      showStatusAndAlert(`Setup looks ready for ${owner}/${repo} on ${branch}.`);
+    });
 
     $("add-slide").addEventListener("click", () => {
       state.slides.push(normalizeSlide());
