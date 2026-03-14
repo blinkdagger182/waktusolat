@@ -17,7 +17,6 @@ struct AlAdhanApp: App {
 
     private enum AppTab: Hashable {
         case adhan
-        case tools
         case settings
     }
 
@@ -62,12 +61,14 @@ struct AlAdhanApp: App {
                             }
                             .tag(AppTab.adhan)
 
+                        #if false
                         OtherView()
                             .tabItem {
                                 Image(systemName: "book.closed.fill")
                                 Text("Resources")
                             }
                             .tag(AppTab.tools)
+                        #endif
 
                         SettingsView()
                             .tabItem {
@@ -526,10 +527,16 @@ private struct MarketingModalConfig: Codable {
     }
 
     static let defaultValue = MarketingModalConfig(
-        title: "Daily Quran Inspiration",
+        title: "Live Notification",
         subtitle: "Add it from Lock Screen > Customize > Widgets > Waktu",
         ctaText: "Got it",
         slides: [
+            DailyQuranIntroSlide(
+                title: "Live Notification",
+                subtitle: "See the next prayer countdown and reminders right from your Lock Screen.",
+                imageAsset: nil,
+                imageURL: "https://blinkdagger182.github.io/waktusolat/images/live-notification-marketing-banner.png?v=1"
+            ),
             DailyQuranIntroSlide(
                 title: "Daily Quran Widget",
                 subtitle: "One inspiring ayah every day.",
@@ -557,6 +564,41 @@ private struct DailyQuranIntroSlide: Codable {
         case subtitle
         case imageAsset = "image_asset"
         case imageURL = "image_url"
+    }
+
+    enum AlternateCodingKeys: String, CodingKey {
+        case imageTitle = "image_title"
+        case imageSubtitle = "image_subtitle"
+    }
+
+    init(title: String, subtitle: String, imageAsset: String?, imageURL: String?) {
+        self.title = title
+        self.subtitle = subtitle
+        self.imageAsset = imageAsset
+        self.imageURL = imageURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let alternate = try decoder.container(keyedBy: AlternateCodingKeys.self)
+        self.title =
+            (try? container.decode(String.self, forKey: .title)) ??
+            (try? alternate.decode(String.self, forKey: .imageTitle)) ??
+            "Update"
+        self.subtitle =
+            (try? container.decode(String.self, forKey: .subtitle)) ??
+            (try? alternate.decode(String.self, forKey: .imageSubtitle)) ??
+            ""
+        self.imageAsset = try? container.decodeIfPresent(String.self, forKey: .imageAsset)
+        self.imageURL = try? container.decodeIfPresent(String.self, forKey: .imageURL)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encode(subtitle, forKey: .subtitle)
+        try container.encodeIfPresent(imageAsset, forKey: .imageAsset)
+        try container.encodeIfPresent(imageURL, forKey: .imageURL)
     }
 }
 

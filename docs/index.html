@@ -3,46 +3,439 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Waktu Marketing Modal Config</title>
+  <title>Waktu Marketing Carousel Editor</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; margin: 40px auto; max-width: 900px; padding: 0 16px; background: #0f1115; color: #f3f5f7; }
-    a { color: #7ec8ff; }
-    pre { background: #171b22; border: 1px solid #2b3442; border-radius: 10px; padding: 16px; overflow: auto; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .muted { color: #b4bfcd; }
+    :root {
+      --bg: #0c1220;
+      --panel: #121b2f;
+      --panel-2: #17233d;
+      --text: #e6edf9;
+      --muted: #9bb0d0;
+      --accent: #2fb3ff;
+      --accent-2: #22d3a6;
+      --danger: #ef5350;
+      --border: #263552;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top right, #1c2d56 0%, var(--bg) 45%);
+      color: var(--text);
+      font-family: "Avenir Next", "Segoe UI", Roboto, sans-serif;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    h1 { margin: 0 0 6px; font-size: 1.8rem; }
+    .muted { color: var(--muted); }
+    .grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 14px;
+    }
+    .panel {
+      background: linear-gradient(165deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .section { margin-bottom: 14px; }
+    .section h2 { margin: 0 0 10px; font-size: 1.05rem; }
+    .row { display: grid; gap: 8px; }
+    .row.two { grid-template-columns: 1fr 1fr; }
+    label { font-size: 12px; color: var(--muted); }
+    input, textarea, button {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0d172c;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 11px;
+      font: inherit;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    button { cursor: pointer; font-weight: 600; }
+    .btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #001224; border: 0; }
+    .btn-danger { background: rgba(239, 83, 80, 0.12); border-color: rgba(239, 83, 80, 0.4); color: #ffd8d7; }
+    .btn-soft { background: #13203a; }
+    .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .slide {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: rgba(5, 10, 20, 0.35);
+    }
+    .slide-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .slide-title { font-weight: 700; font-size: 0.95rem; }
+    .slide-controls { display: flex; gap: 6px; }
+    .slide-controls button { padding: 6px 8px; width: auto; min-width: 40px; }
+    .preview {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #060b15;
+    }
+    .preview-image {
+      position: relative;
+      min-height: 220px;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: flex-end;
+    }
+    .preview-image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.58), rgba(0,0,0,.12));
+    }
+    .preview-copy {
+      position: relative;
+      z-index: 1;
+      padding: 14px;
+    }
+    .preview-copy h3 { margin: 0 0 3px; }
+    .preview-copy p { margin: 0; color: #d7e6ff; }
+    .dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      padding: 10px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #4b648f;
+    }
+    .dot.active { background: var(--accent); }
+    .status { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .actions { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <h1>Waktu Marketing Modal Config</h1>
-  <p class="muted">Host this folder via GitHub Pages. The app reads <code>/marketing-modal.json</code>.</p>
+  <main class="wrap">
+    <h1>Waktu Marketing Carousel Editor</h1>
+    <p class="muted">Edit your banner content here, then update <code>docs/marketing-modal.json</code>. The app auto-reads the latest item count and slides from GitHub Pages.</p>
 
-  <h2>Live URL</h2>
-  <p><a href="./marketing-modal.json">marketing-modal.json</a></p>
+    <div class="grid">
+      <section class="panel">
+        <div class="section">
+          <h2>Modal Content</h2>
+          <div class="row two">
+            <div>
+              <label for="title">Title</label>
+              <input id="title" placeholder="Live Notification" />
+            </div>
+            <div>
+              <label for="cta">CTA Text</label>
+              <input id="cta" placeholder="Got it" />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <div>
+              <label for="subtitle">Subtitle</label>
+              <textarea id="subtitle" placeholder="Add it from Lock Screen > Customize > Widgets > Waktu"></textarea>
+            </div>
+          </div>
+        </div>
 
-  <h2>JSON Format</h2>
-  <pre><code>{
-  "title": "Daily Quran Inspiration",
-  "subtitle": "Add it from Lock Screen > Customize > Widgets > Waktu",
-  "cta_text": "Got it",
-  "slides": [
-    {
-      "title": "Daily Quran Widget",
-      "subtitle": "One inspiring ayah every day.",
-      "image_url": "https://your-domain/path/slide-1.jpg"
-    },
-    {
-      "title": "Tap For Full Verse",
-      "subtitle": "Open Waktu to see full details and translation.",
-      "image_url": "https://your-domain/path/slide-2.jpg"
+        <div class="section">
+          <h2>Carousel Items</h2>
+          <div id="slides"></div>
+          <button class="btn-soft" id="add-slide">+ Add Item</button>
+        </div>
+
+        <div class="actions">
+          <button class="btn-accent" id="copy-json">Copy JSON</button>
+          <button class="btn-soft" id="download-json">Download JSON</button>
+          <button class="btn-soft" id="reload-json">Reload Live JSON</button>
+        </div>
+
+        <p class="status" id="status">Ready.</p>
+      </section>
+
+      <aside class="panel">
+        <div class="section">
+          <h2>Preview</h2>
+          <div class="preview">
+            <div id="preview-image" class="preview-image">
+              <div class="preview-copy">
+                <h3 id="preview-title">Item title</h3>
+                <p id="preview-subtitle">Item subtitle</p>
+              </div>
+            </div>
+            <div id="dots" class="dots"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Publish Steps</h2>
+          <ol class="muted">
+            <li>Edit content here.</li>
+            <li>Click <strong>Copy JSON</strong>.</li>
+            <li>Paste into <code>docs/marketing-modal.json</code>.</li>
+            <li>Commit and push to GitHub. Pages updates, app shows new slides.</li>
+          </ol>
+          <p><a href="./marketing-modal.json" target="_blank" rel="noopener">Open current marketing-modal.json</a></p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <template id="slide-template">
+    <div class="slide">
+      <div class="slide-head">
+        <div class="slide-title">Item</div>
+        <div class="slide-controls">
+          <button class="move-up" title="Move up">↑</button>
+          <button class="move-down" title="Move down">↓</button>
+          <button class="btn-danger remove">Delete</button>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom: 8px;">
+        <div>
+          <label>Image URL</label>
+          <input data-key="image_url" placeholder="https://..." />
+        </div>
+      </div>
+      <div class="row two">
+        <div>
+          <label>Image Title</label>
+          <input data-key="image_title" placeholder="Live Notification" />
+        </div>
+        <div>
+          <label>Image Subtitle</label>
+          <input data-key="image_subtitle" placeholder="Countdown from lock screen" />
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const defaults = {
+      title: "Live Notification",
+      subtitle: "Add it from Lock Screen > Customize > Widgets > Waktu",
+      cta_text: "Got it",
+      slides: [
+        {
+          image_url: "https://blinkdagger182.github.io/waktusolat/images/live-notification-marketing-banner.png?v=1",
+          image_title: "Live Notification",
+          image_subtitle: "See the next prayer countdown and reminders right from your Lock Screen."
+        },
+        {
+          image_url: "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg?v=4",
+          image_title: "Daily Quran Widget",
+          image_subtitle: "One inspiring ayah every day."
+        },
+        {
+          image_url: "https://blinkdagger182.github.io/waktusolat/images/ayat-recitation.png?v=4",
+          image_title: "Tap For Full Verse",
+          image_subtitle: "Open Waktu to see full details and translation."
+        }
+      ]
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const titleEl = $("title");
+    const subtitleEl = $("subtitle");
+    const ctaEl = $("cta");
+    const slidesEl = $("slides");
+    const statusEl = $("status");
+
+    let state = structuredClone(defaults);
+    let previewIndex = 0;
+
+    function setStatus(text) {
+      statusEl.textContent = text;
     }
-  ]
-}</code></pre>
 
-  <h2>Notes</h2>
-  <ul>
-    <li>Use <code>image_url</code> for remote images.</li>
-    <li>Use <code>image_asset</code> only for bundled app images.</li>
-    <li>At least one slide is required.</li>
-  </ul>
+    function normalizeSlide(slide = {}) {
+      const imageTitle = slide.image_title ?? slide.title ?? "";
+      const imageSubtitle = slide.image_subtitle ?? slide.subtitle ?? "";
+      return {
+        image_url: slide.image_url ?? "",
+        image_title: imageTitle,
+        image_subtitle: imageSubtitle
+      };
+    }
+
+    function normalizeConfig(config = {}) {
+      return {
+        title: config.title ?? defaults.title,
+        subtitle: config.subtitle ?? defaults.subtitle,
+        cta_text: config.cta_text ?? defaults.cta_text,
+        slides: Array.isArray(config.slides) && config.slides.length
+          ? config.slides.map(normalizeSlide)
+          : defaults.slides.map(normalizeSlide)
+      };
+    }
+
+    function toAppJSON() {
+      return {
+        title: titleEl.value.trim(),
+        subtitle: subtitleEl.value.trim(),
+        cta_text: ctaEl.value.trim() || "Got it",
+        slides: state.slides.map((slide) => ({
+          title: slide.image_title,
+          subtitle: slide.image_subtitle,
+          image_title: slide.image_title,
+          image_subtitle: slide.image_subtitle,
+          image_url: slide.image_url
+        }))
+      };
+    }
+
+    function renderSlides() {
+      slidesEl.innerHTML = "";
+      state.slides.forEach((slide, index) => {
+        const node = $("slide-template").content.firstElementChild.cloneNode(true);
+        node.querySelector(".slide-title").textContent = `Item ${index + 1}`;
+
+        node.querySelectorAll("input[data-key]").forEach((input) => {
+          const key = input.getAttribute("data-key");
+          input.value = slide[key] || "";
+          input.addEventListener("input", (e) => {
+            state.slides[index][key] = e.target.value;
+            renderPreview();
+          });
+        });
+
+        node.querySelector(".remove").addEventListener("click", () => {
+          if (state.slides.length <= 1) {
+            setStatus("At least one item is required.");
+            return;
+          }
+          state.slides.splice(index, 1);
+          if (previewIndex >= state.slides.length) previewIndex = state.slides.length - 1;
+          renderSlides();
+          renderPreview();
+        });
+
+        node.querySelector(".move-up").addEventListener("click", () => {
+          if (index === 0) return;
+          [state.slides[index - 1], state.slides[index]] = [state.slides[index], state.slides[index - 1]];
+          previewIndex = index - 1;
+          renderSlides();
+          renderPreview();
+        });
+
+        node.querySelector(".move-down").addEventListener("click", () => {
+          if (index >= state.slides.length - 1) return;
+          [state.slides[index + 1], state.slides[index]] = [state.slides[index], state.slides[index + 1]];
+          previewIndex = index + 1;
+          renderSlides();
+          renderPreview();
+        });
+
+        slidesEl.appendChild(node);
+      });
+    }
+
+    function renderPreview() {
+      if (!state.slides.length) return;
+      if (previewIndex >= state.slides.length) previewIndex = 0;
+      const slide = state.slides[previewIndex];
+      const image = $("preview-image");
+      const safeURL = (slide.image_url || "").replace(/"/g, "\\\"");
+      image.style.backgroundImage = slide.image_url
+        ? `url("${safeURL}")`
+        : "linear-gradient(135deg,#1e2f52,#0d172c)";
+      $("preview-title").textContent = slide.image_title || "Image title";
+      $("preview-subtitle").textContent = slide.image_subtitle || "Image subtitle";
+
+      const dots = $("dots");
+      dots.innerHTML = "";
+      state.slides.forEach((_, idx) => {
+        const dot = document.createElement("button");
+        dot.className = `dot${idx === previewIndex ? " active" : ""}`;
+        dot.type = "button";
+        dot.addEventListener("click", () => {
+          previewIndex = idx;
+          renderPreview();
+        });
+        dots.appendChild(dot);
+      });
+    }
+
+    function bindInputs() {
+      titleEl.value = state.title;
+      subtitleEl.value = state.subtitle;
+      ctaEl.value = state.cta_text;
+
+      titleEl.addEventListener("input", () => { state.title = titleEl.value; });
+      subtitleEl.addEventListener("input", () => { state.subtitle = subtitleEl.value; });
+      ctaEl.addEventListener("input", () => { state.cta_text = ctaEl.value; });
+    }
+
+    async function loadLiveJSON() {
+      try {
+        const response = await fetch(`./marketing-modal.json?_nocache=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const json = await response.json();
+        state = normalizeConfig(json);
+        previewIndex = 0;
+        bindInputs();
+        renderSlides();
+        renderPreview();
+        setStatus("Loaded current marketing-modal.json");
+      } catch (error) {
+        setStatus(`Failed to load live JSON (${error.message}). Using defaults.`);
+        state = normalizeConfig(defaults);
+        previewIndex = 0;
+        bindInputs();
+        renderSlides();
+        renderPreview();
+      }
+    }
+
+    $("add-slide").addEventListener("click", () => {
+      state.slides.push(normalizeSlide());
+      previewIndex = state.slides.length - 1;
+      renderSlides();
+      renderPreview();
+    });
+
+    $("copy-json").addEventListener("click", async () => {
+      const json = JSON.stringify(toAppJSON(), null, 2);
+      try {
+        await navigator.clipboard.writeText(json);
+        setStatus("JSON copied. Paste into docs/marketing-modal.json and push to GitHub.");
+      } catch {
+        setStatus("Clipboard blocked. Use Download JSON.");
+      }
+    });
+
+    $("download-json").addEventListener("click", () => {
+      const json = JSON.stringify(toAppJSON(), null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "marketing-modal.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus("Downloaded marketing-modal.json");
+    });
+
+    $("reload-json").addEventListener("click", loadLiveJSON);
+
+    loadLiveJSON();
+  </script>
 </body>
 </html>

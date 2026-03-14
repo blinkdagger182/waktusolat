@@ -1,16 +1,27 @@
 {
-  "title": "Daily Quran Inspiration",
+  "title": "Live Notification",
   "subtitle": "Add it from Lock Screen > Customize > Widgets > Waktu",
   "cta_text": "Got it",
   "slides": [
     {
+      "title": "Live Notification",
+      "subtitle": "See the next prayer countdown and reminders right from your Lock Screen.",
+      "image_title": "Live Notification",
+      "image_subtitle": "See the next prayer countdown and reminders right from your Lock Screen.",
+      "image_url": "https://blinkdagger182.github.io/waktusolat/images/live-notification-marketing-banner.png?v=1"
+    },
+    {
       "title": "Daily Quran Widget",
       "subtitle": "One inspiring ayah every day.",
+      "image_title": "Daily Quran Widget",
+      "image_subtitle": "One inspiring ayah every day.",
       "image_url": "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg?v=4"
     },
     {
       "title": "Tap For Full Verse",
       "subtitle": "Open Waktu to see full details and translation.",
+      "image_title": "Tap For Full Verse",
+      "image_subtitle": "Open Waktu to see full details and translation.",
       "image_url": "https://blinkdagger182.github.io/waktusolat/images/ayat-recitation.png?v=4"
     }
   ]
