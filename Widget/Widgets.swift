@@ -132,6 +132,7 @@ struct NextPrayerLiveActivityWidget: Widget {
                             reachedText: "It's time for \(context.state.prayerName)",
                             countdownPrefix: "Next in",
                             compactReachedText: "It's time for \(context.state.prayerName)",
+                            isStale: context.isStale,
                             compact: false
                         )
                     }
@@ -145,6 +146,7 @@ struct NextPrayerLiveActivityWidget: Widget {
                     reachedText: "It's time for \(context.state.prayerName)",
                     countdownPrefix: nil,
                     compactReachedText: context.state.prayerName,
+                    isStale: context.isStale,
                     compact: true
                 )
             } minimal: {
@@ -183,6 +185,7 @@ private struct NextPrayerLiveActivityContentView: View {
                         reachedText: "It's time for \(context.state.prayerName)",
                         countdownPrefix: "Next in",
                         compactReachedText: "It's time for \(context.state.prayerName)",
+                        isStale: context.isStale,
                         compact: false
                     )
                     .foregroundColor(palette.fg)
@@ -241,11 +244,12 @@ private struct LiveActivityCountdownText: View {
     let reachedText: String
     let countdownPrefix: String?
     let compactReachedText: String
+    let isStale: Bool
     let compact: Bool
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
-            if timeline.date >= prayerTime {
+            if isStale || timeline.date >= prayerTime {
                 Text(compact ? compactReachedText : reachedText)
                     .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)
                                   : .system(.title3, design: .rounded).weight(.bold))
@@ -281,6 +285,7 @@ struct Widgets: WidgetBundle {
             LockScreen2Widget()
             LockScreen3Widget()
             LockScreen4Widget()
+            LockScreen5Widget()
             LockScreenVerseWidget()
             #if canImport(ActivityKit)
             if #available(iOSApplicationExtension 16.2, *) {

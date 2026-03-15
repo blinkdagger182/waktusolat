@@ -28,7 +28,20 @@ struct PrayerLiveActivityAttributes: ActivityAttributes {
 final class PrayerLiveActivityCoordinator {
     static let shared = PrayerLiveActivityCoordinator()
     private var startedAtByPrayerKey: [String: Date] = [:]
+    private var autoDismissTask: Task<Void, Never>?
     private init() {}
+
+    private func scheduleAutoDismiss(for prayerKey: String, at prayerTime: Date, graceSeconds: TimeInterval = 90) {
+        autoDismissTask?.cancel()
+        let delay = max(1, prayerTime.timeIntervalSinceNow + graceSeconds)
+
+        autoDismissTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled, let self else { return }
+            guard self.startedAtByPrayerKey.keys.first == prayerKey else { return }
+            self.stopAllActivities()
+        }
+    }
 
     private func endAll() {
         for activity in Activity<PrayerLiveActivityAttributes>.activities {
@@ -39,6 +52,8 @@ final class PrayerLiveActivityCoordinator {
     }
 
     func stopAllActivities() {
+        autoDismissTask?.cancel()
+        autoDismissTask = nil
         startedAtByPrayerKey.removeAll()
         endAll()
     }
@@ -61,6 +76,7 @@ final class PrayerLiveActivityCoordinator {
         let prayerKey = "\(nextPrayer.nameTransliteration)|\(Int(nextPrayer.time.timeIntervalSince1970))"
         let startedAt = startedAtByPrayerKey[prayerKey] ?? Date()
         startedAtByPrayerKey = [prayerKey: startedAt]
+        scheduleAutoDismiss(for: prayerKey, at: nextPrayer.time)
 
         let state = PrayerLiveActivityAttributes.ContentState(
             prayerName: nextPrayer.nameTransliteration,
@@ -69,8 +85,8 @@ final class PrayerLiveActivityCoordinator {
             startedAt: startedAt
         )
 
-        // Keep activity non-stale briefly past prayer time so reached text can render instead of freezing at 0:00.
-        let staleDate = nextPrayer.time.addingTimeInterval(5 * 60)
+        // Mark stale exactly at prayer time so Widget rendering can switch to "It's time..." reliably.
+        let staleDate = nextPrayer.time
 
         if let existing = Activity<PrayerLiveActivityAttributes>.activities.first {
             Task {
