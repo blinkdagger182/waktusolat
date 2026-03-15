@@ -41,6 +41,7 @@ struct PrayersProvider: TimelineProvider {
         settings.hanafiMadhab     = store?.bool(forKey: "hanafiMadhab") ?? false
         settings.prayerCalculation = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"
         settings.hijriOffset       = store?.integer(forKey: "hijriOffset") ?? 0
+        let isMalaysia = settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
 
         settings.fetchPrayerTimes()
 
@@ -60,7 +61,8 @@ struct PrayersProvider: TimelineProvider {
             fullPrayers:    obj.fullPrayers,
             currentPrayer:  current,
             nextPrayer:     next,
-            hijriOffset:    settings.hijriOffset
+            hijriOffset:    settings.hijriOffset,
+            isMalaysia:     isMalaysia
         )
     }
 
@@ -70,7 +72,8 @@ struct PrayersProvider: TimelineProvider {
               currentCity: "",
               prayers: [], fullPrayers: [],
               currentPrayer: nil, nextPrayer: nil,
-              hijriOffset: 0)
+              hijriOffset: 0,
+              isMalaysia: true)
     }
 
     private func previewEntry() -> PrayersEntry {
@@ -103,7 +106,8 @@ struct PrayersProvider: TimelineProvider {
             fullPrayers: [current, next],
             currentPrayer: current,
             nextPrayer: next,
-            hijriOffset: 0
+            hijriOffset: 0,
+            isMalaysia: true
         )
     }
 
@@ -125,6 +129,7 @@ struct PrayersEntry: TimelineEntry {
     let currentPrayer: Prayer?
     let nextPrayer: Prayer?
     let hijriOffset: Int
+    let isMalaysia: Bool
 }
 
 func widgetPrayerDisplayName(_ raw: String) -> String {

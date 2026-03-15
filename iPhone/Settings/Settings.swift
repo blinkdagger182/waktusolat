@@ -84,6 +84,50 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         dec.dateDecodingStrategy = .millisecondsSince1970
         return dec
     }()
+
+    static func islamicReferenceDate(now: Date = Date(), prayers: [Prayer]) -> Date {
+        guard let maghribToday = maghribPrayerTime(on: now, prayers: prayers) else {
+            return now
+        }
+        if now >= maghribToday {
+            return Calendar.current.date(byAdding: .day, value: 1, to: now) ?? now
+        }
+        return now
+    }
+
+    private static func maghribPrayerTime(on date: Date, prayers: [Prayer]) -> Date? {
+        let cal = Calendar.current
+        return prayers
+            .filter { cal.isDate($0.time, inSameDayAs: date) }
+            .first(where: { prayer in
+                let name = prayer.nameTransliteration.lowercased()
+                return name.contains("maghrib") || name.contains("magrib") || name.contains("sunset")
+            })?
+            .time
+    }
+
+    static func effectiveHijriOffset(baseOffset: Int, location: Location?) -> Int {
+        if baseOffset != 0 { return baseOffset }
+        return baseOffset + regionalHijriAdjustment(location: location)
+    }
+
+    static func effectiveHijriOffset(baseOffset: Int, isMalaysia: Bool) -> Int {
+        if baseOffset != 0 { return baseOffset }
+        return baseOffset + (isMalaysia ? -1 : 0)
+    }
+
+    static func regionalHijriAdjustment(location: Location?) -> Int {
+        guard let location else { return -1 }
+        if location.countryCode?.uppercased() == "MY" {
+            return -1
+        }
+
+        let latitude = location.latitude
+        let longitude = location.longitude
+        let west = (latitude >= 0.7 && latitude <= 7.6) && (longitude >= 99.5 && longitude <= 104.7)
+        let east = (latitude >= 0.7 && latitude <= 7.6) && (longitude >= 109.4 && longitude <= 119.4)
+        return (west || east) ? -1 : 0
+    }
     
     private override init() {
         self.accentColor = AccentColor.fromStoredValue(appGroupUserDefaults?.string(forKey: "accentColor"))

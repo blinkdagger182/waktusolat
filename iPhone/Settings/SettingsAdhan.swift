@@ -473,16 +473,20 @@ extension Settings {
     
     func updateDates() {
         let now = Date()
-        if let h = hijriDate, h.date.isSameDay(as: now) {
+        let sourcePrayers = prayers?.fullPrayers.isEmpty == false ? prayers?.fullPrayers : prayers?.prayers
+        let referenceDate = Settings.islamicReferenceDate(now: now, prayers: sourcePrayers ?? [])
+
+        if let h = hijriDate, h.date.isSameDay(as: referenceDate) {
             return
         }
 
-        let base = Self.hijriCalendarAR.date(byAdding: .day, value: hijriOffset, to: now) ?? now
+        let effectiveOffset = Settings.effectiveHijriOffset(baseOffset: hijriOffset, location: currentLocation)
+        let base = Self.hijriCalendarAR.date(byAdding: .day, value: effectiveOffset, to: referenceDate) ?? referenceDate
         let arabic = arabicNumberString(from: Self.hijriFormatterAR.string(from: base)) + " هـ"
         let english = Self.hijriFormatterEN.string(from: base)
 
         withAnimation {
-            hijriDate = HijriDate(english: english, arabic: arabic, date: now)
+            hijriDate = HijriDate(english: english, arabic: arabic, date: referenceDate)
         }
     }
     
