@@ -569,7 +569,7 @@ private struct DailyQuranWidgetIntroModal: View {
 }
 
 private enum MarketingModalConfigURLResolver {
-    private static let defaultURL = "https://blinkdagger182.github.io/waktusolat/marketing-modal.json"
+    private static let defaultURL = "https://blinkdagger182.github.io/waktu-config/marketing-modal.json"
 
     static func resolve() -> URL {
         if let fromInfo = Bundle.main.object(forInfoDictionaryKey: "MarketingModalConfigURL") as? String,
@@ -614,19 +614,19 @@ private struct MarketingModalConfig: Codable {
                 title: "Live Notification",
                 subtitle: "See the next prayer countdown and reminders right from your Lock Screen.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/live-notification-marketing-banner.png?v=1"
+                imageURL: "https://blinkdagger182.github.io/waktu-config/images/live-notification-marketing-banner.png?v=1"
             ),
             DailyQuranIntroSlide(
                 title: "Daily Quran Widget",
                 subtitle: "One inspiring ayah every day.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg?v=4"
+                imageURL: "https://blinkdagger182.github.io/waktu-config/images/IMG_9653.jpg?v=4"
             ),
             DailyQuranIntroSlide(
                 title: "Tap For Full Verse",
                 subtitle: "Open Waktu to see full details and translation.",
                 imageAsset: nil,
-                imageURL: "https://blinkdagger182.github.io/waktusolat/images/ayat-recitation.png?v=4"
+                imageURL: "https://blinkdagger182.github.io/waktu-config/images/ayat-recitation.png?v=4"
             )
         ]
     )

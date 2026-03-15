@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Waktu Marketing Carousel Editor</title>
+  <title>Waktu Content Editor</title>
   <style>
     :root {
       --bg: #0c1220;
@@ -129,8 +129,8 @@
 </head>
 <body>
   <main class="wrap">
-    <h1>Waktu Marketing Carousel Editor</h1>
-    <p class="muted">Edit your banner content here, then update <code>docs/marketing-modal.json</code>. The app auto-reads the latest item count and slides from GitHub Pages.</p>
+    <h1>Waktu Content Editor</h1>
+    <p class="muted">Manage both marketing carousel content and app version prompts from one page.</p>
 
     <div class="grid">
       <section class="panel">
@@ -197,6 +197,51 @@
         </div>
 
         <div class="section">
+          <h2>Version Control</h2>
+          <p class="tiny">Controls soft update prompts and force-update minimum app version.</p>
+          <div class="row two">
+            <div>
+              <label for="vc-latest">Latest Version</label>
+              <input id="vc-latest" placeholder="1.0.5" />
+            </div>
+            <div>
+              <label for="vc-min">Minimum Supported</label>
+              <input id="vc-min" placeholder="1.0.4" />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <div>
+              <label for="vc-url">App Store URL</label>
+              <input id="vc-url" placeholder="itms-apps://itunes.apple.com/app/id..." />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <div>
+              <label for="vc-soft">Soft Prompt Message</label>
+              <textarea id="vc-soft" placeholder="A new version is available..."></textarea>
+            </div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <div>
+              <label for="vc-force">Force Prompt Message</label>
+              <textarea id="vc-force" placeholder="Please update to continue."></textarea>
+            </div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input id="vc-enabled" type="checkbox" style="width:auto;" />
+              <span style="font-size:13px;color:var(--text);">Enable version check</span>
+            </label>
+          </div>
+          <div class="actions" style="grid-template-columns: repeat(3, 1fr); margin-top: 8px;">
+            <button class="btn-soft" id="reload-version-json">Reload Version JSON</button>
+            <button class="btn-soft" id="copy-version-json">Copy Version JSON</button>
+            <button class="btn-accent" id="save-version-json-github">Save Version JSON</button>
+          </div>
+          <p style="margin-top:8px;"><a href="./version-check.json" target="_blank" rel="noopener">Open current version-check.json</a></p>
+        </div>
+
+        <div class="section">
           <h2>GitHub Upload Settings</h2>
           <div class="row two">
             <div>
@@ -205,7 +250,7 @@
             </div>
             <div>
               <label for="gh-repo">Repo</label>
-              <input id="gh-repo" value="waktusolat" />
+              <input id="gh-repo" value="waktu-config" />
             </div>
           </div>
           <div class="row two" style="margin-top: 8px;">
@@ -221,7 +266,7 @@
           <div class="row" style="margin-top: 8px;">
             <button class="btn-soft" id="check-upload-setup" type="button">Check Upload Setup</button>
           </div>
-          <p class="tiny">Token is required for upload. Use each item's own Upload button below. Files go to <code>docs/images/</code> and the item URL is auto-filled.</p>
+          <p class="tiny">Token is required for upload. Use each item's own Upload button below. Files go to <code>images/</code> and the item URL is auto-filled.</p>
         </div>
       </aside>
     </div>
@@ -272,17 +317,17 @@
       cta_text: "Got it",
       slides: [
         {
-          image_url: "https://blinkdagger182.github.io/waktusolat/images/live-notification-marketing-banner.png?v=1",
+          image_url: "https://blinkdagger182.github.io/waktu-config/images/live-notification-marketing-banner.png?v=1",
           image_title: "Live Notification",
           image_subtitle: "See the next prayer countdown and reminders right from your Lock Screen."
         },
         {
-          image_url: "https://blinkdagger182.github.io/waktusolat/images/IMG_9653.jpg?v=4",
+          image_url: "https://blinkdagger182.github.io/waktu-config/images/IMG_9653.jpg?v=4",
           image_title: "Daily Quran Widget",
           image_subtitle: "One inspiring ayah every day."
         },
         {
-          image_url: "https://blinkdagger182.github.io/waktusolat/images/ayat-recitation.png?v=4",
+          image_url: "https://blinkdagger182.github.io/waktu-config/images/ayat-recitation.png?v=4",
           image_title: "Tap For Full Verse",
           image_subtitle: "Open Waktu to see full details and translation."
         }
@@ -299,10 +344,26 @@
     const ghRepoEl = $("gh-repo");
     const ghBranchEl = $("gh-branch");
     const ghTokenEl = $("gh-token");
+    const vcEnabledEl = $("vc-enabled");
+    const vcLatestEl = $("vc-latest");
+    const vcMinEl = $("vc-min");
+    const vcUrlEl = $("vc-url");
+    const vcSoftEl = $("vc-soft");
+    const vcForceEl = $("vc-force");
 
     let state = structuredClone(defaults);
     let previewIndex = 0;
     let saveJSONQueue = Promise.resolve();
+    const versionDefaults = {
+      enabled: true,
+      latest_version: "1.0.0",
+      min_supported_version: "1.0.0",
+      app_store_url: "itms-apps://itunes.apple.com/app/id6759585564",
+      soft_message: "A new version of Waktu is available with improvements and fixes.",
+      force_message: "Please update Waktu to continue."
+    };
+    let versionState = structuredClone(versionDefaults);
+    let saveVersionQueue = Promise.resolve();
 
     function setStatus(text) {
       statusEl.textContent = text;
@@ -346,6 +407,37 @@
           image_subtitle: slide.image_subtitle,
           image_url: slide.image_url
         }))
+      };
+    }
+
+    function normalizeVersionConfig(config = {}) {
+      return {
+        enabled: config.enabled !== false,
+        latest_version: config.latest_version ?? versionDefaults.latest_version,
+        min_supported_version: config.min_supported_version ?? versionDefaults.min_supported_version,
+        app_store_url: config.app_store_url ?? versionDefaults.app_store_url,
+        soft_message: config.soft_message ?? versionDefaults.soft_message,
+        force_message: config.force_message ?? versionDefaults.force_message
+      };
+    }
+
+    function bindVersionInputs() {
+      vcEnabledEl.checked = !!versionState.enabled;
+      vcLatestEl.value = versionState.latest_version;
+      vcMinEl.value = versionState.min_supported_version;
+      vcUrlEl.value = versionState.app_store_url;
+      vcSoftEl.value = versionState.soft_message;
+      vcForceEl.value = versionState.force_message;
+    }
+
+    function toVersionJSON() {
+      return {
+        enabled: !!vcEnabledEl.checked,
+        latest_version: vcLatestEl.value.trim(),
+        min_supported_version: vcMinEl.value.trim(),
+        app_store_url: vcUrlEl.value.trim(),
+        soft_message: vcSoftEl.value.trim(),
+        force_message: vcForceEl.value.trim()
       };
     }
 
@@ -458,6 +550,21 @@
       }
     }
 
+    async function loadLiveVersionJSON() {
+      try {
+        const response = await fetch(`./version-check.json?_nocache=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const json = await response.json();
+        versionState = normalizeVersionConfig(json);
+        bindVersionInputs();
+        setStatus("Loaded current version-check.json");
+      } catch (error) {
+        versionState = normalizeVersionConfig(versionDefaults);
+        bindVersionInputs();
+        setStatus(`Failed to load version-check.json (${error.message}). Using defaults.`);
+      }
+    }
+
     function sanitizeFilename(filename) {
       const dot = filename.lastIndexOf(".");
       const ext = dot >= 0 ? filename.slice(dot + 1).toLowerCase() : "png";
@@ -558,19 +665,60 @@
           repo,
           branch,
           token,
-          path: "docs/marketing-modal.json",
+          path: "marketing-modal.json",
           text: jsonText,
           message: "chore(marketing): update modal config"
         });
-        setStatus("Saved docs/marketing-modal.json successfully.");
+        setStatus("Saved marketing-modal.json successfully.");
         if (showPopup) {
-          window.alert("Saved docs/marketing-modal.json to GitHub.");
+          window.alert("Saved marketing-modal.json to GitHub.");
         }
         return true;
       } catch (error) {
         showStatusAndAlert(`JSON save failed: ${error.message}`);
         return false;
       }
+      });
+    }
+
+    async function saveVersionJSONToGitHub(showPopup = true) {
+      return saveVersionQueue = saveVersionQueue.then(async () => {
+        const owner = ghOwnerEl.value.trim();
+        const repo = ghRepoEl.value.trim();
+        const branch = ghBranchEl.value.trim() || "main";
+        const token = ghTokenEl.value.trim();
+        if (!owner || !repo || !token) {
+          showStatusAndAlert("Owner/repo/token are required to save version JSON.");
+          return false;
+        }
+
+        const payload = toVersionJSON();
+        if (!payload.latest_version || !payload.min_supported_version || !payload.app_store_url) {
+          showStatusAndAlert("Latest version, minimum supported version, and App Store URL are required.");
+          return false;
+        }
+
+        try {
+          setStatus("Saving version-check.json to GitHub...");
+          const jsonText = JSON.stringify(payload, null, 2) + "\n";
+          await uploadTextFileToGitHub({
+            owner,
+            repo,
+            branch,
+            token,
+            path: "version-check.json",
+            text: jsonText,
+            message: "chore(version): update app version gate config"
+          });
+          setStatus("Saved version-check.json successfully.");
+          if (showPopup) {
+            window.alert("Saved version-check.json to GitHub.");
+          }
+          return true;
+        } catch (error) {
+          showStatusAndAlert(`Version JSON save failed: ${error.message}`);
+          return false;
+        }
       });
     }
 
@@ -600,7 +748,7 @@
       try {
         setStatus(`Uploading image for item ${index + 1}...`);
         const filename = sanitizeFilename(file.name);
-        const path = `docs/images/${filename}`;
+        const path = `images/${filename}`;
         const content = await fileToBase64(file);
         const existingSha = await getExistingFileSha({ owner, repo, path, branch, token });
 
@@ -665,7 +813,7 @@
       const json = JSON.stringify(toAppJSON(), null, 2);
       try {
         await navigator.clipboard.writeText(json);
-        setStatus("JSON copied. Paste into docs/marketing-modal.json and push to GitHub.");
+        setStatus("JSON copied. Paste into marketing-modal.json and push to GitHub.");
       } catch {
         setStatus("Clipboard blocked. Use Download JSON.");
       }
@@ -689,8 +837,22 @@
     $("save-json-github").addEventListener("click", () => {
       saveJSONToGitHub(true);
     });
+    $("reload-version-json").addEventListener("click", loadLiveVersionJSON);
+    $("copy-version-json").addEventListener("click", async () => {
+      const json = JSON.stringify(toVersionJSON(), null, 2);
+      try {
+        await navigator.clipboard.writeText(json);
+        setStatus("Version JSON copied.");
+      } catch {
+        setStatus("Clipboard blocked. Use Save Version JSON.");
+      }
+    });
+    $("save-version-json-github").addEventListener("click", () => {
+      saveVersionJSONToGitHub(true);
+    });
 
     loadLiveJSON();
+    loadLiveVersionJSON();
   </script>
 </body>
 </html>
