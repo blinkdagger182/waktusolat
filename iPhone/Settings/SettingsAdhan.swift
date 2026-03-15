@@ -169,7 +169,6 @@ extension Settings {
 
     #if os(iOS)
     func configurePassiveLocationMonitoring() {
-        guard CLLocationManager.locationServicesEnabled() else { return }
         let status = Self.locationManager.authorizationStatus
 
         switch status {
@@ -500,14 +499,48 @@ extension Settings {
     private struct GPSMonthResponse: Codable {
         let zone: String
         let year: Int
+        let month: String?
         let monthNumber: Int
         let prayers: [GPSPrayerDay]
 
         enum CodingKeys: String, CodingKey {
             case zone
             case year
+            case month
             case monthNumber = "month_number"
             case prayers
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            zone = try container.decode(String.self, forKey: .zone)
+            year = try container.decode(Int.self, forKey: .year)
+            month = try container.decodeIfPresent(String.self, forKey: .month)
+
+            if let monthNumber = try container.decodeIfPresent(Int.self, forKey: .monthNumber) {
+                self.monthNumber = monthNumber
+            } else if let month {
+                switch month.uppercased() {
+                case "JAN": monthNumber = 1
+                case "FEB": monthNumber = 2
+                case "MAR": monthNumber = 3
+                case "APR": monthNumber = 4
+                case "MAY": monthNumber = 5
+                case "JUN": monthNumber = 6
+                case "JUL": monthNumber = 7
+                case "AUG": monthNumber = 8
+                case "SEP": monthNumber = 9
+                case "OCT": monthNumber = 10
+                case "NOV": monthNumber = 11
+                case "DEC": monthNumber = 12
+                default:
+                    monthNumber = 0
+                }
+            } else {
+                monthNumber = 0
+            }
+
+            prayers = try container.decode([GPSPrayerDay].self, forKey: .prayers)
         }
     }
 
@@ -590,8 +623,8 @@ extension Settings {
         }
     }
 
-    private static let gpsAPIBase = "https://api.waktusolat.app/v2/solat/gps"
-    private static let malaysiaZoneAPIBase = "https://api.waktusolat.app/v2/solat"
+    private static let gpsAPIBase = "https://api-waktusolat.vercel.app/v2/solat/gps"
+    private static let malaysiaZoneAPIBase = "https://api-waktusolat.vercel.app/v2/solat"
     private static let alAdhanAPIBase = "https://api.aladhan.com/v1/calendar"
     private static let appGroupId = "group.app.riskcreatives.waktu"
     private static let jakimSupportedYear = 2026
@@ -1129,13 +1162,17 @@ extension Settings {
                 throw GPSAPIError.invalidURL
             }
 
+            logger.debug("Malaysia API request (zone override): \(url.absoluteString)")
+
             let (data, response) = try await URLSession.shared.data(from: url)
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            logger.debug("Malaysia API response status (zone override): \(status)")
             guard status == 200 else {
                 throw GPSAPIError.badHTTPStatus(status)
             }
 
             let decoded = try JSONDecoder().decode(GPSMonthResponse.self, from: data)
+            logger.debug("Malaysia API decoded payload (zone override): zone=\(decoded.zone), year=\(decoded.year), month=\(decoded.month ?? "nil"), days=\(decoded.prayers.count)")
             saveMonthCache(decoded)
             return
         }
@@ -1144,13 +1181,17 @@ extension Settings {
             throw GPSAPIError.invalidURL
         }
 
+        logger.debug("Malaysia API request (gps): \(url.absoluteString)")
+
         let (data, response) = try await URLSession.shared.data(from: url)
         let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        logger.debug("Malaysia API response status (gps): \(status)")
         guard status == 200 else {
             throw GPSAPIError.badHTTPStatus(status)
         }
 
         let decoded = try JSONDecoder().decode(GPSMonthResponse.self, from: data)
+        logger.debug("Malaysia API decoded payload (gps): zone=\(decoded.zone), year=\(decoded.year), month=\(decoded.month ?? "nil"), days=\(decoded.prayers.count)")
         saveMonthCache(decoded)
     }
 

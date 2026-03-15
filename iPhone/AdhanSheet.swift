@@ -101,7 +101,7 @@ struct AdhanSetupSheet: View {
     @MainActor
     private func loadMalaysiaZonesIfNeeded() async {
         guard malaysiaZones.isEmpty else { return }
-        guard let url = URL(string: "https://api.waktusolat.app/zones") else { return }
+        guard let url = URL(string: "https://api-waktusolat.vercel.app/zones") else { return }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1
@@ -121,7 +121,7 @@ struct AdhanSetupSheet: View {
         }
         let lat = String(format: "%.6f", location.latitude)
         let lon = String(format: "%.6f", location.longitude)
-        guard let url = URL(string: "https://api.waktusolat.app/zones/\(lat)/\(lon)") else {
+        guard let url = URL(string: "https://api-waktusolat.vercel.app/zones/\(lat)/\(lon)") else {
             return
         }
 

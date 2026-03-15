@@ -15,7 +15,7 @@ struct CreditsView: View {
 
                     Text("Made by developers at Risk Creatives.")
                         .font(.headline)
-                    if let url = URL(string: "https://api.waktusolat.app/") {
+                    if let url = URL(string: "https://api-waktusolat.vercel.app/") {
                         Link("Powered by the Waktu Solat Project API", destination: url)
                             .foregroundColor(settings.accentColor.color)
                     }
