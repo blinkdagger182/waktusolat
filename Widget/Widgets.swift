@@ -129,27 +129,27 @@ struct NextPrayerLiveActivityWidget: Widget {
                     HStack(spacing: 6) {
                         LiveActivityCountdownText(
                             prayerTime: context.state.prayerTime,
-                            reachedText: "It's time for a Prayer",
+                            reachedText: "It's time for \(context.state.prayerName)",
                             countdownPrefix: "Next in",
-                            compactReachedText: "Now",
+                            compactReachedText: "It's time for \(context.state.prayerName)",
                             compact: false
                         )
                     }
                 }
             } compactLeading: {
-                Text("WK")
-                    .font(.system(.caption2, design: .rounded).weight(.bold))
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 12, weight: .bold))
             } compactTrailing: {
                 LiveActivityCountdownText(
                     prayerTime: context.state.prayerTime,
-                    reachedText: "It's time for a Prayer",
+                    reachedText: "It's time for \(context.state.prayerName)",
                     countdownPrefix: nil,
-                    compactReachedText: "Now",
+                    compactReachedText: context.state.prayerName,
                     compact: true
                 )
             } minimal: {
-                Text("WK")
-                    .font(.system(.caption2, design: .rounded).weight(.bold))
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 12, weight: .bold))
             }
         }
     }
@@ -180,9 +180,9 @@ private struct NextPrayerLiveActivityContentView: View {
                 HStack(spacing: 6) {
                     LiveActivityCountdownText(
                         prayerTime: context.state.prayerTime,
-                        reachedText: "It's time for a Prayer",
+                        reachedText: "It's time for \(context.state.prayerName)",
                         countdownPrefix: "Next in",
-                        compactReachedText: "Now",
+                        compactReachedText: "It's time for \(context.state.prayerName)",
                         compact: false
                     )
                     .foregroundColor(palette.fg)
@@ -192,10 +192,9 @@ private struct NextPrayerLiveActivityContentView: View {
 
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
                     if timeline.date >= context.state.prayerTime {
-                        Text("It's time for a Prayer")
-                            .font(.system(.headline, design: .rounded).weight(.bold))
-                            .foregroundColor(palette.fg)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Capsule(style: .continuous)
+                            .fill(palette.progress)
+                            .frame(height: 14)
                     } else {
                         ProgressView(
                             timerInterval: context.state.startedAt...context.state.prayerTime,

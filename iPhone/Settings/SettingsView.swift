@@ -245,7 +245,7 @@ struct SettingsView: View {
                         Button {
                             NotificationCenter.default.post(name: .debugShowSupportPromoToast, object: nil)
                         } label: {
-                            Label("Trigger Support Toast", systemImage: "heart.bubble.fill")
+                            Label("Trigger Support Toast", systemImage: "heart.fill")
                                 .foregroundColor(settings.accentColor.color)
                         }
                     }

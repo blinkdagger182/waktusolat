@@ -69,9 +69,12 @@ final class PrayerLiveActivityCoordinator {
             startedAt: startedAt
         )
 
+        // Keep activity non-stale briefly past prayer time so reached text can render instead of freezing at 0:00.
+        let staleDate = nextPrayer.time.addingTimeInterval(5 * 60)
+
         if let existing = Activity<PrayerLiveActivityAttributes>.activities.first {
             Task {
-                let content = ActivityContent(state: state, staleDate: nextPrayer.time)
+                let content = ActivityContent(state: state, staleDate: staleDate)
                 await existing.update(content)
             }
             return
@@ -79,7 +82,7 @@ final class PrayerLiveActivityCoordinator {
 
         let attributes = PrayerLiveActivityAttributes(activityID: "next-prayer")
         do {
-            let content = ActivityContent(state: state, staleDate: nextPrayer.time)
+            let content = ActivityContent(state: state, staleDate: staleDate)
             _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
         } catch {
             logger.debug("Live Activity request failed: \(error.localizedDescription)")
@@ -145,13 +148,61 @@ extension Settings {
     private static let minCoordinateUpdateDistance: CLLocationDistance = 300
     
     private static let travelThresholdM: CLLocationDistance = 48 * oneMile   // ≈ 77 112 m
+
+    private var locationRefreshTimeoutSeconds: TimeInterval { 15 }
+
+    #if os(iOS)
+    func configurePassiveLocationMonitoring() {
+        guard CLLocationManager.locationServicesEnabled() else { return }
+        let status = Self.locationManager.authorizationStatus
+
+        switch status {
+        case .authorizedAlways, .authorizedWhenInUse:
+            if CLLocationManager.significantLocationChangeMonitoringAvailable() {
+                Self.locationManager.startMonitoringSignificantLocationChanges()
+            }
+            Self.locationManager.startMonitoringVisits()
+        default:
+            Self.locationManager.stopMonitoringSignificantLocationChanges()
+            Self.locationManager.stopMonitoringVisits()
+        }
+    }
+    #endif
+
+    private func beginLocationRefresh(using manager: CLLocationManager) {
+        locationRefreshTimeoutWorkItem?.cancel()
+        isRefreshingLocation = true
+
+        // One-shot can return stale points; keep a short active window for a fresh fix.
+        manager.requestLocation()
+        manager.startUpdatingLocation()
+
+        let timeout = DispatchWorkItem { [weak self, weak manager] in
+            guard let self, let manager else { return }
+            self.isRefreshingLocation = false
+            manager.stopUpdatingLocation()
+        }
+        locationRefreshTimeoutWorkItem = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + locationRefreshTimeoutSeconds, execute: timeout)
+    }
+
+    private func endLocationRefresh(using manager: CLLocationManager) {
+        locationRefreshTimeoutWorkItem?.cancel()
+        locationRefreshTimeoutWorkItem = nil
+        isRefreshingLocation = false
+        manager.stopUpdatingLocation()
+    }
     
     // AUTHORIZATION CHANGES
     func locationManager(_ mgr: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        #if os(iOS)
+        configurePassiveLocationMonitoring()
+        #endif
+
         switch status {
         case .authorizedAlways, .authorizedWhenInUse:
             showLocationAlert = false
-            mgr.requestLocation()
+            beginLocationRefresh(using: mgr)
             
         case .denied where !locationNeverAskAgain:
             showLocationAlert = true
@@ -168,7 +219,7 @@ extension Settings {
     func locationManager(_ mgr: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
         let candidates = locs
             .filter { $0.horizontalAccuracy > 0 }
-            .filter { abs($0.timestamp.timeIntervalSinceNow) <= 300 }
+            .filter { abs($0.timestamp.timeIntervalSinceNow) <= Self.maxAge }
             .sorted { $0.horizontalAccuracy < $1.horizontalAccuracy }
 
         guard let loc = candidates.first else { return }
@@ -188,6 +239,7 @@ extension Settings {
         Task { @MainActor in
             await updateCity(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude)
             fetchPrayerTimes(force: false)
+            endLocationRefresh(using: mgr)
         }
     }
 
@@ -196,13 +248,33 @@ extension Settings {
         logger.error("CLLocationManager failed: \(err.localizedDescription)")
     }
 
+    #if os(iOS)
+    func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
+        guard CLLocationCoordinate2DIsValid(visit.coordinate) else { return }
+
+        Task { @MainActor in
+            await updateCity(latitude: visit.coordinate.latitude, longitude: visit.coordinate.longitude)
+            fetchPrayerTimes(force: false)
+        }
+    }
+    #endif
+
     // PERMISSION REQUEST
     func requestLocationAuthorization() {
+        let now = Date()
+        if let last = lastLocationAuthorizationRequestAt, now.timeIntervalSince(last) < 2 {
+            return
+        }
+        lastLocationAuthorizationRequestAt = now
+
         switch Self.locationManager.authorizationStatus {
         case .notDetermined:
             Self.locationManager.requestWhenInUseAuthorization()
         case .authorizedAlways, .authorizedWhenInUse:
-            Self.locationManager.requestLocation()
+            #if os(iOS)
+            configurePassiveLocationMonitoring()
+            #endif
+            beginLocationRefresh(using: Self.locationManager)
         default:
             break
         }
@@ -1821,6 +1893,35 @@ extension Settings {
         guard let city = currentLocation?.city, let prayerObj = prayers
         else { return }
 
+        let scheduleDay = Calendar.current.startOfDay(for: prayerObj.day).timeIntervalSince1970
+        let prayerTimesSignature = prayerObj.prayers
+            .map { "\($0.nameTransliteration)=\(Int($0.time.timeIntervalSince1970 / 60))" }
+            .joined(separator: ",")
+
+        let scheduleSignature = [
+            "day:\(Int(scheduleDay))",
+            "city:\(city)",
+            "times:\(prayerTimesSignature)",
+            "dateNotif:\(dateNotifications)",
+            "nagMode:\(naggingMode)",
+            "nagStart:\(naggingStartOffset)",
+            "f:\(notificationFajr)-\(preNotificationFajr)-\(naggingFajr)",
+            "s:\(notificationSunrise)-\(preNotificationSunrise)-\(naggingSunrise)",
+            "d:\(notificationDhuhr)-\(preNotificationDhuhr)-\(naggingDhuhr)",
+            "a:\(notificationAsr)-\(preNotificationAsr)-\(naggingAsr)",
+            "m:\(notificationMaghrib)-\(preNotificationMaghrib)-\(naggingMaghrib)",
+            "i:\(notificationIsha)-\(preNotificationIsha)-\(naggingIsha)"
+        ].joined(separator: "|")
+
+        if let lastSig = lastNotificationScheduleSignature,
+           lastSig == scheduleSignature {
+            // Do not clear/re-add identical schedules; this can cause missed alerts near trigger time.
+            return
+        }
+
+        lastNotificationScheduleSignature = scheduleSignature
+        lastNotificationScheduleAt = Date()
+
         logger.debug("Scheduling prayer time notifications")
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
@@ -1938,18 +2039,28 @@ extension Settings {
             }
             return prayer.time
         }()
-
-        guard triggerTime > Date() else { return }
+        let now = Date()
+        if triggerTime <= now {
+            // If we rescheduled right around the threshold, still deliver an immediate alert.
+            guard now.timeIntervalSince(triggerTime) <= 90 else { return }
+        }
 
         let content = UNMutableNotificationContent()
         content.title = "Waktu Solat"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = prayerNotificationSound()
 
-        let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-
-        let id = "\(prayer.nameTransliteration)-\(minutes ?? 0)-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)"
+        let id: String
+        let trigger: UNNotificationTrigger
+        if triggerTime > now {
+            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
+            trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            id = "\(prayer.nameTransliteration)-\(minutes ?? 0)-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)"
+        } else {
+            trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+            let day = Calendar.current.dateComponents([.year, .month, .day], from: now)
+            id = "\(prayer.nameTransliteration)-\(minutes ?? 0)-late-\(day.year ?? 0)-\(day.month ?? 0)-\(day.day ?? 0)"
+        }
         let req  = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
 
         center.add(req) { error in

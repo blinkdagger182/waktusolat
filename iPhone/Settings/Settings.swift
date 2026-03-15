@@ -67,6 +67,11 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     var liveActivitySyncTimer: Timer?
     var liveActivityLifecycleObservers: [NSObjectProtocol] = []
     #endif
+    var locationRefreshTimeoutWorkItem: DispatchWorkItem?
+    var isRefreshingLocation = false
+    var lastLocationAuthorizationRequestAt: Date?
+    var lastNotificationScheduleSignature: String?
+    var lastNotificationScheduleAt: Date?
     
     static let encoder: JSONEncoder = {
         let enc = JSONEncoder()
@@ -109,6 +114,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         super.init()
         Self.locationManager.delegate = self
         #if os(iOS)
+        configurePassiveLocationMonitoring()
         refreshCustomAuraBackgroundState()
         configureLiveActivitySyncLifecycle()
         #endif

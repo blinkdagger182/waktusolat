@@ -34,6 +34,10 @@ struct AdhanView: View {
     }
     
     func prayerTimeRefresh(force: Bool) {
+        // Always request a fresh location when user refreshes the page.
+        // This ensures prayer data re-fetch uses the newest detected place.
+        settings.requestLocationAuthorization()
+
         settings.requestNotificationAuthorization {
             settings.fetchPrayerTimes(force: force) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -277,7 +281,7 @@ struct AdhanView: View {
                         Button {
                             NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "generic")
                         } label: {
-                            Label("Donation Toast (Generic)", systemImage: "heart.bubble")
+                            Label("Donation Toast (Generic)", systemImage: "heart")
                         }
 
                         Button {

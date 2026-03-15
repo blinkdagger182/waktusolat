@@ -37,6 +37,7 @@ struct AlAdhanApp: App {
     @State private var showSupportPromoToast = false
     @State private var supportPromoMessage = ""
     @State private var supportPromoCountdownStart = Date()
+    @State private var showMalaysiaOnlyModal = false
 
     init() {
         RevenueCatManager.shared.configure()
@@ -164,6 +165,16 @@ struct AlAdhanApp: App {
                     .zIndex(19)
                 }
             }
+            .overlay {
+                if showMalaysiaOnlyModal {
+                    MalaysiaOnlyModal {
+                        settings.requestLocationAuthorization()
+                    }
+                    .environmentObject(settings)
+                    .transition(.opacity)
+                    .zIndex(50)
+                }
+            }
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
@@ -171,6 +182,7 @@ struct AlAdhanApp: App {
                 if !settings.firstLaunch {
                     settings.requestLocationAuthorization()
                 }
+                updateMalaysiaOnlyModalVisibility()
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugShowDailyQuranWidgetIntro)) { _ in
                 showDailyQuranWidgetIntro = true
@@ -224,10 +236,17 @@ struct AlAdhanApp: App {
                 presentDailyQuranWidgetIntroIfNeeded()
                 presentSupportPromoToastIfNeeded()
             }
+            updateMalaysiaOnlyModalVisibility()
+        }
+        .onChange(of: settings.currentLocation?.countryCode) { _ in
+            updateMalaysiaOnlyModalVisibility()
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active, !settings.firstLaunch {
                 settings.requestLocationAuthorization()
+            }
+            if phase == .active {
+                updateMalaysiaOnlyModalVisibility()
             }
         }
     }
@@ -302,11 +321,71 @@ struct AlAdhanApp: App {
             }
         }
     }
+
+    private func updateMalaysiaOnlyModalVisibility() {
+        guard !settings.firstLaunch else {
+            showMalaysiaOnlyModal = false
+            return
+        }
+
+        guard let location = settings.currentLocation else {
+            showMalaysiaOnlyModal = false
+            return
+        }
+
+        if let countryCode = location.countryCode?.uppercased() {
+            showMalaysiaOnlyModal = countryCode != "MY"
+        } else {
+            showMalaysiaOnlyModal = false
+        }
+    }
 }
 
 private struct QuranDeepLinkPayload: Identifiable {
     let reference: String
     var id: String { reference }
+}
+
+private struct MalaysiaOnlyModal: View {
+    @EnvironmentObject private var settings: Settings
+    let onRefreshLocation: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.56)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "location.slash.circle.fill")
+                    .font(.system(size: 42))
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Malaysia Only")
+                    .font(.title3.bold())
+
+                Text("We believe accurate prayer times are an amanah, and we treat that as our highest priority. To protect that standard, Waktu currently supports Malaysia only. We detected your location outside Malaysia.")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.secondary)
+
+                Button(action: onRefreshLocation) {
+                    Text("Refresh Location")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(settings.accentColor.color)
+            }
+            .padding(20)
+            .frame(maxWidth: 360)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(.ultraThinMaterial)
+            )
+            .padding(.horizontal, 20)
+        }
+    }
 }
 
 private struct SupportPromoToast: View {
