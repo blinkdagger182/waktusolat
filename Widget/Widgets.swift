@@ -32,10 +32,24 @@ private enum LiveActivityTheme {
     }
 
     static func hijriFooterText() -> String {
-        let offset = UserDefaults(suiteName: appGroupSuite)?.integer(forKey: "hijriOffset") ?? 0
+        let defaults = UserDefaults(suiteName: appGroupSuite)
+        let offset = defaults?.integer(forKey: "hijriOffset") ?? 0
+        var sourcePrayers: [Prayer] = []
+        var location: Location?
+        if let data = defaults?.data(forKey: "prayersData"),
+           let cached = try? Settings.decoder.decode(Prayers.self, from: data) {
+            sourcePrayers = cached.fullPrayers.isEmpty ? cached.prayers : cached.fullPrayers
+        }
+        if let locationData = defaults?.data(forKey: "currentLocation"),
+           let decodedLocation = try? Settings.decoder.decode(Location.self, from: locationData) {
+            location = decodedLocation
+        }
+
         var calendar = Calendar(identifier: .islamicUmmAlQura)
         calendar.locale = Locale(identifier: "en_US_POSIX")
-        let date = calendar.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let referenceDate = Settings.islamicReferenceDate(prayers: sourcePrayers)
+        let effectiveOffset = Settings.effectiveHijriOffset(baseOffset: offset, location: location)
+        let date = calendar.date(byAdding: .day, value: effectiveOffset, to: referenceDate) ?? referenceDate
         let day = calendar.component(.day, from: date)
 
         let monthFormatter = DateFormatter()

@@ -35,11 +35,14 @@ struct PrayersEntryView: View {
         dateFormatter.calendar = hijriCalendar
         dateFormatter.dateStyle = .full
         dateFormatter.locale = Locale(identifier: "en")
-        
-        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: Date()) else {
-            return dateFormatter.string(from: Date())
+
+        let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
+        let referenceDate = Settings.islamicReferenceDate(prayers: sourcePrayers)
+        let effectiveOffset = Settings.effectiveHijriOffset(baseOffset: entry.hijriOffset, isMalaysia: entry.isMalaysia)
+        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: effectiveOffset, to: referenceDate) else {
+            return dateFormatter.string(from: referenceDate)
         }
-        
+
         return dateFormatter.string(from: offsetDate)
     }
     
