@@ -318,6 +318,15 @@ struct AlAdhanApp: App {
         "supportPromoLastShownAtV1.\(triggerKey)"
     }
 
+    private func supportPromoResetsAfter30Days(_ triggerKey: String) -> Bool {
+        switch triggerKey {
+        case "launch_5", "launch_6", "streak_7":
+            return true
+        default:
+            return false
+        }
+    }
+
     private func lastShownDate(for triggerKey: String, defaults: UserDefaults) -> Date? {
         let timestamp = defaults.double(forKey: supportPromoLastShownKey(for: triggerKey))
         guard timestamp > 0 else { return nil }
@@ -349,6 +358,14 @@ struct AlAdhanApp: App {
         let launchCount = defaults.integer(forKey: "appLaunchCountV1")
         let streak = defaults.integer(forKey: "supportPromoActiveDayStreakV1")
         var shownTriggers = Set(defaults.stringArray(forKey: "supportPromoShownTriggersV1") ?? [])
+
+        for triggerKey in shownTriggers where supportPromoResetsAfter30Days(triggerKey) {
+            if let lastShownAt = lastShownDate(for: triggerKey, defaults: defaults),
+               Date().timeIntervalSince(lastShownAt) >= (30 * 24 * 60 * 60) {
+                shownTriggers.remove(triggerKey)
+            }
+        }
+
         guard let selectedItem = supportPromoSchedule.first(where: { item in
             isEligibleSupportPromoItem(
                 item,
@@ -391,7 +408,7 @@ struct AlAdhanApp: App {
         switch item.variant {
         case .launch:
             guard let minLaunchCount = item.minLaunchCount else { return false }
-            return launchCount == minLaunchCount
+            return launchCount >= minLaunchCount
         case .streak:
             guard let minActiveDayStreak = item.minActiveDayStreak else { return false }
             return streak >= minActiveDayStreak
@@ -503,19 +520,19 @@ private struct SupportPromoToast: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
             Image(systemName: "heart.fill")
                 .foregroundStyle(.pink)
                 .font(.subheadline.weight(.bold))
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(message)
                     .font(.subheadline)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 if let poolProgress {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(poolProgress.title)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.primary)
@@ -545,12 +562,13 @@ private struct SupportPromoToast: View {
 
             Spacer(minLength: 4)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Button("Support") {
                     onSupport()
                 }
                 .font(.caption.weight(.semibold))
                 .buttonStyle(.borderedProminent)
+                .controlSize(.small)
                 .tint(.orange)
 
                 Button(action: onDismiss) {
@@ -562,8 +580,8 @@ private struct SupportPromoToast: View {
             }
             .fixedSize()
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)

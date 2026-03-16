@@ -104,7 +104,7 @@ struct PrayerList: View {
                                             }
                                         }
                                     }) {
-                                        HStack {
+                                        HStack(alignment: .center, spacing: 0) {
                                             Image(systemName: prayerTime.image)
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fit)
@@ -113,28 +113,35 @@ struct PrayerList: View {
                                                 .padding(.all, 4)
                                                 .padding(.trailing, 8)
                                             
-                                            VStack(alignment: .leading) {
+                                            VStack(alignment: .leading, spacing: 2) {
                                                 Text(prayerTime.nameTransliteration)
                                                     .font(.headline)
                                                     .foregroundColor(.primary)
+                                                    .lineLimit(2)
+                                                    .fixedSize(horizontal: false, vertical: true)
                                                 
                                                 Text(prayerTime.time, style: .time)
                                                     .font(.subheadline)
                                                     .foregroundColor(.secondary)
                                             }
+                                            .layoutPriority(1)
                                             
                                             Spacer()
                                             
                                             #if !os(watchOS)
-                                            VStack(alignment: .trailing) {
+                                            VStack(alignment: .trailing, spacing: 2) {
                                                 
                                                 Text(prayerTime.nameEnglish)
                                                     .font(.subheadline)
                                                     .foregroundColor(.primary)
+                                                    .lineLimit(1)
+                                                    .minimumScaleFactor(0.75)
                                                 
                                                 Text(prayerTime.nameArabic)
                                                     .font(.subheadline)
                                                     .foregroundColor(.secondary)
+                                                    .lineLimit(1)
+                                                    .minimumScaleFactor(0.75)
                                             }
                                             #endif
                                         }

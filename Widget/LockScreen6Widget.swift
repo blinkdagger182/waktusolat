@@ -57,6 +57,8 @@ struct LockScreen6EntryView: View {
                         Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                             .font(.system(size: 14, weight: .semibold, design: .rounded))
                             .lineLimit(1)
+                            .minimumScaleFactor(0.65)
+                            .truncationMode(.tail)
                     }
 
                     Spacer(minLength: 8)

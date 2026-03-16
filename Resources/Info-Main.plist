@@ -9,7 +9,7 @@
 	<key>VersionCheckConfigURL</key>
 	<string>https://blinkdagger182.github.io/waktusolat/version-check.json</string>
 	<key>MarketingModalConfigURL</key>
-	<string>https://blinkdagger182.github.io/waktusolat/marketing-modal.json</string>
+	<string>https://blinkdagger182.github.io/waktu-config/marketing-modal.json</string>
 	<key>SupportPromoScheduleURL</key>
 	<string>https://api-waktusolat.vercel.app/api/support/toasts/schedule</string>
 	<key>SupportPromoPoolURL</key>
