@@ -40,6 +40,8 @@ struct AlAdhanApp: App {
     @State private var supportPromoMessage = ""
     @State private var supportPromoPoolProgress: SupportPromoPoolProgress?
     @State private var supportPromoCountdownStart = Date()
+    @State private var supportPromoAutoDismissAfter: TimeInterval = 8
+    @State private var supportPromoSchedule = SupportPromoRemoteConfig.initialSchedule
     @State private var rootRefreshToken = UUID()
     @State private var lastUIHeartbeatAt = Date.distantPast
     @State private var lastSceneActiveAt = Date.distantPast
@@ -154,6 +156,7 @@ struct AlAdhanApp: App {
                         message: supportPromoMessage,
                         poolProgress: supportPromoPoolProgress,
                         countdownStartDate: supportPromoCountdownStart,
+                        autoDismissAfter: supportPromoAutoDismissAfter,
                         onSupport: {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showSupportPromoToast = false
@@ -179,6 +182,7 @@ struct AlAdhanApp: App {
                 withAnimation {
                     settings.fetchPrayerTimes()
                 }
+                refreshSupportPromoConfigIfNeeded(force: false)
                 if !settings.firstLaunch {
                     settings.requestLocationAuthorization()
                 }
@@ -192,39 +196,15 @@ struct AlAdhanApp: App {
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToast)) { _ in
                 guard !isLaunching else { return }
-                supportPromoMessage = "Debug trigger. Enjoying Waktu? Support the devs."
-                supportPromoPoolProgress = nil
-                supportPromoCountdownStart = Date()
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
-                    showSupportPromoToast = true
+                Task {
+                    await presentSupportPromoToast(for: supportPromoSchedule.first(where: { $0.triggerKey == "generic_debug" }) ?? .genericDebug)
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToastVariant)) { note in
                 guard !isLaunching else { return }
                 let variant = (note.object as? String) ?? "generic"
-                switch variant {
-                case "launch-5":
-                    supportPromoMessage = "Launch #5. Love Waktu so far? Support the devs with a coffee."
-                    supportPromoPoolProgress = nil
-                case "launch-6":
-                    supportPromoMessage = "Launch #6. Love Waktu so far? Support the devs with a coffee."
-                    supportPromoPoolProgress = nil
-                case "streak-7":
-                    supportPromoMessage = "7-day streak. Enjoying Waktu? Support the devs."
-                    supportPromoPoolProgress = nil
-                case "eid-pool":
-                    supportPromoMessage = "Eid pool is live. Keep Waktu running for everyone."
-                    supportPromoPoolProgress = .eidPrayerPool
-                case "month-pool":
-                    supportPromoMessage = "Monthly pool is open. Chip in to keep Waktu accurate."
-                    supportPromoPoolProgress = .monthlyPool
-                default:
-                    supportPromoMessage = "Debug trigger. Enjoying Waktu? Support the devs."
-                    supportPromoPoolProgress = nil
-                }
-                supportPromoCountdownStart = Date()
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
-                    showSupportPromoToast = true
+                Task {
+                    await presentSupportPromoToast(for: resolvedDebugSupportPromoItem(for: variant))
                 }
             }
         }
@@ -247,6 +227,7 @@ struct AlAdhanApp: App {
         .onChange(of: settings.firstLaunch) { isFirstLaunch in
             if !isFirstLaunch {
                 settings.requestLocationAuthorization()
+                refreshSupportPromoConfigIfNeeded(force: false)
                 presentDailyQuranWidgetIntroIfNeeded()
                 presentSupportPromoToastIfNeeded()
             }
@@ -257,6 +238,7 @@ struct AlAdhanApp: App {
             }
             if phase == .active {
                 lastSceneActiveAt = Date()
+                refreshSupportPromoConfigIfNeeded(force: false)
                 scheduleUIRecoveryWatchdog()
             }
         }
@@ -332,6 +314,30 @@ struct AlAdhanApp: App {
         defaults.set(streak, forKey: "supportPromoActiveDayStreakV1")
     }
 
+    private func supportPromoLastShownKey(for triggerKey: String) -> String {
+        "supportPromoLastShownAtV1.\(triggerKey)"
+    }
+
+    private func lastShownDate(for triggerKey: String, defaults: UserDefaults) -> Date? {
+        let timestamp = defaults.double(forKey: supportPromoLastShownKey(for: triggerKey))
+        guard timestamp > 0 else { return nil }
+        return Date(timeIntervalSince1970: timestamp)
+    }
+
+    private func markSupportPromoShown(_ triggerKey: String, defaults: UserDefaults) {
+        defaults.set(Date().timeIntervalSince1970, forKey: supportPromoLastShownKey(for: triggerKey))
+    }
+
+    private func refreshSupportPromoConfigIfNeeded(force: Bool) {
+        Task {
+            let schedule = await SupportPromoRemoteConfig.loadSchedule(force: force)
+            await MainActor.run {
+                supportPromoSchedule = schedule
+                presentSupportPromoToastIfNeeded()
+            }
+        }
+    }
+
     private func presentSupportPromoToastIfNeeded() {
         guard !isLaunching else { return }
         guard !settings.firstLaunch else { return }
@@ -343,28 +349,100 @@ struct AlAdhanApp: App {
         let launchCount = defaults.integer(forKey: "appLaunchCountV1")
         let streak = defaults.integer(forKey: "supportPromoActiveDayStreakV1")
         var shownTriggers = Set(defaults.stringArray(forKey: "supportPromoShownTriggersV1") ?? [])
-        var trigger: String?
+        guard let selectedItem = supportPromoSchedule.first(where: { item in
+            isEligibleSupportPromoItem(
+                item,
+                launchCount: launchCount,
+                streak: streak,
+                shownTriggers: shownTriggers
+            )
+        }) else { return }
 
-        if streak >= 7 && !shownTriggers.contains("streak-7") {
-            trigger = "streak-7"
-            supportPromoMessage = "7-day streak. Enjoying Waktu? Support the devs."
-        } else if (launchCount == 5 || launchCount == 6) && !shownTriggers.contains("launch-\(launchCount)") {
-            trigger = "launch-\(launchCount)"
-            supportPromoMessage = "Love Waktu so far? Support the devs with a coffee."
+        if selectedItem.showOnce {
+            shownTriggers.insert(selectedItem.triggerKey)
+            defaults.set(Array(shownTriggers), forKey: "supportPromoShownTriggersV1")
         }
-
-        guard let trigger else { return }
-
-        shownTriggers.insert(trigger)
-        defaults.set(Array(shownTriggers), forKey: "supportPromoShownTriggersV1")
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             guard !showDailyQuranWidgetIntro else { return }
-            supportPromoCountdownStart = Date()
-            supportPromoPoolProgress = nil
-            withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
-                showSupportPromoToast = true
+            Task {
+                await presentSupportPromoToast(for: selectedItem)
             }
+        }
+    }
+
+    private func isEligibleSupportPromoItem(
+        _ item: SupportPromoScheduleItem,
+        launchCount: Int,
+        streak: Int,
+        shownTriggers: Set<String>
+    ) -> Bool {
+        guard item.isEnabled else { return false }
+        guard item.audience != .debug else { return false }
+        guard !(item.showOnce && shownTriggers.contains(item.triggerKey)) else { return false }
+        let defaults = UserDefaults.standard
+
+        if let minimumHoursBetweenShows = item.minimumHoursBetweenShows,
+           let lastShownAt = lastShownDate(for: item.triggerKey, defaults: defaults),
+           Date().timeIntervalSince(lastShownAt) < (minimumHoursBetweenShows * 60 * 60) {
+            return false
+        }
+
+        switch item.variant {
+        case .launch:
+            guard let minLaunchCount = item.minLaunchCount else { return false }
+            return launchCount == minLaunchCount
+        case .streak:
+            guard let minActiveDayStreak = item.minActiveDayStreak else { return false }
+            return streak >= minActiveDayStreak
+        case .eidPool, .monthlyPool, .generic:
+            if let minLaunchCount = item.minLaunchCount, launchCount < minLaunchCount {
+                return false
+            }
+            if let minActiveDayStreak = item.minActiveDayStreak, streak < minActiveDayStreak {
+                return false
+            }
+            return true
+        }
+    }
+
+    private func resolvedDebugSupportPromoItem(for variant: String) -> SupportPromoScheduleItem {
+        if let directMatch = supportPromoSchedule.first(where: { $0.triggerKey == variant }) {
+            return directMatch
+        }
+
+        switch variant {
+        case "launch-5":
+            return supportPromoSchedule.first(where: { $0.triggerKey == "launch_5" }) ?? .launch5
+        case "launch-6":
+            return supportPromoSchedule.first(where: { $0.triggerKey == "launch_6" }) ?? .launch6
+        case "streak-7":
+            return supportPromoSchedule.first(where: { $0.triggerKey == "streak_7" }) ?? .streak7
+        case "eid-pool":
+            return supportPromoSchedule.first(where: { $0.triggerKey == "eid_pool" }) ?? .eidPool
+        case "month-pool":
+            return supportPromoSchedule.first(where: { $0.triggerKey == "monthly_pool" }) ?? .monthlyPool
+        default:
+            return supportPromoSchedule.first(where: { $0.triggerKey == "generic_debug" }) ?? .genericDebug
+        }
+    }
+
+    @MainActor
+    private func presentSupportPromoToast(for item: SupportPromoScheduleItem) async {
+        supportPromoMessage = item.message
+        supportPromoAutoDismissAfter = item.autoDismissSeconds
+        supportPromoCountdownStart = Date()
+        markSupportPromoShown(item.triggerKey, defaults: UserDefaults.standard)
+
+        if item.hasProgress {
+            let poolSnapshot = await SupportPromoRemoteConfig.loadPoolSnapshot(force: false)
+            supportPromoPoolProgress = SupportPromoPoolProgress(snapshot: poolSnapshot, variant: item.variant)
+        } else {
+            supportPromoPoolProgress = nil
+        }
+
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+            showSupportPromoToast = true
         }
     }
 
@@ -377,44 +455,55 @@ private struct QuranDeepLinkPayload: Identifiable {
 
 private struct SupportPromoPoolProgress {
     let title: String
-    let current: Int
-    let target: Int
+    let current: Double
+    let target: Double
     let subtitle: String
 
     var fraction: Double {
         guard target > 0 else { return 0 }
-        return min(max(Double(current) / Double(target), 0), 1)
+        return min(max(current / target, 0), 1)
     }
 
     var amountLabel: String {
-        "RM\(current.formatted()) / RM\(target.formatted())"
+        "RM\(Self.formatAmount(current)) / RM\(Self.formatAmount(target))"
     }
 
-    static let eidPrayerPool = SupportPromoPoolProgress(
-        title: "Eid Prayer Support Pool",
-        current: 3620,
-        target: 5000,
-        subtitle: "Every contribution helps"
-    )
+    init(snapshot: SupportPromoPoolSnapshot, variant: SupportPromoVariant) {
+        switch variant {
+        case .eidPool:
+            title = "Eid Prayer Support Pool"
+            subtitle = "Every contribution helps"
+        case .monthlyPool:
+            title = "Monthly Support Pool"
+            subtitle = "Powered by the community"
+        case .generic, .launch, .streak:
+            title = "Support Pool"
+            subtitle = "Powered by the community"
+        }
 
-    static let monthlyPool = SupportPromoPoolProgress(
-        title: "Monthly Support Pool",
-        current: 1940,
-        target: 3000,
-        subtitle: "Powered by the community"
-    )
+        current = snapshot.totalAmount
+        target = snapshot.targetAmount
+    }
+
+    private static func formatAmount(_ value: Double) -> String {
+        if value.rounded() == value {
+            return String(Int(value))
+        }
+
+        return value.formatted(.number.precision(.fractionLength(2)))
+    }
 }
 
 private struct SupportPromoToast: View {
     let message: String
     let poolProgress: SupportPromoPoolProgress?
     let countdownStartDate: Date
+    let autoDismissAfter: TimeInterval
     let onSupport: () -> Void
     let onDismiss: () -> Void
-    private let autoDismissAfter: TimeInterval = 8
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             Image(systemName: "heart.fill")
                 .foregroundStyle(.pink)
                 .font(.subheadline.weight(.bold))
@@ -447,26 +536,31 @@ private struct SupportPromoToast: View {
                         Text("\(poolProgress.amountLabel) • \(poolProgress.subtitle)")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
+            .layoutPriority(1)
 
             Spacer(minLength: 4)
 
-            Button("Support") {
-                onSupport()
-            }
-            .font(.caption.weight(.semibold))
-            .buttonStyle(.borderedProminent)
-            .tint(.orange)
+            HStack(spacing: 8) {
+                Button("Support") {
+                    onSupport()
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
 
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .fixedSize()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -493,6 +587,349 @@ private struct SupportPromoToast: View {
                 onDismiss()
             }
         }
+    }
+}
+
+private enum SupportPromoAudience: String, Codable {
+    case debug
+    case production
+    case all
+}
+
+private enum SupportPromoVariant: String, Codable {
+    case generic
+    case launch
+    case streak
+    case eidPool = "eid_pool"
+    case monthlyPool = "monthly_pool"
+}
+
+private struct SupportPromoScheduleItem: Codable, Identifiable {
+    let triggerKey: String
+    let isEnabled: Bool
+    let audience: SupportPromoAudience
+    let title: String?
+    let message: String
+    let variant: SupportPromoVariant
+    let minLaunchCount: Int?
+    let minActiveDayStreak: Int?
+    let minimumHoursBetweenShows: Double?
+    let showOnce: Bool
+    let priority: Int
+    let hasProgress: Bool
+    let autoDismissSeconds: TimeInterval
+
+    var id: String { triggerKey }
+
+    enum CodingKeys: String, CodingKey {
+        case triggerKey = "trigger_key"
+        case isEnabled = "is_enabled"
+        case audience
+        case title
+        case message
+        case variant
+        case minLaunchCount = "min_launch_count"
+        case minActiveDayStreak = "min_active_day_streak"
+        case minimumHoursBetweenShows = "minimum_hours_between_shows"
+        case showOnce = "show_once"
+        case priority
+        case hasProgress = "has_progress"
+        case autoDismissSeconds = "auto_dismiss_seconds"
+    }
+
+    static let genericDebug = SupportPromoScheduleItem(
+        triggerKey: "generic_debug",
+        isEnabled: true,
+        audience: .debug,
+        title: nil,
+        message: "Enjoying Waktu? Support it.",
+        variant: .generic,
+        minLaunchCount: nil,
+        minActiveDayStreak: nil,
+        minimumHoursBetweenShows: 24,
+        showOnce: false,
+        priority: 100,
+        hasProgress: false,
+        autoDismissSeconds: 8
+    )
+
+    static let launch5 = SupportPromoScheduleItem(
+        triggerKey: "launch_5",
+        isEnabled: true,
+        audience: .production,
+        title: nil,
+        message: "Love Waktu? Help keep it running.",
+        variant: .launch,
+        minLaunchCount: 5,
+        minActiveDayStreak: nil,
+        minimumHoursBetweenShows: nil,
+        showOnce: true,
+        priority: 10,
+        hasProgress: false,
+        autoDismissSeconds: 8
+    )
+
+    static let launch6 = SupportPromoScheduleItem(
+        triggerKey: "launch_6",
+        isEnabled: true,
+        audience: .production,
+        title: nil,
+        message: "Use Waktu daily? Support this month's costs.",
+        variant: .launch,
+        minLaunchCount: 6,
+        minActiveDayStreak: nil,
+        minimumHoursBetweenShows: nil,
+        showOnce: true,
+        priority: 20,
+        hasProgress: false,
+        autoDismissSeconds: 8
+    )
+
+    static let streak7 = SupportPromoScheduleItem(
+        triggerKey: "streak_7",
+        isEnabled: true,
+        audience: .production,
+        title: nil,
+        message: "7 days in a row. Help keep Waktu going.",
+        variant: .streak,
+        minLaunchCount: nil,
+        minActiveDayStreak: 7,
+        minimumHoursBetweenShows: nil,
+        showOnce: true,
+        priority: 30,
+        hasProgress: false,
+        autoDismissSeconds: 8
+    )
+
+    static let eidPool = SupportPromoScheduleItem(
+        triggerKey: "eid_pool",
+        isEnabled: false,
+        audience: .production,
+        title: nil,
+        message: "Eid pool is live. Keep Waktu running.",
+        variant: .eidPool,
+        minLaunchCount: nil,
+        minActiveDayStreak: nil,
+        minimumHoursBetweenShows: 72,
+        showOnce: false,
+        priority: 40,
+        hasProgress: true,
+        autoDismissSeconds: 8
+    )
+
+    static let monthlyPool = SupportPromoScheduleItem(
+        triggerKey: "monthly_pool",
+        isEnabled: false,
+        audience: .production,
+        title: nil,
+        message: "This month's pool is open. Keep Waktu accurate.",
+        variant: .monthlyPool,
+        minLaunchCount: nil,
+        minActiveDayStreak: nil,
+        minimumHoursBetweenShows: 168,
+        showOnce: false,
+        priority: 50,
+        hasProgress: true,
+        autoDismissSeconds: 8
+    )
+}
+
+private struct SupportPromoPoolSnapshot: Codable {
+    let month: String
+    let monthStart: String
+    let totalAmount: Double
+    let targetAmount: Double
+    let capAmount: Double
+    let progress: Double
+
+    enum CodingKeys: String, CodingKey {
+        case month
+        case monthStart
+        case totalAmount
+        case targetAmount
+        case capAmount
+        case progress
+    }
+
+    static let fallback = SupportPromoPoolSnapshot(
+        month: "",
+        monthStart: "",
+        totalAmount: 0,
+        targetAmount: 150,
+        capAmount: 1000,
+        progress: 0
+    )
+}
+
+private enum SupportPromoRemoteConfig {
+    private static let defaults = UserDefaults.standard
+    private static let scheduleCacheKey = "supportPromoScheduleCachedPayloadV1"
+    private static let scheduleCacheTimeKey = "supportPromoScheduleLastFetchTimeV1"
+    private static let poolCacheKey = "supportPromoPoolCachedPayloadV1"
+    private static let poolCacheTimeKey = "supportPromoPoolLastFetchTimeV1"
+    #if DEBUG
+    private static let scheduleCacheTTL: TimeInterval = 0
+    private static let poolCacheTTL: TimeInterval = 0
+    #else
+    private static let scheduleCacheTTL: TimeInterval = 60 * 30
+    private static let poolCacheTTL: TimeInterval = 60 * 10
+    #endif
+
+    static let defaultSchedule: [SupportPromoScheduleItem] = [
+        .launch5,
+        .launch6,
+        .streak7,
+        .eidPool,
+        .monthlyPool,
+        .genericDebug,
+    ]
+
+    static var initialSchedule: [SupportPromoScheduleItem] {
+        if let cached = decodeSchedule(from: defaults.string(forKey: scheduleCacheKey) ?? "") {
+            return sanitizeSchedule(cached)
+        }
+
+        return defaultSchedule
+    }
+
+    static func loadSchedule(force: Bool) async -> [SupportPromoScheduleItem] {
+        if !force, let cached = cachedScheduleIfFresh() {
+            return sanitizeSchedule(cached)
+        }
+
+        let url = SupportPromoConfigURLResolver.resolveScheduleNoCacheURL()
+
+        do {
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.timeoutInterval = 12
+            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+
+            let session = URLSession(configuration: .ephemeral)
+            let (data, _) = try await session.data(for: request)
+            guard let payload = String(data: data, encoding: .utf8) else {
+                return defaultSchedule
+            }
+
+            defaults.set(payload, forKey: scheduleCacheKey)
+            defaults.set(Date().timeIntervalSince1970, forKey: scheduleCacheTimeKey)
+
+            let decoded = try JSONDecoder().decode([SupportPromoScheduleItem].self, from: data)
+            return sanitizeSchedule(decoded)
+        } catch {
+            if let cached = decodeSchedule(from: defaults.string(forKey: scheduleCacheKey) ?? "") {
+                return sanitizeSchedule(cached)
+            }
+
+            return defaultSchedule
+        }
+    }
+
+    static func loadPoolSnapshot(force: Bool) async -> SupportPromoPoolSnapshot {
+        if !force, let cached = cachedPoolIfFresh() {
+            return cached
+        }
+
+        let url = SupportPromoConfigURLResolver.resolvePoolNoCacheURL()
+
+        do {
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.timeoutInterval = 12
+            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+
+            let session = URLSession(configuration: .ephemeral)
+            let (data, _) = try await session.data(for: request)
+            guard let payload = String(data: data, encoding: .utf8) else {
+                return .fallback
+            }
+
+            defaults.set(payload, forKey: poolCacheKey)
+            defaults.set(Date().timeIntervalSince1970, forKey: poolCacheTimeKey)
+
+            return try JSONDecoder().decode(SupportPromoPoolSnapshot.self, from: data)
+        } catch {
+            return cachedPoolIfFresh() ?? decodePool(from: defaults.string(forKey: poolCacheKey) ?? "") ?? .fallback
+        }
+    }
+
+    private static func cachedScheduleIfFresh() -> [SupportPromoScheduleItem]? {
+        let age = Date().timeIntervalSince1970 - defaults.double(forKey: scheduleCacheTimeKey)
+        guard age < scheduleCacheTTL else { return nil }
+        return decodeSchedule(from: defaults.string(forKey: scheduleCacheKey) ?? "")
+    }
+
+    private static func cachedPoolIfFresh() -> SupportPromoPoolSnapshot? {
+        let age = Date().timeIntervalSince1970 - defaults.double(forKey: poolCacheTimeKey)
+        guard age < poolCacheTTL else { return nil }
+        return decodePool(from: defaults.string(forKey: poolCacheKey) ?? "")
+    }
+
+    private static func decodeSchedule(from payload: String) -> [SupportPromoScheduleItem]? {
+        guard let data = payload.data(using: .utf8), !payload.isEmpty else { return nil }
+        return try? JSONDecoder().decode([SupportPromoScheduleItem].self, from: data)
+    }
+
+    private static func decodePool(from payload: String) -> SupportPromoPoolSnapshot? {
+        guard let data = payload.data(using: .utf8), !payload.isEmpty else { return nil }
+        return try? JSONDecoder().decode(SupportPromoPoolSnapshot.self, from: data)
+    }
+
+    private static func sanitizeSchedule(_ schedule: [SupportPromoScheduleItem]) -> [SupportPromoScheduleItem] {
+        let merged = Dictionary(uniqueKeysWithValues: defaultSchedule.map { ($0.triggerKey, $0) })
+            .merging(Dictionary(uniqueKeysWithValues: schedule.map { ($0.triggerKey, $0) })) { _, remote in remote }
+
+        return merged.values.sorted { lhs, rhs in
+            if lhs.priority == rhs.priority {
+                return lhs.triggerKey < rhs.triggerKey
+            }
+            return lhs.priority < rhs.priority
+        }
+    }
+}
+
+private enum SupportPromoConfigURLResolver {
+    private static let defaultScheduleURL = "https://api-waktusolat.vercel.app/api/support/toasts/schedule"
+    private static let defaultPoolURL = "https://api-waktusolat.vercel.app/api/donations/pool/current"
+
+    static func resolveScheduleURL() -> URL {
+        if let fromInfo = Bundle.main.object(forInfoDictionaryKey: "SupportPromoScheduleURL") as? String,
+           let url = URL(string: fromInfo),
+           !fromInfo.isEmpty {
+            return url
+        }
+
+        return URL(string: defaultScheduleURL)!
+    }
+
+    static func resolvePoolURL() -> URL {
+        if let fromInfo = Bundle.main.object(forInfoDictionaryKey: "SupportPromoPoolURL") as? String,
+           let url = URL(string: fromInfo),
+           !fromInfo.isEmpty {
+            return url
+        }
+
+        return URL(string: defaultPoolURL)!
+    }
+
+    static func resolveScheduleNoCacheURL() -> URL {
+        nocacheURL(from: resolveScheduleURL())
+    }
+
+    static func resolvePoolNoCacheURL() -> URL {
+        nocacheURL(from: resolvePoolURL())
+    }
+
+    private static func nocacheURL(from url: URL) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        var items = components.queryItems ?? []
+        let stamp = String(Int(Date().timeIntervalSince1970 / 60))
+        items.removeAll(where: { $0.name == "_nocache" })
+        items.append(URLQueryItem(name: "_nocache", value: stamp))
+        components.queryItems = items
+        return components.url ?? url
     }
 }
 

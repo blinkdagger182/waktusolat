@@ -133,6 +133,104 @@ final class RevenueCatManager: NSObject, ObservableObject {
 }
 #endif
 
+private struct SupportToastDebugOption: Identifiable, Codable {
+    let triggerKey: String
+    let message: String
+
+    var id: String { triggerKey }
+
+    var debugLabel: String {
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? triggerKey : trimmed
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case triggerKey = "trigger_key"
+        case message
+    }
+
+    static let defaultOptions: [SupportToastDebugOption] = [
+        SupportToastDebugOption(triggerKey: "generic_debug", message: "Enjoying Waktu? Support it."),
+        SupportToastDebugOption(triggerKey: "launch_5", message: "Love Waktu? Help keep it running."),
+        SupportToastDebugOption(triggerKey: "launch_6", message: "Use Waktu daily? Support this month's costs."),
+        SupportToastDebugOption(triggerKey: "streak_7", message: "7 days in a row. Help keep Waktu going."),
+        SupportToastDebugOption(triggerKey: "eid_pool", message: "Eid pool is live. Keep Waktu running."),
+        SupportToastDebugOption(triggerKey: "monthly_pool", message: "This month's pool is open. Keep Waktu accurate."),
+    ]
+}
+
+private enum SupportToastDebugLoader {
+    private static let cacheKey = "supportToastDebugOptionsCachedPayloadV1"
+    private static let cacheTimeKey = "supportToastDebugOptionsLastFetchTimeV1"
+    private static let defaults = UserDefaults.standard
+    #if DEBUG
+    private static let cacheTTL: TimeInterval = 0
+    #else
+    private static let cacheTTL: TimeInterval = 60 * 30
+    #endif
+
+    static func load() async -> [SupportToastDebugOption] {
+        if let cached = cachedIfFresh() {
+            return cached
+        }
+
+        do {
+            let url = resolveNoCacheURL()
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.timeoutInterval = 12
+            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+
+            let session = URLSession(configuration: .ephemeral)
+            let (data, _) = try await session.data(for: request)
+            guard let payload = String(data: data, encoding: .utf8) else {
+                return SupportToastDebugOption.defaultOptions
+            }
+
+            defaults.set(payload, forKey: cacheKey)
+            defaults.set(Date().timeIntervalSince1970, forKey: cacheTimeKey)
+
+            let decoded = try JSONDecoder().decode([SupportToastDebugOption].self, from: data)
+            return decoded.isEmpty ? SupportToastDebugOption.defaultOptions : decoded
+        } catch {
+            return cachedIfFresh() ?? decode(from: defaults.string(forKey: cacheKey) ?? "") ?? SupportToastDebugOption.defaultOptions
+        }
+    }
+
+    private static func cachedIfFresh() -> [SupportToastDebugOption]? {
+        let age = Date().timeIntervalSince1970 - defaults.double(forKey: cacheTimeKey)
+        guard age < cacheTTL else { return nil }
+        return decode(from: defaults.string(forKey: cacheKey) ?? "")
+    }
+
+    private static func decode(from payload: String) -> [SupportToastDebugOption]? {
+        guard let data = payload.data(using: .utf8), !payload.isEmpty else { return nil }
+        return try? JSONDecoder().decode([SupportToastDebugOption].self, from: data)
+    }
+
+    private static func resolveURL() -> URL {
+        if let fromInfo = Bundle.main.object(forInfoDictionaryKey: "SupportPromoScheduleURL") as? String,
+           let url = URL(string: fromInfo),
+           !fromInfo.isEmpty {
+            return url
+        }
+
+        return URL(string: "https://api-waktusolat.vercel.app/api/support/toasts/schedule")!
+    }
+
+    private static func resolveNoCacheURL() -> URL {
+        let url = resolveURL()
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        var items = components.queryItems ?? []
+        let stamp = String(Int(Date().timeIntervalSince1970 / 60))
+        items.removeAll(where: { $0.name == "_nocache" })
+        items.append(URLQueryItem(name: "_nocache", value: stamp))
+        components.queryItems = items
+        return components.url ?? url
+    }
+}
+
 struct SettingsView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
@@ -144,6 +242,7 @@ struct SettingsView: View {
     @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
     @State private var showingSupportToastDebugPicker = false
+    @State private var supportToastDebugOptions = SupportToastDebugOption.defaultOptions
     @State private var showDonationCelebration = false
     @State private var hasInitializedEntitlementState = false
     @State private var lastKnownDonationState = false
@@ -272,6 +371,7 @@ struct SettingsView: View {
             revenueCat.configure()
             await revenueCat.refreshCustomerInfo()
             await revenueCat.refreshOfferings()
+            await loadSupportToastDebugOptions()
             lastKnownDonationState = revenueCat.hasBuyMeKopi
             hasInitializedEntitlementState = true
         }
@@ -309,6 +409,9 @@ struct SettingsView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .active {
                 postUIHeartbeat()
+                Task {
+                    await loadSupportToastDebugOptions()
+                }
             }
         }
         .confirmationDialog(
@@ -316,23 +419,10 @@ struct SettingsView: View {
             isPresented: $showingSupportToastDebugPicker,
             titleVisibility: .visible
         ) {
-            Button("Default") {
-                NotificationCenter.default.post(name: .debugShowSupportPromoToast, object: nil)
-            }
-            Button("Launch #5 Variant") {
-                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "launch-5")
-            }
-            Button("Launch #6 Variant") {
-                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "launch-6")
-            }
-            Button("7-Day Streak Variant") {
-                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "streak-7")
-            }
-            Button("Eid Prayer Pool") {
-                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "eid-pool")
-            }
-            Button("Monthly Support Pool") {
-                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "month-pool")
+            ForEach(supportToastDebugOptions) { option in
+                Button(option.debugLabel) {
+                    NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: option.triggerKey)
+                }
             }
             Button("Cancel", role: .cancel) {}
         }
@@ -380,6 +470,10 @@ struct SettingsView: View {
                 revenueCat.lastErrorMessage = "Offering '\(paywallOfferingIdentifier)' not found. Available offerings: \(available)"
             }
         }
+    }
+
+    private func loadSupportToastDebugOptions() async {
+        supportToastDebugOptions = await SupportToastDebugLoader.load()
     }
     
     private var donationImpactMessage: String {
