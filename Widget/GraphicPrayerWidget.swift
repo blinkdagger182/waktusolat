@@ -131,21 +131,6 @@ private struct GraphicPrayerEntryView: View {
         return (full, "")
     }
 
-    private func countdownText(until date: Date) -> String {
-        let seconds = max(0, Int(date.timeIntervalSinceNow))
-        let hours = seconds / 3600
-        let minutes = (seconds % 3600) / 60
-
-        if hours > 0 {
-            let hourLabel = hours == 1 ? "hr" : "hrs"
-            let minuteLabel = minutes == 1 ? "min" : "mins"
-            return "In \(hours) \(hourLabel) \(minutes) \(minuteLabel)"
-        }
-
-        let minuteLabel = minutes == 1 ? "min" : "mins"
-        return "In \(minutes) \(minuteLabel)"
-    }
-
     @ViewBuilder
     private func backgroundView(for prayer: Prayer?) -> some View {
         #if os(iOS)
@@ -197,9 +182,13 @@ private struct GraphicPrayerEntryView: View {
                     }
                     .foregroundColor(.white)
 
-                    Text(countdownText(until: prayer.time))
-                        .font(.title3.weight(.semibold))
-                        .foregroundColor(.white.opacity(0.95))
+                    HStack(spacing: 5) {
+                        Text("In")
+                        Text(prayer.time, style: .timer)
+                    }
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.95))
+                    .monospacedDigit()
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -225,16 +214,6 @@ private struct GraphicPrayerSquareEntryView: View {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
-    }
-
-    private func countdownText(until date: Date) -> String {
-        let seconds = max(0, Int(date.timeIntervalSinceNow))
-        let hours = seconds / 3600
-        let minutes = (seconds % 3600) / 60
-        if hours > 0 {
-            return "In \(hours)h \(minutes)m"
-        }
-        return "In \(minutes)m"
     }
 
     var body: some View {
@@ -279,9 +258,13 @@ private struct GraphicPrayerSquareEntryView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
 
-                Text(countdownText(until: entry.prayerTime))
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text("In")
+                    Text(entry.prayerTime, style: .timer)
+                }
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .monospacedDigit()
             }
             .padding(12)
             .foregroundColor(.white)

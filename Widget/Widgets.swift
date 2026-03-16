@@ -299,6 +299,7 @@ struct Widgets: WidgetBundle {
             LockScreen2Widget()
             LockScreen3Widget()
             LockScreen4Widget()
+            LockScreen6Widget()
             // LockScreen5Widget() // Temporarily disabled
             LockScreenVerseWidget()
             #if canImport(ActivityKit)

@@ -7,6 +7,7 @@ private struct VersionConfig: Codable {
     let softMessage: String?
     let forceMessage: String?
     let enabled: Bool?
+    let uiRecoveryEnabled: Bool?
 
     enum CodingKeys: String, CodingKey {
         case latestVersion = "latest_version"
@@ -15,6 +16,7 @@ private struct VersionConfig: Codable {
         case softMessage = "soft_message"
         case forceMessage = "force_message"
         case enabled
+        case uiRecoveryEnabled = "ui_recovery_enabled"
     }
 }
 
@@ -32,6 +34,7 @@ private struct AppVersionGateModifier: ViewModifier {
     @AppStorage("versionCheckCachedPayload") private var cachedPayload: String = ""
     @AppStorage("versionCheckLastSoftPromptVersion") private var lastSoftPromptVersion: String = ""
     @AppStorage("versionCheckLastSoftPromptTime") private var lastSoftPromptTime: Double = 0
+    @AppStorage("remoteUIRecoveryEnabled") private var remoteUIRecoveryEnabled: Bool = true
 
     @State private var isChecking = false
     @State private var updateURL: URL?
@@ -138,6 +141,10 @@ private struct AppVersionGateModifier: ViewModifier {
     }
 
     private func evaluate(_ config: VersionConfig) {
+        if let remoteFlag = config.uiRecoveryEnabled {
+            remoteUIRecoveryEnabled = remoteFlag
+        }
+
         guard config.enabled ?? true else { return }
         guard let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String else { return }
         guard let appStoreURL = URL(string: config.appStoreURL) else { return }

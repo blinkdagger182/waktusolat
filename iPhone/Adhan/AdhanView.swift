@@ -78,6 +78,10 @@ struct AdhanView: View {
         }
     }
 
+    private func postUIHeartbeat() {
+        NotificationCenter.default.post(name: .uiContentHeartbeat, object: nil)
+    }
+
     var body: some View {
         NavigationView {
             List {
@@ -255,11 +259,13 @@ struct AdhanView: View {
                 prayerTimeRefresh(force: true)
             }
             .onAppear {
+                postUIHeartbeat()
                 prayerTimeRefresh(force: false)
                 loadDailyQuranQuote()
             }
             .onChange(of: scenePhase) { newScenePhase in
                 if newScenePhase == .active {
+                    postUIHeartbeat()
                     prayerTimeRefresh(force: false)
                     loadDailyQuranQuote()
                 }
@@ -300,6 +306,18 @@ struct AdhanView: View {
                             NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "streak-7")
                         } label: {
                             Label("Donation Toast (Streak 7)", systemImage: "flame")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "eid-pool")
+                        } label: {
+                            Label("Donation Toast (Eid Pool)", systemImage: "moon.stars")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "month-pool")
+                        } label: {
+                            Label("Donation Toast (Monthly Pool)", systemImage: "calendar")
                         }
                     } label: {
                         Image(systemName: "ladybug")

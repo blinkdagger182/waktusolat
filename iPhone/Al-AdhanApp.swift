@@ -9,6 +9,7 @@ extension Notification.Name {
     static let debugShowSupportPromoToast = Notification.Name("debugShowSupportPromoToast")
     static let debugShowSupportPromoToastVariant = Notification.Name("debugShowSupportPromoToastVariant")
     static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
+    static let uiContentHeartbeat = Notification.Name("uiContentHeartbeat")
 }
 
 @main
@@ -28,6 +29,7 @@ struct AlAdhanApp: App {
     
     @AppStorage("firstLaunchSheet") var firstLaunchSheet: Bool = true
     @AppStorage("didShowDailyQuranWidgetIntroV1") private var didShowDailyQuranWidgetIntro = false
+    @AppStorage("remoteUIRecoveryEnabled") private var remoteUIRecoveryEnabled = true
     @State var showAdhanSheet: Bool = false
     @State private var showDailyQuranWidgetIntro = false
     
@@ -36,7 +38,13 @@ struct AlAdhanApp: App {
     @State private var selectedTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
     @State private var supportPromoMessage = ""
+    @State private var supportPromoPoolProgress: SupportPromoPoolProgress?
     @State private var supportPromoCountdownStart = Date()
+    @State private var rootRefreshToken = UUID()
+    @State private var lastUIHeartbeatAt = Date.distantPast
+    @State private var lastSceneActiveAt = Date.distantPast
+    @State private var lastUIRecoveryAt = Date.distantPast
+    @State private var uiRecoveryTask: Task<Void, Never>?
 
     init() {
         RevenueCatManager.shared.configure()
@@ -105,6 +113,7 @@ struct AlAdhanApp: App {
                     }
                 }
             }
+            .id(rootRefreshToken)
             //.statusBarHidden(true)
             .environmentObject(settings)
             .environmentObject(namesData)
@@ -143,6 +152,7 @@ struct AlAdhanApp: App {
                 if showSupportPromoToast {
                     SupportPromoToast(
                         message: supportPromoMessage,
+                        poolProgress: supportPromoPoolProgress,
                         countdownStartDate: supportPromoCountdownStart,
                         onSupport: {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -165,12 +175,17 @@ struct AlAdhanApp: App {
                 }
             }
             .onAppear {
+                lastUIHeartbeatAt = Date()
                 withAnimation {
                     settings.fetchPrayerTimes()
                 }
                 if !settings.firstLaunch {
                     settings.requestLocationAuthorization()
                 }
+                scheduleUIRecoveryWatchdog()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .uiContentHeartbeat)) { _ in
+                lastUIHeartbeatAt = Date()
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugShowDailyQuranWidgetIntro)) { _ in
                 showDailyQuranWidgetIntro = true
@@ -178,6 +193,7 @@ struct AlAdhanApp: App {
             .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToast)) { _ in
                 guard !isLaunching else { return }
                 supportPromoMessage = "Debug trigger. Enjoying Waktu? Support the devs."
+                supportPromoPoolProgress = nil
                 supportPromoCountdownStart = Date()
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
                     showSupportPromoToast = true
@@ -189,12 +205,22 @@ struct AlAdhanApp: App {
                 switch variant {
                 case "launch-5":
                     supportPromoMessage = "Launch #5. Love Waktu so far? Support the devs with a coffee."
+                    supportPromoPoolProgress = nil
                 case "launch-6":
                     supportPromoMessage = "Launch #6. Love Waktu so far? Support the devs with a coffee."
+                    supportPromoPoolProgress = nil
                 case "streak-7":
                     supportPromoMessage = "7-day streak. Enjoying Waktu? Support the devs."
+                    supportPromoPoolProgress = nil
+                case "eid-pool":
+                    supportPromoMessage = "Eid pool is live. Keep Waktu running for everyone."
+                    supportPromoPoolProgress = .eidPrayerPool
+                case "month-pool":
+                    supportPromoMessage = "Monthly pool is open. Chip in to keep Waktu accurate."
+                    supportPromoPoolProgress = .monthlyPool
                 default:
                     supportPromoMessage = "Debug trigger. Enjoying Waktu? Support the devs."
+                    supportPromoPoolProgress = nil
                 }
                 supportPromoCountdownStart = Date()
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
@@ -229,7 +255,45 @@ struct AlAdhanApp: App {
             if phase == .active, !settings.firstLaunch {
                 settings.requestLocationAuthorization()
             }
+            if phase == .active {
+                lastSceneActiveAt = Date()
+                scheduleUIRecoveryWatchdog()
+            }
         }
+    }
+
+    private func scheduleUIRecoveryWatchdog() {
+        uiRecoveryTask?.cancel()
+        guard remoteUIRecoveryEnabled else { return }
+        guard !isLaunching, !settings.firstLaunch else { return }
+
+        let activeStartedAt = lastSceneActiveAt == .distantPast ? Date() : lastSceneActiveAt
+        if lastSceneActiveAt == .distantPast {
+            lastSceneActiveAt = activeStartedAt
+        }
+
+        uiRecoveryTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard !Task.isCancelled else { return }
+            guard scenePhase == .active else { return }
+            guard remoteUIRecoveryEnabled else { return }
+            guard !isLaunching, !settings.firstLaunch else { return }
+            guard lastUIHeartbeatAt < activeStartedAt else { return }
+            guard Date().timeIntervalSince(lastUIRecoveryAt) > 20 else { return }
+            performSafeUIRecovery()
+        }
+    }
+
+    @MainActor
+    private func performSafeUIRecovery() {
+        lastUIRecoveryAt = Date()
+        showAdhanSheet = false
+        showDailyQuranWidgetIntro = false
+        showSupportPromoToast = false
+        quranDeepLink = nil
+        selectedTab = .adhan
+        rootRefreshToken = UUID()
+        settings.fetchPrayerTimes(force: true)
     }
 
     private func presentDailyQuranWidgetIntroIfNeeded() {
@@ -297,6 +361,7 @@ struct AlAdhanApp: App {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             guard !showDailyQuranWidgetIntro else { return }
             supportPromoCountdownStart = Date()
+            supportPromoPoolProgress = nil
             withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
                 showSupportPromoToast = true
             }
@@ -310,8 +375,39 @@ private struct QuranDeepLinkPayload: Identifiable {
     var id: String { reference }
 }
 
+private struct SupportPromoPoolProgress {
+    let title: String
+    let current: Int
+    let target: Int
+    let subtitle: String
+
+    var fraction: Double {
+        guard target > 0 else { return 0 }
+        return min(max(Double(current) / Double(target), 0), 1)
+    }
+
+    var amountLabel: String {
+        "RM\(current.formatted()) / RM\(target.formatted())"
+    }
+
+    static let eidPrayerPool = SupportPromoPoolProgress(
+        title: "Eid Prayer Support Pool",
+        current: 3620,
+        target: 5000,
+        subtitle: "Every contribution helps"
+    )
+
+    static let monthlyPool = SupportPromoPoolProgress(
+        title: "Monthly Support Pool",
+        current: 1940,
+        target: 3000,
+        subtitle: "Powered by the community"
+    )
+}
+
 private struct SupportPromoToast: View {
     let message: String
+    let poolProgress: SupportPromoPoolProgress?
     let countdownStartDate: Date
     let onSupport: () -> Void
     let onDismiss: () -> Void
@@ -323,10 +419,38 @@ private struct SupportPromoToast: View {
                 .foregroundStyle(.pink)
                 .font(.subheadline.weight(.bold))
 
-            Text(message)
-                .font(.subheadline)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(message)
+                    .font(.subheadline)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                if let poolProgress {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(poolProgress.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        GeometryReader { proxy in
+                            let width = max(proxy.size.width, 0)
+                            Capsule()
+                                .fill(Color.orange.opacity(0.18))
+                                .overlay(alignment: .leading) {
+                                    Capsule()
+                                        .fill(.orange)
+                                        .frame(width: width * poolProgress.fraction)
+                                }
+                        }
+                        .frame(height: 6)
+
+                        Text("\(poolProgress.amountLabel) • \(poolProgress.subtitle)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
 
             Spacer(minLength: 4)
 

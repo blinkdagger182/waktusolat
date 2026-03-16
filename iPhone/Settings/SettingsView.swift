@@ -136,16 +136,22 @@ final class RevenueCatManager: NSObject, ObservableObject {
 struct SettingsView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("donationSuccessCount") private var donationSuccessCount: Int = 0
     @AppStorage("appLaunchCountV1") private var appLaunchCount: Int = 0
     
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
+    @State private var showingSupportToastDebugPicker = false
     @State private var showDonationCelebration = false
     @State private var hasInitializedEntitlementState = false
     @State private var lastKnownDonationState = false
     private let paywallOfferingIdentifier = "Waktu Donation"
+
+    private func postUIHeartbeat() {
+        NotificationCenter.default.post(name: .uiContentHeartbeat, object: nil)
+    }
 
     var body: some View {
         ZStack {
@@ -243,7 +249,7 @@ struct SettingsView: View {
                         }
 
                         Button {
-                            NotificationCenter.default.post(name: .debugShowSupportPromoToast, object: nil)
+                            showingSupportToastDebugPicker = true
                         } label: {
                             Label("Trigger Support Toast", systemImage: "heart.fill")
                                 .foregroundColor(settings.accentColor.color)
@@ -296,6 +302,39 @@ struct SettingsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSupportDonationPaywall)) { _ in
             openDonationPaywall()
+        }
+        .onAppear {
+            postUIHeartbeat()
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                postUIHeartbeat()
+            }
+        }
+        .confirmationDialog(
+            "Trigger Support Toast",
+            isPresented: $showingSupportToastDebugPicker,
+            titleVisibility: .visible
+        ) {
+            Button("Default") {
+                NotificationCenter.default.post(name: .debugShowSupportPromoToast, object: nil)
+            }
+            Button("Launch #5 Variant") {
+                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "launch-5")
+            }
+            Button("Launch #6 Variant") {
+                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "launch-6")
+            }
+            Button("7-Day Streak Variant") {
+                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "streak-7")
+            }
+            Button("Eid Prayer Pool") {
+                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "eid-pool")
+            }
+            Button("Monthly Support Pool") {
+                NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: "month-pool")
+            }
+            Button("Cancel", role: .cancel) {}
         }
     }
 

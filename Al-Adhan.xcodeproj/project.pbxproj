@@ -61,14 +61,15 @@
 		72CCAE642D42CDEB00871A6A /* ConditionalStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE632D42CDEB00871A6A /* ConditionalStyle.swift */; };
 		72CCAE662D42CE0000871A6A /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE652D42CE0000871A6A /* SearchBar.swift */; };
 		72CCAE682D42CE2B00871A6A /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE672D42CE2B00871A6A /* DismissKeyboard.swift */; };
-		72D0BCCB2D7AE99600B7E4F5 /* Prayers2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */; };
-		72F4D8E42F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */; };
-		A10000012F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
-		A10000022F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
-		A20000012F80000100ABCDEF /* IMG_9643.jpg in Resources */ = {isa = PBXBuildFile; fileRef = A20000002F80000100ABCDEF /* IMG_9643.jpg */; };
-		A30000012F90000100ABCDEF /* azan_waktu.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A30000002F90000100ABCDEF /* azan_waktu.mp3 */; };
-		A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */; };
-		FCB183172F4D506300249966 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183162F4D506300249966 /* RevenueCat */; };
+			72D0BCCB2D7AE99600B7E4F5 /* Prayers2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */; };
+			72F4D8E42F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */; };
+			A10000012F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
+			A10000022F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
+			A20000012F80000100ABCDEF /* IMG_9643.jpg in Resources */ = {isa = PBXBuildFile; fileRef = A20000002F80000100ABCDEF /* IMG_9643.jpg */; };
+			A30000012F90000100ABCDEF /* azan_waktu.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A30000002F90000100ABCDEF /* azan_waktu.mp3 */; };
+			A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */; };
+			A4F510032F900AB100ABCDEF /* LockScreen6Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */; };
+			FCB183172F4D506300249966 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183162F4D506300249966 /* RevenueCat */; };
 		FCB183192F4D506300249966 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183182F4D506300249966 /* RevenueCatUI */; };
 		FCB1831C2F5DE11500249966 /* Inject in Frameworks */ = {isa = PBXBuildFile; productRef = FCB1831B2F5DE11500249966 /* Inject */; };
 /* End PBXBuildFile section */
@@ -156,8 +157,9 @@
 		72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Versioning/AppVersionGate.swift; sourceTree = "<group>"; };
 		A10000002F70000100ABCDEF /* quotes.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = quotes.json; sourceTree = "<group>"; };
 		A20000002F80000100ABCDEF /* IMG_9643.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = IMG_9643.jpg; sourceTree = "<group>"; };
-		A30000002F90000100ABCDEF /* azan_waktu.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_waktu.mp3; sourceTree = "<group>"; };
-		A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen5Widget.swift; sourceTree = "<group>"; };
+			A30000002F90000100ABCDEF /* azan_waktu.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_waktu.mp3; sourceTree = "<group>"; };
+			A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen5Widget.swift; sourceTree = "<group>"; };
+			A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen6Widget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -292,11 +294,12 @@
 				72728D2B2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift */,
 				72728D092B3D524600FAA3B3 /* LockScreen1Widget.swift */,
 				72728D0B2B3D525300FAA3B3 /* LockScreen2Widget.swift */,
-				7205C1EE2D797535001D4979 /* LockScreen3Widget.swift */,
-				7205C1EF2D797535001D4979 /* LockScreen4Widget.swift */,
-				A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */,
-			);
-			path = Widget;
+					7205C1EE2D797535001D4979 /* LockScreen3Widget.swift */,
+					7205C1EF2D797535001D4979 /* LockScreen4Widget.swift */,
+					A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */,
+					A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */,
+				);
+				path = Widget;
 			sourceTree = "<group>";
 		};
 		72728D482B3D535600FAA3B3 /* Complication */ = {
@@ -533,11 +536,12 @@
 				72D0BCCB2D7AE99600B7E4F5 /* Prayers2Widget.swift in Sources */,
 				72728D062B3D51F800FAA3B3 /* PrayersProvider.swift in Sources */,
 				728E2EEC2E6E048300F2C24C /* SettingsAdhan.swift in Sources */,
-				7205C1F02D797535001D4979 /* LockScreen3Widget.swift in Sources */,
-				7205C1F12D797535001D4979 /* LockScreen4Widget.swift in Sources */,
-				A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */,
-				720CCE432E3960BB002DD82E /* Globals.swift in Sources */,
-				72728CF92B3D51B200FAA3B3 /* PrayersWidget.swift in Sources */,
+					7205C1F02D797535001D4979 /* LockScreen3Widget.swift in Sources */,
+					7205C1F12D797535001D4979 /* LockScreen4Widget.swift in Sources */,
+					A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */,
+					A4F510032F900AB100ABCDEF /* LockScreen6Widget.swift in Sources */,
+					720CCE432E3960BB002DD82E /* Globals.swift in Sources */,
+					72728CF92B3D51B200FAA3B3 /* PrayersWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -233,6 +233,12 @@
               <span style="font-size:13px;color:var(--text);">Enable version check</span>
             </label>
           </div>
+          <div class="row" style="margin-top: 8px;">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input id="vc-ui-recovery-enabled" type="checkbox" style="width:auto;" />
+              <span style="font-size:13px;color:var(--text);">Enable UI recovery guard (remote rollback)</span>
+            </label>
+          </div>
           <div class="actions" style="grid-template-columns: repeat(3, 1fr); margin-top: 8px;">
             <button class="btn-soft" id="reload-version-json">Reload Version JSON</button>
             <button class="btn-soft" id="copy-version-json">Copy Version JSON</button>
@@ -350,12 +356,14 @@
     const vcUrlEl = $("vc-url");
     const vcSoftEl = $("vc-soft");
     const vcForceEl = $("vc-force");
+    const vcUiRecoveryEnabledEl = $("vc-ui-recovery-enabled");
 
     let state = structuredClone(defaults);
     let previewIndex = 0;
     let saveJSONQueue = Promise.resolve();
     const versionDefaults = {
       enabled: true,
+      ui_recovery_enabled: true,
       latest_version: "1.0.0",
       min_supported_version: "1.0.0",
       app_store_url: "itms-apps://itunes.apple.com/app/id6759585564",
@@ -413,6 +421,7 @@
     function normalizeVersionConfig(config = {}) {
       return {
         enabled: config.enabled !== false,
+        ui_recovery_enabled: config.ui_recovery_enabled !== false,
         latest_version: config.latest_version ?? versionDefaults.latest_version,
         min_supported_version: config.min_supported_version ?? versionDefaults.min_supported_version,
         app_store_url: config.app_store_url ?? versionDefaults.app_store_url,
@@ -423,6 +432,7 @@
 
     function bindVersionInputs() {
       vcEnabledEl.checked = !!versionState.enabled;
+      vcUiRecoveryEnabledEl.checked = !!versionState.ui_recovery_enabled;
       vcLatestEl.value = versionState.latest_version;
       vcMinEl.value = versionState.min_supported_version;
       vcUrlEl.value = versionState.app_store_url;
@@ -433,6 +443,7 @@
     function toVersionJSON() {
       return {
         enabled: !!vcEnabledEl.checked,
+        ui_recovery_enabled: !!vcUiRecoveryEnabledEl.checked,
         latest_version: vcLatestEl.value.trim(),
         min_supported_version: vcMinEl.value.trim(),
         app_store_url: vcUrlEl.value.trim(),
