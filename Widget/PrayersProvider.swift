@@ -62,7 +62,8 @@ struct PrayersProvider: TimelineProvider {
             currentPrayer:  current,
             nextPrayer:     next,
             hijriOffset:    settings.hijriOffset,
-            isMalaysia:     isMalaysia
+            isMalaysia:     isMalaysia,
+            travelingMode:  settings.travelingMode
         )
     }
 
@@ -73,7 +74,8 @@ struct PrayersProvider: TimelineProvider {
               prayers: [], fullPrayers: [],
               currentPrayer: nil, nextPrayer: nil,
               hijriOffset: 0,
-              isMalaysia: true)
+              isMalaysia: true,
+              travelingMode: false)
     }
 
     private func previewEntry() -> PrayersEntry {
@@ -107,7 +109,8 @@ struct PrayersProvider: TimelineProvider {
             currentPrayer: current,
             nextPrayer: next,
             hijriOffset: 0,
-            isMalaysia: true
+            isMalaysia: true,
+            travelingMode: false
         )
     }
 
@@ -130,6 +133,7 @@ struct PrayersEntry: TimelineEntry {
     let nextPrayer: Prayer?
     let hijriOffset: Int
     let isMalaysia: Bool
+    let travelingMode: Bool
 }
 
 func widgetPrayerDisplayName(_ raw: String) -> String {

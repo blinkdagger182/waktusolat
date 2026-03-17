@@ -2,6 +2,7 @@ import SwiftUI
 import WidgetKit
 
 private struct LockScreen5Sparkline: View {
+    let dotCount: Int
     let activeDotIndex: Int
 
     private func catmullRomPath(points: [CGPoint]) -> Path {
@@ -36,14 +37,21 @@ private struct LockScreen5Sparkline: View {
                 CGPoint(x: x * width, y: y * height)
             }
 
-            let points: [CGPoint] = [
-                p(0.06, 0.70),
-                p(0.30, 0.52),
-                p(0.52, 0.14),
-                p(0.70, 0.26),
-                p(0.84, 0.46),
-                p(0.95, 0.66)
-            ]
+            let clampedDotCount = min(max(dotCount, 2), 6)
+            let points: [CGPoint] = clampedDotCount == 3
+                ? [
+                    p(0.06, 0.70),
+                    p(0.52, 0.14),
+                    p(0.95, 0.66)
+                ]
+                : [
+                    p(0.06, 0.70),
+                    p(0.30, 0.52),
+                    p(0.52, 0.14),
+                    p(0.70, 0.26),
+                    p(0.84, 0.46),
+                    p(0.95, 0.66)
+                ]
 
             let smoothPath = catmullRomPath(points: points)
 
@@ -60,7 +68,7 @@ private struct LockScreen5Sparkline: View {
                     Circle()
                         .fill(reached ? lineColor : Color.clear)
                         .overlay(Circle().stroke(reached ? lineColor : futureDotColor, lineWidth: 1.5))
-                        .frame(width: idx == 2 ? 7.5 : 6.5, height: idx == 2 ? 7.5 : 6.5)
+                        .frame(width: idx == (points.count / 2) ? 7.5 : 6.5, height: idx == (points.count / 2) ? 7.5 : 6.5)
                         .position(point)
                 }
             }
@@ -74,7 +82,15 @@ private struct LockScreenSparkEntryView: View {
 
     private func graphPrayers() -> [Prayer] {
         let source = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
-        return Array(source.sorted { $0.time < $1.time }.prefix(6))
+        let sorted = source.sorted { $0.time < $1.time }
+        guard entry.travelingMode else {
+            return Array(sorted.prefix(6))
+        }
+
+        let travelNames = ["Fajr", "Dhuhr", "Maghrib"]
+        return travelNames.compactMap { target in
+            sorted.first { widgetPrayerDisplayName($0.nameTransliteration) == target }
+        }
     }
 
     private func activeIndex(in prayers: [Prayer]) -> Int {
@@ -90,7 +106,7 @@ private struct LockScreenSparkEntryView: View {
         if let nextPrayer = entry.nextPrayer {
             let graph = graphPrayers()
             VStack(alignment: .leading, spacing: 6) {
-                LockScreen5Sparkline(activeDotIndex: activeIndex(in: graph))
+                LockScreen5Sparkline(dotCount: graph.count, activeDotIndex: activeIndex(in: graph))
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     VStack(alignment: .leading, spacing: 1) {
