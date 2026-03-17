@@ -239,14 +239,7 @@ struct MapView: View {
             updateRegion(to: item.placemark.coordinate)
             searchText = ""
         }
-
-        settings.fetchPrayerTimes() {
-            if !settings.locationNeverAskAgain && settings.showLocationAlert {
-                showAlert = true
-            } else {
-                dismiss()
-            }
-        }
+        dismiss()
     }
 
     private func formattedName(for item: MKMapItem) -> String {
