@@ -222,8 +222,6 @@ struct OtherView: View {
                         }
                 }
             }
-            
-            ArabicView()
         }
     }
 }

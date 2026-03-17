@@ -2,6 +2,9 @@ import SwiftUI
 import MapKit
 import CryptoKit
 import ObjectiveC.runtime
+#if os(iOS)
+import UIKit
+#endif
 
 struct MapView: View {
     @EnvironmentObject private var settings: Settings
@@ -65,6 +68,27 @@ struct MapView: View {
         else { return nil }
 
         return "\(miStr) mi / \(kmStr) km"
+    }
+
+    private var useCurrentButtonTextColor: Color {
+        #if os(iOS)
+        let traitStyle: UIUserInterfaceStyle = scheme == .dark ? .dark : .light
+        let resolved = UIColor(settings.accentColor.color).resolvedColor(with: UITraitCollection(userInterfaceStyle: traitStyle))
+
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        guard resolved.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            return scheme == .dark ? .black : .white
+        }
+
+        let luminance = (0.299 * red) + (0.587 * green) + (0.114 * blue)
+        return luminance > 0.6 ? .black : .white
+        #else
+        return .white
+        #endif
     }
 
     var body: some View {
@@ -176,7 +200,7 @@ struct MapView: View {
     }
 
     private var useCurrentButton: some View {
-        Button("Automatically Use Current Location") {
+        Button {
             settings.hapticFeedback()
             guard let cur = settings.currentLocation else { return }
 
@@ -191,13 +215,16 @@ struct MapView: View {
             settings.fetchPrayerTimes() {
                 if !settings.locationNeverAskAgain && settings.showLocationAlert { showAlert = true }
             }
+        } label: {
+            Text("Automatically Use Current Location")
+                .foregroundStyle(useCurrentButtonTextColor)
+                .frame(maxWidth: .infinity)
+                .padding()
         }
-        .padding()
-        .frame(maxWidth: .infinity)
         .background(settings.accentColor.color)
-        .foregroundColor(.white)
         .cornerRadius(24)
         .padding(.horizontal, 16)
+        .buttonStyle(.plain)
     }
 
     private func select(_ item: MKMapItem) {
@@ -211,6 +238,14 @@ struct MapView: View {
             settings.homeLocation = Location(city: full, latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude)
             updateRegion(to: item.placemark.coordinate)
             searchText = ""
+        }
+
+        settings.fetchPrayerTimes() {
+            if !settings.locationNeverAskAgain && settings.showLocationAlert {
+                showAlert = true
+            } else {
+                dismiss()
+            }
         }
     }
 

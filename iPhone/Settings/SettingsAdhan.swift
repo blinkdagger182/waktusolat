@@ -2083,7 +2083,15 @@ extension Settings {
         return nil
     }
 
-    private func prayerNotificationSound() -> UNNotificationSound {
+    private func prayerNotificationSound(for prayer: Prayer, minutesBefore: Int?) -> UNNotificationSound {
+        if prayer.nameTransliteration == "Shurooq" {
+            return .default
+        }
+
+        if let minutesBefore, minutesBefore > 0 {
+            return .default
+        }
+
         switch notificationSoundOption {
         case .iosDefault:
             return .default
@@ -2112,7 +2120,7 @@ extension Settings {
         let content = UNMutableNotificationContent()
         content.title = "Waktu Solat"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
-        content.sound = prayerNotificationSound()
+        content.sound = prayerNotificationSound(for: prayer, minutesBefore: minutes)
 
         let id: String
         let trigger: UNNotificationTrigger

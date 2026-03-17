@@ -71,15 +71,6 @@ struct AlAdhanApp: App {
                             }
                             .tag(AppTab.adhan)
 
-                        #if false
-                        OtherView()
-                            .tabItem {
-                                Image(systemName: "book.closed.fill")
-                                Text("Resources")
-                            }
-                            .tag(AppTab.tools)
-                        #endif
-
                         SettingsView()
                             .tabItem {
                                 Image(systemName: "gearshape")
@@ -178,7 +169,6 @@ struct AlAdhanApp: App {
                 }
             }
             .onAppear {
-                lastUIHeartbeatAt = Date()
                 withAnimation {
                     settings.fetchPrayerTimes()
                 }
@@ -197,14 +187,20 @@ struct AlAdhanApp: App {
             .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToast)) { _ in
                 guard !isLaunching else { return }
                 Task {
-                    await presentSupportPromoToast(for: supportPromoSchedule.first(where: { $0.triggerKey == "generic_debug" }) ?? .genericDebug)
+                    await presentSupportPromoToast(
+                        for: supportPromoSchedule.first(where: { $0.triggerKey == "generic_debug" }) ?? .genericDebug,
+                        markAsShown: false
+                    )
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugShowSupportPromoToastVariant)) { note in
                 guard !isLaunching else { return }
                 let variant = (note.object as? String) ?? "generic"
                 Task {
-                    await presentSupportPromoToast(for: resolvedDebugSupportPromoItem(for: variant))
+                    await presentSupportPromoToast(
+                        for: resolvedDebugSupportPromoItem(for: variant),
+                        markAsShown: false
+                    )
                 }
             }
         }
@@ -250,6 +246,7 @@ struct AlAdhanApp: App {
         guard !isLaunching, !settings.firstLaunch else { return }
 
         let activeStartedAt = lastSceneActiveAt == .distantPast ? Date() : lastSceneActiveAt
+        let requiredHeartbeatAfter = Date()
         if lastSceneActiveAt == .distantPast {
             lastSceneActiveAt = activeStartedAt
         }
@@ -260,7 +257,7 @@ struct AlAdhanApp: App {
             guard scenePhase == .active else { return }
             guard remoteUIRecoveryEnabled else { return }
             guard !isLaunching, !settings.firstLaunch else { return }
-            guard lastUIHeartbeatAt < activeStartedAt else { return }
+            guard lastUIHeartbeatAt < requiredHeartbeatAfter else { return }
             guard Date().timeIntervalSince(lastUIRecoveryAt) > 20 else { return }
             performSafeUIRecovery()
         }
@@ -274,8 +271,10 @@ struct AlAdhanApp: App {
         showSupportPromoToast = false
         quranDeepLink = nil
         selectedTab = .adhan
+        lastUIHeartbeatAt = .distantPast
         rootRefreshToken = UUID()
         settings.fetchPrayerTimes(force: true)
+        scheduleUIRecoveryWatchdog()
     }
 
     private func presentDailyQuranWidgetIntroIfNeeded() {
@@ -412,7 +411,16 @@ struct AlAdhanApp: App {
         case .streak:
             guard let minActiveDayStreak = item.minActiveDayStreak else { return false }
             return streak >= minActiveDayStreak
-        case .eidPool, .monthlyPool, .generic:
+        case .eidPool:
+            guard isOnOrAfterFirstShawwal else { return false }
+            if let minLaunchCount = item.minLaunchCount, launchCount < minLaunchCount {
+                return false
+            }
+            if let minActiveDayStreak = item.minActiveDayStreak, streak < minActiveDayStreak {
+                return false
+            }
+            return true
+        case .monthlyPool, .generic:
             if let minLaunchCount = item.minLaunchCount, launchCount < minLaunchCount {
                 return false
             }
@@ -444,12 +452,25 @@ struct AlAdhanApp: App {
         }
     }
 
+    private var isOnOrAfterFirstShawwal: Bool {
+        let prayerSource = settings.prayers?.fullPrayers.isEmpty == false
+            ? settings.prayers?.fullPrayers
+            : settings.prayers?.prayers
+        let referenceDate = Settings.islamicReferenceDate(now: Date(), prayers: prayerSource ?? [])
+        let hijriCalendar = Calendar(identifier: .islamicUmmAlQura)
+        let components = hijriCalendar.dateComponents([.month, .day], from: referenceDate)
+        guard let month = components.month, let day = components.day else { return false }
+        return month == 10 && day >= 1
+    }
+
     @MainActor
-    private func presentSupportPromoToast(for item: SupportPromoScheduleItem) async {
+    private func presentSupportPromoToast(for item: SupportPromoScheduleItem, markAsShown: Bool = true) async {
         supportPromoMessage = item.message
         supportPromoAutoDismissAfter = item.autoDismissSeconds
         supportPromoCountdownStart = Date()
-        markSupportPromoShown(item.triggerKey, defaults: UserDefaults.standard)
+        if markAsShown {
+            markSupportPromoShown(item.triggerKey, defaults: UserDefaults.standard)
+        }
 
         if item.hasProgress {
             let poolSnapshot = await SupportPromoRemoteConfig.loadPoolSnapshot(force: false)
@@ -471,6 +492,7 @@ private struct QuranDeepLinkPayload: Identifiable {
 }
 
 private struct SupportPromoPoolProgress {
+    let variant: SupportPromoVariant
     let title: String
     let current: Double
     let target: Double
@@ -486,10 +508,11 @@ private struct SupportPromoPoolProgress {
     }
 
     init(snapshot: SupportPromoPoolSnapshot, variant: SupportPromoVariant) {
+        self.variant = variant
         switch variant {
         case .eidPool:
-            title = "Eid Prayer Support Pool"
-            subtitle = "Every contribution helps"
+            title = "Eid Giving Pool"
+            subtitle = "Simple, ad-free, and for everyone"
         case .monthlyPool:
             title = "Monthly Support Pool"
             subtitle = "Powered by the community"
@@ -521,14 +544,21 @@ private struct SupportPromoToast: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            Image(systemName: "heart.fill")
-                .foregroundStyle(.pink)
-                .font(.subheadline.weight(.bold))
+            if poolProgress?.variant == .eidPool {
+                Image("Ketupat")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+            } else {
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(.pink)
+                    .font(.subheadline.weight(.bold))
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(message)
                     .font(.subheadline)
-                    .lineLimit(2)
+                    .lineLimit(5)
                     .multilineTextAlignment(.leading)
 
                 if let poolProgress {
@@ -721,15 +751,15 @@ private struct SupportPromoScheduleItem: Codable, Identifiable {
 
     static let eidPool = SupportPromoScheduleItem(
         triggerKey: "eid_pool",
-        isEnabled: false,
+        isEnabled: true,
         audience: .production,
         title: nil,
-        message: "Eid pool is live. Keep Waktu running.",
+        message: "This Eid, let's share a little goodness together.\nIf Waktu has helped you stay closer to your prayers, consider contributing. Even a small amount makes a difference.\nYour support keeps Waktu simple, ad-free, and for everyone.",
         variant: .eidPool,
         minLaunchCount: nil,
         minActiveDayStreak: nil,
-        minimumHoursBetweenShows: 72,
-        showOnce: false,
+        minimumHoursBetweenShows: nil,
+        showOnce: true,
         priority: 40,
         hasProgress: true,
         autoDismissSeconds: 8

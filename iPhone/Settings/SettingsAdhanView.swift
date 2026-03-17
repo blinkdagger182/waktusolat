@@ -68,26 +68,6 @@ struct SettingsAdhanView: View {
             }
             #endif
             
-            #if false
-            Section(header: Text("PRAYER CALCULATION")) {
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("Calculation")
-                        Spacer()
-                        Text(settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation) ? "Malaysian Prayer Times/ JAKIM" : settings.prayerCalculation)
-                            .foregroundColor(.secondary)
-                    }
-                    .font(.subheadline)
-                    
-                    Text(settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
-                         ? "Using official Malaysian Prayer Times/ JAKIM timings."
-                         : "Using AlAdhan API for your selected calculation method.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                }
-            }
-            
             Section(header: Text("TRAVELING MODE")) {
                 #if !os(watchOS)
                 Button(action: {
@@ -141,7 +121,6 @@ struct SettingsAdhanView: View {
                     #endif
                 }
             }
-            #endif
             
         }
         .applyConditionalListStyle(defaultView: true)
@@ -425,20 +404,12 @@ struct NotificationView: View {
             }
             #endif
             
-            #if false
-            Section(header: Text("HIJRI CALENDAR")) {
-                Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
-                    .font(.subheadline)
-                    .tint(settings.accentColor.toggleTint)
-            }
-            
             Section(header: Text("PRAYER REMINDERS")) {
                 NavigationLink(destination: MoreNotificationView()) {
                     Label("Prayer Notifications", systemImage: "bell.fill")
                         .font(.subheadline)
                 }
             }
-            #endif
 
             Section(header: Text("NOTIFICATION SOUND")) {
                 Picker(
