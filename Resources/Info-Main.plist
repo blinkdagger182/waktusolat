@@ -6,25 +6,6 @@
 	<array>
 		<string>com.Quran.Elmallah.Prayer-Times.fetchPrayerTimes</string>
 	</array>
-	<key>VersionCheckConfigURL</key>
-	<string>https://blinkdagger182.github.io/waktusolat/version-check.json</string>
-	<key>MarketingModalConfigURL</key>
-	<string>https://blinkdagger182.github.io/waktu-config/marketing-modal.json</string>
-	<key>SupportPromoScheduleURL</key>
-	<string>https://api-waktusolat.vercel.app/api/support/toasts/schedule</string>
-	<key>SupportPromoPoolURL</key>
-	<string>https://api-waktusolat.vercel.app/api/donations/pool/current</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Uthmani.otf</string>
-	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>processing</string>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -36,5 +17,27 @@
 			</array>
 		</dict>
 	</array>
+	<key>MarketingModalConfigURL</key>
+	<string>https://blinkdagger182.github.io/waktu-config/marketing-modal.json</string>
+	<key>SupportPromoPoolURL</key>
+	<string>https://api-waktusolat.vercel.app/api/donations/pool/current</string>
+	<key>SupportPromoScheduleURL</key>
+	<string>https://api-waktusolat.vercel.app/api/support/toasts/schedule</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Uthmani.otf</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
+	<key>VersionCheckConfigURL</key>
+	<string>https://blinkdagger182.github.io/waktusolat/version-check.json</string>
 </dict>
 </plist>

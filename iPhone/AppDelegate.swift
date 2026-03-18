@@ -1,6 +1,7 @@
 import UIKit
 import BackgroundTasks
 import UserNotifications
+import ActivityKit
 
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private let taskID  = "com.Quran.Elmallah.Prayer-Times.fetchPrayerTimes"
@@ -12,7 +13,64 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
         scheduleAppRefresh()
         UNUserNotificationCenter.current().delegate = self
+        requestPushPermissions()
+        setupLiveActivityPushTokenHandler()
+        observePushToStartToken()
         return true
+    }
+
+    private func observePushToStartToken() {
+        guard #available(iOS 17.2, *) else { return }
+        Task {
+            for await tokenData in Activity<PrayerLiveActivityAttributes>.pushToStartTokenUpdates {
+                let token = tokenData.map { String(format: "%02x", $0) }.joined()
+                logger.debug("✅ Live Activity push-to-start token: \(token)")
+                PushNotificationService.registerPushToStartToken(token)
+            }
+        }
+    }
+
+    private func setupLiveActivityPushTokenHandler() {
+        if #available(iOS 16.2, *) {
+            PrayerLiveActivityCoordinator.shared.onPushToken = { pushToken, prayerName, city, prayerTime in
+                PushNotificationService.registerLiveActivityToken(
+                    pushToken: pushToken,
+                    activityId: "next-prayer",
+                    deviceToken: nil,
+                    prayerName: prayerName,
+                    city: city,
+                    prayerTime: prayerTime
+                )
+            }
+        }
+    }
+    
+    // MARK: - Push Notifications
+    
+    private func requestPushPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                logger.error("❌ Push authorization error: \(error.localizedDescription)")
+                return
+            }
+            
+            logger.debug("✅ Push authorization granted: \(granted)")
+            
+            DispatchQueue.main.async {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
+        }
+    }
+    
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        let token = deviceToken.map { String(format: "%02x", $0) }.joined()
+        logger.debug("✅ APNs device token: \(token)")
+
+        PushNotificationService.registerDeviceToken(token)
+    }
+    
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        logger.error("❌ APNs registration failed: \(error.localizedDescription)")
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {

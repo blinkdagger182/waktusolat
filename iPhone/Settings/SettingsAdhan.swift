@@ -29,6 +29,11 @@ final class PrayerLiveActivityCoordinator {
     static let shared = PrayerLiveActivityCoordinator()
     private var startedAtByPrayerKey: [String: Date] = [:]
     private var autoDismissTask: Task<Void, Never>?
+
+    /// Set by the main app to register the live activity push token with the backend.
+    /// Not called by the Widget extension (which also compiles this file).
+    var onPushToken: ((_ pushToken: String, _ prayerName: String, _ city: String, _ prayerTime: Date) -> Void)?
+
     private init() {}
 
     private func scheduleAutoDismiss(for prayerKey: String, at prayerTime: Date, graceSeconds: TimeInterval = 90) {
@@ -99,9 +104,23 @@ final class PrayerLiveActivityCoordinator {
         let attributes = PrayerLiveActivityAttributes(activityID: "next-prayer")
         do {
             let content = ActivityContent(state: state, staleDate: staleDate)
-            _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
+            let activity = try Activity.request(attributes: attributes, content: content, pushType: .token)
+            observePushToken(activity: activity, state: state)
         } catch {
             logger.debug("Live Activity request failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func observePushToken(
+        activity: Activity<PrayerLiveActivityAttributes>,
+        state: PrayerLiveActivityAttributes.ContentState
+    ) {
+        Task {
+            for await tokenData in activity.pushTokenUpdates {
+                let token = tokenData.map { String(format: "%02x", $0) }.joined()
+                logger.debug("✅ Live Activity push token: \(token)")
+                onPushToken?(token, state.prayerName, state.city, state.prayerTime)
+            }
         }
     }
 
@@ -128,7 +147,8 @@ final class PrayerLiveActivityCoordinator {
                     await existing.update(content)
                 }
             } else {
-                _ = try Activity.request(attributes: attributes, content: content, pushType: nil)
+                let activity = try Activity.request(attributes: attributes, content: content, pushType: .token)
+                observePushToken(activity: activity, state: state)
             }
         } catch {
             logger.debug("Debug Live Activity request failed: \(error.localizedDescription)")
