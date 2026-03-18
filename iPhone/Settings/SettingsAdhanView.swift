@@ -234,9 +234,6 @@ struct LiveActivitySettingsView: View {
     }
     #endif
 
-    private let leadMinuteOptions: [Int] = [
-        1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60
-    ]
     #if DEBUG
     @State private var debugTimingMode: DebugTimingMode = .relative
     @State private var debugMinutesUntilPrayer: Int = 2
@@ -251,14 +248,15 @@ struct LiveActivitySettingsView: View {
     var body: some View {
         List {
             Section(header: Text("LIVE ACTIVITY TIMING")) {
-                Picker("Show Before Prayer", selection: $settings.liveActivityLeadMinutes) {
-                    ForEach(leadMinuteOptions, id: \.self) { minute in
-                        Text("\(minute) minute\(minute == 1 ? "" : "s")").tag(minute)
-                    }
+                HStack {
+                    Text("Show Before Prayer")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("5 minutes")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
-                .pickerStyle(.menu)
-                .font(.subheadline)
-                Text("Live Activity will appear this many minutes before the selected prayer time.")
+                Text("Live Activity appears 5 minutes before prayer time.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)

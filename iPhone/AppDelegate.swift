@@ -15,6 +15,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
         scheduleAppRefresh()
         UNUserNotificationCenter.current().delegate = self
+        Settings.registerForRemoteNotificationsHandler = {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
         requestPushPermissions()
         setupLiveActivityPushTokenHandler()
         observePushToStartToken()
@@ -29,13 +32,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             for await tokenData in Activity<PrayerLiveActivityAttributes>.pushToStartTokenUpdates {
                 let token = tokenData.map { String(format: "%02x", $0) }.joined()
                 logger.debug("✅ Live Activity push-to-start token: \(token)")
-                // Cache token so zone-change observer can re-register with correct zone
                 UserDefaults.standard.set(token, forKey: "pushToStartToken")
                 let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
-                let lead = Settings.shared.liveActivityLeadMinutes
-                PushNotificationService.registerPushToStartToken(token, zone: zone, leadMinutes: lead)
+                PushNotificationService.registerPushToStartToken(token, zone: zone)
                 if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
-                UserDefaults.standard.set(lead, forKey: "pushToStartLeadMinutes")
             }
         }
     }
@@ -49,31 +49,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             .store(in: &cancellables)
     }
 
-    /// On launch, sync only if zone or lead_minutes has drifted from what was last registered.
+    /// On launch, sync only if zone has drifted from what was last registered.
     private func syncPushToStartTokenIfCached() {
         guard #available(iOS 17.2, *),
               let token = UserDefaults.standard.string(forKey: "pushToStartToken") else { return }
         let zone     = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
-        let lead     = Settings.shared.liveActivityLeadMinutes
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
-        let lastLead = UserDefaults.standard.integer(forKey: "pushToStartLeadMinutes")
-        guard zone != lastZone || lead != lastLead else { return }
-        PushNotificationService.registerPushToStartToken(token, zone: zone, leadMinutes: lead)
+        guard zone != lastZone else { return }
+        PushNotificationService.registerPushToStartToken(token, zone: zone)
         UserDefaults.standard.set(zone, forKey: "pushToStartZone")
-        UserDefaults.standard.set(lead, forKey: "pushToStartLeadMinutes")
     }
 
     private func reRegisterIfZoneChanged() {
         guard let token = UserDefaults.standard.string(forKey: "pushToStartToken"),
               let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone") else { return }
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
-        let lead = Settings.shared.liveActivityLeadMinutes
-        let lastLead = UserDefaults.standard.integer(forKey: "pushToStartLeadMinutes")
-        guard zone != lastZone || lead != lastLead else { return }
-        logger.debug("🔄 Settings changed (zone: \(lastZone ?? "nil") → \(zone), lead: \(lastLead) → \(lead)), re-registering")
-        PushNotificationService.registerPushToStartToken(token, zone: zone, leadMinutes: lead)
+        guard zone != lastZone else { return }
+        logger.debug("🔄 Zone changed (\(lastZone ?? "nil") → \(zone)), re-registering push-to-start token")
+        PushNotificationService.registerPushToStartToken(token, zone: zone)
         UserDefaults.standard.set(zone, forKey: "pushToStartZone")
-        UserDefaults.standard.set(lead, forKey: "pushToStartLeadMinutes")
     }
 
     private func setupLiveActivityPushTokenHandler() {
@@ -94,14 +88,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     // MARK: - Push Notifications
     
     private func requestPushPermissions() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if let error = error {
-                logger.error("❌ Push authorization error: \(error.localizedDescription)")
-                return
-            }
-            
-            logger.debug("✅ Push authorization granted: \(granted)")
-            
+        // Only register for APNs if already authorized — the UI handles the first-time
+        // permission prompt from AdhanView/SettingsAdhanView once the window is ready.
+        // Calling requestAuthorization here (before the scene is visible) can silently
+        // suppress the system dialog on some devices, leaving the auth status stuck at
+        // .notDetermined and the Azan/Settings tabs appearing empty.
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            guard settings.authorizationStatus == .authorized ||
+                  settings.authorizationStatus == .provisional else { return }
             DispatchQueue.main.async {
                 UIApplication.shared.registerForRemoteNotifications()
             }
@@ -173,15 +167,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         logger.debug("🚀 BGAppRefresh fired")
         scheduleAppRefresh()
 
+        // Guard against double-completion: URLSession default timeout (60s) exceeds the
+        // typical BGAppRefreshTask window (~30s), so both the expiration handler and the
+        // fetch completion can fire. Calling setTaskCompleted twice is undefined behaviour.
+        var completed = false
+        func finish(success: Bool) {
+            guard !completed else { return }
+            completed = true
+            task.setTaskCompleted(success: success)
+        }
+
         task.expirationHandler = {
             logger.error("⏰ BG task expired before finishing")
-            task.setTaskCompleted(success: false)
+            finish(success: false)
         }
 
         Settings.shared.fetchPrayerTimes {
             Settings.shared.updateCurrentAndNextPrayer()
             logger.debug("🎉 BG task completed – prayer times refreshed")
-            task.setTaskCompleted(success: true)
+            finish(success: true)
         }
     }
 

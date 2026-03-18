@@ -20,8 +20,10 @@ struct PrayersProvider: TimelineProvider {
         let now = Date()
         let cal = Calendar.current
         let nextMidnight = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now) ?? now)
-        let nextPrayerRefresh = entry.nextPrayer?.time ?? now.addingTimeInterval(30 * 60)
-        let refresh = min(nextPrayerRefresh, nextMidnight)
+        // Only use nextPrayer time if it's actually in the future — otherwise asking
+        // WidgetKit to refresh at a past time leaves it budget-throttled for hours.
+        let nextPrayerRefresh = entry.nextPrayer.flatMap { $0.time > now ? $0.time : nil }
+        let refresh = nextPrayerRefresh.map { min($0, nextMidnight) } ?? nextMidnight
         completion(Timeline(entries: [entry], policy: .after(refresh)))
     }
 

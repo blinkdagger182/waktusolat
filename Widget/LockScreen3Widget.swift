@@ -5,18 +5,39 @@ struct LockScreen3EntryView: View {
     var entry: PrayersProvider.Entry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        let now = entry.date
+        let calendar = Calendar.current
+        
+        // Check if all prayers for today have passed
+        let allPrayersPassed = entry.prayers.allSatisfy { $0.time < now }
+        
+        let visiblePrayers: [Prayer] = {
             if entry.prayers.isEmpty {
-                Text("Open app to get prayer times")
+                return []
+            } else if allPrayersPassed {
+                // All of today's prayers are done. If it's past midnight the widget will
+                // have already refreshed with tomorrow's data so allPrayersPassed will be
+                // false. Reaching here means we're in the pre-midnight gap — show nothing
+                // so the widget doesn't display misleading past times.
+                return []
             } else {
                 let currentIndex = entry.prayers.firstIndex(where: {
                     $0.nameTransliteration == entry.currentPrayer?.nameTransliteration
                 }) ?? 0
                 let half = entry.prayers.count / 2
-                let visiblePrayers = currentIndex >= half - 1
+                return currentIndex >= half - 1
                     ? Array(entry.prayers.suffix(half))
                     : Array(entry.prayers.prefix(half))
-
+            }
+        }()
+        
+        return VStack(alignment: .leading, spacing: 4) {
+            if entry.prayers.isEmpty {
+                Text("Open app to get prayer times")
+            } else if visiblePrayers.isEmpty {
+                Text("Next prayers at midnight")
+                    .foregroundColor(.secondary)
+            } else {
                 ForEach(visiblePrayers) { prayer in
                     HStack {
                         Image(systemName: prayer.image)

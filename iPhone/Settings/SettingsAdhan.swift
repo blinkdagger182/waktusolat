@@ -1866,9 +1866,16 @@ extension Settings {
 
         case .notDetermined:
             do {
-                let granted = try await center.requestAuthorization(options: [.alert, .sound])
+                let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
                 showNotificationAlert = !granted && !notificationNeverAskAgain
-                if granted { fetchPrayerTimes(notification: true) }
+                if granted {
+                    // Register for APNs push token now that permission is granted and
+                    // the UI is ready. Routed via callback so extension targets compile.
+                    DispatchQueue.main.async {
+                        Settings.registerForRemoteNotificationsHandler?()
+                    }
+                    fetchPrayerTimes(notification: true)
+                }
                 return granted
             } catch {
                 logger.error("Notification request failed: \(error.localizedDescription)")
@@ -1898,16 +1905,29 @@ extension Settings {
         }
     }
 
+    /// Normalises Malaysian API names ("Subuh", "Syuruk", "Zuhur", "Asar", "Isyak")
+    /// to the canonical English keys used in notifTable.
+    static func canonicalPrayerName(_ raw: String) -> String {
+        switch raw.trimmingCharacters(in: .whitespaces).lowercased() {
+        case "subuh":                    return "Fajr"
+        case "syuruk", "shurooq":        return "Shurooq"
+        case "zuhur":                    return "Dhuhr"
+        case "asar":                     return "Asr"
+        case "isyak", "isya":            return "Isha"
+        default:                         return raw
+        }
+    }
+
     /// Static lookup table
     private static let notifTable: [String: NotifPrefs] = [
         "Fajr":          .init(enabled: \.notificationFajr,  preMinutes: \.preNotificationFajr,  nagging: \.naggingFajr),
         "Shurooq":       .init(enabled: \.notificationSunrise, preMinutes: \.preNotificationSunrise, nagging: \.naggingSunrise),
         "Dhuhr":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
-        "Dhuhr/Asr":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
-        "Jumuah":       .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
+        "Dhuhr/Asr":     .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
+        "Jumuah":        .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
         "Asr":           .init(enabled: \.notificationAsr,   preMinutes: \.preNotificationAsr,   nagging: \.naggingAsr),
         "Maghrib":       .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
-        "Maghrib/Isha":         .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
+        "Maghrib/Isha":  .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
         "Isha":          .init(enabled: \.notificationIsha,  preMinutes: \.preNotificationIsha,  nagging: \.naggingIsha)
     ]
 
@@ -2020,7 +2040,7 @@ extension Settings {
         }
 
         for prayer in prayerObj.prayers {
-            guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
+            guard let prefs = Self.notifTable[Self.canonicalPrayerName(prayer.nameTransliteration)] else { continue }
 
             for minutes in offsets(for: prefs) {
                 scheduleNotification(
@@ -2038,7 +2058,7 @@ extension Settings {
                 guard let list = getPrayerTimes(for: date) else { continue }
                 
                 for prayer in list {
-                    guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
+                    guard let prefs = Self.notifTable[Self.canonicalPrayerName(prayer.nameTransliteration)] else { continue }
                     
                     for minutes in offsets(for: prefs) {
                         scheduleNotification(
@@ -2207,21 +2227,21 @@ extension Settings {
     }
 
     func currentNotification(prayerTime: Prayer) -> Binding<Bool> {
-        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else {
+        guard let prefs = Self.notifTable[Self.canonicalPrayerName(prayerTime.nameTransliteration)] else {
             return .constant(false)
         }
         return binding(prefs.enabled, default: false)
     }
 
     func currentPreNotification(prayerTime: Prayer) -> Binding<Int> {
-        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else {
+        guard let prefs = Self.notifTable[Self.canonicalPrayerName(prayerTime.nameTransliteration)] else {
             return .constant(0)
         }
         return binding(prefs.preMinutes, default: 0)
     }
 
     func shouldShowFilledBell(prayerTime: Prayer) -> Bool {
-        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
+        guard let prefs = Self.notifTable[Self.canonicalPrayerName(prayerTime.nameTransliteration)] else { return false }
         // Filled bell = both notifications are active:
         // 1) exact prayer-time notification (enabled == true), and
         // 2) pre-notification before prayer (preMinutes > 0).
@@ -2229,7 +2249,7 @@ extension Settings {
     }
 
     func shouldShowOutlinedBell(prayerTime: Prayer) -> Bool {
-        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
+        guard let prefs = Self.notifTable[Self.canonicalPrayerName(prayerTime.nameTransliteration)] else { return false }
         // Outlined bell = exact prayer-time notification only (no pre-notification).
         return self[keyPath: prefs.enabled] && self[keyPath: prefs.preMinutes] == 0
     }

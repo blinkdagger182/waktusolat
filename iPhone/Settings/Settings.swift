@@ -62,6 +62,9 @@ enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
+
+    /// Set by AppDelegate (main app only) so extension targets don't reference UIApplication.shared.
+    static var registerForRemoteNotificationsHandler: (() -> Void)?
     private let appGroupUserDefaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
     #if os(iOS)
     var liveActivitySyncTimer: Timer?
@@ -391,7 +394,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("liveNextPrayerEnabled") var liveNextPrayerEnabled: Bool = false {
         didSet { self.fetchPrayerTimes(force: false) }
     }
-    @AppStorage("liveActivityLeadMinutes") var liveActivityLeadMinutes: Int = 30 {
+    @AppStorage("liveActivityLeadMinutes") var liveActivityLeadMinutes: Int = 5 {
         didSet { self.fetchPrayerTimes(force: false) }
     }
     @AppStorage("liveActivityFajrEnabled") var liveActivityFajrEnabled: Bool = true {
