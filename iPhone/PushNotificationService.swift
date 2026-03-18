@@ -17,10 +17,12 @@ struct PushNotificationService {
         )
     }
 
-    static func registerPushToStartToken(_ token: String) {
+    static func registerPushToStartToken(_ token: String, zone: String?) {
+        var payload: [String: Any] = ["pushToStartToken": token, "platform": "ios"]
+        if let zone, !zone.isEmpty { payload["zone"] = zone }
         post(
             endpoint: "\(baseURL)/api/live-activity/register-start-token",
-            payload: ["pushToStartToken": token, "platform": "ios"],
+            payload: payload,
             label: "push-to-start token"
         )
     }

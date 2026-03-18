@@ -2,9 +2,11 @@ import UIKit
 import BackgroundTasks
 import UserNotifications
 import ActivityKit
+import Combine
 
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private let taskID  = "com.Quran.Elmallah.Prayer-Times.fetchPrayerTimes"
+    private var cancellables = Set<AnyCancellable>()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]?) -> Bool {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: taskID, using: nil) { task in
@@ -16,6 +18,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         requestPushPermissions()
         setupLiveActivityPushTokenHandler()
         observePushToStartToken()
+        observeZoneChanges()
         return true
     }
 
@@ -25,9 +28,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             for await tokenData in Activity<PrayerLiveActivityAttributes>.pushToStartTokenUpdates {
                 let token = tokenData.map { String(format: "%02x", $0) }.joined()
                 logger.debug("✅ Live Activity push-to-start token: \(token)")
-                PushNotificationService.registerPushToStartToken(token)
+                // Cache token so zone-change observer can re-register with correct zone
+                UserDefaults.standard.set(token, forKey: "pushToStartToken")
+                let zone = Settings.shared.prayers?.zone
+                PushNotificationService.registerPushToStartToken(token, zone: zone)
+                if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
             }
         }
+    }
+
+    /// Re-registers the cached push-to-start token whenever the user's zone changes.
+    private func observeZoneChanges() {
+        guard #available(iOS 17.2, *) else { return }
+        Settings.shared.objectWillChange
+            .debounce(for: .seconds(2), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in self?.reRegisterIfZoneChanged() }
+            .store(in: &cancellables)
+    }
+
+    private func reRegisterIfZoneChanged() {
+        guard let token = UserDefaults.standard.string(forKey: "pushToStartToken"),
+              let zone = Settings.shared.prayers?.zone else { return }
+        let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
+        guard zone != lastZone else { return }
+        logger.debug("🔄 Zone changed \(lastZone ?? "nil") → \(zone), re-registering push-to-start token")
+        PushNotificationService.registerPushToStartToken(token, zone: zone)
+        UserDefaults.standard.set(zone, forKey: "pushToStartZone")
     }
 
     private func setupLiveActivityPushTokenHandler() {
