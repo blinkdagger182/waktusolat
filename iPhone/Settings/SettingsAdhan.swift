@@ -788,6 +788,8 @@ extension Settings {
         appGroupStore()?.setValue(data, forKey: key)
         // Keep legacy key warm for compatibility with existing widget/app installs.
         appGroupStore()?.setValue(data, forKey: Self.legacyMonthCacheKey)
+        // Persist zone for push notification targeting
+        UserDefaults.standard.set(month.zone, forKey: "lastKnownMalaysiaZone")
     }
 
     private func isSameYearMonth(_ date: Date, as month: GPSMonthResponse) -> Bool {

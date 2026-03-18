@@ -30,7 +30,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 logger.debug("✅ Live Activity push-to-start token: \(token)")
                 // Cache token so zone-change observer can re-register with correct zone
                 UserDefaults.standard.set(token, forKey: "pushToStartToken")
-                let zone = Settings.shared.prayers?.zone
+                let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
                 PushNotificationService.registerPushToStartToken(token, zone: zone)
                 if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
             }
@@ -48,7 +48,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     private func reRegisterIfZoneChanged() {
         guard let token = UserDefaults.standard.string(forKey: "pushToStartToken"),
-              let zone = Settings.shared.prayers?.zone else { return }
+              let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone") else { return }
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
         guard zone != lastZone else { return }
         logger.debug("🔄 Zone changed \(lastZone ?? "nil") → \(zone), re-registering push-to-start token")
