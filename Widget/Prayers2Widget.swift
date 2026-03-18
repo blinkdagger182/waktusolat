@@ -16,11 +16,11 @@ struct Prayers2EntryView: View {
         }
 
         if currentIndex < currentPrayerIndex {
-            return .secondary
+            return .primary
         } else if currentIndex == currentPrayerIndex {
             return entry.accentColor.color
         } else {
-            return .primary
+            return .secondary
         }
     }
     
@@ -77,63 +77,33 @@ struct Prayers2EntryView: View {
                 }
                 
                 Spacer()
-                
-                HStack {
-                    let first3Prayers = Array(entry.prayers
-                        .prefix(Int(floor(Double(
-                            entry.prayers.count / 2
-                        )))))
-                    
-                    VStack(spacing: 4) {
-                        ForEach(first3Prayers) { prayer in
-                            HStack {
-                                Image(systemName: prayer.image)
-                                    .frame(width: 10, alignment: .center)
-                                
-                                Text(widgetPrayerDisplayName(prayer.nameTransliteration))
-                                    .fontWeight(.bold)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.5)
-                                
-                                Spacer()
-                                
-                                Text(prayer.time, style: .time)
-                                    .fontWeight(.bold)
-                            }
-                            .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
-                            .font(.caption)
+
+                let currentIndex = entry.prayers.firstIndex(where: {
+                    $0.nameTransliteration == entry.currentPrayer?.nameTransliteration
+                }) ?? 0
+                let half = entry.prayers.count / 2
+                let visiblePrayers = currentIndex >= half - 1
+                    ? Array(entry.prayers.suffix(half))
+                    : Array(entry.prayers.prefix(half))
+
+                VStack(spacing: 4) {
+                    ForEach(visiblePrayers) { prayer in
+                        HStack {
+                            Image(systemName: prayer.image)
+                                .frame(width: 10, alignment: .center)
+
+                            Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                                .fontWeight(.bold)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+
+                            Spacer()
+
+                            Text(prayer.time, style: .time)
+                                .fontWeight(.bold)
                         }
-                    }
-                    
-                    Divider()
-                        .background(entry.accentColor.color)
-                        .frame(height: 65)
-                        .padding(.horizontal, 4)
-                    
-                    let last3Prayers = Array(entry.prayers
-                        .suffix(Int(floor(Double(
-                            entry.prayers.count / 2
-                        )))))
-                    
-                    VStack(spacing: 4) {
-                        ForEach(last3Prayers) { prayer in
-                            HStack {
-                                Image(systemName: prayer.image)
-                                    .frame(width: 10, alignment: .center)
-                                
-                                Text(widgetPrayerDisplayName(prayer.nameTransliteration))
-                                    .fontWeight(.bold)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.5)
-                                
-                                Spacer()
-                                
-                                Text(prayer.time, style: .time)
-                                    .fontWeight(.bold)
-                            }
-                            .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
-                            .font(.caption)
-                        }
+                        .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
+                        .font(.caption)
                     }
                 }
                 .frame(maxHeight: .infinity)

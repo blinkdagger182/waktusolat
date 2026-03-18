@@ -79,33 +79,28 @@ struct PrayersProvider: TimelineProvider {
     }
 
     private func previewEntry() -> PrayersEntry {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        func t(_ h: Int, _ m: Int) -> Date {
+            cal.date(bySettingHour: h, minute: m, second: 0, of: today)!
+        }
+        let prayers: [Prayer] = [
+            Prayer(nameArabic: "الفَجْر",   nameTransliteration: "Subuh",   nameEnglish: "Dawn",    time: t(5, 47),  image: "sun.horizon",      rakah: "2", sunnahBefore: "2", sunnahAfter: "0"),
+            Prayer(nameArabic: "الشُّرُوق", nameTransliteration: "Syuruk",  nameEnglish: "Sunrise", time: t(7, 4),   image: "sunrise",           rakah: "0", sunnahBefore: "0", sunnahAfter: "0"),
+            Prayer(nameArabic: "الظُّهْر",  nameTransliteration: "Zuhur",   nameEnglish: "Midday",  time: t(13, 12), image: "sun.max",            rakah: "4", sunnahBefore: "4", sunnahAfter: "2"),
+            Prayer(nameArabic: "العَصْر",   nameTransliteration: "Asar",    nameEnglish: "Afternoon",time: t(16, 33), image: "sun.min",            rakah: "4", sunnahBefore: "0", sunnahAfter: "0"),
+            Prayer(nameArabic: "المَغْرِب", nameTransliteration: "Maghrib", nameEnglish: "Sunset",  time: t(19, 22), image: "sunset",             rakah: "3", sunnahBefore: "0", sunnahAfter: "2"),
+            Prayer(nameArabic: "العِشَاء",  nameTransliteration: "Isyak",   nameEnglish: "Night",   time: t(20, 33), image: "moon.stars.fill",    rakah: "4", sunnahBefore: "0", sunnahAfter: "2"),
+        ]
         let now = Date()
-        let current = Prayer(
-            nameArabic: "المَغْرِب",
-            nameTransliteration: "Maghrib",
-            nameEnglish: "Sunset",
-            time: now.addingTimeInterval(-20 * 60),
-            image: "sunset",
-            rakah: "3",
-            sunnahBefore: "0",
-            sunnahAfter: "2"
-        )
-        let next = Prayer(
-            nameArabic: "العِشَاء",
-            nameTransliteration: "Isyak",
-            nameEnglish: "Night",
-            time: now.addingTimeInterval(70 * 60),
-            image: "moon",
-            rakah: "4",
-            sunnahBefore: "0",
-            sunnahAfter: "2"
-        )
+        let current = prayers.last(where: { $0.time <= now }) ?? prayers[3]
+        let next    = prayers.first(where: { $0.time > now })  ?? prayers[4]
         return .init(
             date: now,
             accentColor: .green,
             currentCity: "Kuala Lumpur",
-            prayers: [current, next],
-            fullPrayers: [current, next],
+            prayers: prayers,
+            fullPrayers: prayers,
             currentPrayer: current,
             nextPrayer: next,
             hijriOffset: 0,

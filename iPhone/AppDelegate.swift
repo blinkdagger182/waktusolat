@@ -19,6 +19,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         setupLiveActivityPushTokenHandler()
         observePushToStartToken()
         observeZoneChanges()
+        syncPushToStartTokenIfCached()
         return true
     }
 
@@ -31,8 +32,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 // Cache token so zone-change observer can re-register with correct zone
                 UserDefaults.standard.set(token, forKey: "pushToStartToken")
                 let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
-                PushNotificationService.registerPushToStartToken(token, zone: zone)
+                let lead = Settings.shared.liveActivityLeadMinutes
+                PushNotificationService.registerPushToStartToken(token, zone: zone, leadMinutes: lead)
                 if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
+                UserDefaults.standard.set(lead, forKey: "pushToStartLeadMinutes")
             }
         }
     }
@@ -46,14 +49,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             .store(in: &cancellables)
     }
 
+    /// On launch, sync only if zone or lead_minutes has drifted from what was last registered.
+    private func syncPushToStartTokenIfCached() {
+        guard #available(iOS 17.2, *),
+              let token = UserDefaults.standard.string(forKey: "pushToStartToken") else { return }
+        let zone     = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
+        let lead     = Settings.shared.liveActivityLeadMinutes
+        let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
+        let lastLead = UserDefaults.standard.integer(forKey: "pushToStartLeadMinutes")
+        guard zone != lastZone || lead != lastLead else { return }
+        PushNotificationService.registerPushToStartToken(token, zone: zone, leadMinutes: lead)
+        UserDefaults.standard.set(zone, forKey: "pushToStartZone")
+        UserDefaults.standard.set(lead, forKey: "pushToStartLeadMinutes")
+    }
+
     private func reRegisterIfZoneChanged() {
         guard let token = UserDefaults.standard.string(forKey: "pushToStartToken"),
               let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone") else { return }
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
-        guard zone != lastZone else { return }
-        logger.debug("🔄 Zone changed \(lastZone ?? "nil") → \(zone), re-registering push-to-start token")
-        PushNotificationService.registerPushToStartToken(token, zone: zone)
+        let lead = Settings.shared.liveActivityLeadMinutes
+        let lastLead = UserDefaults.standard.integer(forKey: "pushToStartLeadMinutes")
+        guard zone != lastZone || lead != lastLead else { return }
+        logger.debug("🔄 Settings changed (zone: \(lastZone ?? "nil") → \(zone), lead: \(lastLead) → \(lead)), re-registering")
+        PushNotificationService.registerPushToStartToken(token, zone: zone, leadMinutes: lead)
         UserDefaults.standard.set(zone, forKey: "pushToStartZone")
+        UserDefaults.standard.set(lead, forKey: "pushToStartLeadMinutes")
     }
 
     private func setupLiveActivityPushTokenHandler() {

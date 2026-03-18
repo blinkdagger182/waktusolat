@@ -298,7 +298,6 @@ struct Widgets: WidgetBundle {
             LockScreen1Widget()
             LockScreen2Widget()
             LockScreen3Widget()
-            LockScreen4Widget()
             LockScreen6Widget()
             // LockScreen5Widget() // Temporarily disabled
             LockScreenVerseWidget()
