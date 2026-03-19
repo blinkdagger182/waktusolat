@@ -33,7 +33,8 @@ struct PushNotificationService {
         deviceToken: String?,
         prayerName: String,
         city: String,
-        prayerTime: Date
+        prayerTime: Date,
+        zone: String?
     ) {
         var payload: [String: Any] = [
             "pushToken": pushToken,
@@ -43,6 +44,7 @@ struct PushNotificationService {
             "prayerTime": ISO8601DateFormatter().string(from: prayerTime),
         ]
         if let deviceToken { payload["deviceToken"] = deviceToken }
+        if let zone, !zone.isEmpty { payload["zone"] = zone }
 
         post(
             endpoint: "\(baseURL)/api/live-activity/register",

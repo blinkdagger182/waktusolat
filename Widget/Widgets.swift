@@ -207,7 +207,7 @@ private struct NextPrayerLiveActivityContentView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
 
-                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                TimelineView(.explicit([context.state.prayerTime])) { timeline in
                     if timeline.date >= context.state.prayerTime {
                         Capsule(style: .continuous)
                             .fill(palette.progress)
@@ -262,7 +262,7 @@ private struct LiveActivityCountdownText: View {
     let compact: Bool
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+        TimelineView(.explicit([prayerTime])) { timeline in
             if isStale || timeline.date >= prayerTime {
                 Text(compact ? compactReachedText : reachedText)
                     .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)

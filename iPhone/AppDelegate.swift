@@ -73,13 +73,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     private func setupLiveActivityPushTokenHandler() {
         if #available(iOS 16.2, *) {
             PrayerLiveActivityCoordinator.shared.onPushToken = { pushToken, prayerName, city, prayerTime in
+                let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
                 PushNotificationService.registerLiveActivityToken(
                     pushToken: pushToken,
                     activityId: "next-prayer",
                     deviceToken: nil,
                     prayerName: prayerName,
                     city: city,
-                    prayerTime: prayerTime
+                    prayerTime: prayerTime,
+                    zone: zone
                 )
             }
         }
