@@ -554,8 +554,12 @@
     }
 
     async function loadLiveJSON() {
+      const owner = ghOwnerEl.value.trim() || "blinkdagger182";
+      const repo = ghRepoEl.value.trim() || "waktu-config";
+      const branch = ghBranchEl.value.trim() || "main";
+      const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/marketing-modal.json?_nocache=${Date.now()}`;
       try {
-        const response = await fetch(`./marketing-modal.json?_nocache=${Date.now()}`, { cache: "no-store" });
+        const response = await fetch(url, { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const json = await response.json();
         state = normalizeConfig(json);
@@ -563,7 +567,7 @@
         bindInputs();
         renderSlides();
         renderPreview();
-        setStatus("Loaded current marketing-modal.json");
+        setStatus(`Loaded marketing-modal.json from ${owner}/${repo}`);
       } catch (error) {
         setStatus(`Failed to load live JSON (${error.message}). Using defaults.`);
         state = normalizeConfig(defaults);
