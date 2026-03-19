@@ -136,6 +136,12 @@
       <section class="panel">
         <div class="section">
           <h2>Modal Content</h2>
+          <div class="row" style="margin-bottom: 8px;">
+            <div>
+              <label for="display-key">Display Key <span class="muted" style="font-size:11px;">(change to re-show modal to all users)</span></label>
+              <input id="display-key" placeholder="v1" />
+            </div>
+          </div>
           <div class="row two">
             <div>
               <label for="title">Title</label>
@@ -341,6 +347,7 @@
     };
 
     const $ = (id) => document.getElementById(id);
+    const displayKeyEl = $("display-key");
     const titleEl = $("title");
     const subtitleEl = $("subtitle");
     const ctaEl = $("cta");
@@ -394,6 +401,7 @@
 
     function normalizeConfig(config = {}) {
       return {
+        display_key: config.display_key ?? "",
         title: config.title ?? defaults.title,
         subtitle: config.subtitle ?? defaults.subtitle,
         cta_text: config.cta_text ?? defaults.cta_text,
@@ -404,7 +412,9 @@
     }
 
     function toAppJSON() {
-      return {
+      const key = displayKeyEl.value.trim();
+      const json = {
+        ...(key ? { display_key: key } : {}),
         title: titleEl.value.trim(),
         subtitle: subtitleEl.value.trim(),
         cta_text: ctaEl.value.trim() || "Got it",
@@ -416,6 +426,7 @@
           image_url: slide.image_url
         }))
       };
+      return json;
     }
 
     function normalizeVersionConfig(config = {}) {
@@ -531,10 +542,12 @@
     }
 
     function bindInputs() {
+      displayKeyEl.value = state.display_key ?? "";
       titleEl.value = state.title;
       subtitleEl.value = state.subtitle;
       ctaEl.value = state.cta_text;
 
+      displayKeyEl.addEventListener("input", () => { state.display_key = displayKeyEl.value; });
       titleEl.addEventListener("input", () => { state.title = titleEl.value; });
       subtitleEl.addEventListener("input", () => { state.subtitle = subtitleEl.value; });
       ctaEl.addEventListener("input", () => { state.cta_text = ctaEl.value; });

@@ -23,6 +23,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         observePushToStartToken()
         observeZoneChanges()
         syncPushToStartTokenIfCached()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
         return true
     }
 
@@ -47,6 +53,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             .debounce(for: .seconds(2), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in self?.reRegisterIfZoneChanged() }
             .store(in: &cancellables)
+    }
+
+    /// Reads the current push-to-start token directly from ActivityKit and registers it.
+    /// Reading from the stream (not UserDefaults cache) ensures we always get the latest
+    /// token — the token rotates every time a live activity ends, and the cache may be stale
+    /// if the app was backgrounded when that happened.
+    private func syncPushToStartToken() {
+        guard #available(iOS 17.2, *) else { return }
+        Task {
+            for await tokenData in Activity<PrayerLiveActivityAttributes>.pushToStartTokenUpdates {
+                let token = tokenData.map { String(format: "%02x", $0) }.joined()
+                UserDefaults.standard.set(token, forKey: "pushToStartToken")
+                let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
+                PushNotificationService.registerPushToStartToken(token, zone: zone)
+                if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
+                return // Only need the current value, not future updates
+            }
+        }
     }
 
     /// On launch, sync only if zone has drifted from what was last registered.
@@ -87,6 +111,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
     }
     
+    @objc private func appWillEnterForeground() {
+        syncPushToStartToken()
+    }
+
     // MARK: - Push Notifications
     
     private func requestPushPermissions() {
@@ -186,6 +214,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
         Settings.shared.fetchPrayerTimes {
             Settings.shared.updateCurrentAndNextPrayer()
+            // Re-register the push-to-start token so the DB is fresh before the cron fires.
+            // The token changes after each live activity ends and is only captured via
+            // pushToStartTokenUpdates when the app is active. Syncing here (BGAppRefreshTask
+            // fires ~7 min before prayer) ensures the cron always has the current token.
+            self.syncPushToStartToken()
             logger.debug("🎉 BG task completed – prayer times refreshed")
             finish(success: true)
         }
