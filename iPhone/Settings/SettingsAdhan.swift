@@ -1694,11 +1694,16 @@ extension Settings {
             let enabled = liveNextPrayerEnabled
             let prayerEnabled = isLiveActivityPrayerEnabled(for: nextPrayer)
             let inWindow = isWithinLiveActivityLeadWindow(for: nextPrayer)
+            // Keep a running push-to-start activity alive even if we're outside the
+            // normal lead window — tapping the notification opens the app before the
+            // window starts, and we must not kill the activity until prayer time passes.
+            let hasRunning = !Activity<PrayerLiveActivityAttributes>.activities.isEmpty
+            let prayerNotPassed = next.map { Date() < $0.time } ?? false
             Task { @MainActor in
                 PrayerLiveActivityCoordinator.shared.sync(
                     nextPrayer: next,
                     city: city,
-                    isFeatureEnabled: enabled && prayerEnabled && inWindow
+                    isFeatureEnabled: enabled && prayerEnabled && (inWindow || (hasRunning && prayerNotPassed))
                 )
             }
         }

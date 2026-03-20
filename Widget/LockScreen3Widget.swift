@@ -6,37 +6,30 @@ struct LockScreen3EntryView: View {
 
     var body: some View {
         let now = entry.date
-        let calendar = Calendar.current
-        
-        // Check if all prayers for today have passed
-        let allPrayersPassed = entry.prayers.allSatisfy { $0.time < now }
-        
+
         let visiblePrayers: [Prayer] = {
-            if entry.prayers.isEmpty {
-                return []
-            } else if allPrayersPassed {
-                // All of today's prayers are done. If it's past midnight the widget will
-                // have already refreshed with tomorrow's data so allPrayersPassed will be
-                // false. Reaching here means we're in the pre-midnight gap — show nothing
-                // so the widget doesn't display misleading past times.
-                return []
-            } else {
-                let currentIndex = entry.prayers.firstIndex(where: {
-                    $0.nameTransliteration == entry.currentPrayer?.nameTransliteration
-                }) ?? 0
-                let half = entry.prayers.count / 2
-                return currentIndex >= half - 1
-                    ? Array(entry.prayers.suffix(half))
-                    : Array(entry.prayers.prefix(half))
+            guard !entry.prayers.isEmpty else { return [] }
+            let half = entry.prayers.count / 2
+            // Pre-Fajr (all prayers still in future): show first half
+            if entry.prayers.allSatisfy({ $0.time > now }) {
+                return Array(entry.prayers.prefix(half))
             }
+            // Post-Isha (all prayers passed): show last half
+            if entry.prayers.allSatisfy({ $0.time <= now }) {
+                return Array(entry.prayers.suffix(half))
+            }
+            // Mixed: use next prayer index to decide
+            let nextIndex = entry.prayers.firstIndex(where: {
+                $0.nameTransliteration == entry.nextPrayer?.nameTransliteration
+            }) ?? 0
+            return nextIndex < half
+                ? Array(entry.prayers.prefix(half))
+                : Array(entry.prayers.suffix(half))
         }()
         
         return VStack(alignment: .leading, spacing: 4) {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
-            } else if visiblePrayers.isEmpty {
-                Text("Next prayers at midnight")
-                    .foregroundColor(.secondary)
             } else {
                 ForEach(visiblePrayers) { prayer in
                     HStack {

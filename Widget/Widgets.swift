@@ -207,7 +207,7 @@ private struct NextPrayerLiveActivityContentView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
 
-                TimelineView(.explicit([context.state.prayerTime])) { timeline in
+                TimelineView(.explicit([.distantPast, context.state.prayerTime])) { timeline in
                     if timeline.date >= context.state.prayerTime {
                         Capsule(style: .continuous)
                             .fill(palette.progress)
@@ -262,20 +262,30 @@ private struct LiveActivityCountdownText: View {
     let compact: Bool
 
     var body: some View {
-        TimelineView(.explicit([prayerTime])) { timeline in
+        TimelineView(.explicit([.distantPast, prayerTime])) { timeline in
             if isStale || timeline.date >= prayerTime {
-                Text(compact ? compactReachedText : reachedText)
-                    .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)
-                                  : .system(.title3, design: .rounded).weight(.bold))
+                if compact {
+                    Text(compactReachedText)
+                        .font(.system(.caption2, design: .rounded).weight(.semibold))
+                } else {
+                    HStack {
+                        Text(reachedText)
+                            .font(.system(.title3, design: .rounded).weight(.bold))
+                        Spacer()
+                        Text("Tap to Dismiss")
+                            .font(.system(.caption, design: .rounded))
+                            .opacity(0.55)
+                    }
+                }
             } else if let countdownPrefix, !compact {
                 HStack(spacing: 6) {
                     Text(countdownPrefix)
                         .font(.system(.title3, design: .rounded).weight(.bold))
-                    Text(timerInterval: timeline.date...prayerTime, countsDown: true)
+                    Text(timerInterval: Date()...prayerTime, countsDown: true)
                         .font(.system(.title3, design: .rounded).weight(.black))
                 }
             } else {
-                Text(timerInterval: timeline.date...prayerTime, countsDown: true)
+                Text(timerInterval: Date()...prayerTime, countsDown: true)
                     .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)
                                   : .system(.subheadline, design: .rounded).weight(.bold))
             }
