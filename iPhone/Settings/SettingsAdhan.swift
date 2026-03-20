@@ -808,29 +808,10 @@ extension Settings {
 
     static let globalCalculationMethods: [String] = [
         "Auto (By Location)",
-        "Jafari / Shia Ithna-Ashari",
-        "University of Islamic Sciences, Karachi",
-        "Islamic Society of North America",
-        "Muslim World League",
-        "Umm Al-Qura University, Makkah",
-        "Egyptian General Authority of Survey",
-        "Institute of Geophysics, University of Tehran",
-        "Gulf Region",
-        "Kuwait",
-        "Qatar",
-        "Majlis Ugama Islam Singapura, Singapore",
-        "Union Organization islamic de France",
-        "Diyanet İşleri Başkanlığı, Turkey",
-        "Spiritual Administration of Muslims of Russia",
         "Moonsighting Committee Worldwide",
-        "Dubai (experimental)",
+        "Muslim World League",
+        "Majlis Ugama Islam Singapura, Singapore",
         "Jabatan Kemajuan Islam Malaysia (JAKIM)",
-        "Tunisia",
-        "Algeria",
-        "KEMENAG - Kementerian Agama Republik Indonesia",
-        "Morocco",
-        "Comunidade Islamica de Lisboa",
-        "Ministry of Awqaf, Islamic Affairs and Holy Places, Jordan"
     ]
 
     private func alAdhanMethodId(for selection: String) -> Int {
@@ -880,7 +861,7 @@ extension Settings {
         case "MA": return 21
         case "PT": return 22
         case "JO": return 23
-        case "US", "CA": return 2
+        case "US", "CA": return 3
         case "GB": return 15
         case "SA": return 4
         case "EG": return 5
@@ -1027,6 +1008,9 @@ extension Settings {
     }
 
     private func isLikelyMalaysiaCoordinate(latitude: Double, longitude: Double) -> Bool {
+        // Exclude Singapore — its coordinates overlap the peninsular bounding box
+        let isSingapore = (latitude >= 1.13 && latitude <= 1.48) && (longitude >= 103.60 && longitude <= 104.10)
+        if isSingapore { return false }
         // Peninsular Malaysia
         let west = (latitude >= 0.7 && latitude <= 7.6) && (longitude >= 99.5 && longitude <= 104.7)
         // East Malaysia (Sabah/Sarawak/Labuan)
@@ -1036,7 +1020,12 @@ extension Settings {
 
     private var isJAKIMMethodSelected: Bool {
         let normalized = prayerCalculation.lowercased()
-        return normalized.contains("jakim") || normalized == "malaysian prayer times/ jakim"
+        guard normalized.contains("jakim") || normalized == "malaysian prayer times/ jakim" else { return false }
+        // JAKIM is only sticky in Malaysia — don't lock users from other countries into the Malaysia path
+        if let countryCode = currentLocation?.countryCode?.uppercased(), countryCode != "MY" {
+            return false
+        }
+        return true
     }
     
     private var debugMalaysiaZoneOverride: String? {
@@ -1065,6 +1054,10 @@ extension Settings {
         }
 
         guard let location else { return true }
+        // Prefer country code when available — coordinate bounding box overlaps Singapore
+        if let countryCode = location.countryCode?.uppercased() {
+            return countryCode == "MY" || countryCode == "SG"
+        }
         return isLikelyMalaysiaCoordinate(latitude: location.latitude, longitude: location.longitude)
     }
 

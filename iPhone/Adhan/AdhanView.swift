@@ -274,7 +274,8 @@ struct AdhanView: View {
             #if !os(watchOS)
             .toolbar {
                 #if DEBUG
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarLeading) { EmptyView() }
+                /*ToolbarItem(placement: .navigationBarLeading) {
                     Menu {
                         Button {
                             NotificationCenter.default.post(name: .debugShowDailyQuranWidgetIntro, object: nil)
@@ -323,7 +324,7 @@ struct AdhanView: View {
                         Image(systemName: "ladybug")
                     }
                     .accessibilityLabel("Debug options")
-                }
+                }*/
                 #endif
 
                 ToolbarItem(placement: .navigationBarTrailing) {

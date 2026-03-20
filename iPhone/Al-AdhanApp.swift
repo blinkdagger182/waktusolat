@@ -47,6 +47,7 @@ struct AlAdhanApp: App {
     @State private var lastSceneActiveAt = Date.distantPast
     @State private var lastUIRecoveryAt = Date.distantPast
     @State private var uiRecoveryTask: Task<Void, Never>?
+    @State private var showUnsupportedRegionModal = false
 
     init() {
         RevenueCatManager.shared.configure()
@@ -141,6 +142,17 @@ struct AlAdhanApp: App {
                     .zIndex(20)
                 }
             }
+            .overlay {
+                if showUnsupportedRegionModal {
+                    UnsupportedRegionModal(
+                        storefrontRegionName: storefrontRegionName,
+                        onRefreshLocation: { settings.requestLocationAuthorization() }
+                    )
+                    .environmentObject(settings)
+                    .transition(.opacity)
+                    .zIndex(50)
+                }
+            }
             .overlay(alignment: .top) {
                 if showSupportPromoToast {
                     SupportPromoToast(
@@ -177,6 +189,7 @@ struct AlAdhanApp: App {
                     settings.requestLocationAuthorization()
                 }
                 scheduleUIRecoveryWatchdog()
+                updateUnsupportedRegionModalVisibility()
             }
             .onReceive(NotificationCenter.default.publisher(for: .uiContentHeartbeat)) { _ in
                 lastUIHeartbeatAt = Date()
@@ -227,6 +240,10 @@ struct AlAdhanApp: App {
                 presentDailyQuranWidgetIntroIfNeeded()
                 presentSupportPromoToastIfNeeded()
             }
+            updateUnsupportedRegionModalVisibility()
+        }
+        .onChange(of: settings.currentLocation?.countryCode) { _ in
+            updateUnsupportedRegionModalVisibility()
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active, !settings.firstLaunch {
@@ -236,7 +253,35 @@ struct AlAdhanApp: App {
                 lastSceneActiveAt = Date()
                 refreshSupportPromoConfigIfNeeded(force: false)
                 scheduleUIRecoveryWatchdog()
+                updateUnsupportedRegionModalVisibility()
             }
+        }
+    }
+
+    private var storefrontRegionName: String {
+        let code = SKPaymentQueue.default().storefront?.countryCode ?? ""
+        switch code {
+        case "MYS": return "Malaysia"
+        case "SGP": return "Singapore"
+        case "GBR": return "United Kingdom"
+        case "USA": return "United States"
+        default: return "the supported regions"
+        }
+    }
+
+    private func updateUnsupportedRegionModalVisibility() {
+        guard !settings.firstLaunch else {
+            showUnsupportedRegionModal = false
+            return
+        }
+        guard let location = settings.currentLocation else {
+            showUnsupportedRegionModal = false
+            return
+        }
+        let code = location.countryCode?.uppercased() ?? ""
+        let supportedCodes = ["MY", "SG", "GB", "US"]
+        withAnimation {
+            showUnsupportedRegionModal = !code.isEmpty && !supportedCodes.contains(code)
         }
     }
 
@@ -2380,4 +2425,43 @@ private struct QuranEditionSurahData: Decodable {
     let englishName: String
     let name: String
     let revelationType: String?
+}
+
+private struct UnsupportedRegionModal: View {
+    @EnvironmentObject private var settings: Settings
+    let storefrontRegionName: String
+    let onRefreshLocation: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.56)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "location.slash.circle.fill")
+                    .font(.system(size: 42))
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Outside Supported Region")
+                    .font(.title3.bold())
+
+                Text("Waktu Solat currently only supports \(storefrontRegionName). We detected your location outside the supported region.")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.secondary)
+
+                Button(action: onRefreshLocation) {
+                    Text("Refresh Location")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(settings.accentColor.color)
+            }
+            .padding(24)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .padding(.horizontal, 32)
+        }
+    }
 }

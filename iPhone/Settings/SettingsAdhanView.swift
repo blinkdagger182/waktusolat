@@ -126,11 +126,10 @@ struct SettingsAdhanView: View {
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Waktu Solat Settings")
         .onAppear {
-            // Keep Malaysia path unchanged while allowing non-Malaysia coordinate calculation.
-            if settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation) {
-                settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
-                settings.hanafiMadhab = false
-            }
+            applyRegionDefaultCalculation()
+        }
+        .onChange(of: settings.currentLocation?.countryCode) { _ in
+            applyRegionDefaultCalculation()
         }
         .onChange(of: settings.homeLocation) { _ in
             settings.fetchPrayerTimes() {
@@ -212,6 +211,36 @@ struct SettingsAdhanView: View {
                 Text("Waktu Solat has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
             case .none:
                 EmptyView()
+            }
+        }
+    }
+
+    private func applyRegionDefaultCalculation() {
+        let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
+
+        guard !countryCode.isEmpty else {
+            if settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation) {
+                settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+                settings.hanafiMadhab = false
+            } else if settings.prayerCalculation == "Singapore" {
+                settings.prayerCalculation = "Auto (By Location)"
+            }
+            return
+        }
+
+        switch countryCode {
+        case "MY":
+            settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+            settings.hanafiMadhab = false
+        case "SG":
+            settings.prayerCalculation = "Majlis Ugama Islam Singapura, Singapore"
+        case "GB":
+            settings.prayerCalculation = "Moonsighting Committee Worldwide"
+        case "US", "CA":
+            settings.prayerCalculation = "Muslim World League"
+        default:
+            if settings.prayerCalculation == "Singapore" {
+                settings.prayerCalculation = "Auto (By Location)"
             }
         }
     }
@@ -993,6 +1022,7 @@ struct NotificationSettingsSection: View {
         }
     }
 }
+
 
 #Preview {
     SettingsAdhanView(showNotifications: true)

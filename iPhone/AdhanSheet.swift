@@ -24,57 +24,45 @@ struct AdhanSetupSheet: View {
     private var shouldShowGlobalMethodDropdown: Bool {
         isGlobalDebugForced || !settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
     }
+
+    private var isSingaporeMode: Bool {
+        !isGlobalDebugForced &&
+        settings.currentLocation?.countryCode?.uppercased() == "SG"
+    }
     
+    private func shortCalculationLabel(_ method: String) -> String {
+        switch method {
+        case "Auto (By Location)":                          return "Auto"
+        case "Moonsighting Committee Worldwide":            return "Moonsighting (UK)"
+        case "Muslim World League":                         return "Muslim World League (US)"
+        case "Majlis Ugama Islam Singapura, Singapore":     return "MUIS (Singapore)"
+        case "Jabatan Kemajuan Islam Malaysia (JAKIM)":     return "JAKIM (Malaysia)"
+        default:                                            return method
+        }
+    }
+
+    private var resolvedAutoMethodLabel: String {
+        switch settings.currentLocation?.countryCode?.uppercased() ?? "" {
+        case "MY": return "JAKIM (Malaysia)"
+        case "SG": return "MUIS (Singapore)"
+        case "GB": return "Moonsighting Committee Worldwide"
+        case "US", "CA": return "Muslim World League"
+        default: return "Muslim World League"
+        }
+    }
+
     private var selectedCalculationDescription: String {
         switch settings.prayerCalculation {
         case "Auto (By Location)":
-            return "Automatically selects a recommended calculation authority based on your detected country."
-        case "Jafari / Shia Ithna-Ashari":
-            return "Uses the Jafari (Shia Ithna-Ashari) calculation convention."
-        case "University of Islamic Sciences, Karachi":
-            return "Applies the Karachi method, commonly used in parts of South Asia."
-        case "Islamic Society of North America":
-            return "Uses ISNA parameters, commonly used in North America."
-        case "Muslim World League":
-            return "Uses Muslim World League parameters, widely adopted internationally."
-        case "Umm Al-Qura University, Makkah":
-            return "Uses Umm Al-Qura convention from Makkah, Saudi Arabia."
-        case "Egyptian General Authority of Survey":
-            return "Uses Egyptian General Authority of Survey parameters."
-        case "Institute of Geophysics, University of Tehran":
-            return "Uses Tehran University of Geophysics calculation parameters."
-        case "Gulf Region":
-            return "Uses parameters commonly adopted in Gulf countries."
-        case "Kuwait":
-            return "Uses Kuwait prayer time calculation parameters."
-        case "Qatar":
-            return "Uses Qatar prayer time calculation parameters."
-        case "Majlis Ugama Islam Singapura, Singapore":
-            return "Uses MUIS (Singapore) prayer time calculation parameters."
-        case "Union Organization islamic de France":
-            return "Uses UOIF calculation parameters used by some communities in France."
-        case "Diyanet İşleri Başkanlığı, Turkey":
-            return "Uses Diyanet (Turkey) prayer time calculation parameters."
-        case "Spiritual Administration of Muslims of Russia":
-            return "Uses prayer time parameters from Russia’s Muslim administration."
+            return "Automatically selects the recommended authority based on your detected country."
         case "Moonsighting Committee Worldwide":
-            return "Uses Moonsighting Committee Worldwide method with shafaq set to general."
-        case "Dubai (experimental)":
-            return "Uses Dubai calculation parameters (experimental)."
+            return "Used in the UK and many Western countries. Based on moon sighting with shafaq set to general."
+        case "Muslim World League":
+            return "Widely used in the US and internationally. Uses Muslim World League calculation parameters."
+        case "Majlis Ugama Islam Singapura, Singapore":
+            return "Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura)."
         case "Jabatan Kemajuan Islam Malaysia (JAKIM)":
-            return "Uses JAKIM via Malaysian Prayer Times API."
-        case "Tunisia":
-            return "Uses Tunisia prayer time calculation parameters."
-        case "Algeria":
-            return "Uses Algeria prayer time calculation parameters."
-        case "KEMENAG - Kementerian Agama Republik Indonesia":
-            return "Uses Indonesia KEMENAG prayer time calculation parameters."
-        case "Morocco":
-            return "Uses Morocco prayer time calculation parameters."
-        case "Comunidade Islamica de Lisboa":
-            return "Uses Comunidade Islamica de Lisboa prayer time parameters."
-        case "Ministry of Awqaf, Islamic Affairs and Holy Places, Jordan":
-            return "Uses Jordan Ministry of Awqaf prayer time calculation parameters."
+            return "Official Malaysian prayer times by JAKIM. Uses the Malaysian Prayer Times API."
         default:
             return "Uses the selected prayer time calculation method for your location."
         }
@@ -83,12 +71,24 @@ struct AdhanSetupSheet: View {
     private var selectedMalaysiaZoneLabel: String {
         let zone = settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard !zone.isEmpty else { return "Auto (GPS)" }
-        guard let info = malaysiaZones.first(where: { $0.jakimCode.uppercased() == zone }) else {
+        guard let info = filteredZones.first(where: { $0.jakimCode.uppercased() == zone }) else {
             return zone
         }
         return "\(info.jakimCode) · \(info.negeri) · \(info.daerah)"
     }
     
+    /// Zones filtered to the user's current country.
+    /// SG → only SGP01; everything else → Malaysian JAKIM zones.
+    private var filteredZones: [MalaysiaZoneInfo] {
+        let country = settings.currentLocation?.countryCode?.uppercased() ?? ""
+        switch country {
+        case "SG":
+            return [MalaysiaZoneInfo(jakimCode: "SGP01", negeri: "Singapore", daerah: "Singapore")]
+        default:
+            return malaysiaZones
+        }
+    }
+
     private var autoDetectedZoneLabel: String {
         let zone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard !zone.isEmpty else { return "Detecting..." }
@@ -101,6 +101,8 @@ struct AdhanSetupSheet: View {
     @MainActor
     private func loadMalaysiaZonesIfNeeded() async {
         guard malaysiaZones.isEmpty else { return }
+        // Singapore only has one known zone (SGP01) — no need to fetch the Malaysian list
+        guard settings.currentLocation?.countryCode?.uppercased() != "SG" else { return }
         guard let url = URL(string: "https://api-waktusolat.vercel.app/zones") else { return }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
@@ -148,6 +150,38 @@ struct AdhanSetupSheet: View {
         }
     }
 
+    /// Always maps prayer calculation to the regional default for the current country code.
+    private func applyRegionDefaultCalculation() {
+        let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
+
+        guard !countryCode.isEmpty else {
+            // Country code not yet resolved — coordinate-based fallback
+            if !shouldShowGlobalMethodDropdown {
+                settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+                settings.hanafiMadhab = false
+            } else if settings.prayerCalculation == "Singapore" {
+                settings.prayerCalculation = "Auto (By Location)"
+            }
+            return
+        }
+
+        switch countryCode {
+        case "MY":
+            settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+            settings.hanafiMadhab = false
+        case "SG":
+            settings.prayerCalculation = "Majlis Ugama Islam Singapura, Singapore"
+        case "GB":
+            settings.prayerCalculation = "Moonsighting Committee Worldwide"
+        case "US", "CA":
+            settings.prayerCalculation = "Muslim World League"
+        default:
+            if settings.prayerCalculation == "Singapore" {
+                settings.prayerCalculation = "Auto (By Location)"
+            }
+        }
+    }
+
     var body: some View {
         NavigationView {
             List {
@@ -158,16 +192,26 @@ struct AdhanSetupSheet: View {
                     VStack(alignment: .leading, spacing: 10) {
                         if !shouldShowGlobalMethodDropdown {
                             Text("Prayer times are sourced from Malaysian Prayer Times, and this app currently supports Malaysia only.")
-                            
+
                             Text("""
                                 • The app is currently optimized for Malaysia prayer times.
                                 • Calculation is fixed to Malaysia for consistency across app and widgets.
                                 """
                             )
                             .foregroundColor(.secondary)
+                        } else if isSingaporeMode {
+                            Text("Prayer times are sourced from MUIS (Majlis Ugama Islam Singapura), Singapore's official Islamic religious authority.")
+
+                            Text("""
+                                • The app is currently optimized for Singapore prayer times.
+                                • Times are fetched from our backend, sourced directly from MUIS.
+                                • Calculation is fixed to MUIS for consistency across app and widgets.
+                                """
+                            )
+                            .foregroundColor(.secondary)
                         } else {
                             Text("Prayer times are calculated from your current coordinates using trusted Adhan methods.")
-                            
+
                             Text("""
                                 • You can choose the most suitable local calculation method.
                                 • Traveling mode and prayer offsets still apply.
@@ -201,6 +245,19 @@ struct AdhanSetupSheet: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
+                        } else if isSingaporeMode {
+                            HStack {
+                                Text("Calculation")
+                                Spacer()
+                                Text("MUIS (Singapore)")
+                                    .foregroundColor(.secondary)
+                            }
+                            .font(.subheadline)
+
+                            Text("Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura), the official Islamic authority of Singapore.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 2)
                         } else {
                             HStack {
                                 Text("Calculation")
@@ -211,7 +268,7 @@ struct AdhanSetupSheet: View {
                                             settings.prayerCalculation = method
                                         } label: {
                                             HStack {
-                                                Text(method)
+                                                Text(shortCalculationLabel(method))
                                                 if settings.prayerCalculation == method {
                                                     Spacer()
                                                     Image(systemName: "checkmark")
@@ -221,7 +278,7 @@ struct AdhanSetupSheet: View {
                                     }
                                 } label: {
                                     HStack(spacing: 4) {
-                                        Text(settings.prayerCalculation)
+                                        Text(shortCalculationLabel(settings.prayerCalculation))
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.75)
                                             .truncationMode(.tail)
@@ -238,6 +295,17 @@ struct AdhanSetupSheet: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
+
+                            if settings.prayerCalculation == "Auto (By Location)" {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "location.fill")
+                                        .font(.caption2)
+                                    Text("Using \(resolvedAutoMethodLabel)")
+                                        .font(.caption)
+                                }
+                                .foregroundColor(settings.accentColor.color)
+                                .padding(.vertical, 2)
+                            }
                         }
                     }
                 }
@@ -280,12 +348,14 @@ struct AdhanSetupSheet: View {
                     #endif
                     
                     #if !DEBUG
-                    Picker("Mode", selection: releaseWaktuModeBinding) {
-                        Text("Auto").tag(0)
-                        Text("Manual").tag(1)
+                    if !shouldShowGlobalMethodDropdown || isSingaporeMode {
+                        Picker("Mode", selection: releaseWaktuModeBinding) {
+                            Text("Auto").tag(0)
+                            Text("Manual").tag(1)
+                        }
+                        .pickerStyle(.segmented)
                     }
-                    .pickerStyle(.segmented)
-                    
+
                     HStack {
                         Text("Location")
                         Spacer()
@@ -296,20 +366,22 @@ struct AdhanSetupSheet: View {
                     }
                     .font(.subheadline)
 
-                    if releaseWaktuModeBinding.wrappedValue == 1 {
-                        Text("Manual mode lets you select a specific Waktu Zone from Malaysian Prayer Times API.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    } else {
-                        Text("Auto mode uses your current location and keeps Waktu Zone selection disabled.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
+                    if !shouldShowGlobalMethodDropdown || isSingaporeMode {
+                        if releaseWaktuModeBinding.wrappedValue == 1 {
+                            Text("Manual mode lets you select a specific Waktu Zone.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 2)
+                        } else {
+                            Text("Auto mode uses your current location to determine the prayer zone.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 2)
+                        }
                     }
                     #endif
 
-                    if releaseWaktuModeBinding.wrappedValue == 0 {
+                    if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && releaseWaktuModeBinding.wrappedValue == 0 {
                         HStack {
                             HStack(spacing: 6) {
                                 Text("Waktu Zone")
@@ -330,7 +402,7 @@ struct AdhanSetupSheet: View {
                                 .truncationMode(.tail)
                         }
                         .font(.subheadline)
-                    } else {
+                    } else if (!shouldShowGlobalMethodDropdown || isSingaporeMode) {
                         HStack {
                             HStack(spacing: 6) {
                                 Text("Waktu Zone")
@@ -357,7 +429,7 @@ struct AdhanSetupSheet: View {
                                     }
                                 }
 
-                                ForEach(malaysiaZones) { zone in
+                                ForEach(filteredZones) { zone in
                                     Button {
                                         settings.debugMalaysiaZoneCode = zone.jakimCode
                                         settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
@@ -388,10 +460,12 @@ struct AdhanSetupSheet: View {
                         .font(.subheadline)
                     }
 
-                    Text("Auto matches your location to a Waktu Zone. Manual lets you choose a specific Waktu Zone from Malaysian Prayer Times API.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
+                    if !shouldShowGlobalMethodDropdown || isSingaporeMode {
+                        Text("Auto matches your location to a prayer zone. Manual lets you choose a specific zone.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    }
                 }
             }
             .listStyle(.insetGrouped)
@@ -406,14 +480,7 @@ struct AdhanSetupSheet: View {
                 }
             }
             .onAppear {
-                // Keep Malaysia path unchanged while allowing non-Malaysia coordinate calculation.
-                if !shouldShowGlobalMethodDropdown {
-                    settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
-                    settings.hanafiMadhab = false
-                } else if settings.prayerCalculation == "Singapore" {
-                    // Migrate global users from legacy fixed selection to location-aware mode.
-                    settings.prayerCalculation = "Auto (By Location)"
-                }
+                applyRegionDefaultCalculation()
             }
             .onChange(of: settings.prayerCalculation) { _ in
                 settings.fetchPrayerTimes(force: true)
@@ -428,8 +495,13 @@ struct AdhanSetupSheet: View {
             .onChange(of: settings.currentLocation?.longitude) { _ in
                 Task { await refreshAutoDetectedZone() }
             }
+            .onChange(of: settings.currentLocation?.countryCode) { _ in
+                applyRegionDefaultCalculation()
+                Task { await loadMalaysiaZonesIfNeeded() }
+                Task { await refreshAutoDetectedZone() }
+            }
             .sheet(isPresented: $showingWaktuZoneReference) {
-                WaktuZoneReferenceView(zones: malaysiaZones)
+                WaktuZoneReferenceView(zones: filteredZones)
                     .preferredColorScheme(settings.colorScheme)
             }
         }
