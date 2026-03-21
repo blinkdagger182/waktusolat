@@ -335,6 +335,11 @@
     "province": "GORONTALO"
   },
   {
+    "id": "812b4ba287f5ee0bc9d43bbf5bbe87fb",
+    "location": "KAB. BATANGHARI",
+    "province": "JAMBI"
+  },
+  {
     "id": "26657d5ff9020d2abefe558796b99584",
     "location": "KAB. BUNGO",
     "province": "JAMBI"
@@ -480,11 +485,6 @@
     "province": "JAWA BARAT"
   },
   {
-    "id": "4c5bde74a8f110656874902f07378009",
-    "location": "KOTA BANJAR",
-    "province": "JAWA BARAT"
-  },
-  {
     "id": "cedebb6e872f539bef8c3f919874e9d7",
     "location": "KOTA BEKASI",
     "province": "JAWA BARAT"
@@ -527,11 +527,6 @@
   {
     "id": "85d8ce590ad8981ca2c8286f79f59954",
     "location": "KAB. BANYUMAS",
-    "province": "JAWA TENGAH"
-  },
-  {
-    "id": "0e65972dce68dad4d52d063967f0a705",
-    "location": "KAB. BATANG",
     "province": "JAWA TENGAH"
   },
   {
@@ -1012,6 +1007,11 @@
   {
     "id": "04025959b191f8f9de3f924f0940515f",
     "location": "KAB. TAPIN",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "40008b9a5380fcacce3976bf7c08af5b",
+    "location": "KOTA BANJARBARU",
     "province": "KALIMANTAN SELATAN"
   },
   {
@@ -2225,8 +2225,8 @@
     "province": "SUMATERA BARAT"
   },
   {
-    "id": "7cbbc409ec990f19c78c75bd1e06f215",
-    "location": "KOTA PADANG",
+    "id": "e2c420d928d4bf8ce0ff2ec19b371514",
+    "location": "KOTA PADANGPANJANG",
     "province": "SUMATERA BARAT"
   },
   {

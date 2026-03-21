@@ -1,12 +1,5 @@
 [
   {
-    "id": "812b4ba287f5ee0bc9d43bbf5bbe87fb",
-    "location": "KAB. BATANGHARI",
-    "province": "JAMBI",
-    "timezone": "Asia/Jakarta",
-    "category": "district-gap"
-  },
-  {
     "id": "82161242827b703e6acf9c726942a1e4",
     "location": "KAB. PANGANDARAN",
     "province": "JAWA BARAT",
@@ -18,13 +11,6 @@
     "location": "KAB. MEMPAWAH",
     "province": "KALIMANTAN BARAT",
     "timezone": "Asia/Pontianak",
-    "category": "district-gap"
-  },
-  {
-    "id": "40008b9a5380fcacce3976bf7c08af5b",
-    "location": "KOTA BANJARBARU",
-    "province": "KALIMANTAN SELATAN",
-    "timezone": "Asia/Makassar",
     "category": "district-gap"
   },
   {
@@ -81,7 +67,7 @@
     "location": "KAB. PULAU TALIABU",
     "province": "MALUKU UTARA",
     "timezone": "Asia/Jayapura",
-    "category": "special-island-zone"
+    "category": "district-gap"
   },
   {
     "id": "07563a3fe3bbe7e3ba84431ad9d055af",
@@ -165,20 +151,13 @@
     "location": "KAB. KONAWE KEPULAUAN",
     "province": "SULAWESI TENGGARA",
     "timezone": "Asia/Makassar",
-    "category": "special-island-zone"
+    "category": "district-gap"
   },
   {
     "id": "66808e327dc79d135ba18e051673d906",
     "location": "KAB. MUNA BARAT",
     "province": "SULAWESI TENGGARA",
     "timezone": "Asia/Makassar",
-    "category": "district-gap"
-  },
-  {
-    "id": "e2c420d928d4bf8ce0ff2ec19b371514",
-    "location": "KOTA PADANGPANJANG",
-    "province": "SUMATERA BARAT",
-    "timezone": "Asia/Jakarta",
     "category": "district-gap"
   },
   {

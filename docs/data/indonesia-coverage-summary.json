@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-03-21T04:36:45.540Z",
+  "generatedAt": "2026-03-21T05:57:35.727Z",
   "sourcePrayerSnapshot": "indonesia-prayer-data-2026.json",
   "sourcePolygonSnapshot": "indonesia-districts.geojson",
   "totalRegions": 517,
-  "coveredRegions": 488,
-  "missingRegions": 29,
-  "coveragePercent": 94.39,
+  "coveredRegions": 491,
+  "missingRegions": 26,
+  "coveragePercent": 94.97,
   "provincesWithMissing": [
     {
       "province": "KEPULAUAN RIAU",
@@ -32,19 +32,11 @@
       "count": 2
     },
     {
-      "province": "JAMBI",
-      "count": 1
-    },
-    {
       "province": "JAWA BARAT",
       "count": 1
     },
     {
       "province": "KALIMANTAN BARAT",
-      "count": 1
-    },
-    {
-      "province": "KALIMANTAN SELATAN",
       "count": 1
     },
     {
@@ -65,10 +57,6 @@
     },
     {
       "province": "SULAWESI BARAT",
-      "count": 1
-    },
-    {
-      "province": "SUMATERA BARAT",
       "count": 1
     },
     {
