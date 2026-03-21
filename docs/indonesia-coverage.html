@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Indonesia Prayer Zone Coverage</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --paper: rgba(255, 251, 241, 0.9);
+      --ink: #18231b;
+      --muted: #5f695f;
+      --line: rgba(24, 35, 27, 0.12);
+      --covered: #2a8f63;
+      --covered-fill: rgba(42, 143, 99, 0.28);
+      --missing: #d5533f;
+      --missing-fill: rgba(213, 83, 63, 0.12);
+      --shadow: 0 24px 80px rgba(39, 35, 24, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 223, 158, 0.38), transparent 36%),
+        radial-gradient(circle at top right, rgba(104, 168, 134, 0.28), transparent 28%),
+        linear-gradient(180deg, #efe5d2 0%, var(--bg) 56%);
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 16px 32px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 14ch;
+      font-size: clamp(2.2rem, 4vw, 4.4rem);
+      line-height: 0.94;
+      font-weight: 750;
+    }
+
+    .lead {
+      margin: 0;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--paper);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+
+    .map-shell {
+      overflow: hidden;
+      min-height: 72vh;
+    }
+
+    .map-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.24), transparent);
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
+
+    .swatch.covered {
+      background: var(--covered-fill);
+      border-color: var(--covered);
+    }
+
+    .swatch.missing {
+      background: var(--missing-fill);
+      border-color: var(--missing);
+    }
+
+    #map {
+      width: 100%;
+      min-height: calc(72vh - 60px);
+    }
+
+    .sidebar {
+      display: grid;
+      gap: 16px;
+    }
+
+    .section {
+      padding: 16px;
+    }
+
+    .section h2, .section h3 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255,255,255,0.4);
+    }
+
+    .stat .label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat .value {
+      font-size: 1.7rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.52);
+      color: var(--ink);
+      font-size: 0.86rem;
+    }
+
+    .search {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.7);
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .region-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      max-height: 42vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .region-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255,255,255,0.44);
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .region-card:hover,
+    .region-card.active {
+      transform: translateY(-1px);
+      border-color: rgba(24, 35, 27, 0.24);
+      background: rgba(255,255,255,0.84);
+    }
+
+    .region-card .name {
+      font-weight: 650;
+      line-height: 1.25;
+    }
+
+    .region-card .meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+
+    .inspector-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .inspector-row {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .inspector-row:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .inspector-row .key {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 16px;
+    }
+
+    .leaflet-popup-content {
+      margin: 14px 16px;
+      font: 14px/1.45 "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .map-shell {
+        min-height: 60vh;
+      }
+
+      #map {
+        min-height: 56vh;
+      }
+
+      .region-list {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Waktu Solat Audit</p>
+      <h1>Indonesia prayer zone polygon coverage</h1>
+      <p class="lead">
+        This page compares the current polygon-backed GPS resolver against the full MyQuran-backed prayer-zone catalog.
+        Green areas already resolve by polygon. The checklist tracks the remaining uncovered regions that still need true geometry.
+      </p>
+    </header>
+
+    <section class="layout">
+      <article class="panel map-shell">
+        <div class="map-toolbar">
+          <div class="legend">
+            <span><i class="swatch covered"></i> Polygon-covered regions</span>
+            <span><i class="swatch missing"></i> Missing true polygon coverage</span>
+          </div>
+          <div class="muted" id="generated-at">Loading audit data...</div>
+        </div>
+        <div id="map" aria-label="Indonesia polygon coverage map"></div>
+      </article>
+
+      <aside class="sidebar">
+        <section class="panel section">
+          <h2>Coverage Summary</h2>
+          <div class="stats">
+            <div class="stat">
+              <span class="label">Catalog</span>
+              <span class="value" id="total-regions">-</span>
+            </div>
+            <div class="stat">
+              <span class="label">Covered</span>
+              <span class="value" id="covered-regions">-</span>
+            </div>
+            <div class="stat">
+              <span class="label">Missing</span>
+              <span class="value" id="missing-regions">-</span>
+            </div>
+            <div class="stat">
+              <span class="label">Coverage</span>
+              <span class="value" id="coverage-percent">-</span>
+            </div>
+          </div>
+          <div class="chip-row" id="province-chips"></div>
+        </section>
+
+        <section class="panel section">
+          <h2>Region Inspector</h2>
+          <div class="inspector-grid" id="inspector">
+            <div class="inspector-row">
+              <span class="key">Selection</span>
+              <div class="muted">Tap a polygon or a missing-region row to inspect its metadata.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section">
+          <h2>Missing Polygon Checklist</h2>
+          <input class="search" id="missing-search" type="search" placeholder="Filter by region or province" />
+          <div class="region-list" id="missing-list"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    const DATA_BASE = "./data";
+    const COVERED_STYLE = {
+      color: "#2a8f63",
+      weight: 0.8,
+      opacity: 0.85,
+      fillColor: "#2a8f63",
+      fillOpacity: 0.22
+    };
+
+    const map = L.map("map", {
+      zoomSnap: 0.25,
+      minZoom: 4,
+      worldCopyJump: false
+    }).setView([-2.2, 118], 4.6);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    const coveredLayer = L.geoJSON(null, {
+      style: COVERED_STYLE,
+      onEachFeature(feature, layer) {
+        const props = feature.properties || {};
+        layer.bindPopup(`
+          <strong>${props.location || "Unknown region"}</strong><br/>
+          ${props.province || "Unknown province"}<br/>
+          <span style="color:#5f695f;">ID: ${props.region_id || "-"}</span>
+        `);
+        layer.on("click", () => renderInspector({
+          id: props.region_id,
+          location: props.location,
+          province: props.province,
+          timezone: "Backed by polygon",
+          category: "covered-region"
+        }));
+      }
+    }).addTo(map);
+
+    let currentMissing = [];
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function renderInspector(entry) {
+      const inspector = document.getElementById("inspector");
+      inspector.innerHTML = `
+        <div class="inspector-row">
+          <span class="key">Location</span>
+          <div>${escapeHtml(entry.location || "-")}</div>
+        </div>
+        <div class="inspector-row">
+          <span class="key">Province</span>
+          <div>${escapeHtml(entry.province || "-")}</div>
+        </div>
+        <div class="inspector-row">
+          <span class="key">Region ID</span>
+          <div>${escapeHtml(entry.id || "-")}</div>
+        </div>
+        <div class="inspector-row">
+          <span class="key">Status</span>
+          <div>${escapeHtml(entry.category || "-")}</div>
+        </div>
+        <div class="inspector-row">
+          <span class="key">Timezone / Note</span>
+          <div>${escapeHtml(entry.timezone || "-")}</div>
+        </div>
+      `;
+    }
+
+    function renderProvinceChips(summary) {
+      const container = document.getElementById("province-chips");
+      container.innerHTML = "";
+      for (const province of summary.provincesWithMissing.slice(0, 8)) {
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.textContent = `${province.province}: ${province.count} gap${province.count === 1 ? "" : "s"}`;
+        container.appendChild(chip);
+      }
+    }
+
+    function renderMissingList(regions) {
+      currentMissing = regions;
+      const list = document.getElementById("missing-list");
+      const query = document.getElementById("missing-search").value.trim().toLowerCase();
+      const filtered = regions.filter((region) => {
+        if (!query) return true;
+        return (
+          region.location.toLowerCase().includes(query) ||
+          region.province.toLowerCase().includes(query) ||
+          region.id.toLowerCase().includes(query)
+        );
+      });
+
+      list.innerHTML = "";
+      for (const region of filtered) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "region-card";
+        card.innerHTML = `
+          <div class="name">${escapeHtml(region.location)}</div>
+          <div class="meta">
+            ${escapeHtml(region.province)}<br/>
+            ${escapeHtml(region.category)}<br/>
+            ${escapeHtml(region.id)}
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          document.querySelectorAll(".region-card.active").forEach((node) => node.classList.remove("active"));
+          card.classList.add("active");
+          renderInspector(region);
+        });
+        list.appendChild(card);
+      }
+
+      if (filtered.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "muted";
+        empty.textContent = "No missing regions match that filter.";
+        list.appendChild(empty);
+      }
+    }
+
+    async function loadAudit() {
+      const [summary, missingRegions, coveredGeo] = await Promise.all([
+        fetch(`${DATA_BASE}/indonesia-coverage-summary.json`).then((response) => response.json()),
+        fetch(`${DATA_BASE}/indonesia-missing-regions.json`).then((response) => response.json()),
+        fetch(`${DATA_BASE}/indonesia-covered.geojson`).then((response) => response.json())
+      ]);
+
+      document.getElementById("generated-at").textContent = `Generated ${new Date(summary.generatedAt).toLocaleString()}`;
+      document.getElementById("total-regions").textContent = summary.totalRegions;
+      document.getElementById("covered-regions").textContent = summary.coveredRegions;
+      document.getElementById("missing-regions").textContent = summary.missingRegions;
+      document.getElementById("coverage-percent").textContent = `${summary.coveragePercent}%`;
+
+      renderProvinceChips(summary);
+      renderMissingList(missingRegions);
+
+      coveredLayer.addData(coveredGeo);
+      const bounds = coveredLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.03));
+      }
+    }
+
+    document.getElementById("missing-search").addEventListener("input", () => renderMissingList(currentMissing));
+
+    loadAudit().catch((error) => {
+      console.error(error);
+      document.getElementById("generated-at").textContent = "Failed to load audit data.";
+      renderInspector({
+        id: "-",
+        location: "Audit data failed to load",
+        province: "-",
+        timezone: error?.message || String(error),
+        category: "error"
+      });
+    });
+  </script>
+</body>
+</html>

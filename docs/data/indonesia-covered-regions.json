@@ -1,0 +1,2492 @@
+[
+  {
+    "id": "c4ca4238a0b923820dcc509a6f75849b",
+    "location": "KAB. ACEH BARAT",
+    "province": "ACEH"
+  },
+  {
+    "id": "c81e728d9d4c2f636f067f89cc14862c",
+    "location": "KAB. ACEH BARAT DAYA",
+    "province": "ACEH"
+  },
+  {
+    "id": "eccbc87e4b5ce2fe28308fd9f2a7baf3",
+    "location": "KAB. ACEH BESAR",
+    "province": "ACEH"
+  },
+  {
+    "id": "a87ff679a2f3e71d9181a67b7542122c",
+    "location": "KAB. ACEH JAYA",
+    "province": "ACEH"
+  },
+  {
+    "id": "e4da3b7fbbce2345d7772b0674a318d5",
+    "location": "KAB. ACEH SELATAN",
+    "province": "ACEH"
+  },
+  {
+    "id": "1679091c5a880faf6fb5e6087eb1b2dc",
+    "location": "KAB. ACEH SINGKIL",
+    "province": "ACEH"
+  },
+  {
+    "id": "8f14e45fceea167a5a36dedd4bea2543",
+    "location": "KAB. ACEH TAMIANG",
+    "province": "ACEH"
+  },
+  {
+    "id": "c9f0f895fb98ab9159f51fd0297e236d",
+    "location": "KAB. ACEH TENGAH",
+    "province": "ACEH"
+  },
+  {
+    "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
+    "location": "KAB. ACEH TENGGARA",
+    "province": "ACEH"
+  },
+  {
+    "id": "d3d9446802a44259755d38e6d163e820",
+    "location": "KAB. ACEH TIMUR",
+    "province": "ACEH"
+  },
+  {
+    "id": "6512bd43d9caa6e02c990b0a82652dca",
+    "location": "KAB. ACEH UTARA",
+    "province": "ACEH"
+  },
+  {
+    "id": "c20ad4d76fe97759aa27a0c99bff6710",
+    "location": "KAB. BENER MERIAH",
+    "province": "ACEH"
+  },
+  {
+    "id": "c51ce410c124a10e0db5e4b97fc2af39",
+    "location": "KAB. BIREUEN",
+    "province": "ACEH"
+  },
+  {
+    "id": "aab3238922bcc25a6f606eb525ffdc56",
+    "location": "KAB. GAYO LUES",
+    "province": "ACEH"
+  },
+  {
+    "id": "9bf31c7ff062936a96d3c8bd1f8f2ff3",
+    "location": "KAB. NAGAN RAYA",
+    "province": "ACEH"
+  },
+  {
+    "id": "c74d97b01eae257e44aa9d5bade97baf",
+    "location": "KAB. PIDIE",
+    "province": "ACEH"
+  },
+  {
+    "id": "70efdf2ec9b086079795c442636b55fb",
+    "location": "KAB. PIDIE JAYA",
+    "province": "ACEH"
+  },
+  {
+    "id": "6f4922f45568161a8cdf4ad2299f6d23",
+    "location": "KAB. SIMEULUE",
+    "province": "ACEH"
+  },
+  {
+    "id": "1f0e3dad99908345f7439f8ffabdffc4",
+    "location": "KOTA BANDA ACEH",
+    "province": "ACEH"
+  },
+  {
+    "id": "98f13708210194c475687be6106a3b84",
+    "location": "KOTA LANGSA",
+    "province": "ACEH"
+  },
+  {
+    "id": "3c59dc048e8850243be8079a5c74d079",
+    "location": "KOTA LHOKSEUMAWE",
+    "province": "ACEH"
+  },
+  {
+    "id": "b6d767d2f8ed5d21a44b0e5886680cb9",
+    "location": "KOTA SABANG",
+    "province": "ACEH"
+  },
+  {
+    "id": "37693cfc748049e45d87b8c7d8b9aacd",
+    "location": "KOTA SUBULUSSALAM",
+    "province": "ACEH"
+  },
+  {
+    "id": "d947bf06a885db0d477d707121934ff8",
+    "location": "KAB. BADUNG",
+    "province": "BALI"
+  },
+  {
+    "id": "63923f49e5241343aa7acb6a06a751e7",
+    "location": "KAB. BANGLI",
+    "province": "BALI"
+  },
+  {
+    "id": "db8e1af0cb3aca1ae2d0018624204529",
+    "location": "KAB. BULELENG",
+    "province": "BALI"
+  },
+  {
+    "id": "20f07591c6fcb220ffe637cda29bb3f6",
+    "location": "KAB. GIANYAR",
+    "province": "BALI"
+  },
+  {
+    "id": "07cdfd23373b17c6b337251c22b7ea57",
+    "location": "KAB. JEMBRANA",
+    "province": "BALI"
+  },
+  {
+    "id": "d395771085aab05244a4fb8fd91bf4ee",
+    "location": "KAB. KARANGASEM",
+    "province": "BALI"
+  },
+  {
+    "id": "92c8c96e4c37100777c7190b76d28233",
+    "location": "KAB. KLUNGKUNG",
+    "province": "BALI"
+  },
+  {
+    "id": "e3796ae838835da0b6f6ea37bcf8bcb7",
+    "location": "KAB. TABANAN",
+    "province": "BALI"
+  },
+  {
+    "id": "6a9aeddfc689c1d0e3b9ccc3ab651bc5",
+    "location": "KOTA DENPASAR",
+    "province": "BALI"
+  },
+  {
+    "id": "2a79ea27c279e471f4d180b08d62b00a",
+    "location": "KAB. LEBAK",
+    "province": "BANTEN"
+  },
+  {
+    "id": "1c9ac0159c94d8d0cbedc973445af2da",
+    "location": "KAB. PANDEGLANG",
+    "province": "BANTEN"
+  },
+  {
+    "id": "6c4b761a28b734fe93831e3fb400ce87",
+    "location": "KAB. SERANG",
+    "province": "BANTEN"
+  },
+  {
+    "id": "06409663226af2f3114485aa4e0a23b4",
+    "location": "KAB. TANGERANG",
+    "province": "BANTEN"
+  },
+  {
+    "id": "140f6969d5213fd0ece03148e62e461e",
+    "location": "KOTA CILEGON",
+    "province": "BANTEN"
+  },
+  {
+    "id": "b73ce398c39f506af761d2277d853a92",
+    "location": "KOTA SERANG",
+    "province": "BANTEN"
+  },
+  {
+    "id": "bd4c9ab730f5513206b999ec0d90d1fb",
+    "location": "KOTA TANGERANG",
+    "province": "BANTEN"
+  },
+  {
+    "id": "82aa4b0af34c2313a562076992e50aa3",
+    "location": "KOTA TANGERANG SELATAN",
+    "province": "BANTEN"
+  },
+  {
+    "id": "f0935e4cd5920aa6c7c996a5ee53a70f",
+    "location": "KAB. BENGKULU SELATAN",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "a97da629b098b75c294dffdc3e463904",
+    "location": "KAB. BENGKULU TENGAH",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "a3c65c2974270fd093ee8a9bf8ae7d0b",
+    "location": "KAB. BENGKULU UTARA",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "2723d092b63885e0d7c260cc007e8b9d",
+    "location": "KAB. KAUR",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "5f93f983524def3dca464469d2cf9f3e",
+    "location": "KAB. KEPAHIANG",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "698d51a19d8a121ce581499d7b701668",
+    "location": "KAB. LEBONG",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "7f6ffaa6bb0b408017b62254211691b5",
+    "location": "KAB. MUKOMUKO",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "73278a4a86960eeb576a8fd4c9ec6997",
+    "location": "KAB. REJANG LEBONG",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "5fd0b37cd7dbbb00f97ba6ce92bf5add",
+    "location": "KAB. SELUMA",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "2b44928ae11fb9384c4cf38708677c48",
+    "location": "KOTA BENGKULU",
+    "province": "BENGKULU"
+  },
+  {
+    "id": "9b04d152845ec0a378394003c96da594",
+    "location": "KAB. BANTUL",
+    "province": "D.I. YOGYAKARTA"
+  },
+  {
+    "id": "be83ab3ecd0db773eb2dc1b0a17836a1",
+    "location": "KAB. GUNUNGKIDUL",
+    "province": "D.I. YOGYAKARTA"
+  },
+  {
+    "id": "e165421110ba03099a1c0393373c5b43",
+    "location": "KAB. KULON PROGO",
+    "province": "D.I. YOGYAKARTA"
+  },
+  {
+    "id": "289dff07669d7a23de0ef88d2f7129e7",
+    "location": "KAB. SLEMAN",
+    "province": "D.I. YOGYAKARTA"
+  },
+  {
+    "id": "577ef1154f3240ad5b9b413aa7346a1e",
+    "location": "KOTA YOGYAKARTA",
+    "province": "D.I. YOGYAKARTA"
+  },
+  {
+    "id": "cfecdb276f634854f3ef915e2e980c31",
+    "location": "KAB. ADMINISTRASI KEPULAUAN SERIBU",
+    "province": "DKI JAKARTA"
+  },
+  {
+    "id": "58a2fc6ed39fd083f55d4182bf88826d",
+    "location": "KOTA JAKARTA",
+    "province": "DKI JAKARTA"
+  },
+  {
+    "id": "58a2fc6ed39fd083f55d4182bf88826d",
+    "location": "KOTA JAKARTA",
+    "province": "DKI JAKARTA"
+  },
+  {
+    "id": "58a2fc6ed39fd083f55d4182bf88826d",
+    "location": "KOTA JAKARTA",
+    "province": "DKI JAKARTA"
+  },
+  {
+    "id": "58a2fc6ed39fd083f55d4182bf88826d",
+    "location": "KOTA JAKARTA",
+    "province": "DKI JAKARTA"
+  },
+  {
+    "id": "58a2fc6ed39fd083f55d4182bf88826d",
+    "location": "KOTA JAKARTA",
+    "province": "DKI JAKARTA"
+  },
+  {
+    "id": "41f1f19176d383480afa65d325c06ed0",
+    "location": "KAB. BOALEMO",
+    "province": "GORONTALO"
+  },
+  {
+    "id": "24b16fede9a67c9251d3e7c7161c83ac",
+    "location": "KAB. BONE BOLANGO",
+    "province": "GORONTALO"
+  },
+  {
+    "id": "ffd52f3c7e12435a724a8f30fddadd9c",
+    "location": "KAB. GORONTALO",
+    "province": "GORONTALO"
+  },
+  {
+    "id": "ad972f10e0800b49d76fed33a21f6698",
+    "location": "KAB. GORONTALO UTARA",
+    "province": "GORONTALO"
+  },
+  {
+    "id": "f61d6947467ccd3aa5af24db320235dd",
+    "location": "KAB. PAHUWATO",
+    "province": "GORONTALO"
+  },
+  {
+    "id": "142949df56ea8ae0be8b5306971900a4",
+    "location": "KOTA GORONTALO",
+    "province": "GORONTALO"
+  },
+  {
+    "id": "26657d5ff9020d2abefe558796b99584",
+    "location": "KAB. BUNGO",
+    "province": "JAMBI"
+  },
+  {
+    "id": "e2ef524fbf3d9fe611d5a8e90fefdc9c",
+    "location": "KAB. KERINCI",
+    "province": "JAMBI"
+  },
+  {
+    "id": "ed3d2c21991e3bef5e069713af9fa6ca",
+    "location": "KAB. MERANGIN",
+    "province": "JAMBI"
+  },
+  {
+    "id": "ac627ab1ccbdb62ec96e702f07f6425b",
+    "location": "KAB. MUARO JAMBI",
+    "province": "JAMBI"
+  },
+  {
+    "id": "f899139df5e1059396431415e770c6dd",
+    "location": "KAB. SAROLANGUN",
+    "province": "JAMBI"
+  },
+  {
+    "id": "38b3eff8baf56627478ec76a704e9b52",
+    "location": "KAB. TANJUNG JABUNG BARAT",
+    "province": "JAMBI"
+  },
+  {
+    "id": "ec8956637a99787bd197eacd77acce5e",
+    "location": "KAB. TANJUNG JABUNG TIMUR",
+    "province": "JAMBI"
+  },
+  {
+    "id": "6974ce5ac660610b44d9b9fed0ff9548",
+    "location": "KAB. TEBO",
+    "province": "JAMBI"
+  },
+  {
+    "id": "c9e1074f5b3f9fc8ea15d152add07294",
+    "location": "KOTA JAMBI",
+    "province": "JAMBI"
+  },
+  {
+    "id": "65b9eea6e1cc6bb9f0cd2a47751a186f",
+    "location": "KOTA SUNGAI PENUH",
+    "province": "JAMBI"
+  },
+  {
+    "id": "0777d5c17d4066b82ab86dff8a46af6f",
+    "location": "KAB. BANDUNG",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "fa7cdfad1a5aaf8370ebeda47a1ff1c3",
+    "location": "KAB. BANDUNG BARAT",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "9766527f2b5d3e95d4a733fcfb77bd7e",
+    "location": "KAB. BEKASI",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "7e7757b1e12abcb736ab9a754ffb617a",
+    "location": "KAB. BOGOR",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "5878a7ab84fb43402106c575658472fa",
+    "location": "KAB. CIAMIS",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "006f52e9102a8d3be2fe5614f42ba989",
+    "location": "KAB. CIANJUR",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "3636638817772e42b59d74cff571fbb3",
+    "location": "KAB. CIREBON",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "149e9677a5989fd342ae44213df68868",
+    "location": "KAB. GARUT",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "a4a042cf4fd6bfb47701cbc8a1653ada",
+    "location": "KAB. INDRAMAYU",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "1ff8a7b5dc7a7d1f0ed65aaa29c04b1e",
+    "location": "KAB. KARAWANG",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "f7e6c85504ce6e82442c770f7c8606f0",
+    "location": "KAB. KUNINGAN",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "bf8229696f7a3bb4700cfddef19fa23f",
+    "location": "KAB. MAJALENGKA",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "38af86134b65d0f10fe33d30dd76442e",
+    "location": "KAB. PURWAKARTA",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "96da2f590cd7246bbde0051047b0d6f7",
+    "location": "KAB. SUBANG",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "8f85517967795eeef66c225f7883bdcb",
+    "location": "KAB. SUKABUMI",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "8f53295a73878494e9bc8dd6c3c7104f",
+    "location": "KAB. SUMEDANG",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "045117b0e0a11a242b9765e79cbf113f",
+    "location": "KAB. TASIKMALAYA",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "fc221309746013ac554571fbd180e1c8",
+    "location": "KOTA BANDUNG",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "4c5bde74a8f110656874902f07378009",
+    "location": "KOTA BANJAR",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "4c5bde74a8f110656874902f07378009",
+    "location": "KOTA BANJAR",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "cedebb6e872f539bef8c3f919874e9d7",
+    "location": "KOTA BEKASI",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "6cdd60ea0045eb7a6ec44c54d29ed402",
+    "location": "KOTA BOGOR",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "eecca5b6365d9607ee5a9d336962c534",
+    "location": "KOTA CIMAHI",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "9872ed9fc22fc182d371c3e9ed316094",
+    "location": "KOTA CIREBON",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "31fefc0e570cb3860f2a6d4b38c6490d",
+    "location": "KOTA DEPOK",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "9dcb88e0137649590b755372b040afad",
+    "location": "KOTA SUKABUMI",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "a2557a7b2e94197ff767970b67041697",
+    "location": "KOTA TASIKMALAYA",
+    "province": "JAWA BARAT"
+  },
+  {
+    "id": "084b6fbb10729ed4da8c3d3f5a3ae7c9",
+    "location": "KAB. BANJARNEGARA",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "85d8ce590ad8981ca2c8286f79f59954",
+    "location": "KAB. BANYUMAS",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "0e65972dce68dad4d52d063967f0a705",
+    "location": "KAB. BATANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "0e65972dce68dad4d52d063967f0a705",
+    "location": "KAB. BATANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "84d9ee44e457ddef7f2c4f25dc8fa865",
+    "location": "KAB. BLORA",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "3644a684f98ea8fe223c713b77189a77",
+    "location": "KAB. BOYOLALI",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "757b505cfd34c64c85ca5b5690ee5293",
+    "location": "KAB. BREBES",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "854d6fae5ee42911677c739ee1734486",
+    "location": "KAB. CILACAP",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "e2c0be24560d78c5e599c2a9c9d0bbd2",
+    "location": "KAB. DEMAK",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "274ad4786c3abca69fa097b85867d9a4",
+    "location": "KAB. GROBOGAN",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "eae27d77ca20db309e056e3d2dcd7d69",
+    "location": "KAB. JEPARA",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "7eabe3a1649ffa2b3ff8c02ebfd5659f",
+    "location": "KAB. KARANGANYAR",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "69adc1e107f7f7d035d7baf04342e1ca",
+    "location": "KAB. KEBUMEN",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "091d584fced301b442654dd8c23b3fc9",
+    "location": "KAB. KENDAL",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "b1d10e7bafa4421218a51b1e1f1b0ba2",
+    "location": "KAB. KLATEN",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "6f3ef77ac0e3619e98159e9b6febf557",
+    "location": "KAB. KUDUS",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "eb163727917cbba1eea208541a643e74",
+    "location": "KAB. MAGELANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "1534b76d325a8f591b52d302e7181331",
+    "location": "KAB. PATI",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "979d472a84804b9f647bc185a877a8b5",
+    "location": "KAB. PEKALONGAN",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "ca46c1b9512a7a8315fa3c5a946e8265",
+    "location": "KAB. PEMALANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "3b8a614226a953a8cd9526fca6fe9ba5",
+    "location": "KAB. PURBALINGGA",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "45fbc6d3e05ebd93369ce542e8f2322d",
+    "location": "KAB. PURWOREJO",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "63dc7ed1010d3c3b8269faf0ba7491d4",
+    "location": "KAB. REMBANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "e96ed478dab8595a7dbda4cbcbee168f",
+    "location": "KAB. SEMARANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "c0e190d8267e36708f955d7ab048990d",
+    "location": "KAB. SRAGEN",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "ec8ce6abb3e952a85b8551ba726a1227",
+    "location": "KAB. SUKOHARJO",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "060ad92489947d410d897474079c1477",
+    "location": "KAB. TEGAL",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "bcbe3365e6ac95ea2c0343a2395834dd",
+    "location": "KAB. TEMANGGUNG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "115f89503138416a242f40fb7d7f338e",
+    "location": "KAB. WONOGIRI",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "13fe9d84310e77f13a6d184dbf1232f3",
+    "location": "KAB. WONOSOBO",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "d1c38a09acc34845c6be3a127a5aacaf",
+    "location": "KOTA MAGELANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "9cfdf10e8fc047a44b08ed031e1f0ed1",
+    "location": "KOTA PEKALONGAN",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "705f2172834666788607efbfca35afb3",
+    "location": "KOTA SALATIGA",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "74db120f0a8e5646ef5a30154e9f6deb",
+    "location": "KOTA SEMARANG",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "57aeee35c98205091e18d1140e9f38cf",
+    "location": "KOTA SURAKARTA",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "6da9003b743b65f4c0ccd295cc484e57",
+    "location": "KOTA TEGAL",
+    "province": "JAWA TENGAH"
+  },
+  {
+    "id": "01161aaa0b6d1345dd8fe4e481144d84",
+    "location": "KAB. BANGKALAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "539fd53b59e3bb12d203f45a912eeaf2",
+    "location": "KAB. BANYUWANGI",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "ac1dd209cbcc5e5d1c6e28598e8cbbe8",
+    "location": "KAB. BLITAR",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "555d6702c950ecb729a966504af0a635",
+    "location": "KAB. BOJONEGORO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "335f5352088d7d9bf74191e006d8e24c",
+    "location": "KAB. BONDOWOSO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "f340f1b1f65b6df5b5e3f94d95b11daf",
+    "location": "KAB. GRESIK",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "e4a6222cdb5b34375400904f03d8e6a5",
+    "location": "KAB. JEMBER",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "cb70ab375662576bd1ac5aaf16b3fca4",
+    "location": "KAB. JOMBANG",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "9188905e74c28e489b44e954ec0b9bca",
+    "location": "KAB. KEDIRI",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "0266e33d3f546cb5436a10798e657d97",
+    "location": "KAB. LAMONGAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "38db3aed920cf82ab059bfccbd02be6a",
+    "location": "KAB. LUMAJANG",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "3cec07e9ba5f5bb252d13f5f431e4bbb",
+    "location": "KAB. MADIUN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "621bf66ddb7c962aa0d22ac97d69b793",
+    "location": "KAB. MAGETAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "077e29b11be80ab57e1a2ecabb7da330",
+    "location": "KAB. MALANG",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "6c9882bbac1c7093bd25041881277658",
+    "location": "KAB. MOJOKERTO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "19f3cd308f1455b3fa09a282e0d496f4",
+    "location": "KAB. NGANJUK",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "03c6b06952c750899bb03d998e631860",
+    "location": "KAB. NGAWI",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "c24cd76e1ce41366a4bbe8a49b02a028",
+    "location": "KAB. PACITAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "c52f1bd66cc19d05628bd8bf27af3ad6",
+    "location": "KAB. PAMEKASAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "fe131d7f5a6b38b23cc967316c13dae2",
+    "location": "KAB. PASURUAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "f718499c1c8cef6730f9fd03c8125cab",
+    "location": "KAB. PONOROGO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "d96409bf894217686ba124d7356686c9",
+    "location": "KAB. PROBOLINGGO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "502e4a16930e414107ee22b6198c578f",
+    "location": "KAB. SAMPANG",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "cfa0860e83a4c3a763a7e62d825349f7",
+    "location": "KAB. SIDOARJO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "a4f23670e1833f3fdb077ca70bbd5d66",
+    "location": "KAB. SITUBONDO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "b1a59b315fc9a3002ce38bbe070ec3f5",
+    "location": "KAB. SUMENEP",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "36660e59856b4de58a219bcf4e27eba3",
+    "location": "KAB. TRENGGALEK",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "8c19f571e251e61cb8dd3612f26d5ecf",
+    "location": "KAB. TUBAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "d6baf65e0b240ce177cf70da146c8dc8",
+    "location": "KAB. TULUNGAGUNG",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "e56954b4f6347e897f954495eab16a88",
+    "location": "KOTA BATU",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "f7664060cc52bc6f3d620bcedc94a4b6",
+    "location": "KOTA BLITAR",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "eda80a3d5b344bc40f3bc04f65b7a357",
+    "location": "KOTA KEDIRI",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "8f121ce07d74717e0b1f21d122e04521",
+    "location": "KOTA MADIUN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "06138bc5af6023646ede0e1f7c1eac75",
+    "location": "KOTA MALANG",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "39059724f73a9969845dfe4146c5660e",
+    "location": "KOTA MOJOKERTO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "7f100b7b36092fb9b06dfb4fac360931",
+    "location": "KOTA PASURUAN",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "7a614fd06c325499f1680b9896beedeb",
+    "location": "KOTA PROBOLINGGO",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "4734ba6f3de83d861c3176a6273cac6d",
+    "location": "KOTA SURABAYA",
+    "province": "JAWA TIMUR"
+  },
+  {
+    "id": "ad13a2a07ca4b7642959dc0c4c740ab6",
+    "location": "KAB. BENGKAYANG",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "3fe94a002317b5f9259f82690aeea4cd",
+    "location": "KAB. KAPUAS HULU",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "5b8add2a5d98b1a652ea7fd72d942dac",
+    "location": "KAB. KAYONG UTARA",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "432aca3a1e345e339f35a30c8f65edce",
+    "location": "KAB. KETAPANG",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "8d3bba7425e7c98c50f52ca1b52d3735",
+    "location": "KAB. KUBU RAYA",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "320722549d1751cf3f247855f937b982",
+    "location": "KAB. LANDAK",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "caf1a3dfb505ffed0d024130f58c5cfa",
+    "location": "KAB. MELAWI",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "bc6dc48b743dc5d013b1abaebd2faed2",
+    "location": "KAB. SAMBAS",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "f2fc990265c712c49d51a18a32b39f0c",
+    "location": "KAB. SANGGAU",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "89f0fd5c927d466d6ec9a21b9ac34ffa",
+    "location": "KAB. SEKADAU",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "a666587afda6e89aec274a3657558a27",
+    "location": "KAB. SINTANG",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "b83aac23b9528732c23cc7352950e880",
+    "location": "KOTA PONTIANAK",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "b83aac23b9528732c23cc7352950e880",
+    "location": "KOTA PONTIANAK",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "cd00692c3bfe59267d5ecfac5310286c",
+    "location": "KOTA SINGKAWANG",
+    "province": "KALIMANTAN BARAT"
+  },
+  {
+    "id": "6faa8040da20ef399b63a72d0e4ab575",
+    "location": "KAB. BALANGAN",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "fe73f687e5bc5280214e0486b273a5f9",
+    "location": "KAB. BANJAR",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "6da37dd3139aa4d9aa55b8d237ec5d4a",
+    "location": "KAB. BARITO KUALA",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "c042f4db68f23406c6cecf84a7ebb0fe",
+    "location": "KAB. HULU SUNGAI SELATAN",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "310dcbbf4cce62f762a2aaa148d556bd",
+    "location": "KAB. HULU SUNGAI TENGAH",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "2f2b265625d76a6704b08093c652fd79",
+    "location": "KAB. HULU SUNGAI UTARA",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "f9b902fc3289af4dd08de5d1de54f68f",
+    "location": "KAB. KOTABARU",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "6855456e2fe46a9d49d3d3af4f57443d",
+    "location": "KAB. TABALONG",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "357a6fdf7642bf815a88822c447d9dc4",
+    "location": "KAB. TANAH BUMBU",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "819f46e52c25763a55cc642422644317",
+    "location": "KAB. TANAH LAUT",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "04025959b191f8f9de3f924f0940515f",
+    "location": "KAB. TAPIN",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "3dd48ab31d016ffcbf3314df2b3cb9ce",
+    "location": "KOTA BANJARMASIN",
+    "province": "KALIMANTAN SELATAN"
+  },
+  {
+    "id": "58238e9ae2dd305d79c2ebc8c1883422",
+    "location": "KAB. BARITO SELATAN",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "3ad7c2ebb96fcba7cda0cf54a2e802f5",
+    "location": "KAB. BARITO TIMUR",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "b3967a0e938dc2a6340e258630febd5a",
+    "location": "KAB. BARITO UTARA",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "d81f9c1be2e08964bf9f24b15f0e4900",
+    "location": "KAB. GUNUNG MAS",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "13f9896df61279c928f19721878fac41",
+    "location": "KAB. KAPUAS",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "c5ff2543b53f4cc0ad3819a36752467b",
+    "location": "KAB. KATINGAN",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "01386bd6d8e091c2ab4c7c7de644d37b",
+    "location": "KAB. KOTAWARINGIN BARAT",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "0bb4aec1710521c12ee76289d9440817",
+    "location": "KAB. KOTAWARINGIN TIMUR",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "9de6d14fff9806d4bcd1ef555be766cd",
+    "location": "KAB. LAMANDAU",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "efe937780e95574250dabe07151bdc23",
+    "location": "KAB. MURUNG RAYA",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "371bce7dc83817b7893bcdeed13799b5",
+    "location": "KAB. PULANG PISAU",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "8dd48d6a2e2cad213179a3992c0be53c",
+    "location": "KAB. SERUYAN",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "138bb0696595b338afbab333c555292a",
+    "location": "KAB. SUKAMARA",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "82cec96096d4281b7c95cd7e74623496",
+    "location": "KOTA PALANGKARAYA",
+    "province": "KALIMANTAN TENGAH"
+  },
+  {
+    "id": "6c524f9d5d7027454a783c841250ba71",
+    "location": "KAB. BERAU",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "fb7b9ffa5462084c5f4e7e85a093e6d7",
+    "location": "KAB. KUTAI BARAT",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "aa942ab2bfa6ebda4840e7360ce6e7ef",
+    "location": "KAB. KUTAI KARTANEGARA",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "c058f544c737782deacefa532d9add4c",
+    "location": "KAB. KUTAI TIMUR",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "52720e003547c70561bf5e03b95aa99f",
+    "location": "KAB. PASER",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "c3e878e27f52e2a57ace4d9a76fd9acf",
+    "location": "KAB. PENAJAM PASER UTARA",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "00411460f7c92d2124a67ea0f4cb5f85",
+    "location": "KOTA BALIKPAPAN",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "bac9162b47c56fc8a4d2a519803d51b3",
+    "location": "KOTA BONTANG",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "9be40cee5b0eee1462c82c6964087ff9",
+    "location": "KOTA SAMARINDA",
+    "province": "KALIMANTAN TIMUR"
+  },
+  {
+    "id": "5ef698cd9fe650923ea331c15af3b160",
+    "location": "KAB. BULUNGAN",
+    "province": "KALIMANTAN UTARA"
+  },
+  {
+    "id": "05049e90fa4f5039a8cadc6acbb4b2cc",
+    "location": "KAB. MALINAU",
+    "province": "KALIMANTAN UTARA"
+  },
+  {
+    "id": "cf004fdc76fa1a4f25f62e0eb5261ca3",
+    "location": "KAB. NUNUKAN",
+    "province": "KALIMANTAN UTARA"
+  },
+  {
+    "id": "0c74b7f78409a4022a2c4c5a5ca3ee19",
+    "location": "KAB. TANA TIDUNG",
+    "province": "KALIMANTAN UTARA"
+  },
+  {
+    "id": "d709f38ef758b5066ef31b18039b8ce5",
+    "location": "KOTA TARAKAN",
+    "province": "KALIMANTAN UTARA"
+  },
+  {
+    "id": "9fc3d7152ba9336a670e36d0ed79bc43",
+    "location": "KAB. BANGKA",
+    "province": "KEPULAUAN BANGKA BELITUNG"
+  },
+  {
+    "id": "02522a2b2726fb0a03bb19f2d8d9524d",
+    "location": "KAB. BANGKA BARAT",
+    "province": "KEPULAUAN BANGKA BELITUNG"
+  },
+  {
+    "id": "7f1de29e6da19d22b51c68001e7e0e54",
+    "location": "KAB. BANGKA SELATAN",
+    "province": "KEPULAUAN BANGKA BELITUNG"
+  },
+  {
+    "id": "42a0e188f5033bc65bf8d78622277c4e",
+    "location": "KAB. BANGKA TENGAH",
+    "province": "KEPULAUAN BANGKA BELITUNG"
+  },
+  {
+    "id": "3988c7f88ebcb58c6ce932b957b6f332",
+    "location": "KAB. BELITUNG",
+    "province": "KEPULAUAN BANGKA BELITUNG"
+  },
+  {
+    "id": "013d407166ec4fa56eb1e1f8cbe183b9",
+    "location": "KAB. BELITUNG TIMUR",
+    "province": "KEPULAUAN BANGKA BELITUNG"
+  },
+  {
+    "id": "e00da03b685a0dd18fb6a08af0923de0",
+    "location": "KOTA PANGKAL PINANG",
+    "province": "KEPULAUAN BANGKA BELITUNG"
+  },
+  {
+    "id": "2a38a4a9316c49e5a833517c45d31070",
+    "location": "KAB. BINTAN",
+    "province": "KEPULAUAN RIAU"
+  },
+  {
+    "id": "7647966b7343c29048673252e490f736",
+    "location": "KAB. KARIMUN",
+    "province": "KEPULAUAN RIAU"
+  },
+  {
+    "id": "8613985ec49eb8f757ae6439e879bb2a",
+    "location": "KAB. KEPULAUAN ANAMBAS",
+    "province": "KEPULAUAN RIAU"
+  },
+  {
+    "id": "54229abfcfa5649e7003b83dd4755294",
+    "location": "KAB. LINGGA",
+    "province": "KEPULAUAN RIAU"
+  },
+  {
+    "id": "92cc227532d17e56e07902b254dfad10",
+    "location": "KAB. NATUNA",
+    "province": "KEPULAUAN RIAU"
+  },
+  {
+    "id": "98dce83da57b0395e163467c9dae521b",
+    "location": "KOTA BATAM",
+    "province": "KEPULAUAN RIAU"
+  },
+  {
+    "id": "f4b9ec30ad9f68f89b29639786cb62ef",
+    "location": "KOTA TANJUNG PINANG",
+    "province": "KEPULAUAN RIAU"
+  },
+  {
+    "id": "903ce9225fca3e988c2af215d4e544d3",
+    "location": "KAB. LAMPUNG BARAT",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "a8baa56554f96369ab93e4f3bb068c22",
+    "location": "KAB. LAMPUNG SELATAN",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "1385974ed5904a438616ff7bdb3f7439",
+    "location": "KAB. LAMPUNG TENGAH",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "0a09c8844ba8f0936c20bd791130d6b6",
+    "location": "KAB. LAMPUNG TIMUR",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "0f28b5d49b3020afeecd95b4009adf4c",
+    "location": "KAB. LAMPUNG UTARA",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "2b24d495052a8ce66358eb576b8912c8",
+    "location": "KAB. MESUJI",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "a5e00132373a7031000fd987a3c9f87b",
+    "location": "KAB. PESAWARAN",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "47d1e990583c9c67424d369f3414728e",
+    "location": "KAB. PRINGSEWU",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "a8f15eda80c50adb0e71943adc8015cf",
+    "location": "KAB. TANGGAMUS",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "f2217062e9a397a1dca429e7d70bc6ca",
+    "location": "KAB. TULANG BAWANG",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "7ef605fc8dba5425d6965fbd4c8fbe1f",
+    "location": "KAB. TULANG BAWANG BARAT",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "37a749d808e46495a8da1e5352d03cae",
+    "location": "KAB. WAY KANAN",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "b3e3e393c77e35a4a3f3cbd1e429b5dc",
+    "location": "KOTA BANDAR LAMPUNG",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "1d7f7abc18fcb43975065399b0d1e48e",
+    "location": "KOTA METRO",
+    "province": "LAMPUNG"
+  },
+  {
+    "id": "9431c87f273e507e6040fcb07dcb4509",
+    "location": "KAB. BURU",
+    "province": "MALUKU"
+  },
+  {
+    "id": "49ae49a23f67c759bf4fc791ba842aa2",
+    "location": "KAB. BURU SELATAN",
+    "province": "MALUKU"
+  },
+  {
+    "id": "e44fea3bec53bcea3b7513ccef5857ac",
+    "location": "KAB. KEPULAUAN ARU",
+    "province": "MALUKU"
+  },
+  {
+    "id": "821fa74b50ba3f7cba1e6c53e8fa6845",
+    "location": "KAB. MALUKU BARAT DAYA",
+    "province": "MALUKU"
+  },
+  {
+    "id": "250cf8b51c773f3f8dc8b4be867a9a02",
+    "location": "KAB. MALUKU TENGAH",
+    "province": "MALUKU"
+  },
+  {
+    "id": "42998cf32d552343bc8e460416382dca",
+    "location": "KAB. MALUKU TENGGARA",
+    "province": "MALUKU"
+  },
+  {
+    "id": "d07e70efcfab08731a97e7b91be644de",
+    "location": "KAB. MALUKU TENGGARA BARAT",
+    "province": "MALUKU"
+  },
+  {
+    "id": "7fe1f8abaad094e0b5cb1b01d712f708",
+    "location": "KAB. SERAM BAGIAN BARAT",
+    "province": "MALUKU"
+  },
+  {
+    "id": "98b297950041a42470269d56260243a1",
+    "location": "KAB. SERAM BAGIAN TIMUR",
+    "province": "MALUKU"
+  },
+  {
+    "id": "0353ab4cbed5beae847a7ff6e220b5cf",
+    "location": "KOTA AMBON",
+    "province": "MALUKU"
+  },
+  {
+    "id": "51d92be1c60d1db1d2e5e7a07da55b26",
+    "location": "KOTA TUAL",
+    "province": "MALUKU"
+  },
+  {
+    "id": "428fca9bc1921c25c5121f9da7815cde",
+    "location": "KAB. HALMAHERA BARAT",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "e836d813fd184325132fca8edcdfb40e",
+    "location": "KAB. HALMAHERA SELATAN",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "f1b6f2857fb6d44dd73c7041e0aa0f19",
+    "location": "KAB. HALMAHERA TENGAH",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "877a9ba7a98f75b90a9d49f53f15a858",
+    "location": "KAB. HALMAHERA TIMUR",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "68ce199ec2c5517597ce0a4d89620f55",
+    "location": "KAB. HALMAHERA UTARA",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "ab817c9349cf9c4f6877e1894a1faa00",
+    "location": "KAB. KEPULAUAN SULA",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "dc6a6489640ca02b0d42dabeb8e46bb7",
+    "location": "KAB. PULAU MOROTAI",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "8e6b42f1644ecb1327dc03ab345e618b",
+    "location": "KOTA TERNATE",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "ef575e8837d065a1683c022d2077d342",
+    "location": "KOTA TIDORE KEPULAUAN",
+    "province": "MALUKU UTARA"
+  },
+  {
+    "id": "0f49c89d1e7298bb9930789c8ed59d48",
+    "location": "KAB. BIMA",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "46ba9f2a6976570b0353203ec4474217",
+    "location": "KAB. DOMPU",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "0e01938fc48a2cfb5f2217fbfb00722d",
+    "location": "KAB. LOMBOK BARAT",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "16a5cdae362b8d27a1d8f8c7b78b4330",
+    "location": "KAB. LOMBOK TENGAH",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "918317b57931b6b7a7d29490fe5ec9f9",
+    "location": "KAB. LOMBOK TIMUR",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "48aedb8880cab8c45637abc7493ecddd",
+    "location": "KAB. LOMBOK UTARA",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "839ab46820b524afda05122893c2fe8e",
+    "location": "KAB. SUMBAWA",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "f90f2aca5c640289d0a29417bcb63a37",
+    "location": "KAB. SUMBAWA BARAT",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "9c838d2e45b2ad1094d42f4ef36764f6",
+    "location": "KOTA BIMA",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "1700002963a49da13542e0726b7bb758",
+    "location": "KOTA MATARAM",
+    "province": "NUSA TENGGARA BARAT"
+  },
+  {
+    "id": "53c3bce66e43be4f209556518c2fcb54",
+    "location": "KAB. ALOR",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "6883966fd8f918a4aa29be29d2c386fb",
+    "location": "KAB. BELU",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "49182f81e6a13cf5eaa496d51fea6406",
+    "location": "KAB. ENDE",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "d296c101daa88a51f6ca8cfc1ac79b50",
+    "location": "KAB. FLORES TIMUR",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "9fd81843ad7f202f26c1a174c7357585",
+    "location": "KAB. KUPANG",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "26e359e83860db1d11b6acca57d8ea88",
+    "location": "KAB. LEMBATA",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "94f6d7e04a4d452035300f18b984988c",
+    "location": "KAB. MANGGARAI",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "34ed066df378efacc9b924ec161e7639",
+    "location": "KAB. MANGGARAI BARAT",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "577bcc914f9e55d5e4e4f82f9f00e7d4",
+    "location": "KAB. MANGGARAI TIMUR",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "37bc2f75bf1bcfe8450a1a41c200364c",
+    "location": "KAB. NAGEKEO",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "11b9842e0a271ff252c1903e7132cd68",
+    "location": "KAB. NGADA",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "496e05e1aea0a9c4655800e8a7b9ea28",
+    "location": "KAB. ROTE NDAO",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "b2eb7349035754953b57a32e2841bda5",
+    "location": "KAB. SABU RAIJUA",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "8e98d81f8217304975ccb23337bb5761",
+    "location": "KAB. SIKKA",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "a8c88a0055f636e4a163a5e3d16adab7",
+    "location": "KAB. SUMBA BARAT",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "eddea82ad2755b24c4e168c5fc2ebd40",
+    "location": "KAB. SUMBA BARAT DAYA",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "06eb61b839a0cefee4967c67ccb099dc",
+    "location": "KAB. SUMBA TENGAH",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "9dfcd5e558dfa04aaf37f137a1d9d3e5",
+    "location": "KAB. SUMBA TIMUR",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "950a4152c2b4aa3ad78bdd6b366cc179",
+    "location": "KAB. TIMOR TENGAH SELATAN",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "158f3069a435b314a80bdcb024f8e422",
+    "location": "KAB. TIMOR TENGAH UTARA",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "758874998f5bd0c393da094e1967a72b",
+    "location": "KOTA KUPANG",
+    "province": "NUSA TENGGARA TIMUR"
+  },
+  {
+    "id": "2050e03ca119580f74cca14cc6e97462",
+    "location": "KAB. ASMAT",
+    "province": "PAPUA"
+  },
+  {
+    "id": "25ddc0f8c9d3e22e03d3076f98d83cb2",
+    "location": "KAB. BIAK NUMFOR",
+    "province": "PAPUA"
+  },
+  {
+    "id": "5ef0b4eba35ab2d6180b0bca7e46b6f9",
+    "location": "KAB. BOVEN DIGOEL",
+    "province": "PAPUA"
+  },
+  {
+    "id": "598b3e71ec378bd83e0a727608b5db01",
+    "location": "KAB. DEIYAI",
+    "province": "PAPUA"
+  },
+  {
+    "id": "74071a673307ca7459bcf75fbd024e09",
+    "location": "KAB. DOGIYAI",
+    "province": "PAPUA"
+  },
+  {
+    "id": "cfee398643cbc3dc5eefc89334cacdc1",
+    "location": "KAB. INTAN JAYA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "d18f655c3fce66ca401d5f38b48c89af",
+    "location": "KAB. JAYAPURA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "6ea2ef7311b482724a9b7b0bc0dd85c6",
+    "location": "KAB. JAYAWIJAYA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "9461cce28ebe3e76fb4b931c35a169b0",
+    "location": "KAB. KEEROM",
+    "province": "PAPUA"
+  },
+  {
+    "id": "f770b62bc8f42a0b66751fe636fc6eb0",
+    "location": "KAB. KEPULAUAN YAPEN",
+    "province": "PAPUA"
+  },
+  {
+    "id": "e1e32e235eee1f970470a3a6658dfdd5",
+    "location": "KAB. LANNY JAYA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "eba0dc302bcd9a273f8bbb72be3a687b",
+    "location": "KAB. MAMBERAMO RAYA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "218a0aefd1d1a4be65601cc6ddc1520e",
+    "location": "KAB. MAMBERAMO TENGAH",
+    "province": "PAPUA"
+  },
+  {
+    "id": "7d04bbbe5494ae9d2f5a76aa1c00fa2f",
+    "location": "KAB. MAPPI",
+    "province": "PAPUA"
+  },
+  {
+    "id": "a516a87cfcaef229b342c437fe2b95f7",
+    "location": "KAB. MERAUKE",
+    "province": "PAPUA"
+  },
+  {
+    "id": "c3c59e5f8b3e9753913f4d435b53c308",
+    "location": "KAB. MIMIKA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "854d9fca60b4bd07f9bb215d59ef5561",
+    "location": "KAB. NABIRE",
+    "province": "PAPUA"
+  },
+  {
+    "id": "c410003ef13d451727aeff9082c29a5c",
+    "location": "KAB. NDUGA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "559cb990c9dffd8675f6bc2186971dc2",
+    "location": "KAB. PANIAI",
+    "province": "PAPUA"
+  },
+  {
+    "id": "55a7cf9c71f1c9c495413f934dd1a158",
+    "location": "KAB. PEGUNUNGAN BINTANG",
+    "province": "PAPUA"
+  },
+  {
+    "id": "2f55707d4193dc27118a0f19a1985716",
+    "location": "KAB. PUNCAK",
+    "province": "PAPUA"
+  },
+  {
+    "id": "1be3bc32e6564055d5ca3e5a354acbef",
+    "location": "KAB. PUNCAK JAYA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "35051070e572e47d2c26c241ab88307f",
+    "location": "KAB. SARMI",
+    "province": "PAPUA"
+  },
+  {
+    "id": "b534ba68236ba543ae44b22bd110a1d6",
+    "location": "KAB. SUPIORI",
+    "province": "PAPUA"
+  },
+  {
+    "id": "7380ad8a673226ae47fce7bff88e9c33",
+    "location": "KAB. TOLIKARA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "05f971b5ec196b8c65b75d2ef8267331",
+    "location": "KAB. WAROPEN",
+    "province": "PAPUA"
+  },
+  {
+    "id": "3cf166c6b73f030b4f67eeaeba301103",
+    "location": "KAB. YAHUKIMO",
+    "province": "PAPUA"
+  },
+  {
+    "id": "cee631121c2ec9232f3a2f028ad5c89b",
+    "location": "KAB. YALIMO",
+    "province": "PAPUA"
+  },
+  {
+    "id": "5b69b9cb83065d403869739ae7f0995e",
+    "location": "KOTA JAYAPURA",
+    "province": "PAPUA"
+  },
+  {
+    "id": "b5b41fac0361d157d9673ecb926af5ae",
+    "location": "KAB. FAKFAK",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "285e19f20beded7d215102b49d5c09a0",
+    "location": "KAB. KAIMANA",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "b337e84de8752b27eda3a12363109e80",
+    "location": "KAB. MANOKWARI",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "ff4d5fbbafdf976cfdc032e3bde78de5",
+    "location": "KAB. MAYBRAT",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "389bc7bb1e1c2a5e7e147703232a88f6",
+    "location": "KAB. RAJA AMPAT",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "e2230b853516e7b05d79744fbd4c9c13",
+    "location": "KAB. SORONG",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "087408522c31eeb1f982bc0eaf81d35f",
+    "location": "KAB. SORONG SELATAN",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "a760880003e7ddedfef56acb3b09697f",
+    "location": "KAB. TAMBRAUW",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "10a7cdd970fe135cf4f7bb55c0e3b59f",
+    "location": "KAB. TELUK BINTUNI",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "3dc4876f3f08201c7c76cb71fa1da439",
+    "location": "KAB. TELUK WONDAMA",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "59b90e1005a220e2ebc542eb9d950b1e",
+    "location": "KOTA SORONG",
+    "province": "PAPUA BARAT"
+  },
+  {
+    "id": "fbd7939d674997cdb4692d34de8633c4",
+    "location": "KAB. BENGKALIS",
+    "province": "RIAU"
+  },
+  {
+    "id": "28dd2c7955ce926456240b2ff0100bde",
+    "location": "KAB. INDRAGIRI HILIR",
+    "province": "RIAU"
+  },
+  {
+    "id": "35f4a8d465e6e1edc05f3d8ab658c551",
+    "location": "KAB. INDRAGIRI HULU",
+    "province": "RIAU"
+  },
+  {
+    "id": "d1fe173d08e959397adf34b1d77e88d7",
+    "location": "KAB. KAMPAR",
+    "province": "RIAU"
+  },
+  {
+    "id": "f033ab37c30201f73f142449d037028d",
+    "location": "KAB. KEPULAUAN MERANTI",
+    "province": "RIAU"
+  },
+  {
+    "id": "43ec517d68b6edd3015b3edc9a11367b",
+    "location": "KAB. KUANTAN SINGINGI",
+    "province": "RIAU"
+  },
+  {
+    "id": "9778d5d219c5080b9a6a17bef029331c",
+    "location": "KAB. PELALAWAN",
+    "province": "RIAU"
+  },
+  {
+    "id": "fe9fc289c3ff0af142b6d3bead98a923",
+    "location": "KAB. ROKAN HILIR",
+    "province": "RIAU"
+  },
+  {
+    "id": "68d30a9594728bc39aa24be94b319d21",
+    "location": "KAB. ROKAN HULU",
+    "province": "RIAU"
+  },
+  {
+    "id": "3ef815416f775098fe977004015c6193",
+    "location": "KAB. SIAK",
+    "province": "RIAU"
+  },
+  {
+    "id": "93db85ed909c13838ff95ccfa94cebd9",
+    "location": "KOTA DUMAI",
+    "province": "RIAU"
+  },
+  {
+    "id": "c7e1249ffc03eb9ded908c236bd1996d",
+    "location": "KOTA PEKANBARU",
+    "province": "RIAU"
+  },
+  {
+    "id": "1a5b1e4daae265b790965a275b53ae50",
+    "location": "KAB. MAJENE",
+    "province": "SULAWESI BARAT"
+  },
+  {
+    "id": "9a96876e2f8f3dc4f3cf45f02c61c0c1",
+    "location": "KAB. MAMASA",
+    "province": "SULAWESI BARAT"
+  },
+  {
+    "id": "9b70e8fe62e40c570a322f1b0b659098",
+    "location": "KAB. MAMUJU",
+    "province": "SULAWESI BARAT"
+  },
+  {
+    "id": "f5f8590cd58a54e94377e6ae2eded4d9",
+    "location": "KAB. MAMUJU UTARA",
+    "province": "SULAWESI BARAT"
+  },
+  {
+    "id": "941e1aaaba585b952b62c14a3a175a61",
+    "location": "KAB. POLEWALI MANDAR",
+    "province": "SULAWESI BARAT"
+  },
+  {
+    "id": "d34ab169b70c9dcd35e62896010cd9ff",
+    "location": "KAB. BANTAENG",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "8bf1211fd4b7b94528899de0a43b9fb3",
+    "location": "KAB. BARRU",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "a02ffd91ece5e7efeb46db8f10a74059",
+    "location": "KAB. BONE",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "bca82e41ee7b0833588399b1fcd177c7",
+    "location": "KAB. BULUKUMBA",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "00ec53c4682d36f5c4359f4ae7bd7ba1",
+    "location": "KAB. ENREKANG",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "4f6ffe13a5d75b2d6a3923922b3922e5",
+    "location": "KAB. GOWA",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "beed13602b9b0e6ecb5b568ff5058f07",
+    "location": "KAB. JENEPONTO",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "0584ce565c824b7b7f50282d9a19945b",
+    "location": "KAB. KEPULAUAN SELAYAR",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "dc912a253d1e9ba40e2c597ed2376640",
+    "location": "KAB. LUWU",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "39461a19e9eddfb385ea76b26521ea48",
+    "location": "KAB. LUWU TIMUR",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "8efb100a295c0c690931222ff4467bb8",
+    "location": "KAB. LUWU UTARA",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "d9fc5b73a8d78fad3d6dffe419384e70",
+    "location": "KAB. MAROS",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "c86a7ee3d8ef0b551ed58e354a836f2b",
+    "location": "KAB. PANGKAJENE DAN KEPULAUAN",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "a01a0380ca3c61428c26a231f0e49a09",
+    "location": "KAB. PINRANG",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "5a4b25aaed25c2ee1b74de72dc03c14e",
+    "location": "KAB. SIDENRENG RAPPANG",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "f73b76ce8949fe29bf2a537cfa420e8f",
+    "location": "KAB. SINJAI",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "70c639df5e30bdee440e4cdf599fec2b",
+    "location": "KAB. SOPPENG",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "28f0b864598a1291557bed248a998d4e",
+    "location": "KAB. TAKALAR",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "1543843a4723ed2ab08e18053ae6dc5b",
+    "location": "KAB. TANA TORAJA",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "f8c1f23d6a8d8d7904fc0ea8e066b3bb",
+    "location": "KAB. TORAJA UTARA",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "e46de7e1bcaaced9a54f1e9d0d2f800d",
+    "location": "KAB. WAJO",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "b7b16ecf8ca53723593894116071700c",
+    "location": "KOTA MAKASSAR",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "352fe25daf686bdb4edca223c921acea",
+    "location": "KOTA PALOPO",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "18d8042386b79e2c279fd162df0205c8",
+    "location": "KOTA PAREPARE",
+    "province": "SULAWESI SELATAN"
+  },
+  {
+    "id": "d1f255a373a3cef72e03aa9d980c7eca",
+    "location": "KAB. BANGGAI",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "7eacb532570ff6858afd2723755ff790",
+    "location": "KAB. BANGGAI KEPULAUAN",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "e0c641195b27425bb056ac56f8953d24",
+    "location": "KAB. BUOL",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "f85454e8279be180185cac7d243c5eb3",
+    "location": "KAB. DONGGALA",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "faa9afea49ef2ff029a833cccc778fd0",
+    "location": "KAB. MOROWALI",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "25b2822c2f5a3230abfadd476e8b04c9",
+    "location": "KAB. PARIGI MOUTONG",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "6ecbdd6ec859d284dc13885a37ce8d81",
+    "location": "KAB. POSO",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "18997733ec258a9fcaf239cc55d53363",
+    "location": "KAB. SIGI",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "8d7d8ee069cb0cbbf816bbb65d56947e",
+    "location": "KAB. TOJO UNA-UNA",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "75fc093c0ee742f6dddaa13fff98f104",
+    "location": "KAB. TOLI-TOLI",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "f74909ace68e51891440e4da0b65a70c",
+    "location": "KOTA PALU",
+    "province": "SULAWESI TENGAH"
+  },
+  {
+    "id": "816b112c6105b3ebd537828a39af4818",
+    "location": "KAB. BOMBANA",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "69cb3ea317a32c4e6143e665fdb20b14",
+    "location": "KAB. BUTON",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "bbcbff5c1f1ded46c25d28119a85c6c2",
+    "location": "KAB. BUTON UTARA",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "8cb22bdd0b7ba1ab13d742e22eed8da2",
+    "location": "KAB. KOLAKA",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "0d0fd7c6e093f7b804fa0150b875b868",
+    "location": "KAB. KOLAKA UTARA",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "a96b65a721e561e1e3de768ac819ffbb",
+    "location": "KAB. KONAWE",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "17d63b1625c816c22647a73e1482372b",
+    "location": "KAB. KONAWE SELATAN",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "b9228e0962a78b84f3d5d92f4faa000b",
+    "location": "KAB. KONAWE UTARA",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "0deb1c54814305ca9ad266f53bc82511",
+    "location": "KAB. MUNA",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "42e7aaa88b48137a16a1acd04ed91125",
+    "location": "KAB. WAKATOBI",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "8fe0093bb30d6f8c31474bd0764e6ac0",
+    "location": "KOTA BAU-BAU",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "41ae36ecb9b3eee609d05b90c14222fb",
+    "location": "KOTA KENDARI",
+    "province": "SULAWESI TENGGARA"
+  },
+  {
+    "id": "66368270ffd51418ec58bd793f2d9b1b",
+    "location": "KAB. BOLAANG MONGONDOW",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "248e844336797ec98478f85e7626de4a",
+    "location": "KAB. BOLAANG MONGONDOW SELATAN",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "019d385eb67632a7e958e23f24bd07d7",
+    "location": "KAB. BOLAANG MONGONDOW TIMUR",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "a49e9411d64ff53eccfdd09ad10a15b3",
+    "location": "KAB. BOLAANG MONGONDOW UTARA",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "ddb30680a691d157187ee1cf9e896d03",
+    "location": "KAB. KEPULAUAN SANGIHE",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "2421fcb1263b9530df88f7f002e78ea5",
+    "location": "KAB. KEPULAUAN SIAU TAGULANDANG BIARO",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "fccb60fb512d13df5083790d64c4d5dd",
+    "location": "KAB. KEPULAUAN TALAUD",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "1651cf0d2f737d7adeab84d339dbabd3",
+    "location": "KAB. MINAHASA",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "eed5af6add95a9a6f1252739b1ad8c24",
+    "location": "KAB. MINAHASA SELATAN",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "a8abb4bb284b5b27aa7cb790dc20f80b",
+    "location": "KAB. MINAHASA TENGGARA",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "15d4e891d784977cacbfcbb00c48f133",
+    "location": "KAB. MINAHASA UTARA",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "c203d8a151612acf12457e4d67635a95",
+    "location": "KOTA BITUNG",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "13f3cf8c531952d72e5847c4183e6910",
+    "location": "KOTA KOTAMOBAGU",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "550a141f12de6341fba65b0ad0433500",
+    "location": "KOTA MANADO",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "67f7fb873eaf29526a11a9b7ac33bfac",
+    "location": "KOTA TOMOHON",
+    "province": "SULAWESI UTARA"
+  },
+  {
+    "id": "72b32a1f754ba1c09b3695e0cb6cde7f",
+    "location": "KAB. AGAM",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "66f041e16a60928b05a7e228a89c3799",
+    "location": "KAB. DHARMASRAYA",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "093f65e080a295f8076b1c5722a46aa2",
+    "location": "KAB. KEPULAUAN MENTAWAI",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "072b030ba126b2f4b2374f342be9ed44",
+    "location": "KAB. LIMA PULUH KOTA",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "7f39f8317fbdb1988ef4c628eba02591",
+    "location": "KAB. PADANG PARIAMAN",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "44f683a84163b3523afe57c2e008bc8c",
+    "location": "KAB. PASAMAN",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "03afdbd66e7929b125f8597834fa83a4",
+    "location": "KAB. PASAMAN BARAT",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "ea5d2f1c4608232e07d3aa3d998e5135",
+    "location": "KAB. PESISIR SELATAN",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "fc490ca45c00b1249bbe3554a4fdf6fb",
+    "location": "KAB. SIJUNJUNG",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "3295c76acbf4caaed33c36b1b5fc2cb1",
+    "location": "KAB. SOLOK",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "735b90b4568125ed6c3f678819b6e058",
+    "location": "KAB. SOLOK SELATAN",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "a3f390d88e4c41f2747bfa2f1b5f87db",
+    "location": "KAB. TANAH DATAR",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "14bfa6bb14875e45bba028a21ed38046",
+    "location": "KOTA BUKITTINGGI",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "7cbbc409ec990f19c78c75bd1e06f215",
+    "location": "KOTA PADANG",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "7cbbc409ec990f19c78c75bd1e06f215",
+    "location": "KOTA PADANG",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "7cbbc409ec990f19c78c75bd1e06f215",
+    "location": "KOTA PADANG",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "32bb90e8976aab5298d5da10fe66f21d",
+    "location": "KOTA PARIAMAN",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "d2ddea18f00665ce8623e36bd4e3c7c5",
+    "location": "KOTA PAYAKUMBUH",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "ad61ab143223efbc24c7d2583be69251",
+    "location": "KOTA SAWAHLUNTO",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "d09bf41544a3365a46c9077ebb5e35c3",
+    "location": "KOTA SOLOK",
+    "province": "SUMATERA BARAT"
+  },
+  {
+    "id": "c45147dee729311ef5b5c3003946c48f",
+    "location": "KAB. BANYUASIN",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "eb160de1de89d9058fcb0b968dbbbd68",
+    "location": "KAB. EMPAT LAWANG",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "5ef059938ba799aaa845e1c2e8a762bd",
+    "location": "KAB. LAHAT",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "07e1cd7dca89a1678042477183b7ac3f",
+    "location": "KAB. MUARA ENIM",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "da4fb5c6e93e74d3df8527599fa62642",
+    "location": "KAB. MUSI BANYUASIN",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "4c56ff4ce4aaf9573aa5dff913df997a",
+    "location": "KAB. MUSI RAWAS",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "202cb962ac59075b964b07152d234b70",
+    "location": "KAB. OGAN ILIR",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "c8ffe9a587b126f152ed3d89a146b445",
+    "location": "KAB. OGAN KOMERING ILIR",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "3def184ad8f4755ff269862ea77393dd",
+    "location": "KAB. OGAN KOMERING ULU",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "069059b7ef840f0c74a814ec9237b6ec",
+    "location": "KAB. OGAN KOMERING ULU SELATAN",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "ec5decca5ed3d6b8079e2e7e7bacc9f2",
+    "location": "KAB. OGAN KOMERING ULU TIMUR",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "d1f491a404d6854880943e5c3cd9ca25",
+    "location": "KOTA LUBUKLINGGAU",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "9b8619251a19057cff70779273e95aa6",
+    "location": "KOTA PAGAR ALAM",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "1afa34a7f984eeabdbb0a7d494132ee5",
+    "location": "KOTA PALEMBANG",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "65ded5353c5ee48d0b7d48c591b8f430",
+    "location": "KOTA PRABUMULIH",
+    "province": "SUMATERA SELATAN"
+  },
+  {
+    "id": "1ff1de774005f8da13f42943881c655f",
+    "location": "KAB. ASAHAN",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "8e296a067a37563370ded05f5a3bf3ec",
+    "location": "KAB. BATU BARA",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "4e732ced3463d06de0ca9a15b6153677",
+    "location": "KAB. DAIRI",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "02e74f10e0327ad868d138f2b4fdd6f0",
+    "location": "KAB. DELI SERDANG",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "33e75ff09dd601bbe69f351039152189",
+    "location": "KAB. HUMBANG HASUNDUTAN",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "6ea9ab1baa0efb9e19094440c317e21b",
+    "location": "KAB. KARO",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "34173cb38f07f89ddbebc2ac9128303f",
+    "location": "KAB. LABUHANBATU",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "c16a5320fa475530d9583c34fd356ef5",
+    "location": "KAB. LABUHANBATU SELATAN",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "6364d3f0f495b6ab9dcf8d3b5c6e0b01",
+    "location": "KAB. LABUHANBATU UTARA",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "182be0c5cdcd5072bb1864cdee4d3d6e",
+    "location": "KAB. LANGKAT",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "e369853df766fa44e1ed0ff613f563bd",
+    "location": "KAB. MANDAILING NATAL",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "1c383cd30b7c298ab50293adfecb7b18",
+    "location": "KAB. NIAS",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "19ca14e7ea6328a42e0eb13d585e4c22",
+    "location": "KAB. NIAS BARAT",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "a5bfc9e07964f8dddeb95fc584cd965d",
+    "location": "KAB. NIAS SELATAN",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "a5771bce93e200c36f7cd9dfd0e5deaa",
+    "location": "KAB. NIAS UTARA",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "d67d8ab4f4c10bf22aa353e27879133c",
+    "location": "KAB. PADANG LAWAS",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "d645920e395fedad7bbbed0eca3fe2e0",
+    "location": "KAB. PADANG LAWAS UTARA",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "3416a75f4cea9109507cacd8e2f2aefc",
+    "location": "KAB. PAKPAK BHARAT",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "a1d0c6e83f027327d8461063f4ac58a6",
+    "location": "KAB. SAMOSIR",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "17e62166fc8586dfa4d1bc0e1742c08b",
+    "location": "KAB. SERDANG BEDAGAI",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "f7177163c833dff4b38fc8d2872f1ec6",
+    "location": "KAB. SIMALUNGUN",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "6c8349cc7260ae62e3b1396831a8398f",
+    "location": "KAB. TAPANULI SELATAN",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "d9d4f495e875a2e075a1a4a6e1b9770f",
+    "location": "KAB. TAPANULI TENGAH",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "67c6a1e7ce56d3d6fa748ab6d9af3fd7",
+    "location": "KAB. TAPANULI UTARA",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "642e92efb79421734881b53e1e1b18b6",
+    "location": "KAB. TOBA SAMOSIR",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "642e92efb79421734881b53e1e1b18b6",
+    "location": "KAB. TOBA SAMOSIR",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "f457c545a9ded88f18ecee47145a72c0",
+    "location": "KOTA BINJAI",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "c0c7c76d30bd3dcaefc96f40275bdc0a",
+    "location": "KOTA GUNUNGSITOLI",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "2838023a778dfaecdc212708f721b788",
+    "location": "KOTA MEDAN",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "d82c8d1619ad8176d665453cfb2e55f0",
+    "location": "KOTA PEMATANGSIANTAR",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "a684eceee76fc522773286a895bc8436",
+    "location": "KOTA SIBOLGA",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "b53b3a3d6ab90ce0268229151c9bde11",
+    "location": "KOTA TANJUNGBALAI",
+    "province": "SUMATERA UTARA"
+  },
+  {
+    "id": "9f61408e3afb633e50cdf1b20de6f466",
+    "location": "KOTA TEBING TINGGI",
+    "province": "SUMATERA UTARA"
+  }
+]

@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-03-21T04:36:45.540Z",
+  "sourcePrayerSnapshot": "indonesia-prayer-data-2026.json",
+  "sourcePolygonSnapshot": "indonesia-districts.geojson",
+  "totalRegions": 517,
+  "coveredRegions": 488,
+  "missingRegions": 29,
+  "coveragePercent": 94.39,
+  "provincesWithMissing": [
+    {
+      "province": "KEPULAUAN RIAU",
+      "count": 5
+    },
+    {
+      "province": "SULAWESI TENGGARA",
+      "count": 5
+    },
+    {
+      "province": "MALUKU UTARA",
+      "count": 2
+    },
+    {
+      "province": "PAPUA BARAT",
+      "count": 2
+    },
+    {
+      "province": "SULAWESI TENGAH",
+      "count": 2
+    },
+    {
+      "province": "SUMATERA SELATAN",
+      "count": 2
+    },
+    {
+      "province": "JAMBI",
+      "count": 1
+    },
+    {
+      "province": "JAWA BARAT",
+      "count": 1
+    },
+    {
+      "province": "KALIMANTAN BARAT",
+      "count": 1
+    },
+    {
+      "province": "KALIMANTAN SELATAN",
+      "count": 1
+    },
+    {
+      "province": "KALIMANTAN TIMUR",
+      "count": 1
+    },
+    {
+      "province": "LAMPUNG",
+      "count": 1
+    },
+    {
+      "province": "NUSA TENGGARA TIMUR",
+      "count": 1
+    },
+    {
+      "province": "PAPUA",
+      "count": 1
+    },
+    {
+      "province": "SULAWESI BARAT",
+      "count": 1
+    },
+    {
+      "province": "SUMATERA BARAT",
+      "count": 1
+    },
+    {
+      "province": "SUMATERA UTARA",
+      "count": 1
+    }
+  ]
+}

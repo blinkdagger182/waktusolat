@@ -1,0 +1,205 @@
+[
+  {
+    "id": "812b4ba287f5ee0bc9d43bbf5bbe87fb",
+    "location": "KAB. BATANGHARI",
+    "province": "JAMBI",
+    "timezone": "Asia/Jakarta",
+    "category": "district-gap"
+  },
+  {
+    "id": "82161242827b703e6acf9c726942a1e4",
+    "location": "KAB. PANGANDARAN",
+    "province": "JAWA BARAT",
+    "timezone": "Asia/Jakarta",
+    "category": "district-gap"
+  },
+  {
+    "id": "5737c6ec2e0716f3d8a7a5c4e0de0d9a",
+    "location": "KAB. MEMPAWAH",
+    "province": "KALIMANTAN BARAT",
+    "timezone": "Asia/Pontianak",
+    "category": "district-gap"
+  },
+  {
+    "id": "40008b9a5380fcacce3976bf7c08af5b",
+    "location": "KOTA BANJARBARU",
+    "province": "KALIMANTAN SELATAN",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "e7b24b112a44fdd9ee93bdf998c6ca0e",
+    "location": "KAB. MAHAKAM ULU",
+    "province": "KALIMANTAN TIMUR",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "38913e1d6a7b94cb0f55994f679f5956",
+    "location": "PEKAJANG KAB. LINGGA",
+    "province": "KEPULAUAN RIAU",
+    "timezone": "Asia/Jakarta",
+    "category": "special-island-zone"
+  },
+  {
+    "id": "cf67355a3333e6e143439161adc2d82e",
+    "location": "PULAU LAUT KAB. NATUNA",
+    "province": "KEPULAUAN RIAU",
+    "timezone": "Asia/Jakarta",
+    "category": "special-island-zone"
+  },
+  {
+    "id": "63538fe6ef330c13a05a3ed7e599d5f7",
+    "location": "PULAU MIDAI KAB. NATUNA",
+    "province": "KEPULAUAN RIAU",
+    "timezone": "Asia/Jakarta",
+    "category": "special-island-zone"
+  },
+  {
+    "id": "ebd9629fc3ae5e9f6611e2ee05a31cef",
+    "location": "PULAU SERASAN KAB. NATUNA",
+    "province": "KEPULAUAN RIAU",
+    "timezone": "Asia/Jakarta",
+    "category": "special-island-zone"
+  },
+  {
+    "id": "f3f27a324736617f20abbf2ffd806f6d",
+    "location": "PULAU TAMBELAN KAB. BINTAN",
+    "province": "KEPULAUAN RIAU",
+    "timezone": "Asia/Jakarta",
+    "category": "special-island-zone"
+  },
+  {
+    "id": "8d5e957f297893487bd98fa830fa6413",
+    "location": "KAB. PESISIR BARAT",
+    "province": "LAMPUNG",
+    "timezone": "Asia/Jakarta",
+    "category": "district-gap"
+  },
+  {
+    "id": "26337353b7962f533d78c762373b3318",
+    "location": "KAB. PULAU TALIABU",
+    "province": "MALUKU UTARA",
+    "timezone": "Asia/Jayapura",
+    "category": "special-island-zone"
+  },
+  {
+    "id": "07563a3fe3bbe7e3ba84431ad9d055af",
+    "location": "KOTA SOFIFI",
+    "province": "MALUKU UTARA",
+    "timezone": "Asia/Jayapura",
+    "category": "district-gap"
+  },
+  {
+    "id": "ef0d3930a7b6c95bd2b32ed45989c61f",
+    "location": "KAB. MALAKA",
+    "province": "NUSA TENGGARA TIMUR",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "2b8a61594b1f4c4db0902a8a395ced93",
+    "location": "KAB. YAPEN WAROPEN",
+    "province": "PAPUA",
+    "timezone": "Asia/Jayapura",
+    "category": "district-gap"
+  },
+  {
+    "id": "e8c0653fea13f91bf3c48159f7c24f78",
+    "location": "KAB. MANOKWARI SELATAN",
+    "province": "PAPUA BARAT",
+    "timezone": "Asia/Jayapura",
+    "category": "district-gap"
+  },
+  {
+    "id": "2d6cc4b2d139a53512fb8cbb3086ae2e",
+    "location": "KAB. PEGUNUNGAN ARFAK",
+    "province": "PAPUA BARAT",
+    "timezone": "Asia/Jayapura",
+    "category": "district-gap"
+  },
+  {
+    "id": "d61e4bbd6393c9111e6526ea173a7c8b",
+    "location": "KAB. MAMUJU TENGAH",
+    "province": "SULAWESI BARAT",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "b6f0479ae87d244975439c6124592772",
+    "location": "KAB. BANGGAI LAUT",
+    "province": "SULAWESI TENGAH",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "3c7781a36bcd6cf08c11a970fbe0e2a6",
+    "location": "KAB. MOROWALI UTARA",
+    "province": "SULAWESI TENGAH",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "bbf94b34eb32268ada57a3be5062fe7d",
+    "location": "KAB. BUTON SELATAN",
+    "province": "SULAWESI TENGGARA",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "4f4adcbf8c6f66dcfc8a3282ac2bf10a",
+    "location": "KAB. BUTON TENGAH",
+    "province": "SULAWESI TENGGARA",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "f4f6dce2f3a0f9dada0c2b5b66452017",
+    "location": "KAB. KOLAKA TIMUR",
+    "province": "SULAWESI TENGGARA",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "1068c6e4c8051cfd4e9ea8072e3189e2",
+    "location": "KAB. KONAWE KEPULAUAN",
+    "province": "SULAWESI TENGGARA",
+    "timezone": "Asia/Makassar",
+    "category": "special-island-zone"
+  },
+  {
+    "id": "66808e327dc79d135ba18e051673d906",
+    "location": "KAB. MUNA BARAT",
+    "province": "SULAWESI TENGGARA",
+    "timezone": "Asia/Makassar",
+    "category": "district-gap"
+  },
+  {
+    "id": "e2c420d928d4bf8ce0ff2ec19b371514",
+    "location": "KOTA PADANGPANJANG",
+    "province": "SUMATERA BARAT",
+    "timezone": "Asia/Jakarta",
+    "category": "district-gap"
+  },
+  {
+    "id": "a0a080f42e6f13b3a2df133f073095dd",
+    "location": "KAB. MUSI RAWAS UTARA",
+    "province": "SUMATERA SELATAN",
+    "timezone": "Asia/Jakarta",
+    "category": "district-gap"
+  },
+  {
+    "id": "76dc611d6ebaafc66cc0879c71b5db5c",
+    "location": "KAB. PENUKAL ABAB LEMATANG ILIR",
+    "province": "SUMATERA SELATAN",
+    "timezone": "Asia/Jakarta",
+    "category": "district-gap"
+  },
+  {
+    "id": "9a1158154dfa42caddbd0694a4e9bdc8",
+    "location": "KOTA PADANGSIDEMPUAN",
+    "province": "SUMATERA UTARA",
+    "timezone": "Asia/Jakarta",
+    "category": "district-gap"
+  }
+]
