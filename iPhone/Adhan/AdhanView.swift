@@ -171,7 +171,9 @@ struct AdhanView: View {
                         HStack {
                             #if !os(watchOS)
                             if let currentLoc = settings.currentLocation {
-                                let currentCity = currentLoc.city
+                                let currentDisplayLocation = settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? currentLoc.city
+                                let currentWaktuZone = settings.currentIndonesiaWaktuZoneName
+                                let isResolvingWaktuZone = settings.isResolvingIndonesiaWaktuZone
                                 Image(systemName: "location.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
@@ -179,19 +181,42 @@ struct AdhanView: View {
                                     .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
 
-                                Text(currentCity)
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                                    .contextMenu {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(currentDisplayLocation)
+                                        .font(.subheadline)
+                                        .lineLimit(nil)
+
+                                    if let currentWaktuZone {
+                                        Text("Waktu Zone: \(currentWaktuZone)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(2)
+                                    } else if isResolvingWaktuZone {
+                                        Text("Resolving Waktu Zone...")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(2)
+                                    }
+                                }
+                                .contextMenu {
+                                    Button(action: {
+                                        settings.hapticFeedback()
+                                        UIPasteboard.general.string = currentDisplayLocation
+                                    }) {
+                                        Text("Copy Address")
+                                        Image(systemName: "doc.on.doc")
+                                    }
+
+                                    if let currentWaktuZone {
                                         Button(action: {
                                             settings.hapticFeedback()
-                                            
-                                            UIPasteboard.general.string = currentCity
+                                            UIPasteboard.general.string = currentWaktuZone
                                         }) {
-                                            Text("Copy City Name")
+                                            Text("Copy Waktu Zone")
                                             Image(systemName: "doc.on.doc")
                                         }
                                     }
+                                }
                             } else {
                                 Image(systemName: "location.slash")
                                     .resizable()

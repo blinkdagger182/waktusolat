@@ -525,6 +525,9 @@ extension Settings {
 
     private struct GPSMonthResponse: Codable {
         let zone: String
+        let location: String?
+        let province: String?
+        let timezone: String?
         let year: Int
         let month: String?
         let monthNumber: Int
@@ -532,6 +535,9 @@ extension Settings {
 
         enum CodingKeys: String, CodingKey {
             case zone
+            case location
+            case province
+            case timezone
             case year
             case month
             case monthNumber = "month_number"
@@ -541,6 +547,9 @@ extension Settings {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             zone = try container.decode(String.self, forKey: .zone)
+            location = try container.decodeIfPresent(String.self, forKey: .location)
+            province = try container.decodeIfPresent(String.self, forKey: .province)
+            timezone = try container.decodeIfPresent(String.self, forKey: .timezone)
             year = try container.decode(Int.self, forKey: .year)
             month = try container.decodeIfPresent(String.self, forKey: .month)
 
@@ -652,6 +661,7 @@ extension Settings {
 
     private static let gpsAPIBase = "https://api-waktusolat.vercel.app/v2/solat/gps"
     private static let malaysiaZoneAPIBase = "https://api-waktusolat.vercel.app/v2/solat"
+    private static let indonesiaGPSAPIBase = "https://api-waktusolat.vercel.app/indonesia/v1/solat/gps"
     private static let alAdhanAPIBase = "https://api.aladhan.com/v1/calendar"
     private static let appGroupId = "group.app.riskcreatives.waktu"
     private static let jakimSupportedYear = 2026
@@ -708,6 +718,25 @@ extension Settings {
 
     private func gpsURL(latitude: Double, longitude: Double, for date: Date? = nil) -> URL? {
         guard var components = URLComponents(string: "\(Self.gpsAPIBase)/\(normalizeCoordinate(latitude))/\(normalizeCoordinate(longitude))") else {
+            return nil
+        }
+
+        if let date {
+            let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+            guard let year = comps.year, let month = comps.month else {
+                return nil
+            }
+            components.queryItems = [
+                URLQueryItem(name: "year", value: String(year)),
+                URLQueryItem(name: "month", value: String(month))
+            ]
+        }
+
+        return components.url
+    }
+
+    private func indonesiaGPSURL(latitude: Double, longitude: Double, for date: Date? = nil) -> URL? {
+        guard var components = URLComponents(string: "\(Self.indonesiaGPSAPIBase)/\(normalizeCoordinate(latitude))/\(normalizeCoordinate(longitude))") else {
             return nil
         }
 
@@ -788,8 +817,24 @@ extension Settings {
         appGroupStore()?.setValue(data, forKey: key)
         // Keep legacy key warm for compatibility with existing widget/app installs.
         appGroupStore()?.setValue(data, forKey: Self.legacyMonthCacheKey)
-        // Persist zone for push notification targeting
-        UserDefaults.standard.set(month.zone, forKey: "lastKnownMalaysiaZone")
+        // Persist zone for push notification targeting (Malaysia/SG only)
+        if !shouldUseIndonesiaPrayerAPI(for: currentLocation) {
+            UserDefaults.standard.set(month.zone, forKey: "lastKnownMalaysiaZone")
+            resolvedPrayerArea = nil
+        } else {
+            UserDefaults.standard.set(month.zone, forKey: "lastKnownIndonesiaRegionId")
+            if let location = month.location,
+               let province = month.province,
+               let timezone = month.timezone {
+                resolvedPrayerArea = ResolvedPrayerArea(
+                    regionId: month.zone,
+                    location: location,
+                    province: province,
+                    timezone: timezone,
+                    resolvedBy: "polygon-or-fallback"
+                )
+            }
+        }
     }
 
     private func isSameYearMonth(_ date: Date, as month: GPSMonthResponse) -> Bool {
@@ -1033,6 +1078,11 @@ extension Settings {
         return trimmed.isEmpty ? nil : trimmed.uppercased()
     }
 
+    func shouldUseIndonesiaPrayerAPI(for location: Location?) -> Bool {
+        guard prayerRegionDebugOverride == 0, debugMalaysiaZoneOverride == nil else { return false }
+        return location?.countryCode?.uppercased() == "ID"
+    }
+
     func shouldUseMalaysiaPrayerAPI(for location: Location?) -> Bool {
         if debugMalaysiaZoneOverride != nil {
             return true
@@ -1062,6 +1112,8 @@ extension Settings {
     }
 
     func isDateSupportedByJAKIM(_ date: Date) -> Bool {
+        // Indonesia has data for all years — no year restriction applies
+        if shouldUseIndonesiaPrayerAPI(for: currentLocation) { return true }
         guard shouldUseMalaysiaPrayerAPI(for: currentLocation) else { return true }
         return Self.gregorian.component(.year, from: date) == Self.jakimSupportedYear
     }
@@ -1199,11 +1251,15 @@ extension Settings {
             return
         }
 
-        guard let url = gpsURL(latitude: latitude, longitude: longitude, for: date) else {
+        let isIndonesia = shouldUseIndonesiaPrayerAPI(for: currentLocation)
+        guard let url = isIndonesia
+            ? indonesiaGPSURL(latitude: latitude, longitude: longitude, for: date)
+            : gpsURL(latitude: latitude, longitude: longitude, for: date)
+        else {
             throw GPSAPIError.invalidURL
         }
 
-        logger.debug("Malaysia API request (gps): \(url.absoluteString)")
+        logger.debug("\(isIndonesia ? "Indonesia" : "Malaysia") API request (gps): \(url.absoluteString)")
 
         let (data, response) = try await URLSession.shared.data(from: url)
         let status = (response as? HTTPURLResponse)?.statusCode ?? -1
@@ -1355,7 +1411,9 @@ extension Settings {
     
     /// Uses cached GPS endpoint month payload. Returns nil when cache is missing.
     func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
-        if let location = currentLocation, !shouldUseMalaysiaPrayerAPI(for: location) {
+        if let location = currentLocation,
+           !shouldUseMalaysiaPrayerAPI(for: location),
+           !shouldUseIndonesiaPrayerAPI(for: location) {
             if let apiBacked = getAlAdhanPrayerTimes(for: date, location: location, fullPrayers: fullPrayers) {
                 return apiBacked
             }
@@ -1423,7 +1481,9 @@ extension Settings {
 
     @MainActor
     func refreshDatePrayers(for date: Date) async {
+        let usesIndonesiaPipeline = shouldUseIndonesiaPrayerAPI(for: currentLocation)
         let usesMalaysiaPipeline = shouldUseMalaysiaPrayerAPI(for: currentLocation)
+        let usesZonePipeline = usesMalaysiaPipeline || usesIndonesiaPipeline
 
         guard isDateSupportedByJAKIM(date) else {
             datePrayers = []
@@ -1435,7 +1495,7 @@ extension Settings {
            loc.latitude != 1000,
            loc.longitude != 1000,
            Bundle.main.bundleIdentifier?.contains("Widget") != true {
-            let missingDayData = usesMalaysiaPipeline
+            let missingDayData = usesZonePipeline
                 ? (dayPayload(for: date) == nil)
                 : !hasAlAdhanDayPayload(for: date, location: loc)
             guard missingDayData else {
@@ -1444,7 +1504,7 @@ extension Settings {
                 return
             }
             do {
-                if usesMalaysiaPipeline {
+                if usesZonePipeline {
                     try await fetchMonthFromAPI(latitude: loc.latitude, longitude: loc.longitude, for: date)
                 } else {
                     try await fetchMonthFromAlAdhan(latitude: loc.latitude, longitude: loc.longitude, for: date)
@@ -1484,15 +1544,18 @@ extension Settings {
         // Decide if we need fresh prayers
         let today      = Date()
         let stored     = prayers
-        let staleCity  = stored?.city != currentLocation?.city
+        let usesIndonesiaPipeline = shouldUseIndonesiaPrayerAPI(for: loc)
+        let usesMalaysiaPipeline = shouldUseMalaysiaPrayerAPI(for: loc)
+        let usesZonePipeline = usesMalaysiaPipeline || usesIndonesiaPipeline
+        let unresolvedIndonesiaZone = usesIndonesiaPipeline && resolvedPrayerArea == nil
+        let staleCity  = unresolvedIndonesiaZone || stored?.city != currentPrayerAreaName
         let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
         let emptyList  = stored?.prayers.isEmpty ?? true
-        let usesMalaysiaPipeline = shouldUseMalaysiaPrayerAPI(for: loc)
-        let missingCacheForToday = usesMalaysiaPipeline
+        let missingCacheForToday = usesZonePipeline
             ? (dayPayload(for: today) == nil)
             : !hasAlAdhanDayPayload(for: today, location: loc)
         let needsRefresh = force || stored == nil || staleCity || staleDate || emptyList
-        let needsNetworkFetch = force || missingCacheForToday
+        let needsNetworkFetch = force || missingCacheForToday || unresolvedIndonesiaZone
         let needsFetch = needsRefresh || needsNetworkFetch
         
         if needsFetch {
@@ -1502,7 +1565,7 @@ extension Settings {
                    let fullPrayers = getPrayerTimes(for: today, fullPrayers: true) {
                     prayers = Prayers(
                         day: today,
-                        city: loc.city,
+                        city: currentPrayerAreaName ?? loc.city,
                         prayers: todayPrayers,
                         fullPrayers: fullPrayers,
                         setNotification: false
@@ -1513,7 +1576,7 @@ extension Settings {
                 return
             }
 
-            if !usesMalaysiaPipeline {
+            if !usesZonePipeline {
                 if needsNetworkFetch {
                     logger.debug("Fetching prayer times from AlAdhan API – caller: \(calledFrom)")
                 } else {
@@ -1536,7 +1599,7 @@ extension Settings {
                     if let todayPrayers, let fullPrayers {
                         prayers = Prayers(
                             day: today,
-                            city: loc.city,
+                            city: currentPrayerAreaName ?? loc.city,
                             prayers: todayPrayers,
                             fullPrayers: fullPrayers,
                             setNotification: false
@@ -1574,7 +1637,7 @@ extension Settings {
                 if let todayPrayers, let fullPrayers {
                     prayers = Prayers(
                         day: today,
-                        city: loc.city,
+                        city: currentPrayerAreaName ?? loc.city,
                         prayers: todayPrayers,
                         fullPrayers: fullPrayers,
                         setNotification: false
@@ -1683,7 +1746,7 @@ extension Settings {
         #if os(iOS) && canImport(ActivityKit)
         if #available(iOS 16.2, *) {
             let next = nextPrayer
-            let city = currentLocation?.city
+            let city = currentPrayerAreaName
             let enabled = liveNextPrayerEnabled
             let prayerEnabled = isLiveActivityPrayerEnabled(for: nextPrayer)
             let inWindow = isWithinLiveActivityLeadWindow(for: nextPrayer)
@@ -1823,7 +1886,7 @@ extension Settings {
     ) {
         #if DEBUG && os(iOS) && canImport(ActivityKit)
         guard #available(iOS 16.2, *) else { return }
-        let city = currentLocation?.city ?? "Current Location"
+        let city = currentPrayerAreaName ?? currentLocation?.city ?? "Current Location"
         Task { @MainActor in
             PrayerLiveActivityCoordinator.shared.startDebugActivity(
                 city: city,
@@ -1994,7 +2057,7 @@ extension Settings {
         #if os(watchOS)
         return
         #else
-        guard let city = currentLocation?.city, let prayerObj = prayers
+        guard let city = currentPrayerAreaName ?? currentLocation?.city, let prayerObj = prayers
         else { return }
 
         let scheduleDay = Calendar.current.startOfDay(for: prayerObj.day).timeIntervalSince1970

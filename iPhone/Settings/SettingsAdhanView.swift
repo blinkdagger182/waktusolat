@@ -234,6 +234,9 @@ struct SettingsAdhanView: View {
             settings.hanafiMadhab = false
         case "SG":
             settings.prayerCalculation = "Majlis Ugama Islam Singapura, Singapore"
+        case "ID":
+            settings.prayerCalculation = "KEMENAG - Kementerian Agama Republik Indonesia"
+            settings.hanafiMadhab = false
         case "GB":
             settings.prayerCalculation = "Moonsighting Committee Worldwide"
         case "US", "CA":

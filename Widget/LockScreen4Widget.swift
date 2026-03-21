@@ -35,6 +35,8 @@ struct LockScreen4EntryView: View {
                     }
                     .foregroundColor((entry.currentPrayer?.nameTransliteration ?? "").contains(prayer.nameTransliteration) ? .primary : .secondary)
                 }
+
+                WidgetLocationFooter(entry: entry, widgetKind: "LockScreen4Widget")
             }
         }
         .font(.caption)

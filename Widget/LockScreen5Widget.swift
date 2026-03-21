@@ -126,6 +126,8 @@ private struct LockScreenSparkEntryView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
+
+                WidgetLocationFooter(entry: entry, widgetKind: "LockScreen5Widget")
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {

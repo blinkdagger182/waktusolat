@@ -62,6 +62,24 @@ enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
+    #if os(iOS)
+    private static let prayerLockScreenWidgetKinds: Set<String> = [
+        "LockScreen1Widget",
+        "LockScreen2Widget",
+        "LockScreen3Widget",
+        "LockScreen4Widget",
+        "LockScreen5Widget",
+        "LockScreen6Widget"
+    ]
+    private static let prayerLockScreenFooterCapableKinds: [String] = [
+        "LockScreen5Widget",
+        "LockScreen6Widget",
+        "LockScreen2Widget",
+        "LockScreen3Widget",
+        "LockScreen4Widget"
+    ]
+    private static let preferredPrayerLockScreenFooterWidgetKindKey = "preferredPrayerLockScreenFooterWidgetKind"
+    #endif
 
     /// Set by AppDelegate (main app only) so extension targets don't reference UIApplication.shared.
     static var registerForRemoteNotificationsHandler: (() -> Void)?
@@ -146,6 +164,14 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 currentLocation = location
             } catch {
                 logger.debug("Failed to decode location: \(error)")
+            }
+        }
+
+        if let prayerAreaData = appGroupUserDefaults?.data(forKey: "resolvedPrayerArea") {
+            do {
+                resolvedPrayerArea = try Self.decoder.decode(ResolvedPrayerArea.self, from: prayerAreaData)
+            } catch {
+                logger.debug("Failed to decode resolved prayer area: \(error)")
             }
         }
         
@@ -244,14 +270,130 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var currentLocation: Location? {
         didSet {
             guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            guard let location = currentLocation else { return }
+            guard let location = currentLocation else {
+                appGroupUserDefaults?.removeObject(forKey: "lastLocationUpdatedAt")
+                resolvedPrayerArea = nil
+                return
+            }
+            if location.countryCode?.uppercased() != "ID" {
+                resolvedPrayerArea = nil
+            } else if let previous = oldValue,
+                      resolvedPrayerArea != nil,
+                      (abs(previous.latitude - location.latitude) > 0.02 ||
+                       abs(previous.longitude - location.longitude) > 0.02) {
+                resolvedPrayerArea = nil
+            }
             do {
                 let locationData = try Self.encoder.encode(location)
                 appGroupUserDefaults?.setValue(locationData, forKey: "currentLocation")
+                appGroupUserDefaults?.set(Date(), forKey: "lastLocationUpdatedAt")
             } catch {
                 logger.debug("Failed to encode location: \(error)")
             }
         }
+    }
+
+    @Published var resolvedPrayerArea: ResolvedPrayerArea? {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            guard let resolvedPrayerArea else {
+                appGroupUserDefaults?.removeObject(forKey: "resolvedPrayerArea")
+                return
+            }
+            do {
+                let data = try Self.encoder.encode(resolvedPrayerArea)
+                appGroupUserDefaults?.setValue(data, forKey: "resolvedPrayerArea")
+            } catch {
+                logger.debug("Failed to encode resolved prayer area: \(error)")
+            }
+        }
+    }
+
+    #if os(iOS)
+    @Published var configuredPrayerLockScreenWidgetCount: Int = 0
+
+    var hasMultiplePrayerLockScreenWidgetsConfigured: Bool {
+        configuredPrayerLockScreenWidgetCount >= 2
+    }
+
+    func refreshPrayerLockScreenWidgetCount() {
+        WidgetCenter.shared.getCurrentConfigurations { result in
+            let count: Int
+            let preferredFooterOwnerKind: String?
+            switch result {
+            case .success(let widgets):
+                let kinds = widgets.map(\.kind)
+                let prayerKinds = kinds.filter { Self.prayerLockScreenWidgetKinds.contains($0) }
+                let footerKinds = prayerKinds.filter { Self.prayerLockScreenFooterCapableKinds.contains($0) }
+                let uniqueFooterKinds = Set(footerKinds)
+
+                count = footerKinds.count
+
+                if footerKinds.count <= 1 {
+                    preferredFooterOwnerKind = footerKinds.first
+                } else if uniqueFooterKinds.count == 1 {
+                    // Multiple copies of the same widget kind cannot be distinguished in the extension,
+                    // so hide the footer everywhere to avoid duplicate location labels.
+                    preferredFooterOwnerKind = nil
+                } else {
+                    preferredFooterOwnerKind = Self.prayerLockScreenFooterCapableKinds.first(where: {
+                        uniqueFooterKinds.contains($0)
+                    })
+                }
+            case .failure(let error):
+                logger.debug("Failed to inspect widget configurations: \(error.localizedDescription)")
+                count = 0
+                preferredFooterOwnerKind = nil
+            }
+
+            DispatchQueue.main.async {
+                self.configuredPrayerLockScreenWidgetCount = count
+                if let preferredFooterOwnerKind {
+                    self.appGroupUserDefaults?.setValue(
+                        preferredFooterOwnerKind,
+                        forKey: Self.preferredPrayerLockScreenFooterWidgetKindKey
+                    )
+                } else {
+                    self.appGroupUserDefaults?.removeObject(forKey: Self.preferredPrayerLockScreenFooterWidgetKindKey)
+                }
+            }
+        }
+    }
+    #endif
+
+    var currentPrayerAreaName: String? {
+        if shouldUseIndonesiaPrayerAPI(for: currentLocation) {
+            return resolvedPrayerArea?.displayName
+        }
+        return currentLocation?.city
+    }
+
+    var currentPhoneLocationName: String? {
+        currentLocation?.city
+    }
+
+    var currentIndonesiaWaktuZoneName: String? {
+        guard shouldUseIndonesiaPrayerAPI(for: currentLocation),
+              let resolvedPrayerArea else {
+            return nil
+        }
+        return resolvedPrayerArea.displayName
+    }
+
+    var isResolvingIndonesiaWaktuZone: Bool {
+        shouldUseIndonesiaPrayerAPI(for: currentLocation) &&
+        currentLocation != nil &&
+        resolvedPrayerArea == nil
+    }
+
+    var currentPrayerAreaSubtitle: String? {
+        guard shouldUseIndonesiaPrayerAPI(for: currentLocation),
+              let resolvedPrayerArea,
+              let phoneLocation = currentLocation?.city,
+              phoneLocation != resolvedPrayerArea.displayName else {
+            return nil
+        }
+        return phoneLocation
     }
     
     @Published var homeLocation: Location? {

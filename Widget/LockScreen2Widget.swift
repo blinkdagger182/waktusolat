@@ -191,6 +191,8 @@ struct LockScreen2EntryView: View {
                         .lineLimit(1)
                 }
 
+                WidgetLocationFooter(entry: entry, widgetKind: "LockScreen2Widget")
+
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

@@ -184,6 +184,7 @@ struct AlAdhanApp: App {
                 withAnimation {
                     settings.fetchPrayerTimes()
                 }
+                settings.refreshPrayerLockScreenWidgetCount()
                 refreshSupportPromoConfigIfNeeded(force: false)
                 if !settings.firstLaunch {
                     settings.requestLocationAuthorization()
@@ -250,6 +251,7 @@ struct AlAdhanApp: App {
                 settings.requestLocationAuthorization()
             }
             if phase == .active {
+                settings.refreshPrayerLockScreenWidgetCount()
                 lastSceneActiveAt = Date()
                 refreshSupportPromoConfigIfNeeded(force: false)
                 scheduleUIRecoveryWatchdog()
@@ -265,6 +267,7 @@ struct AlAdhanApp: App {
         case "SGP": return "Singapore"
         case "GBR": return "United Kingdom"
         case "USA": return "United States"
+        case "IDN": return "Indonesia"
         default: return "the supported regions"
         }
     }
@@ -279,7 +282,7 @@ struct AlAdhanApp: App {
             return
         }
         let code = location.countryCode?.uppercased() ?? ""
-        let supportedCodes = ["MY", "SG", "GB", "US"]
+        let supportedCodes = ["MY", "SG", "GB", "US", "ID"]
         withAnimation {
             showUnsupportedRegionModal = !code.isEmpty && !supportedCodes.contains(code)
         }

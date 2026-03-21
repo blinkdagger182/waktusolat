@@ -1128,8 +1128,18 @@ private struct WidgetPreviewDebugView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    if let location = settings.currentLocation {
-                        Text("Current location: \(location.city)")
+                    if let location = settings.currentPhoneLocationName ?? settings.currentPrayerAreaName {
+                        Text("Current location: \(location)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let waktuZone = settings.currentIndonesiaWaktuZoneName {
+                        Text("Waktu zone: \(waktuZone)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    } else if settings.isResolvingIndonesiaWaktuZone {
+                        Text("Waktu zone: resolving...")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }

@@ -49,6 +49,8 @@ struct LockScreen3EntryView: View {
                     }
                     .foregroundColor(prayer.time <= entry.date ? .primary : .secondary)
                 }
+
+                WidgetLocationFooter(entry: entry, widgetKind: "LockScreen3Widget")
             }
         }
         .font(.caption)

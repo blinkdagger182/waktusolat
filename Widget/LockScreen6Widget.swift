@@ -80,6 +80,8 @@ struct LockScreen6EntryView: View {
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+
+                WidgetLocationFooter(entry: entry, widgetKind: "LockScreen6Widget")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

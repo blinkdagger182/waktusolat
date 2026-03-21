@@ -29,15 +29,21 @@ struct AdhanSetupSheet: View {
         !isGlobalDebugForced &&
         settings.currentLocation?.countryCode?.uppercased() == "SG"
     }
+
+    private var isIndonesiaMode: Bool {
+        !isGlobalDebugForced &&
+        settings.currentLocation?.countryCode?.uppercased() == "ID"
+    }
     
     private func shortCalculationLabel(_ method: String) -> String {
         switch method {
-        case "Auto (By Location)":                          return "Auto"
-        case "Moonsighting Committee Worldwide":            return "Moonsighting (UK)"
-        case "Muslim World League":                         return "Muslim World League (US)"
-        case "Majlis Ugama Islam Singapura, Singapore":     return "MUIS (Singapore)"
-        case "Jabatan Kemajuan Islam Malaysia (JAKIM)":     return "JAKIM (Malaysia)"
-        default:                                            return method
+        case "Auto (By Location)":                                          return "Auto"
+        case "Moonsighting Committee Worldwide":                            return "Moonsighting (UK)"
+        case "Muslim World League":                                         return "Muslim World League (US)"
+        case "Majlis Ugama Islam Singapura, Singapore":                     return "MUIS (Singapore)"
+        case "Jabatan Kemajuan Islam Malaysia (JAKIM)":                     return "JAKIM (Malaysia)"
+        case "KEMENAG - Kementerian Agama Republik Indonesia":              return "KEMENAG (Indonesia)"
+        default:                                                            return method
         }
     }
 
@@ -45,6 +51,7 @@ struct AdhanSetupSheet: View {
         switch settings.currentLocation?.countryCode?.uppercased() ?? "" {
         case "MY": return "JAKIM (Malaysia)"
         case "SG": return "MUIS (Singapore)"
+        case "ID": return "KEMENAG (Indonesia)"
         case "GB": return "Moonsighting Committee Worldwide"
         case "US", "CA": return "Muslim World League"
         default: return "Muslim World League"
@@ -63,6 +70,8 @@ struct AdhanSetupSheet: View {
             return "Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura)."
         case "Jabatan Kemajuan Islam Malaysia (JAKIM)":
             return "Official Malaysian prayer times by JAKIM. Uses the Malaysian Prayer Times API."
+        case "KEMENAG - Kementerian Agama Republik Indonesia":
+            return "Official Indonesia prayer times by KEMENAG, matched to your kabupaten/kota via GPS."
         default:
             return "Uses the selected prayer time calculation method for your location."
         }
@@ -78,12 +87,14 @@ struct AdhanSetupSheet: View {
     }
     
     /// Zones filtered to the user's current country.
-    /// SG → only SGP01; everything else → Malaysian JAKIM zones.
+    /// SG → only SGP01; ID → empty (zone picker is hidden); everything else → Malaysian JAKIM zones.
     private var filteredZones: [MalaysiaZoneInfo] {
         let country = settings.currentLocation?.countryCode?.uppercased() ?? ""
         switch country {
         case "SG":
             return [MalaysiaZoneInfo(jakimCode: "SGP01", negeri: "Singapore", daerah: "Singapore")]
+        case "ID":
+            return []
         default:
             return malaysiaZones
         }
@@ -101,8 +112,9 @@ struct AdhanSetupSheet: View {
     @MainActor
     private func loadMalaysiaZonesIfNeeded() async {
         guard malaysiaZones.isEmpty else { return }
-        // Singapore only has one known zone (SGP01) — no need to fetch the Malaysian list
-        guard settings.currentLocation?.countryCode?.uppercased() != "SG" else { return }
+        // Singapore and Indonesia don't use Malaysian JAKIM zones
+        let countryCode = settings.currentLocation?.countryCode?.uppercased()
+        guard countryCode != "SG", countryCode != "ID" else { return }
         guard let url = URL(string: "https://api-waktusolat.vercel.app/zones") else { return }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
@@ -171,6 +183,9 @@ struct AdhanSetupSheet: View {
             settings.hanafiMadhab = false
         case "SG":
             settings.prayerCalculation = "Majlis Ugama Islam Singapura, Singapore"
+        case "ID":
+            settings.prayerCalculation = "KEMENAG - Kementerian Agama Republik Indonesia"
+            settings.hanafiMadhab = false
         case "GB":
             settings.prayerCalculation = "Moonsighting Committee Worldwide"
         case "US", "CA":
@@ -206,6 +221,16 @@ struct AdhanSetupSheet: View {
                                 • The app is currently optimized for Singapore prayer times.
                                 • Times are fetched from our backend, sourced directly from MUIS.
                                 • Calculation is fixed to MUIS for consistency across app and widgets.
+                                """
+                            )
+                            .foregroundColor(.secondary)
+                        } else if isIndonesiaMode {
+                            Text("Prayer times are sourced from KEMENAG (Kementerian Agama Republik Indonesia), Indonesia's official ministry of religious affairs.")
+
+                            Text("""
+                                • The app is currently optimized for Indonesia prayer times.
+                                • Times are fetched from our backend, sourced directly from KEMENAG.
+                                • Calculation is automatically matched to your exact kabupaten/kota.
                                 """
                             )
                             .foregroundColor(.secondary)
@@ -255,6 +280,19 @@ struct AdhanSetupSheet: View {
                             .font(.subheadline)
 
                             Text("Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura), the official Islamic authority of Singapore.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 2)
+                        } else if isIndonesiaMode {
+                            HStack {
+                                Text("Calculation")
+                                Spacer()
+                                Text("KEMENAG (Indonesia)")
+                                    .foregroundColor(.secondary)
+                            }
+                            .font(.subheadline)
+
+                            Text("Official Indonesia prayer times by KEMENAG, automatically matched to your kabupaten/kota using GPS polygon lookup.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
@@ -328,13 +366,25 @@ struct AdhanSetupSheet: View {
                     HStack {
                         Text("Location")
                         Spacer()
-                        Text(settings.currentLocation?.city ?? "Unknown")
+                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? "Unknown")
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                             .truncationMode(.tail)
                     }
                     .font(.subheadline)
+
+                    if let waktuZone = settings.currentIndonesiaWaktuZoneName {
+                        Text("Waktu Zone: \(waktuZone)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    } else if settings.isResolvingIndonesiaWaktuZone {
+                        Text("Resolving Waktu Zone...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    }
 
                     Text("Location is read-only. Use Waktu Zone in Manual mode for testing.")
                         .font(.caption)
@@ -359,12 +409,24 @@ struct AdhanSetupSheet: View {
                     HStack {
                         Text("Location")
                         Spacer()
-                        Text(settings.currentLocation?.city ?? "Unknown")
+                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? "Unknown")
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                     }
                     .font(.subheadline)
+
+                    if let waktuZone = settings.currentIndonesiaWaktuZoneName {
+                        Text("Waktu Zone: \(waktuZone)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    } else if settings.isResolvingIndonesiaWaktuZone {
+                        Text("Resolving Waktu Zone...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    }
 
                     if !shouldShowGlobalMethodDropdown || isSingaporeMode {
                         if releaseWaktuModeBinding.wrappedValue == 1 {
@@ -379,9 +441,16 @@ struct AdhanSetupSheet: View {
                                 .padding(.vertical, 2)
                         }
                     }
+
+                    if isIndonesiaMode {
+                        Text("Prayer zone is automatically detected from your GPS coordinates. No manual zone selection is needed for Indonesia.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    }
                     #endif
 
-                    if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && releaseWaktuModeBinding.wrappedValue == 0 {
+                    if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && !isIndonesiaMode && releaseWaktuModeBinding.wrappedValue == 0 {
                         HStack {
                             HStack(spacing: 6) {
                                 Text("Waktu Zone")
@@ -402,7 +471,7 @@ struct AdhanSetupSheet: View {
                                 .truncationMode(.tail)
                         }
                         .font(.subheadline)
-                    } else if (!shouldShowGlobalMethodDropdown || isSingaporeMode) {
+                    } else if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && !isIndonesiaMode {
                         HStack {
                             HStack(spacing: 6) {
                                 Text("Waktu Zone")
@@ -460,7 +529,7 @@ struct AdhanSetupSheet: View {
                         .font(.subheadline)
                     }
 
-                    if !shouldShowGlobalMethodDropdown || isSingaporeMode {
+                    if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && !isIndonesiaMode {
                         Text("Auto matches your location to a prayer zone. Manual lets you choose a specific zone.")
                             .font(.caption)
                             .foregroundColor(.secondary)

@@ -12,6 +12,37 @@ struct Location: Codable, Equatable {
     }
 }
 
+struct ResolvedPrayerArea: Codable, Equatable {
+    let regionId: String
+    let location: String
+    let province: String
+    let timezone: String
+    let resolvedBy: String
+
+    var displayName: String {
+        "\(Self.prettyName(location)), \(Self.prettyName(province))"
+    }
+
+    private static func prettyName(_ raw: String) -> String {
+        raw
+            .split(separator: " ")
+            .map { token in
+                let upper = token.uppercased()
+                switch upper {
+                case "KAB.": return "Kab."
+                case "KOTA": return "Kota"
+                case "DI": return "DI"
+                case "DKI": return "DKI"
+                case "NAD": return "NAD"
+                default:
+                    let lower = token.lowercased()
+                    return lower.prefix(1).uppercased() + lower.dropFirst()
+                }
+            }
+            .joined(separator: " ")
+    }
+}
+
 struct Prayers: Identifiable, Codable, Equatable {
     var id = UUID()
     
