@@ -3,6 +3,7 @@ import WidgetKit
 import StoreKit
 import AVFoundation
 import UIKit
+import UserNotifications
 
 extension Notification.Name {
     static let debugShowDailyQuranWidgetIntro = Notification.Name("debugShowDailyQuranWidgetIntro")
@@ -29,6 +30,7 @@ struct AlAdhanApp: App {
     
     @AppStorage("firstLaunchSheet") var firstLaunchSheet: Bool = true
     @AppStorage("didShowDailyQuranWidgetIntroV1") private var didShowDailyQuranWidgetIntro = false
+    @AppStorage("didTriggerFirstRunNotificationPromptV1") private var didTriggerFirstRunNotificationPrompt = false
     @AppStorage("remoteUIRecoveryEnabled") private var remoteUIRecoveryEnabled = true
     @State var showAdhanSheet: Bool = false
     @State private var showDailyQuranWidgetIntro = false
@@ -37,6 +39,7 @@ struct AlAdhanApp: App {
     @State private var quranDeepLink: QuranDeepLinkPayload?
     @State private var selectedTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
+    @State private var pendingFirstRunNotificationPrompt = false
     @State private var supportPromoMessage = ""
     @State private var supportPromoPoolProgress: SupportPromoPoolProgress?
     @State private var supportPromoCountdownStart = Date()
@@ -96,7 +99,8 @@ struct AlAdhanApp: App {
                         onDismiss: {
                             firstLaunchSheet = false
                             presentDailyQuranWidgetIntroIfNeeded()
-                            presentSupportPromoToastIfNeeded()
+                            pendingFirstRunNotificationPrompt = true
+                            scheduleFirstRunNotificationPromptIfNeeded()
                         }) {
                         AdhanSetupSheet()
                             .environmentObject(settings)
@@ -135,6 +139,7 @@ struct AlAdhanApp: App {
                         onDismiss: {
                             showDailyQuranWidgetIntro = false
                             didShowDailyQuranWidgetIntro = true
+                            scheduleFirstRunNotificationPromptIfNeeded()
                         }
                     )
                     .environmentObject(settings)
@@ -234,18 +239,24 @@ struct AlAdhanApp: App {
             settings.updateDates()
             WidgetCenter.shared.reloadAllTimelines()
         }
-        .onChange(of: settings.firstLaunch) { isFirstLaunch in
-            if !isFirstLaunch {
-                settings.requestLocationAuthorization()
-                refreshSupportPromoConfigIfNeeded(force: false)
-                presentDailyQuranWidgetIntroIfNeeded()
-                presentSupportPromoToastIfNeeded()
+            .onChange(of: settings.firstLaunch) { isFirstLaunch in
+                if !isFirstLaunch {
+                    settings.requestLocationAuthorization()
+                    refreshSupportPromoConfigIfNeeded(force: false)
+                    presentDailyQuranWidgetIntroIfNeeded()
+                    pendingFirstRunNotificationPrompt = true
+                    scheduleFirstRunNotificationPromptIfNeeded()
+                }
+                updateUnsupportedRegionModalVisibility()
             }
-            updateUnsupportedRegionModalVisibility()
-        }
-        .onChange(of: settings.currentLocation?.countryCode) { _ in
-            updateUnsupportedRegionModalVisibility()
-        }
+            .onChange(of: selectedTab) { newTab in
+                if newTab == .adhan {
+                    scheduleFirstRunNotificationPromptIfNeeded()
+                }
+            }
+            .onChange(of: settings.currentLocation?.countryCode) { _ in
+                updateUnsupportedRegionModalVisibility()
+            }
         .onChange(of: scenePhase) { phase in
             if phase == .active, !settings.firstLaunch {
                 settings.requestLocationAuthorization()
@@ -256,6 +267,7 @@ struct AlAdhanApp: App {
                 refreshSupportPromoConfigIfNeeded(force: false)
                 scheduleUIRecoveryWatchdog()
                 updateUnsupportedRegionModalVisibility()
+                scheduleFirstRunNotificationPromptIfNeeded()
             }
         }
     }
@@ -397,6 +409,7 @@ struct AlAdhanApp: App {
     private func presentSupportPromoToastIfNeeded() {
         guard !isLaunching else { return }
         guard !settings.firstLaunch else { return }
+        guard !pendingFirstRunNotificationPrompt else { return }
         guard !showAdhanSheet else { return }
         guard !showDailyQuranWidgetIntro else { return }
         guard !showSupportPromoToast else { return }
@@ -529,6 +542,41 @@ struct AlAdhanApp: App {
 
         withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
             showSupportPromoToast = true
+        }
+    }
+
+    private func scheduleFirstRunNotificationPromptIfNeeded(delay: TimeInterval = 0.45) {
+        guard pendingFirstRunNotificationPrompt else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            Task {
+                await requestFirstRunNotificationPromptIfNeeded()
+            }
+        }
+    }
+
+    @MainActor
+    private func requestFirstRunNotificationPromptIfNeeded() async {
+        guard pendingFirstRunNotificationPrompt else { return }
+        guard !didTriggerFirstRunNotificationPrompt else {
+            pendingFirstRunNotificationPrompt = false
+            return
+        }
+        guard !settings.firstLaunch else { return }
+        guard selectedTab == .adhan else { return }
+        guard !showAdhanSheet else { return }
+        guard !showDailyQuranWidgetIntro else { return }
+        guard !showSupportPromoToast else { return }
+
+        let authorizationStatus = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        if authorizationStatus == .notDetermined {
+            didTriggerFirstRunNotificationPrompt = true
+            pendingFirstRunNotificationPrompt = false
+            _ = await settings.requestNotificationAuthorization()
+            presentSupportPromoToastIfNeeded()
+        } else {
+            didTriggerFirstRunNotificationPrompt = true
+            pendingFirstRunNotificationPrompt = false
+            presentSupportPromoToastIfNeeded()
         }
     }
 

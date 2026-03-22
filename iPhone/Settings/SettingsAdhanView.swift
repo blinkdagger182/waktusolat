@@ -462,8 +462,12 @@ struct NotificationView: View {
             }
         }
         .task { await refresh() }
-        .onAppear { requestAuthorizationAndFetchPrayerTimes() }
-        .onChange(of: scenePhase) { _ in requestAuthorizationAndFetchPrayerTimes() }
+        .onAppear { syncNotificationState() }
+        .onChange(of: scenePhase) { _ in
+            if scenePhase == .active {
+                syncNotificationState()
+            }
+        }
         .confirmationDialog("", isPresented: $showAlert, titleVisibility: .visible) {
             Button("Open Settings") { openSystemSettings() }
             Button("Ignore", role: .cancel) { }
@@ -516,7 +520,7 @@ struct NotificationView: View {
     private var permissionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("Permission", systemImage: "bell.badge")
+                Label("Prayer Reminders", systemImage: "bell.badge")
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
 
@@ -543,12 +547,16 @@ struct NotificationView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
 
+            Text("Turn on notifications to get prayer reminders and live countdown support. Waktu Solat will only show Apple's system prompt after you tap the button below.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+
             HStack(spacing: 10) {
                 Button {
                     settings.hapticFeedback()
                     Task { @MainActor in await onRequestAccessTapped() }
                 } label: {
-                    smallButton("Request Access", systemImage: "checkmark.seal")
+                    smallButton("Enable Reminders", systemImage: "checkmark.seal")
                 }
                 .buttonStyle(.plain)
 
@@ -664,11 +672,13 @@ struct NotificationView: View {
         notifSettings = await center.notificationSettings()
     }
     
-    private func requestAuthorizationAndFetchPrayerTimes() {
-        settings.requestNotificationAuthorization {
-            settings.fetchPrayerTimes {
+    private func syncNotificationState() {
+        Task { @MainActor in
+            await refresh()
+            settings.fetchPrayerTimes(notification: true) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if settings.showNotificationAlert {
+                    if settings.showNotificationAlert,
+                       notifSettings?.authorizationStatus == .denied {
                         showAlert = true
                     }
                 }
@@ -686,8 +696,11 @@ struct NotificationView: View {
         case .denied:
             requestAccessAlertMessage = "Notifications are turned off. Open Settings to enable them."
         case .notDetermined:
-            _ = await settings.requestNotificationAuthorization()
+            let granted = await settings.requestNotificationAuthorization()
             await refresh()
+            if granted {
+                settings.fetchPrayerTimes(notification: true)
+            }
         @unknown default:
             requestAccessAlertMessage = "Unable to change notification settings."
         }
@@ -952,26 +965,10 @@ struct MoreNotificationView: View {
                 }
             }
         }
-        .onAppear {
-            settings.requestNotificationAuthorization {
-                settings.fetchPrayerTimes() {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if settings.showNotificationAlert {
-                            showAlert = true
-                        }
-                    }
-                }
-            }
-        }
+        .onAppear { syncNotificationSettingsPage() }
         .onChange(of: scenePhase) { _ in
-            settings.requestNotificationAuthorization {
-                settings.fetchPrayerTimes() {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if settings.showNotificationAlert {
-                            showAlert = true
-                        }
-                    }
-                }
+            if scenePhase == .active {
+                syncNotificationSettingsPage()
             }
         }
         .onDisappear {
@@ -991,6 +988,19 @@ struct MoreNotificationView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Prayer Notifications")
+    }
+
+    private func syncNotificationSettingsPage() {
+        Task { @MainActor in
+            let authorizationStatus = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+            settings.fetchPrayerTimes(notification: true) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if settings.showNotificationAlert && authorizationStatus == .denied {
+                        showAlert = true
+                    }
+                }
+            }
+        }
     }
 }
 

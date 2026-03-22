@@ -38,18 +38,16 @@ struct AdhanView: View {
         // This ensures prayer data re-fetch uses the newest detected place.
         settings.requestLocationAuthorization()
 
-        settings.requestNotificationAuthorization {
-            settings.fetchPrayerTimes(force: force) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if settings.travelTurnOnAutomatic {
-                        showAlert = .travelTurnOnAutomatic
-                    } else if settings.travelTurnOffAutomatic {
-                        showAlert = .travelTurnOffAutomatic
-                    } else if !settings.locationNeverAskAgain && settings.showLocationAlert {
-                        showAlert = .locationAlert
-                    } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
-                        showAlert = .notificationAlert
-                    }
+        settings.fetchPrayerTimes(force: force) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if settings.travelTurnOnAutomatic {
+                    showAlert = .travelTurnOnAutomatic
+                } else if settings.travelTurnOffAutomatic {
+                    showAlert = .travelTurnOffAutomatic
+                } else if !settings.locationNeverAskAgain && settings.showLocationAlert {
+                    showAlert = .locationAlert
+                } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
+                    showAlert = .notificationAlert
                 }
             }
         }
