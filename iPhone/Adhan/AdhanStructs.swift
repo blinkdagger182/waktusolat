@@ -23,7 +23,7 @@ struct ResolvedPrayerArea: Codable, Equatable {
         "\(Self.prettyName(location)), \(Self.prettyName(province))"
     }
 
-    private static func prettyName(_ raw: String) -> String {
+    static func prettyName(_ raw: String) -> String {
         raw
             .split(separator: " ")
             .map { token in

@@ -571,6 +571,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("debugMalaysiaZoneCode") var debugMalaysiaZoneCode: String = "" {
         didSet { self.fetchPrayerTimes(force: true) }
     }
+    @AppStorage("debugIndonesiaRegionId") var debugIndonesiaRegionId: String = "" {
+        didSet { self.fetchPrayerTimes(force: true) }
+    }
 
     @AppStorage("naggingMode") var naggingMode: Bool = false {
         didSet { self.fetchPrayerTimes(notification: true) }

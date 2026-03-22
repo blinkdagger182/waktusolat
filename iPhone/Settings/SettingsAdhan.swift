@@ -535,6 +535,7 @@ extension Settings {
 
         enum CodingKeys: String, CodingKey {
             case zone
+            case regionId = "region_id"
             case location
             case province
             case timezone
@@ -546,7 +547,11 @@ extension Settings {
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            zone = try container.decode(String.self, forKey: .zone)
+            if let zoneValue = try container.decodeIfPresent(String.self, forKey: .zone) {
+                zone = zoneValue
+            } else {
+                zone = try container.decode(String.self, forKey: .regionId)
+            }
             location = try container.decodeIfPresent(String.self, forKey: .location)
             province = try container.decodeIfPresent(String.self, forKey: .province)
             timezone = try container.decodeIfPresent(String.self, forKey: .timezone)
@@ -577,6 +582,18 @@ extension Settings {
             }
 
             prayers = try container.decode([GPSPrayerDay].self, forKey: .prayers)
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(zone, forKey: .zone)
+            try container.encodeIfPresent(location, forKey: .location)
+            try container.encodeIfPresent(province, forKey: .province)
+            try container.encodeIfPresent(timezone, forKey: .timezone)
+            try container.encode(year, forKey: .year)
+            try container.encodeIfPresent(month, forKey: .month)
+            try container.encode(monthNumber, forKey: .monthNumber)
+            try container.encode(prayers, forKey: .prayers)
         }
     }
 
@@ -662,6 +679,7 @@ extension Settings {
     private static let gpsAPIBase = "https://api-waktusolat.vercel.app/v2/solat/gps"
     private static let malaysiaZoneAPIBase = "https://api-waktusolat.vercel.app/v2/solat"
     private static let indonesiaGPSAPIBase = "https://api-waktusolat.vercel.app/indonesia/v1/solat/gps"
+    private static let indonesiaRegionAPIBase = "https://api-waktusolat.vercel.app/indonesia/v1/solat"
     private static let alAdhanAPIBase = "https://api.aladhan.com/v1/calendar"
     private static let appGroupId = "group.app.riskcreatives.waktu"
     private static let jakimSupportedYear = 2026
@@ -737,6 +755,27 @@ extension Settings {
 
     private func indonesiaGPSURL(latitude: Double, longitude: Double, for date: Date? = nil) -> URL? {
         guard var components = URLComponents(string: "\(Self.indonesiaGPSAPIBase)/\(normalizeCoordinate(latitude))/\(normalizeCoordinate(longitude))") else {
+            return nil
+        }
+
+        if let date {
+            let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+            guard let year = comps.year, let month = comps.month else {
+                return nil
+            }
+            components.queryItems = [
+                URLQueryItem(name: "year", value: String(year)),
+                URLQueryItem(name: "month", value: String(month))
+            ]
+        }
+
+        return components.url
+    }
+
+    private func indonesiaRegionURL(regionId: String, for date: Date? = nil) -> URL? {
+        let normalizedRegionId = regionId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedRegionId.isEmpty,
+              var components = URLComponents(string: "\(Self.indonesiaRegionAPIBase)/\(normalizedRegionId)") else {
             return nil
         }
 
@@ -1078,6 +1117,11 @@ extension Settings {
         return trimmed.isEmpty ? nil : trimmed.uppercased()
     }
 
+    private var debugIndonesiaRegionOverride: String? {
+        let trimmed = debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
     func shouldUseIndonesiaPrayerAPI(for location: Location?) -> Bool {
         guard prayerRegionDebugOverride == 0, debugMalaysiaZoneOverride == nil else { return false }
         return location?.countryCode?.uppercased() == "ID"
@@ -1247,6 +1291,26 @@ extension Settings {
 
             let decoded = try JSONDecoder().decode(GPSMonthResponse.self, from: data)
             logger.debug("Malaysia API decoded payload (zone override): zone=\(decoded.zone), year=\(decoded.year), month=\(decoded.month ?? "nil"), days=\(decoded.prayers.count)")
+            saveMonthCache(decoded)
+            return
+        }
+
+        if let regionId = debugIndonesiaRegionOverride {
+            guard let url = indonesiaRegionURL(regionId: regionId, for: date) else {
+                throw GPSAPIError.invalidURL
+            }
+
+            logger.debug("Indonesia API request (region override): \(url.absoluteString)")
+
+            let (data, response) = try await URLSession.shared.data(from: url)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            logger.debug("Indonesia API response status (region override): \(status)")
+            guard status == 200 else {
+                throw GPSAPIError.badHTTPStatus(status)
+            }
+
+            let decoded = try JSONDecoder().decode(GPSMonthResponse.self, from: data)
+            logger.debug("Indonesia API decoded payload (region override): zone=\(decoded.zone), year=\(decoded.year), month=\(decoded.month ?? "nil"), days=\(decoded.prayers.count)")
             saveMonthCache(decoded)
             return
         }

@@ -7,6 +7,19 @@ fileprivate struct MalaysiaZoneInfo: Decodable, Identifiable {
     var id: String { jakimCode }
 }
 
+fileprivate struct IndonesiaZoneInfo: Decodable, Identifiable {
+    let id: String
+    let location: String
+    let province: String
+    let timezone: String
+}
+
+fileprivate struct WaktuZonePickerItem: Identifiable {
+    let id: String
+    let title: String
+    let subtitle: String
+}
+
 struct AdhanSetupSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var settings: Settings
@@ -14,8 +27,12 @@ struct AdhanSetupSheet: View {
     
     private let globalCalculationMethods: [String] = Settings.globalCalculationMethods
     @State private var malaysiaZones: [MalaysiaZoneInfo] = []
+    @State private var indonesiaZones: [IndonesiaZoneInfo] = []
+    @State private var isLoadingMalaysiaZones = false
+    @State private var isLoadingIndonesiaZones = false
+    @State private var waktuZoneLoadError: String?
     @State private var autoDetectedZoneCode: String = ""
-    @State private var showingWaktuZoneReference = false
+    @State private var showingWaktuZonePicker = false
     
     private var isGlobalDebugForced: Bool {
         settings.prayerRegionDebugOverride == 2
@@ -85,6 +102,15 @@ struct AdhanSetupSheet: View {
         }
         return "\(info.jakimCode) · \(info.negeri) · \(info.daerah)"
     }
+
+    private var selectedIndonesiaZoneLabel: String {
+        let regionId = settings.debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !regionId.isEmpty else { return "Auto (GPS)" }
+        guard let info = indonesiaZones.first(where: { $0.id == regionId }) else {
+            return settings.currentIndonesiaWaktuZoneName ?? regionId
+        }
+        return "\(ResolvedPrayerArea.prettyName(info.location)), \(ResolvedPrayerArea.prettyName(info.province))"
+    }
     
     /// Zones filtered to the user's current country.
     /// SG → only SGP01; ID → empty (zone picker is hidden); everything else → Malaysian JAKIM zones.
@@ -108,6 +134,49 @@ struct AdhanSetupSheet: View {
         }
         return "\(info.jakimCode) · \(info.negeri) · \(info.daerah)"
     }
+
+    private var autoDetectedIndonesiaZoneLabel: String {
+        settings.currentIndonesiaWaktuZoneName ?? "Detecting..."
+    }
+
+    private var canConfigureWaktuZone: Bool {
+        !shouldShowGlobalMethodDropdown || isSingaporeMode || isIndonesiaMode
+    }
+
+    private var waktuZonePickerTitle: String {
+        isIndonesiaMode ? "Indonesia Prayer Zones" : "Waktu Zones"
+    }
+
+    private var waktuZonePickerItems: [WaktuZonePickerItem] {
+        if isIndonesiaMode {
+            return indonesiaZones.map { zone in
+                WaktuZonePickerItem(
+                    id: zone.id,
+                    title: ResolvedPrayerArea.prettyName(zone.location),
+                    subtitle: "\(ResolvedPrayerArea.prettyName(zone.province)) • \(zone.timezone)"
+                )
+            }
+        }
+
+        return filteredZones.map { zone in
+            WaktuZonePickerItem(
+                id: zone.jakimCode,
+                title: "\(zone.jakimCode) · \(zone.negeri)",
+                subtitle: zone.daerah
+            )
+        }
+    }
+
+    private var currentWaktuZoneLabel: String {
+        if isIndonesiaMode {
+            return releaseWaktuModeBinding.wrappedValue == 0 ? autoDetectedIndonesiaZoneLabel : selectedIndonesiaZoneLabel
+        }
+        return releaseWaktuModeBinding.wrappedValue == 0 ? autoDetectedZoneLabel : selectedMalaysiaZoneLabel
+    }
+
+    private var isLoadingCurrentWaktuZoneList: Bool {
+        isIndonesiaMode ? isLoadingIndonesiaZones : isLoadingMalaysiaZones
+    }
     
     @MainActor
     private func loadMalaysiaZonesIfNeeded() async {
@@ -116,14 +185,46 @@ struct AdhanSetupSheet: View {
         let countryCode = settings.currentLocation?.countryCode?.uppercased()
         guard countryCode != "SG", countryCode != "ID" else { return }
         guard let url = URL(string: "https://api-waktusolat.vercel.app/zones") else { return }
+        isLoadingMalaysiaZones = true
+        waktuZoneLoadError = nil
+        defer { isLoadingMalaysiaZones = false }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-            guard status == 200 else { return }
+            guard status == 200 else {
+                waktuZoneLoadError = "Could not load Malaysia Waktu Zones."
+                return
+            }
             let decoded = try JSONDecoder().decode([MalaysiaZoneInfo].self, from: data)
             malaysiaZones = decoded.sorted { $0.jakimCode < $1.jakimCode }
         } catch {
-            // Keep silent in debug UI; manual code entry is not needed with fallback Auto.
+            waktuZoneLoadError = "Could not load Malaysia Waktu Zones."
+        }
+    }
+
+    @MainActor
+    private func loadIndonesiaZonesIfNeeded() async {
+        guard indonesiaZones.isEmpty else { return }
+        guard let url = URL(string: "https://api-waktusolat.vercel.app/indonesia/regions") else { return }
+        isLoadingIndonesiaZones = true
+        waktuZoneLoadError = nil
+        defer { isLoadingIndonesiaZones = false }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            guard status == 200 else {
+                waktuZoneLoadError = "Could not load Indonesia prayer zones."
+                return
+            }
+            let decoded = try JSONDecoder().decode([IndonesiaZoneInfo].self, from: data)
+            indonesiaZones = decoded.sorted {
+                if $0.province == $1.province {
+                    return $0.location < $1.location
+                }
+                return $0.province < $1.province
+            }
+        } catch {
+            waktuZoneLoadError = "Could not load Indonesia prayer zones."
         }
     }
     
@@ -194,6 +295,34 @@ struct AdhanSetupSheet: View {
             if settings.prayerCalculation == "Singapore" {
                 settings.prayerCalculation = "Auto (By Location)"
             }
+        }
+    }
+
+    private func openWaktuZonePicker() {
+        settings.hapticFeedback()
+        Task { @MainActor in
+            if isIndonesiaMode {
+                await loadIndonesiaZonesIfNeeded()
+            } else {
+                await loadMalaysiaZonesIfNeeded()
+            }
+        }
+        showingWaktuZonePicker = true
+    }
+
+    private func applySelectedWaktuZone(id: String) {
+        if isIndonesiaMode {
+            waktuZoneModeSelection = 1
+            settings.debugIndonesiaRegionId = id
+            settings.debugMalaysiaZoneCode = ""
+            settings.prayerCalculation = "KEMENAG - Kementerian Agama Republik Indonesia"
+            settings.hanafiMadhab = false
+        } else {
+            waktuZoneModeSelection = 1
+            settings.debugMalaysiaZoneCode = id
+            settings.debugIndonesiaRegionId = ""
+            settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+            settings.hanafiMadhab = false
         }
     }
 
@@ -398,7 +527,7 @@ struct AdhanSetupSheet: View {
                     #endif
                     
                     #if !DEBUG
-                    if !shouldShowGlobalMethodDropdown || isSingaporeMode {
+                    if canConfigureWaktuZone {
                         Picker("Mode", selection: releaseWaktuModeBinding) {
                             Text("Auto").tag(0)
                             Text("Manual").tag(1)
@@ -428,7 +557,7 @@ struct AdhanSetupSheet: View {
                             .padding(.vertical, 2)
                     }
 
-                    if !shouldShowGlobalMethodDropdown || isSingaporeMode {
+                    if canConfigureWaktuZone {
                         if releaseWaktuModeBinding.wrappedValue == 1 {
                             Text("Manual mode lets you select a specific Waktu Zone.")
                                 .font(.caption)
@@ -442,80 +571,15 @@ struct AdhanSetupSheet: View {
                         }
                     }
 
-                    if isIndonesiaMode {
-                        Text("Prayer zone is automatically detected from your GPS coordinates. No manual zone selection is needed for Indonesia.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
                     #endif
 
-                    if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && !isIndonesiaMode && releaseWaktuModeBinding.wrappedValue == 0 {
-                        HStack {
-                            HStack(spacing: 6) {
+                    if canConfigureWaktuZone {
+                        Button(action: openWaktuZonePicker) {
+                            HStack {
                                 Text("Waktu Zone")
-                                Button {
-                                    showingWaktuZoneReference = true
-                                } label: {
-                                    Image(systemName: "info.circle")
-                                        .font(.caption)
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Text(autoDetectedZoneLabel)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-                                .truncationMode(.tail)
-                        }
-                        .font(.subheadline)
-                    } else if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && !isIndonesiaMode {
-                        HStack {
-                            HStack(spacing: 6) {
-                                Text("Waktu Zone")
-                                Button {
-                                    showingWaktuZoneReference = true
-                                } label: {
-                                    Image(systemName: "info.circle")
-                                        .font(.caption)
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Menu {
-                                Button {
-                                    settings.debugMalaysiaZoneCode = ""
-                                } label: {
-                                    HStack {
-                                        Text("Auto (GPS)")
-                                        if settings.debugMalaysiaZoneCode.isEmpty {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-
-                                ForEach(filteredZones) { zone in
-                                    Button {
-                                        settings.debugMalaysiaZoneCode = zone.jakimCode
-                                        settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
-                                        settings.hanafiMadhab = false
-                                    } label: {
-                                        HStack {
-                                            Text("\(zone.jakimCode) · \(zone.negeri) · \(zone.daerah)")
-                                            if settings.debugMalaysiaZoneCode.uppercased() == zone.jakimCode.uppercased() {
-                                                Spacer()
-                                                Image(systemName: "checkmark")
-                                            }
-                                        }
-                                    }
-                                }
-                            } label: {
+                                Spacer()
                                 HStack(spacing: 4) {
-                                    Text(selectedMalaysiaZoneLabel)
+                                    Text(currentWaktuZoneLabel)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.75)
                                         .truncationMode(.tail)
@@ -524,12 +588,12 @@ struct AdhanSetupSheet: View {
                                 }
                                 .foregroundColor(.secondary)
                             }
-                            .frame(maxWidth: 220, alignment: .trailing)
+                            .font(.subheadline)
                         }
-                        .font(.subheadline)
+                        .buttonStyle(.plain)
                     }
 
-                    if (!shouldShowGlobalMethodDropdown || isSingaporeMode) && !isIndonesiaMode {
+                    if canConfigureWaktuZone {
                         Text("Auto matches your location to a prayer zone. Manual lets you choose a specific zone.")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -556,6 +620,7 @@ struct AdhanSetupSheet: View {
             }
             .task {
                 await loadMalaysiaZonesIfNeeded()
+                await loadIndonesiaZonesIfNeeded()
                 await refreshAutoDetectedZone()
             }
             .onChange(of: settings.currentLocation?.latitude) { _ in
@@ -567,10 +632,20 @@ struct AdhanSetupSheet: View {
             .onChange(of: settings.currentLocation?.countryCode) { _ in
                 applyRegionDefaultCalculation()
                 Task { await loadMalaysiaZonesIfNeeded() }
+                Task { await loadIndonesiaZonesIfNeeded() }
                 Task { await refreshAutoDetectedZone() }
             }
-            .sheet(isPresented: $showingWaktuZoneReference) {
-                WaktuZoneReferenceView(zones: filteredZones)
+            .fullScreenCover(isPresented: $showingWaktuZonePicker) {
+                WaktuZonePickerView(
+                    title: waktuZonePickerTitle,
+                    items: waktuZonePickerItems,
+                    isLoading: isLoadingCurrentWaktuZoneList,
+                    errorMessage: waktuZoneLoadError,
+                    selectedId: isIndonesiaMode ? settings.debugIndonesiaRegionId : settings.debugMalaysiaZoneCode,
+                    onSelect: { item in
+                        applySelectedWaktuZone(id: item.id)
+                    }
+                )
                     .preferredColorScheme(settings.colorScheme)
             }
         }
@@ -588,14 +663,21 @@ struct AdhanSetupSheet: View {
                 let detectedZone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
                 if newValue == 0 {
                     settings.debugMalaysiaZoneCode = ""
-                } else if settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          !detectedZone.isEmpty {
-                    settings.debugMalaysiaZoneCode = detectedZone
-                    settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
-                    settings.hanafiMadhab = false
+                    settings.debugIndonesiaRegionId = ""
+                } else if isIndonesiaMode {
+                    if settings.debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       let resolvedPrayerArea = settings.resolvedPrayerArea {
+                        settings.debugIndonesiaRegionId = resolvedPrayerArea.regionId
+                    }
                 } else if settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Task { @MainActor in
-                        await refreshAutoDetectedZone()
+                    if !detectedZone.isEmpty {
+                        settings.debugMalaysiaZoneCode = detectedZone
+                        settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
+                        settings.hanafiMadhab = false
+                    } else {
+                        Task { @MainActor in
+                            await refreshAutoDetectedZone()
+                        }
                     }
                 }
             }
@@ -603,32 +685,73 @@ struct AdhanSetupSheet: View {
     }
 }
 
-private struct WaktuZoneReferenceView: View {
+private struct WaktuZonePickerView: View {
     @Environment(\.dismiss) private var dismiss
-    let zones: [MalaysiaZoneInfo]
+    let title: String
+    let items: [WaktuZonePickerItem]
+    let isLoading: Bool
+    let errorMessage: String?
+    let selectedId: String
+    let onSelect: (WaktuZonePickerItem) -> Void
+    @State private var searchText = ""
+
+    private var filteredItems: [WaktuZonePickerItem] {
+        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return items
+        }
+        let query = searchText.lowercased()
+        return items.filter {
+            $0.title.lowercased().contains(query) || $0.subtitle.lowercased().contains(query)
+        }
+    }
 
     var body: some View {
         NavigationView {
             List {
-                if zones.isEmpty {
+                if isLoading {
                     Text("Loading Waktu Zone list...")
                         .foregroundColor(.secondary)
+                } else if let errorMessage, items.isEmpty {
+                    Text(errorMessage)
+                        .foregroundColor(.secondary)
+                } else if filteredItems.isEmpty {
+                    Text("No Waktu Zones found.")
+                        .foregroundColor(.secondary)
                 } else {
-                    ForEach(zones) { zone in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(zone.jakimCode) · \(zone.negeri)")
-                                .font(.subheadline.weight(.semibold))
-                            Text(zone.daerah)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                    ForEach(filteredItems) { item in
+                        Button {
+                            onSelect(item)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.title)
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(item.subtitle)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                Spacer()
+
+                                if item.id == selectedId {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.secondary)
+                                }
+                            }
                         }
+                        .buttonStyle(.plain)
                         .padding(.vertical, 2)
                     }
                 }
             }
-            .navigationTitle("Waktu Zones")
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
