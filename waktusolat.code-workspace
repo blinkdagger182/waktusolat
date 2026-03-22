@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "name": "waktusolat",
+      "path": "."
+    },
+    {
+      "name": "waktu-android",
+      "path": "../waktu-android"
+    },
+    {
+      "name": "api-waktusolat",
+      "path": "../../Developer/api-waktusolat"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.next": true,
+      "**/node_modules": true
+    }
+  }
+}

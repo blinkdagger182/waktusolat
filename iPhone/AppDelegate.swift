@@ -39,9 +39,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 let token = tokenData.map { String(format: "%02x", $0) }.joined()
                 logger.debug("✅ Live Activity push-to-start token: \(token)")
                 UserDefaults.standard.set(token, forKey: "pushToStartToken")
-                let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
-                PushNotificationService.registerPushToStartToken(token, zone: zone)
-                if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
+                registerPushToStartTokenIfNeeded(token: token)
             }
         }
     }
@@ -65,9 +63,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             for await tokenData in Activity<PrayerLiveActivityAttributes>.pushToStartTokenUpdates {
                 let token = tokenData.map { String(format: "%02x", $0) }.joined()
                 UserDefaults.standard.set(token, forKey: "pushToStartToken")
-                let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
-                PushNotificationService.registerPushToStartToken(token, zone: zone)
-                if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
+                registerPushToStartTokenIfNeeded(token: token)
                 return // Only need the current value, not future updates
             }
         }
@@ -77,6 +73,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     private func syncPushToStartTokenIfCached() {
         guard #available(iOS 17.2, *),
               let token = UserDefaults.standard.string(forKey: "pushToStartToken") else { return }
+        guard Settings.shared.shouldRegisterPushToStartTokenNow() else { return }
         let zone     = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
         guard zone != lastZone else { return }
@@ -87,11 +84,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     private func reRegisterIfZoneChanged() {
         guard let token = UserDefaults.standard.string(forKey: "pushToStartToken"),
               let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone") else { return }
+        guard Settings.shared.shouldRegisterPushToStartTokenNow() else { return }
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
         guard zone != lastZone else { return }
         logger.debug("🔄 Zone changed (\(lastZone ?? "nil") → \(zone)), re-registering push-to-start token")
         PushNotificationService.registerPushToStartToken(token, zone: zone)
         UserDefaults.standard.set(zone, forKey: "pushToStartZone")
+    }
+
+    private func registerPushToStartTokenIfNeeded(token: String) {
+        guard Settings.shared.shouldRegisterPushToStartTokenNow() else {
+            logger.debug("Skipping push-to-start token registration outside lead window")
+            return
+        }
+        let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
+        PushNotificationService.registerPushToStartToken(token, zone: zone)
+        if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
     }
 
     private func setupLiveActivityPushTokenHandler() {

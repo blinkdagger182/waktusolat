@@ -172,8 +172,8 @@ struct AdhanView: View {
                             #if !os(watchOS)
                             if let currentLoc = settings.currentLocation {
                                 let currentDisplayLocation = settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? currentLoc.city
-                                let currentWaktuZone = settings.currentIndonesiaWaktuZoneName
-                                let isResolvingWaktuZone = settings.isResolvingIndonesiaWaktuZone
+                                let currentWaktuZone = settings.currentWaktuZoneName
+                                let isResolvingWaktuZone = settings.isResolvingAnyWaktuZone
                                 Image(systemName: "location.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)

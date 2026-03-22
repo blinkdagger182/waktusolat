@@ -1830,6 +1830,18 @@ extension Settings {
         #endif
     }
 
+    func shouldRegisterPushToStartTokenNow(now: Date = Date()) -> Bool {
+        guard liveNextPrayerEnabled,
+              let prayer = nextPrayer,
+              isLiveActivityPrayerEnabled(for: prayer) else {
+            return false
+        }
+
+        let leadMinutes = max(0, liveActivityLeadMinutes)
+        let threshold = prayer.time.addingTimeInterval(-Double(leadMinutes) * 60)
+        return now >= threshold && now < prayer.time
+    }
+
     /// Best-effort trigger date used by background refresh scheduling to keep
     /// Live Activity in sync even when the app is not foregrounded.
     func nextLiveActivityTriggerDate(from now: Date = Date()) -> Date? {

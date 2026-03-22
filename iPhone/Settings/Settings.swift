@@ -380,6 +380,11 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         return resolvedPrayerArea.displayName
     }
 
+    var currentMalaysiaWaktuZoneName: String? {
+        guard shouldUseMalaysiaPrayerAPI(for: currentLocation) else { return nil }
+        return UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
+    }
+
     var isResolvingIndonesiaWaktuZone: Bool {
         shouldUseIndonesiaPrayerAPI(for: currentLocation) &&
         currentLocation != nil &&
@@ -394,6 +399,15 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             return nil
         }
         return phoneLocation
+    }
+
+    var currentWaktuZoneName: String? {
+        currentIndonesiaWaktuZoneName ?? currentMalaysiaWaktuZoneName
+    }
+
+    var isResolvingAnyWaktuZone: Bool {
+        isResolvingIndonesiaWaktuZone ||
+        (shouldUseMalaysiaPrayerAPI(for: currentLocation) && currentMalaysiaWaktuZoneName == nil)
     }
     
     @Published var homeLocation: Location? {
