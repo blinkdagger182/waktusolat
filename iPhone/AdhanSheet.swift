@@ -51,37 +51,156 @@ struct AdhanSetupSheet: View {
         !isGlobalDebugForced &&
         settings.currentLocation?.countryCode?.uppercased() == "ID"
     }
+
+    private var shouldShowPrayerModeSection: Bool {
+        let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
+        return countryCode == "MY" || countryCode == "SG" || countryCode == "ID"
+    }
     
     private func shortCalculationLabel(_ method: String) -> String {
         switch method {
         case "Auto (By Location)":                                          return "Auto"
-        case "Moonsighting Committee Worldwide":                            return "Moonsighting (UK)"
-        case "Muslim World League":                                         return "Muslim World League (US)"
-        case "Majlis Ugama Islam Singapura, Singapore":                     return "MUIS (Singapore)"
-        case "Jabatan Kemajuan Islam Malaysia (JAKIM)":                     return "JAKIM (Malaysia)"
+        case "Islamic Society of North America (ISNA)",
+             "Islamic Society of North America":                            return "ISNA"
+        case "Moonsighting Committee Worldwide":                            return "Moonsighting Committee"
+        case "Muslim World League":                                         return "Muslim World League"
+        case "Majlis Ugama Islam Singapura, Singapore":                     return "MUIS"
+        case "Jabatan Kemajuan Islam Malaysia (JAKIM)":                     return "JAKIM"
         case "KEMENAG - Kementerian Agama Republik Indonesia":              return "KEMENAG (Indonesia)"
         default:                                                            return method
         }
     }
 
+    private func calculationMenuLabel(_ method: String) -> String {
+        switch method {
+        case "Auto (By Location)":
+            return "Auto (Currently using \(resolvedAutoMethodLabel))"
+        case "Islamic Society of North America (ISNA)":
+            return "Islamic Society of North America (ISNA)"
+        case "Majlis Ugama Islam Singapura, Singapore":
+            return "Majlis Ugama Islam Singapura (MUIS)"
+        default:
+            return method
+        }
+    }
+
     private var resolvedAutoMethodLabel: String {
         switch settings.currentLocation?.countryCode?.uppercased() ?? "" {
-        case "MY": return "JAKIM (Malaysia)"
-        case "SG": return "MUIS (Singapore)"
+        case "MY": return "JAKIM"
+        case "SG": return "MUIS"
         case "ID": return "KEMENAG (Indonesia)"
-        case "GB": return "Moonsighting Committee Worldwide"
-        case "US", "CA": return "Muslim World League"
+        case "GB": return "Muslim World League"
+        case "US", "CA": return "ISNA"
+        case "FR", "JP", "KR", "CN", "PT", "RU": return "Muslim World League"
         default: return "Muslim World League"
+        }
+    }
+
+    private var currentCalculationLabel: String {
+        if settings.prayerCalculation == "Auto (By Location)" {
+            return resolvedAutoMethodLabel
+        }
+        return shortCalculationLabel(settings.prayerCalculation)
+    }
+
+    private var supportOverviewTitle: String {
+        let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
+        switch countryCode {
+        case "MY":
+            return "Waktu officially supports Malaysia using JAKIM prayer times."
+        case "SG":
+            return "Waktu officially supports Singapore using MUIS prayer times."
+        case "ID":
+            return "Waktu officially supports Indonesia using KEMENAG prayer times."
+        case "US", "CA":
+            return "Waktu officially supports \(countryCode == "US" ? "the United States" : "Canada") using ISNA as the default calculation."
+        case "GB":
+            return "Waktu officially supports the United Kingdom using Muslim World League as the default calculation."
+        case "FR":
+            return "Waktu officially supports France using Muslim World League as the default calculation."
+        case "JP":
+            return "Waktu officially supports Japan using Muslim World League as the default calculation."
+        case "KR":
+            return "Waktu officially supports South Korea using Muslim World League as the default calculation."
+        case "CN":
+            return "Waktu officially supports China using Muslim World League as the default calculation."
+        case "PT":
+            return "Waktu officially supports Portugal using Muslim World League as the default calculation."
+        case "RU":
+            return "Waktu officially supports Russia using Muslim World League as the default calculation."
+        default:
+            return "Prayer times are calculated from your current coordinates using trusted Adhan methods."
+        }
+    }
+
+    private var supportOverviewBullets: [String] {
+        let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
+        switch countryCode {
+        case "MY":
+            return [
+                "Times are fetched from our backend and sourced from JAKIM.",
+                "Malaysia is supported end to end across the app and widgets."
+            ]
+        case "SG":
+            return [
+                "Times are fetched from our backend and sourced from MUIS.",
+                "Singapore is supported end to end across the app and widgets."
+            ]
+        case "ID":
+            return [
+                "Times are fetched from our backend and sourced from KEMENAG.",
+                "Your prayer area is matched to the detected kabupaten/kota."
+            ]
+        case "US", "CA":
+            return [
+                "Auto uses ISNA, which is commonly used across North America.",
+                "Prayer times are calculated from your detected coordinates."
+            ]
+        case "GB":
+            return [
+                "Auto uses Muslim World League, which is widely used by many masjids across the UK.",
+                "You can still switch to Moonsighting Committee manually if you prefer."
+            ]
+        case "FR":
+            return [
+                "Auto uses Muslim World League as a consistent default for France.",
+                "Prayer times are calculated from your detected coordinates."
+            ]
+        case "JP", "KR", "CN", "PT", "RU":
+            return [
+                "Auto uses Muslim World League as a safe and consistent default.",
+                "Prayer times are calculated from your detected coordinates."
+            ]
+        default:
+            return [
+                "You can choose the most suitable local calculation method.",
+                "Traveling mode and prayer offsets still apply."
+            ]
         }
     }
 
     private var selectedCalculationDescription: String {
         switch settings.prayerCalculation {
         case "Auto (By Location)":
-            return "Automatically selects the recommended authority based on your detected country."
+            let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
+            if countryCode.isEmpty {
+                return "Automatically selects the most suitable prayer calculation based on your detected country. Right now it is using \(resolvedAutoMethodLabel)."
+            }
+            if countryCode == "US" || countryCode == "CA" {
+                return "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using ISNA, which is commonly used across North America."
+            }
+            if countryCode == "GB" {
+                return "Automatically selects the most suitable prayer calculation based on your detected country (GB). Right now it is using Muslim World League, which is widely used by many masjids across the UK."
+            }
+            return "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using \(resolvedAutoMethodLabel)."
+        case "Islamic Society of North America (ISNA)", "Islamic Society of North America":
+            return "Commonly used across North America, with prayer times calculated from your coordinates using ISNA parameters."
         case "Moonsighting Committee Worldwide":
             return "Used in the UK and many Western countries. Based on moon sighting with shafaq set to general."
         case "Muslim World League":
+            if settings.currentLocation?.countryCode?.uppercased() == "GB" {
+                return "Widely used across many masjids in the UK, with prayer times calculated from your coordinates using Muslim World League parameters."
+            }
             return "Widely used in the US and internationally. Uses Muslim World League calculation parameters."
         case "Majlis Ugama Islam Singapura, Singapore":
             return "Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura)."
@@ -288,8 +407,10 @@ struct AdhanSetupSheet: View {
             settings.prayerCalculation = "KEMENAG - Kementerian Agama Republik Indonesia"
             settings.hanafiMadhab = false
         case "GB":
-            settings.prayerCalculation = "Moonsighting Committee Worldwide"
+            settings.prayerCalculation = "Muslim World League"
         case "US", "CA":
+            settings.prayerCalculation = "Islamic Society of North America (ISNA)"
+        case "FR", "JP", "KR", "CN", "PT", "RU":
             settings.prayerCalculation = "Muslim World League"
         default:
             if settings.prayerCalculation == "Singapore" {
@@ -334,46 +455,14 @@ struct AdhanSetupSheet: View {
                         .font(.title3.bold())
 
                     VStack(alignment: .leading, spacing: 10) {
-                        if !shouldShowGlobalMethodDropdown {
-                            Text("Prayer times are sourced from Malaysian Prayer Times, and this app currently supports Malaysia only.")
+                        Text(supportOverviewTitle)
 
-                            Text("""
-                                • The app is currently optimized for Malaysia prayer times.
-                                • Calculation is fixed to Malaysia for consistency across app and widgets.
-                                """
-                            )
-                            .foregroundColor(.secondary)
-                        } else if isSingaporeMode {
-                            Text("Prayer times are sourced from MUIS (Majlis Ugama Islam Singapura), Singapore's official Islamic religious authority.")
-
-                            Text("""
-                                • The app is currently optimized for Singapore prayer times.
-                                • Times are fetched from our backend, sourced directly from MUIS.
-                                • Calculation is fixed to MUIS for consistency across app and widgets.
-                                """
-                            )
-                            .foregroundColor(.secondary)
-                        } else if isIndonesiaMode {
-                            Text("Prayer times are sourced from KEMENAG (Kementerian Agama Republik Indonesia), Indonesia's official ministry of religious affairs.")
-
-                            Text("""
-                                • The app is currently optimized for Indonesia prayer times.
-                                • Times are fetched from our backend, sourced directly from KEMENAG.
-                                • Calculation is automatically matched to your exact kabupaten/kota.
-                                """
-                            )
-                            .foregroundColor(.secondary)
-                        } else {
-                            Text("Prayer times are calculated from your current coordinates using trusted Adhan methods.")
-
-                            Text("""
-                                • You can choose the most suitable local calculation method.
-                                • Traveling mode and prayer offsets still apply.
-                                • You can use debug override below to test both paths quickly.
-                                """
-                            )
-                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(supportOverviewBullets, id: \.self) { bullet in
+                                Text("• \(bullet)")
+                            }
                         }
+                        .foregroundColor(.secondary)
                     }
                     .font(.footnote)
                     .multilineTextAlignment(.leading)
@@ -435,7 +524,7 @@ struct AdhanSetupSheet: View {
                                             settings.prayerCalculation = method
                                         } label: {
                                             HStack {
-                                                Text(shortCalculationLabel(method))
+                                                Text(calculationMenuLabel(method))
                                                 if settings.prayerCalculation == method {
                                                     Spacer()
                                                     Image(systemName: "checkmark")
@@ -445,7 +534,7 @@ struct AdhanSetupSheet: View {
                                     }
                                 } label: {
                                     HStack(spacing: 4) {
-                                        Text(shortCalculationLabel(settings.prayerCalculation))
+                                        Text(currentCalculationLabel)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.75)
                                             .truncationMode(.tail)
@@ -477,6 +566,7 @@ struct AdhanSetupSheet: View {
                     }
                 }
 
+                if shouldShowPrayerModeSection {
                 Section(header: Text(debugSectionTitle)) {
                     #if DEBUG
                     Picker("Region Override", selection: $settings.prayerRegionDebugOverride) {
@@ -503,12 +593,13 @@ struct AdhanSetupSheet: View {
                     }
                     .font(.subheadline)
 
-                    if let waktuZone = settings.currentIndonesiaWaktuZoneName {
+                    if settings.shouldDisplayWaktuZoneTag,
+                       let waktuZone = settings.currentWaktuZoneName {
                         Text("Waktu Zone: \(waktuZone)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
-                    } else if settings.isResolvingIndonesiaWaktuZone {
+                    } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
                         Text("Resolving Waktu Zone...")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -545,12 +636,13 @@ struct AdhanSetupSheet: View {
                     }
                     .font(.subheadline)
 
-                    if let waktuZone = settings.currentIndonesiaWaktuZoneName {
+                    if settings.shouldDisplayWaktuZoneTag,
+                       let waktuZone = settings.currentWaktuZoneName {
                         Text("Waktu Zone: \(waktuZone)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
-                    } else if settings.isResolvingIndonesiaWaktuZone {
+                    } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
                         Text("Resolving Waktu Zone...")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -599,6 +691,7 @@ struct AdhanSetupSheet: View {
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
                     }
+                }
                 }
             }
             .listStyle(.insetGrouped)

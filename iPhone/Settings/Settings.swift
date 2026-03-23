@@ -405,6 +405,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         currentIndonesiaWaktuZoneName ?? currentMalaysiaWaktuZoneName
     }
 
+    var shouldDisplayWaktuZoneTag: Bool {
+        shouldUseMalaysiaPrayerAPI(for: currentLocation) || shouldUseIndonesiaPrayerAPI(for: currentLocation)
+    }
+
     var isResolvingAnyWaktuZone: Bool {
         isResolvingIndonesiaWaktuZone ||
         (shouldUseMalaysiaPrayerAPI(for: currentLocation) && currentMalaysiaWaktuZoneName == nil)

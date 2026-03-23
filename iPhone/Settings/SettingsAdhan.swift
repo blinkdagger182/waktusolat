@@ -892,10 +892,11 @@ extension Settings {
 
     static let globalCalculationMethods: [String] = [
         "Auto (By Location)",
-        "Moonsighting Committee Worldwide",
+        "Islamic Society of North America (ISNA)",
         "Muslim World League",
         "Majlis Ugama Islam Singapura, Singapore",
         "Jabatan Kemajuan Islam Malaysia (JAKIM)",
+        "Moonsighting Committee Worldwide",
     ]
 
     private func alAdhanMethodId(for selection: String) -> Int {
@@ -903,7 +904,7 @@ extension Settings {
         case "Auto (By Location)": return recommendedAlAdhanMethodId(countryCode: currentLocation?.countryCode)
         case "Jafari / Shia Ithna-Ashari": return 0
         case "University of Islamic Sciences, Karachi", "Karachi": return 1
-        case "Islamic Society of North America", "North America": return 2
+        case "Islamic Society of North America (ISNA)", "Islamic Society of North America", "North America": return 2
         case "Muslim World League": return 3
         case "Umm Al-Qura University, Makkah", "Umm Al-Qura": return 4
         case "Egyptian General Authority of Survey", "Egyptian": return 5
@@ -934,24 +935,8 @@ extension Settings {
         case "MY": return 17
         case "SG": return 11
         case "ID": return 20
-        case "TR": return 13
-        case "FR": return 12
-        case "RU": return 14
-        case "AE": return 16
-        case "KW": return 9
-        case "QA": return 10
-        case "TN": return 18
-        case "DZ": return 19
-        case "MA": return 21
-        case "PT": return 22
-        case "JO": return 23
-        case "US", "CA": return 3
-        case "GB": return 15
-        case "SA": return 4
-        case "EG": return 5
-        case "PK": return 1
-        case "IR": return 7
-        case "BH", "OM": return 8
+        case "FR", "GB", "JP", "KR", "CN", "PT", "RU": return 3
+        case "US", "CA": return 2
         default: return 3
         }
     }

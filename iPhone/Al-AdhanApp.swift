@@ -294,7 +294,11 @@ struct AlAdhanApp: App {
             return
         }
         let code = location.countryCode?.uppercased() ?? ""
-        let supportedCodes = ["MY", "SG", "GB", "US", "ID"]
+        let supportedCodes = [
+            "MY", "SG", "ID",
+            "US", "CA", "GB", "FR",
+            "JP", "KR", "CN", "PT", "RU"
+        ]
         withAnimation {
             showUnsupportedRegionModal = !code.isEmpty && !supportedCodes.contains(code)
         }
