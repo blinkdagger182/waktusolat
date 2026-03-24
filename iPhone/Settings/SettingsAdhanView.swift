@@ -37,18 +37,26 @@ struct SettingsAdhanView: View {
                     Toggle("Live Next Prayer Activity", isOn: $settings.liveNextPrayerEnabled.animation(.easeInOut))
                         .font(.subheadline)
                         .tint(settings.accentColor.toggleTint)
-                    
-                    Text("Shows a live countdown to the next prayer on the Lock Screen when that prayer notification is enabled.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
 
                     if settings.liveNextPrayerEnabled {
-                        NavigationLink(destination: LiveActivitySettingsView()) {
-                            Label("Live Activity Options", systemImage: "slider.horizontal.3")
+                        HStack {
+                            Text("Show Before Prayer")
                                 .font(.subheadline)
-                                .foregroundColor(settings.accentColor.color)
+                            Spacer()
+                            Text("\(max(0, settings.liveActivityLeadMinutes)) minutes")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
+
+                        Text("Live Activity appears \(max(0, settings.liveActivityLeadMinutes)) minutes before prayer time. This timing is fixed for now.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
+                    } else {
+                        Text("Shows a live countdown to the next prayer on the Lock Screen when that prayer notification is enabled.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 2)
                     }
 
                     #if DEBUG

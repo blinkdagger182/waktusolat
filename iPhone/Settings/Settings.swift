@@ -83,6 +83,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     /// Set by AppDelegate (main app only) so extension targets don't reference UIApplication.shared.
     static var registerForRemoteNotificationsHandler: (() -> Void)?
+    static var syncLiveActivityEnrollmentHandler: (() -> Void)?
     private let appGroupUserDefaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
     #if os(iOS)
     var liveActivitySyncTimer: Timer?
@@ -563,7 +564,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
     @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false
     @AppStorage("liveNextPrayerEnabled") var liveNextPrayerEnabled: Bool = false {
-        didSet { self.fetchPrayerTimes(force: false) }
+        didSet {
+            self.fetchPrayerTimes(force: false)
+            Self.syncLiveActivityEnrollmentHandler?()
+        }
     }
     @AppStorage("liveActivityLeadMinutes") var liveActivityLeadMinutes: Int = 5 {
         didSet { self.fetchPrayerTimes(force: false) }

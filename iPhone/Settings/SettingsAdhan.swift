@@ -29,6 +29,7 @@ final class PrayerLiveActivityCoordinator {
     static let shared = PrayerLiveActivityCoordinator()
     private var startedAtByPrayerKey: [String: Date] = [:]
     private var autoDismissTask: Task<Void, Never>?
+    private let reachedPrayerGraceSeconds: TimeInterval = 90
 
     /// Set by the main app to register the live activity push token with the backend.
     /// Not called by the Widget extension (which also compiles this file).
@@ -36,9 +37,9 @@ final class PrayerLiveActivityCoordinator {
 
     private init() {}
 
-    private func scheduleAutoDismiss(for prayerKey: String, at prayerTime: Date, graceSeconds: TimeInterval = 90) {
+    private func scheduleAutoDismiss(for prayerKey: String, at prayerTime: Date, graceSeconds: TimeInterval? = nil) {
         autoDismissTask?.cancel()
-        let delay = max(1, prayerTime.timeIntervalSinceNow + graceSeconds)
+        let delay = max(1, prayerTime.timeIntervalSinceNow + (graceSeconds ?? reachedPrayerGraceSeconds))
 
         autoDismissTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
@@ -68,6 +69,19 @@ final class PrayerLiveActivityCoordinator {
         city: String?,
         isFeatureEnabled: Bool
     ) {
+        if let existing = Activity<PrayerLiveActivityAttributes>.activities.first {
+            let existingPrayerTime = existing.content.state.prayerTime
+            let shouldPreserveReachedPrayer = Date() < existingPrayerTime.addingTimeInterval(reachedPrayerGraceSeconds)
+            if shouldPreserveReachedPrayer {
+                let existingPrayerKey = "\(existing.content.state.prayerName)|\(Int(existingPrayerTime.timeIntervalSince1970))"
+                if startedAtByPrayerKey[existingPrayerKey] == nil {
+                    startedAtByPrayerKey = [existingPrayerKey: existing.content.state.startedAt]
+                }
+                scheduleAutoDismiss(for: existingPrayerKey, at: existingPrayerTime)
+                return
+            }
+        }
+
         guard isFeatureEnabled,
               ActivityAuthorizationInfo().areActivitiesEnabled,
               let nextPrayer,
@@ -1816,11 +1830,14 @@ extension Settings {
             // window starts, and we must not kill the activity until prayer time passes.
             let hasRunning = !Activity<PrayerLiveActivityAttributes>.activities.isEmpty
             let prayerNotPassed = next.map { Date() < $0.time } ?? false
+            let hasReachedPrayerStillVisible = Activity<PrayerLiveActivityAttributes>.activities.contains {
+                Date() < $0.content.state.prayerTime.addingTimeInterval(90)
+            }
             Task { @MainActor in
                 PrayerLiveActivityCoordinator.shared.sync(
                     nextPrayer: next,
                     city: city,
-                    isFeatureEnabled: enabled && prayerEnabled && (inWindow || (hasRunning && prayerNotPassed))
+                    isFeatureEnabled: enabled && (hasReachedPrayerStillVisible || (prayerEnabled && (inWindow || (hasRunning && prayerNotPassed))))
                 )
             }
         }

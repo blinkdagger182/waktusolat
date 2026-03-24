@@ -7,6 +7,7 @@ import Combine
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private let taskID  = "com.Quran.Elmallah.Prayer-Times.fetchPrayerTimes"
     private var cancellables = Set<AnyCancellable>()
+    private var lastPushToStartRegistrationSignature: String?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]?) -> Bool {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: taskID, using: nil) { task in
@@ -17,6 +18,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         UNUserNotificationCenter.current().delegate = self
         Settings.registerForRemoteNotificationsHandler = {
             UIApplication.shared.registerForRemoteNotifications()
+        }
+        Settings.syncLiveActivityEnrollmentHandler = { [weak self] in
+            self?.syncPushToStartTokenIfCached(force: true)
         }
         requestPushPermissions()
         setupLiveActivityPushTokenHandler()
@@ -70,36 +74,48 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
 
     /// On launch, sync only if zone has drifted from what was last registered.
-    private func syncPushToStartTokenIfCached() {
+    private func syncPushToStartTokenIfCached(force: Bool = false) {
         guard #available(iOS 17.2, *),
               let token = UserDefaults.standard.string(forKey: "pushToStartToken") else { return }
-        guard Settings.shared.shouldRegisterPushToStartTokenNow() else { return }
         let zone     = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
-        guard zone != lastZone else { return }
-        PushNotificationService.registerPushToStartToken(token, zone: zone)
+        guard force || zone != lastZone else { return }
+        registerPushToStartToken(token: token, zone: zone)
         UserDefaults.standard.set(zone, forKey: "pushToStartZone")
     }
 
     private func reRegisterIfZoneChanged() {
         guard let token = UserDefaults.standard.string(forKey: "pushToStartToken"),
               let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone") else { return }
-        guard Settings.shared.shouldRegisterPushToStartTokenNow() else { return }
         let lastZone = UserDefaults.standard.string(forKey: "pushToStartZone")
         guard zone != lastZone else { return }
         logger.debug("🔄 Zone changed (\(lastZone ?? "nil") → \(zone)), re-registering push-to-start token")
-        PushNotificationService.registerPushToStartToken(token, zone: zone)
+        registerPushToStartToken(token: token, zone: zone)
         UserDefaults.standard.set(zone, forKey: "pushToStartZone")
     }
 
     private func registerPushToStartTokenIfNeeded(token: String) {
-        guard Settings.shared.shouldRegisterPushToStartTokenNow() else {
-            logger.debug("Skipping push-to-start token registration outside lead window")
+        let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
+        registerPushToStartToken(token: token, zone: zone)
+        if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
+    }
+
+    private func registerPushToStartToken(token: String, zone: String?) {
+        let signature = pushToStartRegistrationSignature(token: token, zone: zone)
+        if lastPushToStartRegistrationSignature == signature {
             return
         }
-        let zone = UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
-        PushNotificationService.registerPushToStartToken(token, zone: zone)
-        if let zone { UserDefaults.standard.set(zone, forKey: "pushToStartZone") }
+        lastPushToStartRegistrationSignature = signature
+        PushNotificationService.registerPushToStartToken(
+            token,
+            zone: zone,
+            liveEnabled: Settings.shared.liveNextPrayerEnabled,
+            leadMinutes: max(0, Settings.shared.liveActivityLeadMinutes)
+        )
+    }
+
+    private func pushToStartRegistrationSignature(token: String, zone: String?) -> String {
+        "\(token)|\(zone ?? "")|\(Settings.shared.liveNextPrayerEnabled)|\(max(0, Settings.shared.liveActivityLeadMinutes))"
     }
 
     private func setupLiveActivityPushTokenHandler() {

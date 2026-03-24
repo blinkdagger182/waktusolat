@@ -1,0 +1,17 @@
+//
+//  WatchApp.swift
+//  Watch Watch App
+//
+//  Created by Rizhan Ruslan on 24/03/2026.
+//
+
+import SwiftUI
+
+@main
+struct Watch_Watch_AppApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}

@@ -17,8 +17,13 @@ struct PushNotificationService {
         )
     }
 
-    static func registerPushToStartToken(_ token: String, zone: String?) {
-        var payload: [String: Any] = ["pushToStartToken": token, "platform": "ios"]
+    static func registerPushToStartToken(_ token: String, zone: String?, liveEnabled: Bool, leadMinutes: Int) {
+        var payload: [String: Any] = [
+            "pushToStartToken": token,
+            "platform": "ios",
+            "liveEnabled": liveEnabled,
+            "leadMinutes": leadMinutes,
+        ]
         if let zone, !zone.isEmpty { payload["zone"] = zone }
         post(
             endpoint: "\(baseURL)/api/live-activity/register-start-token",
@@ -76,13 +81,27 @@ struct PushNotificationService {
                 return
             }
             if let http = response as? HTTPURLResponse {
+                let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
                 if http.statusCode == 200 {
-                    logger.debug("✅ \(label) registered successfully")
+                    if let message = registrationMessage(from: body) {
+                        logger.debug("✅ \(message)")
+                    } else {
+                        logger.debug("✅ \(label) registered successfully")
+                    }
                 } else {
-                    let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
                     logger.error("❌ \(label) registration failed (\(http.statusCode)): \(body)")
                 }
             }
         }.resume()
+    }
+
+    private static func registrationMessage(from body: String) -> String? {
+        guard let data = body.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let message = json["message"] as? String,
+              !message.isEmpty else {
+            return nil
+        }
+        return message
     }
 }
