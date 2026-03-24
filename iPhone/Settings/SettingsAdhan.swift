@@ -822,6 +822,18 @@ extension Settings {
         "\(Self.monthCacheKeyPrefix)\(year)-\(String(format: "%02d", month))"
     }
 
+    func invalidateMalaysiaZoneState(for date: Date = Date()) {
+        UserDefaults.standard.removeObject(forKey: "lastKnownMalaysiaZone")
+
+        let comps = Self.gregorian.dateComponents([.year, .month], from: date)
+        guard let year = comps.year, let month = comps.month else { return }
+
+        let key = monthCacheKey(for: year, month: month)
+        Self.monthCacheInMemory.removeValue(forKey: key)
+        appGroupStore()?.removeObject(forKey: key)
+        appGroupStore()?.removeObject(forKey: Self.legacyMonthCacheKey)
+    }
+
     private func loadMonthCache(for date: Date) -> GPSMonthResponse? {
         let comps = Self.gregorian.dateComponents([.year, .month], from: date)
         guard let year = comps.year, let month = comps.month else { return nil }

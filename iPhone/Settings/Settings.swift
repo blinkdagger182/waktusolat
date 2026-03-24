@@ -272,12 +272,23 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
             guard let location = currentLocation else {
                 appGroupUserDefaults?.removeObject(forKey: "lastLocationUpdatedAt")
+                invalidateMalaysiaZoneState()
                 resolvedPrayerArea = nil
                 return
             }
+            let previous = oldValue
+            let movedMaterially = previous.map {
+                abs($0.latitude - location.latitude) > 0.02 ||
+                abs($0.longitude - location.longitude) > 0.02
+            } ?? false
+            let wasMalaysia = previous?.countryCode?.uppercased() == "MY"
+            let isMalaysia = location.countryCode?.uppercased() == "MY"
+            if movedMaterially && (wasMalaysia || isMalaysia) {
+                invalidateMalaysiaZoneState()
+            }
             if location.countryCode?.uppercased() != "ID" {
                 resolvedPrayerArea = nil
-            } else if let previous = oldValue,
+            } else if let previous,
                       resolvedPrayerArea != nil,
                       (abs(previous.latitude - location.latitude) > 0.02 ||
                        abs(previous.longitude - location.longitude) > 0.02) {
