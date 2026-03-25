@@ -51,6 +51,7 @@ struct AlAdhanApp: App {
     @State private var supportPromoAutoDismissAfter: TimeInterval = 8
     @State private var marketingModalConfig = MarketingModalConfig.defaultValue
     @State private var marketingModalRevision = ""
+    @State private var isCheckingMarketingModal = false
     @State private var malaysiaLocationToastPayload: MalaysiaLocationToastPayload?
     @State private var malaysiaLocationToastCountdownStart = Date()
     @State private var malaysiaZoneCatalog: [String: MalaysiaZoneMetadata] = [:]
@@ -102,7 +103,6 @@ struct AlAdhanApp: App {
                             }
                         } else {
                             presentDailyQuranWidgetIntroIfNeeded()
-                            presentSupportPromoToastIfNeeded()
                             Task {
                                 await checkForMarketingModalUpdate(force: false)
                             }
@@ -429,9 +429,22 @@ struct AlAdhanApp: App {
         withAnimation(.easeInOut(duration: 0.2)) {
             showMarketingModal = false
         }
+        presentSupportPromoToastIfNeeded()
     }
 
     private func checkForMarketingModalUpdate(force: Bool) async {
+        await MainActor.run {
+            isCheckingMarketingModal = true
+        }
+        defer {
+            Task { @MainActor in
+                isCheckingMarketingModal = false
+                if !showMarketingModal {
+                    presentSupportPromoToastIfNeeded()
+                }
+            }
+        }
+
         guard !settings.firstLaunch else { return }
         guard !showAdhanSheet else { return }
         guard !showDailyQuranWidgetIntro else { return }
@@ -533,7 +546,9 @@ struct AlAdhanApp: App {
         guard !isLaunching else { return }
         guard !settings.firstLaunch else { return }
         guard !pendingFirstRunNotificationPrompt else { return }
+        guard !isCheckingMarketingModal else { return }
         guard !showAdhanSheet else { return }
+        guard !showMarketingModal else { return }
         guard !showDailyQuranWidgetIntro else { return }
         guard !showSupportPromoToast else { return }
 
@@ -564,6 +579,8 @@ struct AlAdhanApp: App {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            guard !isCheckingMarketingModal else { return }
+            guard !showMarketingModal else { return }
             guard !showDailyQuranWidgetIntro else { return }
             Task {
                 await presentSupportPromoToast(for: selectedItem)
@@ -687,6 +704,8 @@ struct AlAdhanApp: App {
         guard !settings.firstLaunch else { return }
         guard selectedTab == .adhan else { return }
         guard !showAdhanSheet else { return }
+        guard !isCheckingMarketingModal else { return }
+        guard !showMarketingModal else { return }
         guard !showDailyQuranWidgetIntro else { return }
         guard !showSupportPromoToast else { return }
 
@@ -1588,7 +1607,16 @@ private struct DailyQuranWidgetIntroModal: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 220)
-                    .tabViewStyle(.page(indexDisplayMode: .always))
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+
+                    HStack(spacing: 8) {
+                        ForEach(Array(config.slides.enumerated()), id: \.offset) { index, _ in
+                            Circle()
+                                .fill(index == selectedIndex ? Color.white : Color.white.opacity(0.28))
+                                .frame(width: 7, height: 7)
+                        }
+                    }
+                    .padding(.top, -4)
 
                     Text(config.subtitle)
                         .font(.footnote)

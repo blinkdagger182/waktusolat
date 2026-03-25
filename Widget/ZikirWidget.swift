@@ -162,3 +162,22 @@ struct ZikirWidget: Widget {
         .description("Short zikir and selawat reminders that change throughout the day.")
     }
 }
+
+@available(iOSApplicationExtension 16.0, *)
+struct LockScreenZikirWidget: Widget {
+    let kind: String = "LockScreenZikirWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ZikirProvider()) { entry in
+            if #available(iOS 17.0, *) {
+                ZikirEntryView(entry: entry)
+                    .containerBackground(for: .widget) { Color.clear }
+            } else {
+                ZikirEntryView(entry: entry)
+            }
+        }
+        .supportedFamilies([.accessoryRectangular])
+        .configurationDisplayName("Zikir & Selawat")
+        .description("Short zikir and selawat reminders for your Lock Screen.")
+    }
+}
