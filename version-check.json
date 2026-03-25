@@ -2,7 +2,7 @@
   "enabled": true,
   "ui_recovery_enabled": true,
   "latest_version": "1.0.13",
-  "min_supported_version": "1.0.0",
+  "min_supported_version": "1.0.4",
   "app_store_url": "itms-apps://itunes.apple.com/app/id6759585564",
   "soft_message": "A new version of Waktu is available with improvements and fixes.",
   "force_message": "Please update Waktu to continue."
