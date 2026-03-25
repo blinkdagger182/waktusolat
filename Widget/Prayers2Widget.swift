@@ -34,7 +34,7 @@ struct Prayers2EntryView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.calendar = hijriCalendar
         dateFormatter.dateStyle = .full
-        dateFormatter.locale = Locale(identifier: "en")
+        dateFormatter.locale = appLocale()
 
         let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
         let referenceDate = Settings.islamicReferenceDate(prayers: sourcePrayers)
@@ -66,10 +66,13 @@ struct Prayers2EntryView: View {
                         HStack {
                             Spacer()
                             
-                            Text("Time left: \(nextPrayer.time, style: .timer)")
-                                .font(.subheadline)
-                                .frame(alignment: .trailing)
-                                .multilineTextAlignment(.trailing)
+                            HStack(spacing: 3) {
+                                Text(appLocalized("Time left:"))
+                                Text(nextPrayer.time, style: .timer)
+                            }
+                            .font(.subheadline)
+                            .frame(alignment: .trailing)
+                            .multilineTextAlignment(.trailing)
                         }
                     }
                     .font(.headline)

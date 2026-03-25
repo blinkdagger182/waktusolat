@@ -1,5 +1,253 @@
 import SwiftUI
 
+let sharedAppGroupID = "group.app.riskcreatives.waktu"
+
+enum AppLanguage: String, CaseIterable, Identifiable {
+    static let storageKey = "appLanguageCode"
+
+    case system
+    case english = "en"
+    case bahasaMelayu = "ms"
+
+    var id: String { rawValue }
+
+    var localeIdentifier: String? {
+        switch self {
+        case .system:
+            return nil
+        case .english:
+            return "en"
+        case .bahasaMelayu:
+            return "ms"
+        }
+    }
+
+    var quranTranslationEdition: String {
+        switch self {
+        case .system:
+            return resolvedSystemLanguage.quranTranslationEdition
+        case .english:
+            return "en.asad"
+        case .bahasaMelayu:
+            return "ms.basmeih"
+        }
+    }
+
+    var quranTranslationEditionLabel: String {
+        quranTranslationEdition
+    }
+
+    var displayName: String {
+        switch self {
+        case .system:
+            return appLocalized("System")
+        case .english:
+            return appLocalized("English")
+        case .bahasaMelayu:
+            return appLocalized("Bahasa Melayu")
+        }
+    }
+}
+
+private var sharedLanguageDefaults: UserDefaults? {
+    UserDefaults(suiteName: sharedAppGroupID)
+}
+
+private var resolvedSystemLanguage: AppLanguage {
+    let preferredCode = Locale.preferredLanguages.first?
+        .replacingOccurrences(of: "_", with: "-")
+        .lowercased()
+
+    if let preferredCode, preferredCode.hasPrefix("ms") {
+        return .bahasaMelayu
+    }
+
+    return .english
+}
+
+func storedAppLanguageCode() -> String? {
+    UserDefaults.standard.string(forKey: AppLanguage.storageKey)
+        ?? sharedLanguageDefaults?.string(forKey: AppLanguage.storageKey)
+}
+
+func effectiveAppLanguage(from storedCode: String? = storedAppLanguageCode()) -> AppLanguage {
+    guard
+        let storedCode,
+        let language = AppLanguage(rawValue: storedCode),
+        language != .system
+    else {
+        return resolvedSystemLanguage
+    }
+
+    return language
+}
+
+func effectiveAppLanguageCode(from storedCode: String? = storedAppLanguageCode()) -> String {
+    effectiveAppLanguage(from: storedCode).rawValue
+}
+
+func appLocale(for storedCode: String? = storedAppLanguageCode()) -> Locale {
+    Locale(identifier: effectiveAppLanguage(from: storedCode).localeIdentifier ?? resolvedSystemLanguage.localeIdentifier ?? "en")
+}
+
+func syncSharedAppLanguagePreference(_ storedCode: String?) {
+    guard let defaults = sharedLanguageDefaults else { return }
+    if let storedCode {
+        defaults.set(storedCode, forKey: AppLanguage.storageKey)
+    } else {
+        defaults.removeObject(forKey: AppLanguage.storageKey)
+    }
+}
+
+func currentQuranTranslationEdition(for storedCode: String? = storedAppLanguageCode()) -> String {
+    effectiveAppLanguage(from: storedCode).quranTranslationEdition
+}
+
+func currentQuranTranslationEditionLabel(for storedCode: String? = storedAppLanguageCode()) -> String {
+    effectiveAppLanguage(from: storedCode).quranTranslationEditionLabel
+}
+
+private func appLocalizedBundle(for storedCode: String? = storedAppLanguageCode()) -> Bundle {
+    let languageCode = effectiveAppLanguageCode(from: storedCode)
+    guard
+        let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
+        let bundle = Bundle(path: path)
+    else {
+        return .main
+    }
+
+    return bundle
+}
+
+func appLocalized(_ key: String) -> String {
+    NSLocalizedString(key, tableName: nil, bundle: appLocalizedBundle(), comment: "")
+}
+
+func appLocalized(_ key: String, _ args: CVarArg...) -> String {
+    let format = appLocalized(key)
+    return String(format: format, locale: appLocale(), arguments: args)
+}
+
+func localizedPrayerName(_ raw: String) -> String {
+    switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+    case "subuh", "fajr":
+        return appLocalized("Fajr")
+    case "syuruk", "shurooq", "sunrise":
+        return appLocalized("Shurooq")
+    case "zuhur", "dhuhr", "jumuah":
+        return appLocalized("Dhuhr")
+    case "asar", "asr":
+        return appLocalized("Asr")
+    case "isyak", "isya", "isha":
+        return appLocalized("Isha")
+    case "maghrib", "magrib":
+        return appLocalized("Maghrib")
+    default:
+        return raw
+    }
+}
+
+func localizedPrayerMeaning(_ raw: String) -> String {
+    let isMalay = effectiveAppLanguageCode().hasPrefix("ms")
+
+    switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+    case "dawn":
+        return isMalay ? "Fajar" : "Dawn"
+    case "sunrise":
+        return isMalay ? "Matahari terbit" : "Sunrise"
+    case "midday":
+        return isMalay ? "Tengah hari" : "Midday"
+    case "afternoon":
+        return isMalay ? "Petang" : "Afternoon"
+    case "sunset":
+        return isMalay ? "Matahari terbenam" : "Sunset"
+    case "night":
+        return isMalay ? "Malam" : "Night"
+    default:
+        return raw
+    }
+}
+
+func localizedShurooqSummaryText() -> String {
+    effectiveAppLanguageCode().hasPrefix("ms")
+        ? "Syuruk bukan satu solat, tetapi menandakan berakhirnya waktu Subuh."
+        : "Shurooq is not a prayer, but marks the end of Fajr."
+}
+
+func localizedHijriMonthName(_ month: Int) -> String {
+    switch month {
+    case 1: return appLocalized("Muharram")
+    case 2: return appLocalized("Safar")
+    case 3: return appLocalized("Rabi al-Awwal")
+    case 4: return appLocalized("Rabi al-Thani")
+    case 5: return appLocalized("Jumada al-Ula")
+    case 6: return appLocalized("Jumada al-Thani")
+    case 7: return appLocalized("Rajab")
+    case 8: return appLocalized("Sha'ban")
+    case 9: return appLocalized("Ramadan")
+    case 10: return appLocalized("Shawwal")
+    case 11: return appLocalized("Dhul Qi'dah")
+    case 12: return appLocalized("Dhul Hijjah")
+    default: return ""
+    }
+}
+
+func localizedPrayerRakahInfo(_ rakah: String) -> String {
+    effectiveAppLanguageCode().hasPrefix("ms")
+        ? "Solat rakaat: \(rakah)"
+        : appLocalized("Prayer Rakahs: %@", rakah)
+}
+
+func localizedSunnahBeforeInfo(_ rakah: String) -> String {
+    effectiveAppLanguageCode().hasPrefix("ms")
+        ? "Rakaat sebelum solat: \(rakah)"
+        : appLocalized("Sunnah Rakahs Before: %@", rakah)
+}
+
+func localizedSunnahAfterInfo(_ rakah: String) -> String {
+    effectiveAppLanguageCode().hasPrefix("ms")
+        ? "Rakaat selepas solat: \(rakah)"
+        : appLocalized("Sunnah Rakahs After: %@", rakah)
+}
+
+func localizedPrayerDetailNote(for prayerName: String) -> String? {
+    let normalized = prayerName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let isMalay = effectiveAppLanguageCode().hasPrefix("ms")
+
+    switch normalized {
+    case "shurooq", "syuruk", "sunrise":
+        return isMalay
+            ? "Berdasarkan Sahih Muslim 612a, Syuruk menandakan berakhirnya waktu Subuh. Syuruk bukan solat fardu yang tersendiri."
+            : "Based on Sahih Muslim 612a, Shurooq marks the end of Fajr time. It is not a prayer itself."
+    case "fajr", "subuh":
+        return isMalay
+            ? "Dalam Sahih Muslim 612a, Rasulullah SAW menjelaskan bahawa waktu Subuh berterusan sehingga mula terbit matahari."
+            : "In Sahih Muslim 612a, the Prophet ﷺ described Fajr as lasting until the first part of the sun appears."
+    case "dhuhr", "dhuhr/asr", "zuhur":
+        return isMalay
+            ? "Dalam Sahih Muslim 612a, Rasulullah SAW menjelaskan bahawa waktu Zuhur berterusan sehingga masuk waktu Asar."
+            : "In Sahih Muslim 612a, the Prophet ﷺ described Dhuhr as lasting until Asr begins."
+    case "asr", "asar":
+        return isMalay
+            ? "Dalam Sahih Muslim 612a, Rasulullah SAW menjelaskan bahawa waktu Asar berterusan sehingga matahari menjadi kekuningan."
+            : "In Sahih Muslim 612a, the Prophet ﷺ described Asr as lasting until the sun turns yellow."
+    case "maghrib", "maghrib/isha", "magrib":
+        return isMalay
+            ? "Dalam Sahih Muslim 612a, Rasulullah SAW menjelaskan bahawa waktu Maghrib berterusan sehingga hilang cahaya senja."
+            : "In Sahih Muslim 612a, the Prophet ﷺ described Maghrib as lasting until the twilight disappears."
+    case "isha", "isyak", "isya":
+        return isMalay
+            ? "Dalam Sahih Muslim 612a, Rasulullah SAW menjelaskan bahawa waktu Isyak berterusan sehingga pertengahan malam."
+            : "In Sahih Muslim 612a, the Prophet ﷺ described Isha as lasting until half of the night has passed."
+    case "jumuah":
+        return isMalay
+            ? "Dalam Sunan Abi Dawud 1067, Rasulullah SAW bersabda bahawa solat Jumaat berjemaah ialah kewajipan bagi setiap Muslim kecuali hamba, wanita, kanak-kanak, dan orang yang sakit."
+            : "In Sunan Abi Dawud 1067, the Prophet ﷺ said that Friday prayer in congregation is obligatory for every Muslim except a slave, a woman, a child, and a sick person."
+    default:
+        return nil
+    }
+}
+
 enum AccentColor: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 

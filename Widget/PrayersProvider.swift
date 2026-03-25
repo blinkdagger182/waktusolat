@@ -153,7 +153,7 @@ struct WidgetLocationFooter: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel("Last known location, \(entry.currentCity)")
+                .accessibilityLabel(appLocalized("Last known location, %@", entry.currentCity))
         }
     }
 
@@ -167,24 +167,10 @@ struct WidgetLocationFooter: View {
 }
 
 func widgetPrayerDisplayName(_ raw: String) -> String {
-    switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-    case "subuh":
-        return "Fajr"
-    case "syuruk", "shurooq":
-        return "Shurooq"
-    case "zuhur", "dhuhr":
-        return "Dhuhr"
-    case "asar", "asr":
-        return "Asr"
-    case "isyak", "isya", "isha":
-        return "Isha"
-    case "maghrib":
-        return "Maghrib"
-    default:
-        return raw
-    }
+    localizedPrayerName(raw)
 }
 
 func widgetIsShurooq(_ raw: String) -> Bool {
-    widgetPrayerDisplayName(raw).lowercased() == "shurooq"
+    let normalized = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    return normalized == "syuruk" || normalized == "shurooq" || normalized == "sunrise"
 }

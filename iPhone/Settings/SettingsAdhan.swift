@@ -470,13 +470,13 @@ extension Settings {
         return f
     }()
 
-    private static let hijriFormatterEN: DateFormatter = {
+    private static func hijriFormatterLocalized() -> DateFormatter {
         let f = DateFormatter()
         f.calendar = hijriCalendarAR
-        f.locale   = Locale(identifier: "en")
+        f.locale   = appLocale()
         f.dateStyle = .long
         return f
-    }()
+    }
     
     private static let gregorian: Calendar = {
         var c = Calendar(identifier: .gregorian)
@@ -513,7 +513,7 @@ extension Settings {
         let effectiveOffset = Settings.effectiveHijriOffset(baseOffset: hijriOffset, location: currentLocation)
         let base = Self.hijriCalendarAR.date(byAdding: .day, value: effectiveOffset, to: referenceDate) ?? referenceDate
         let arabic = arabicNumberString(from: Self.hijriFormatterAR.string(from: base)) + " هـ"
-        let english = Self.hijriFormatterEN.string(from: base)
+        let english = Self.hijriFormatterLocalized().string(from: base)
 
         if let h = hijriDate,
            h.date.isSameDay(as: referenceDate),

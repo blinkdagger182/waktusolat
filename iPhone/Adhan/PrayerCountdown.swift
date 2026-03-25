@@ -60,8 +60,11 @@ private struct CurrentPrayerCell: View {
                 title
                 subtitle
                 
-                Text("Started at \(prayer.time, style: .time)")
-                    .font(.headline)
+                HStack(spacing: 4) {
+                    Text(appLocalized("Starts at"))
+                    Text(prayer.time, style: .time)
+                }
+                .font(.headline)
                 
                 if settings.showCurrentInfo {
                     Divider()
@@ -84,7 +87,7 @@ private struct CurrentPrayerCell: View {
     private var title: some View {
         HStack {
             Image(systemName: prayer.image)
-            Text(prayer.nameTransliteration)
+            Text(localizedPrayerName(prayer.nameTransliteration))
         }
         #if !os(watchOS)
         .font(.title)
@@ -95,14 +98,14 @@ private struct CurrentPrayerCell: View {
     }
 
     private var subtitle: some View {
-        Text("\(prayer.nameEnglish) / \(prayer.nameArabic)")
+        Text("\(localizedPrayerMeaning(prayer.nameEnglish)) / \(prayer.nameArabic)")
             .font(.title3)
             .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
     }
 
     @ViewBuilder private var rakahInfo: some View {
         if prayer.rakah != "0" {
-            Text("Prayer Rakahs: \(prayer.rakah)")
+            Text(localizedPrayerRakahInfo(prayer.rakah))
                 #if !os(watchOS)
                 .font(.caption)
                 #else
@@ -110,7 +113,7 @@ private struct CurrentPrayerCell: View {
                 #endif
                 .foregroundColor(.primary)
         } else {
-            Text("Shurooq is not a prayer, but marks the end of Fajr")
+            Text(localizedShurooqSummaryText())
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -118,12 +121,12 @@ private struct CurrentPrayerCell: View {
 
     @ViewBuilder private var sunnahInfo: some View {
         if prayer.sunnahBefore != "0" {
-            Text("Sunnah Rakahs Before: \(prayer.sunnahBefore)")
+            Text(localizedSunnahBeforeInfo(prayer.sunnahBefore))
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
         if prayer.sunnahAfter != "0" {
-            Text("Sunnah Rakahs After: \(prayer.sunnahAfter)")
+            Text(localizedSunnahAfterInfo(prayer.sunnahAfter))
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -170,7 +173,7 @@ private struct UpcomingPrayerCell: View {
 
     private var title: some View {
         HStack {
-            Text(prayer.nameTransliteration)
+            Text(localizedPrayerName(prayer.nameTransliteration))
             Image(systemName: prayer.image)
         }
         #if !os(watchOS)
@@ -182,14 +185,14 @@ private struct UpcomingPrayerCell: View {
     }
 
     private var subtitle: some View {
-        Text("\(prayer.nameEnglish) / \(prayer.nameArabic)")
+        Text("\(localizedPrayerMeaning(prayer.nameEnglish)) / \(prayer.nameArabic)")
             .font(.title3)
             .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
     }
 
     @ViewBuilder private var rakahInfo: some View {
         if prayer.rakah != "0" {
-            Text("Prayer Rakahs: \(prayer.rakah)")
+            Text(localizedPrayerRakahInfo(prayer.rakah))
                 #if !os(watchOS)
                 .font(.caption)
                 #else
@@ -197,7 +200,7 @@ private struct UpcomingPrayerCell: View {
                 #endif
                 .foregroundColor(.primary)
         } else {
-            Text("Shurooq is not a prayer, but marks the end of Fajr")
+            Text(localizedShurooqSummaryText())
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -205,12 +208,12 @@ private struct UpcomingPrayerCell: View {
 
     @ViewBuilder private var sunnahInfo: some View {
         if prayer.sunnahBefore != "0" {
-            Text("Sunnah Rakahs Before: \(prayer.sunnahBefore)")
+            Text(localizedSunnahBeforeInfo(prayer.sunnahBefore))
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
         if prayer.sunnahAfter != "0" {
-            Text("Sunnah Rakahs After: \(prayer.sunnahAfter)")
+            Text(localizedSunnahAfterInfo(prayer.sunnahAfter))
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -218,11 +221,15 @@ private struct UpcomingPrayerCell: View {
 
     private var timeInfo: some View {
         HStack {
-            Text("Time Left: \(prayer.time, style: .timer)")
-            
+            Text(appLocalized("Time left:"))
+            Text(prayer.time, style: .timer)
+
             Spacer(minLength: 12)
-            
-            Text("Starts at \(prayer.time, style: .time)")
+
+            HStack(spacing: 4) {
+                Text(appLocalized("Starts at"))
+                Text(prayer.time, style: .time)
+            }
         }
         .font(.headline)
     }

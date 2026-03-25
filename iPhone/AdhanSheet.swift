@@ -33,6 +33,10 @@ struct AdhanSetupSheet: View {
     @State private var waktuZoneLoadError: String?
     @State private var autoDetectedZoneCode: String = ""
     @State private var showingWaktuZonePicker = false
+
+    private var isMalay: Bool {
+        effectiveAppLanguageCode().hasPrefix("ms")
+    }
     
     private var isGlobalDebugForced: Bool {
         settings.prayerRegionDebugOverride == 2
@@ -59,7 +63,7 @@ struct AdhanSetupSheet: View {
     
     private func shortCalculationLabel(_ method: String) -> String {
         switch method {
-        case "Auto (By Location)":                                          return "Auto"
+        case "Auto (By Location)":                                          return appLocalized("Auto")
         case "Islamic Society of North America (ISNA)",
              "Islamic Society of North America":                            return "ISNA"
         case "Moonsighting Committee Worldwide":                            return "Moonsighting Committee"
@@ -74,7 +78,7 @@ struct AdhanSetupSheet: View {
     private func calculationMenuLabel(_ method: String) -> String {
         switch method {
         case "Auto (By Location)":
-            return "Auto (Currently using \(resolvedAutoMethodLabel))"
+            return isMalay ? "Auto (Sedang menggunakan \(resolvedAutoMethodLabel))" : "Auto (Currently using \(resolvedAutoMethodLabel))"
         case "Islamic Society of North America (ISNA)":
             return "Islamic Society of North America (ISNA)"
         case "Majlis Ugama Islam Singapura, Singapore":
@@ -107,29 +111,29 @@ struct AdhanSetupSheet: View {
         let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
         switch countryCode {
         case "MY":
-            return "Waktu officially supports Malaysia using JAKIM prayer times."
+            return isMalay ? "Waktu menyokong Malaysia secara rasmi menggunakan waktu solat JAKIM." : "Waktu officially supports Malaysia using JAKIM prayer times."
         case "SG":
-            return "Waktu officially supports Singapore using MUIS prayer times."
+            return isMalay ? "Waktu menyokong Singapura secara rasmi menggunakan waktu solat MUIS." : "Waktu officially supports Singapore using MUIS prayer times."
         case "ID":
-            return "Waktu officially supports Indonesia using KEMENAG prayer times."
+            return isMalay ? "Waktu menyokong Indonesia secara rasmi menggunakan waktu solat KEMENAG." : "Waktu officially supports Indonesia using KEMENAG prayer times."
         case "US", "CA":
-            return "Waktu officially supports \(countryCode == "US" ? "the United States" : "Canada") using ISNA as the default calculation."
+            return isMalay ? "Waktu menyokong \(countryCode == "US" ? "Amerika Syarikat" : "Kanada") secara rasmi menggunakan ISNA sebagai kiraan lalai." : "Waktu officially supports \(countryCode == "US" ? "the United States" : "Canada") using ISNA as the default calculation."
         case "GB":
-            return "Waktu officially supports the United Kingdom using Muslim World League as the default calculation."
+            return isMalay ? "Waktu menyokong United Kingdom secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports the United Kingdom using Muslim World League as the default calculation."
         case "FR":
-            return "Waktu officially supports France using Muslim World League as the default calculation."
+            return isMalay ? "Waktu menyokong Perancis secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports France using Muslim World League as the default calculation."
         case "JP":
-            return "Waktu officially supports Japan using Muslim World League as the default calculation."
+            return isMalay ? "Waktu menyokong Jepun secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports Japan using Muslim World League as the default calculation."
         case "KR":
-            return "Waktu officially supports South Korea using Muslim World League as the default calculation."
+            return isMalay ? "Waktu menyokong Korea Selatan secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports South Korea using Muslim World League as the default calculation."
         case "CN":
-            return "Waktu officially supports China using Muslim World League as the default calculation."
+            return isMalay ? "Waktu menyokong China secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports China using Muslim World League as the default calculation."
         case "PT":
-            return "Waktu officially supports Portugal using Muslim World League as the default calculation."
+            return isMalay ? "Waktu menyokong Portugal secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports Portugal using Muslim World League as the default calculation."
         case "RU":
-            return "Waktu officially supports Russia using Muslim World League as the default calculation."
+            return isMalay ? "Waktu menyokong Rusia secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports Russia using Muslim World League as the default calculation."
         default:
-            return "Prayer times are calculated from your current coordinates using trusted Adhan methods."
+            return isMalay ? "Waktu solat dikira daripada koordinat semasa anda menggunakan kaedah Adhan yang dipercayai." : "Prayer times are calculated from your current coordinates using trusted Adhan methods."
         }
     }
 
@@ -138,43 +142,43 @@ struct AdhanSetupSheet: View {
         switch countryCode {
         case "MY":
             return [
-                "Times are fetched from our backend and sourced from JAKIM.",
-                "Malaysia is supported end to end across the app and widgets."
+                isMalay ? "Waktu diambil daripada backend kami dan bersumberkan JAKIM." : "Times are fetched from our backend and sourced from JAKIM.",
+                isMalay ? "Malaysia disokong sepenuhnya di seluruh aplikasi dan widget." : "Malaysia is supported end to end across the app and widgets."
             ]
         case "SG":
             return [
-                "Times are fetched from our backend and sourced from MUIS.",
-                "Singapore is supported end to end across the app and widgets."
+                isMalay ? "Waktu diambil daripada backend kami dan bersumberkan MUIS." : "Times are fetched from our backend and sourced from MUIS.",
+                isMalay ? "Singapura disokong sepenuhnya di seluruh aplikasi dan widget." : "Singapore is supported end to end across the app and widgets."
             ]
         case "ID":
             return [
-                "Times are fetched from our backend and sourced from KEMENAG.",
-                "Your prayer area is matched to the detected kabupaten/kota."
+                isMalay ? "Waktu diambil daripada backend kami dan bersumberkan KEMENAG." : "Times are fetched from our backend and sourced from KEMENAG.",
+                isMalay ? "Kawasan solat anda dipadankan dengan kabupaten/kota yang dikesan." : "Your prayer area is matched to the detected kabupaten/kota."
             ]
         case "US", "CA":
             return [
-                "Auto uses ISNA, which is commonly used across North America.",
-                "Prayer times are calculated from your detected coordinates."
+                isMalay ? "Auto menggunakan ISNA, yang lazim digunakan di Amerika Utara." : "Auto uses ISNA, which is commonly used across North America.",
+                isMalay ? "Waktu solat dikira daripada koordinat yang dikesan." : "Prayer times are calculated from your detected coordinates."
             ]
         case "GB":
             return [
-                "Auto uses Muslim World League, which is widely used by many masjids across the UK.",
-                "You can still switch to Moonsighting Committee manually if you prefer."
+                isMalay ? "Auto menggunakan Muslim World League, yang banyak digunakan oleh masjid-masjid di UK." : "Auto uses Muslim World League, which is widely used by many masjids across the UK.",
+                isMalay ? "Anda masih boleh bertukar ke Moonsighting Committee secara manual jika mahu." : "You can still switch to Moonsighting Committee manually if you prefer."
             ]
         case "FR":
             return [
-                "Auto uses Muslim World League as a consistent default for France.",
-                "Prayer times are calculated from your detected coordinates."
+                isMalay ? "Auto menggunakan Muslim World League sebagai lalai yang konsisten untuk Perancis." : "Auto uses Muslim World League as a consistent default for France.",
+                isMalay ? "Waktu solat dikira daripada koordinat yang dikesan." : "Prayer times are calculated from your detected coordinates."
             ]
         case "JP", "KR", "CN", "PT", "RU":
             return [
-                "Auto uses Muslim World League as a safe and consistent default.",
-                "Prayer times are calculated from your detected coordinates."
+                isMalay ? "Auto menggunakan Muslim World League sebagai lalai yang selamat dan konsisten." : "Auto uses Muslim World League as a safe and consistent default.",
+                isMalay ? "Waktu solat dikira daripada koordinat yang dikesan." : "Prayer times are calculated from your detected coordinates."
             ]
         default:
             return [
-                "You can choose the most suitable local calculation method.",
-                "Traveling mode and prayer offsets still apply."
+                isMalay ? "Anda boleh memilih kaedah kiraan tempatan yang paling sesuai." : "You can choose the most suitable local calculation method.",
+                isMalay ? "Mod musafir dan pelarasan waktu solat masih digunakan." : "Traveling mode and prayer offsets still apply."
             ]
         }
     }
@@ -184,38 +188,38 @@ struct AdhanSetupSheet: View {
         case "Auto (By Location)":
             let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
             if countryCode.isEmpty {
-                return "Automatically selects the most suitable prayer calculation based on your detected country. Right now it is using \(resolvedAutoMethodLabel)."
+                return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan. Sekarang ia menggunakan \(resolvedAutoMethodLabel)." : "Automatically selects the most suitable prayer calculation based on your detected country. Right now it is using \(resolvedAutoMethodLabel)."
             }
             if countryCode == "US" || countryCode == "CA" {
-                return "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using ISNA, which is commonly used across North America."
+                return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (\(countryCode)). Sekarang ia menggunakan ISNA, yang lazim digunakan di Amerika Utara." : "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using ISNA, which is commonly used across North America."
             }
             if countryCode == "GB" {
-                return "Automatically selects the most suitable prayer calculation based on your detected country (GB). Right now it is using Muslim World League, which is widely used by many masjids across the UK."
+                return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (GB). Sekarang ia menggunakan Muslim World League, yang banyak digunakan oleh masjid-masjid di UK." : "Automatically selects the most suitable prayer calculation based on your detected country (GB). Right now it is using Muslim World League, which is widely used by many masjids across the UK."
             }
-            return "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using \(resolvedAutoMethodLabel)."
+            return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (\(countryCode)). Sekarang ia menggunakan \(resolvedAutoMethodLabel)." : "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using \(resolvedAutoMethodLabel)."
         case "Islamic Society of North America (ISNA)", "Islamic Society of North America":
-            return "Commonly used across North America, with prayer times calculated from your coordinates using ISNA parameters."
+            return isMalay ? "Lazim digunakan di Amerika Utara, dengan waktu solat dikira daripada koordinat anda menggunakan parameter ISNA." : "Commonly used across North America, with prayer times calculated from your coordinates using ISNA parameters."
         case "Moonsighting Committee Worldwide":
-            return "Used in the UK and many Western countries. Based on moon sighting with shafaq set to general."
+            return isMalay ? "Digunakan di UK dan banyak negara Barat. Berdasarkan rukyah dengan tetapan shafaq umum." : "Used in the UK and many Western countries. Based on moon sighting with shafaq set to general."
         case "Muslim World League":
             if settings.currentLocation?.countryCode?.uppercased() == "GB" {
-                return "Widely used across many masjids in the UK, with prayer times calculated from your coordinates using Muslim World League parameters."
+                return isMalay ? "Banyak digunakan oleh masjid-masjid di UK, dengan waktu solat dikira daripada koordinat anda menggunakan parameter Muslim World League." : "Widely used across many masjids in the UK, with prayer times calculated from your coordinates using Muslim World League parameters."
             }
-            return "Widely used in the US and internationally. Uses Muslim World League calculation parameters."
+            return isMalay ? "Banyak digunakan di AS dan di peringkat antarabangsa. Menggunakan parameter kiraan Muslim World League." : "Widely used in the US and internationally. Uses Muslim World League calculation parameters."
         case "Majlis Ugama Islam Singapura, Singapore":
-            return "Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura)."
+            return isMalay ? "Waktu solat rasmi Singapura oleh MUIS (Majlis Ugama Islam Singapura)." : "Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura)."
         case "Jabatan Kemajuan Islam Malaysia (JAKIM)":
-            return "Official Malaysian prayer times by JAKIM. Uses the Malaysian Prayer Times API."
+            return isMalay ? "Waktu solat rasmi Malaysia oleh JAKIM. Menggunakan API Waktu Solat Malaysia." : "Official Malaysian prayer times by JAKIM. Uses the Malaysian Prayer Times API."
         case "KEMENAG - Kementerian Agama Republik Indonesia":
-            return "Official Indonesia prayer times by KEMENAG, matched to your kabupaten/kota via GPS."
+            return isMalay ? "Waktu solat rasmi Indonesia oleh KEMENAG, dipadankan dengan kabupaten/kota anda melalui GPS." : "Official Indonesia prayer times by KEMENAG, matched to your kabupaten/kota via GPS."
         default:
-            return "Uses the selected prayer time calculation method for your location."
+            return isMalay ? "Menggunakan kaedah kiraan waktu solat yang dipilih untuk lokasi anda." : "Uses the selected prayer time calculation method for your location."
         }
     }
     
     private var selectedMalaysiaZoneLabel: String {
         let zone = settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        guard !zone.isEmpty else { return "Auto (GPS)" }
+        guard !zone.isEmpty else { return isMalay ? "Auto (GPS)" : "Auto (GPS)" }
         guard let info = filteredZones.first(where: { $0.jakimCode.uppercased() == zone }) else {
             return zone
         }
@@ -224,7 +228,7 @@ struct AdhanSetupSheet: View {
 
     private var selectedIndonesiaZoneLabel: String {
         let regionId = settings.debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !regionId.isEmpty else { return "Auto (GPS)" }
+        guard !regionId.isEmpty else { return isMalay ? "Auto (GPS)" : "Auto (GPS)" }
         guard let info = indonesiaZones.first(where: { $0.id == regionId }) else {
             return settings.currentIndonesiaWaktuZoneName ?? regionId
         }
@@ -247,7 +251,7 @@ struct AdhanSetupSheet: View {
 
     private var autoDetectedZoneLabel: String {
         let zone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        guard !zone.isEmpty else { return "Detecting..." }
+        guard !zone.isEmpty else { return isMalay ? "Sedang mengesan..." : "Detecting..." }
         guard let info = malaysiaZones.first(where: { $0.jakimCode.uppercased() == zone }) else {
             return zone
         }
@@ -255,7 +259,7 @@ struct AdhanSetupSheet: View {
     }
 
     private var autoDetectedIndonesiaZoneLabel: String {
-        settings.currentIndonesiaWaktuZoneName ?? "Detecting..."
+        settings.currentIndonesiaWaktuZoneName ?? (isMalay ? "Sedang mengesan..." : "Detecting...")
     }
 
     private var canConfigureWaktuZone: Bool {
@@ -311,13 +315,13 @@ struct AdhanSetupSheet: View {
             let (data, response) = try await URLSession.shared.data(from: url)
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1
             guard status == 200 else {
-                waktuZoneLoadError = "Could not load Malaysia Waktu Zones."
+                waktuZoneLoadError = isMalay ? "Tidak dapat memuatkan Zon Waktu Solat Malaysia." : "Could not load Malaysia Waktu Zones."
                 return
             }
             let decoded = try JSONDecoder().decode([MalaysiaZoneInfo].self, from: data)
             malaysiaZones = decoded.sorted { $0.jakimCode < $1.jakimCode }
         } catch {
-            waktuZoneLoadError = "Could not load Malaysia Waktu Zones."
+            waktuZoneLoadError = isMalay ? "Tidak dapat memuatkan Zon Waktu Solat Malaysia." : "Could not load Malaysia Waktu Zones."
         }
     }
 
@@ -332,7 +336,7 @@ struct AdhanSetupSheet: View {
             let (data, response) = try await URLSession.shared.data(from: url)
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1
             guard status == 200 else {
-                waktuZoneLoadError = "Could not load Indonesia prayer zones."
+                waktuZoneLoadError = isMalay ? "Tidak dapat memuatkan zon waktu solat Indonesia." : "Could not load Indonesia prayer zones."
                 return
             }
             let decoded = try JSONDecoder().decode([IndonesiaZoneInfo].self, from: data)
@@ -343,7 +347,7 @@ struct AdhanSetupSheet: View {
                 return $0.province < $1.province
             }
         } catch {
-            waktuZoneLoadError = "Could not load Indonesia prayer zones."
+            waktuZoneLoadError = isMalay ? "Tidak dapat memuatkan zon waktu solat Indonesia." : "Could not load Indonesia prayer zones."
         }
     }
     
@@ -451,7 +455,7 @@ struct AdhanSetupSheet: View {
         NavigationView {
             List {
                 Section {
-                    Text("Make sure your prayer times are correct")
+                    Text(isMalay ? "Pastikan waktu solat anda betul" : "Make sure your prayer times are correct")
                         .font(.title3.bold())
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -467,7 +471,7 @@ struct AdhanSetupSheet: View {
                     .font(.footnote)
                     .multilineTextAlignment(.leading)
                     
-                    Text("After this, take a moment to review your notification settings and appearance preferences.")
+                    Text(isMalay ? "Selepas ini, luangkan sedikit masa untuk menyemak tetapan pemberitahuan dan pilihan penampilan anda." : "After this, take a moment to review your notification settings and appearance preferences.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
 
@@ -477,9 +481,9 @@ struct AdhanSetupSheet: View {
                     VStack(alignment: .leading) {
                         if !shouldShowGlobalMethodDropdown {
                             HStack {
-                                Text("Calculation")
+                                Text(isMalay ? "Kiraan" : "Calculation")
                                 Spacer()
-                                Text("Malaysian Prayer Times/ JAKIM")
+                                Text(isMalay ? "Waktu Solat Malaysia / JAKIM" : "Malaysian Prayer Times/ JAKIM")
                                     .foregroundColor(.secondary)
                             }
                             .font(.subheadline)
@@ -490,33 +494,33 @@ struct AdhanSetupSheet: View {
                                 .padding(.vertical, 2)
                         } else if isSingaporeMode {
                             HStack {
-                                Text("Calculation")
+                                Text(isMalay ? "Kiraan" : "Calculation")
                                 Spacer()
                                 Text("MUIS (Singapore)")
                                     .foregroundColor(.secondary)
                             }
                             .font(.subheadline)
 
-                            Text("Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura), the official Islamic authority of Singapore.")
+                            Text(isMalay ? "Waktu solat rasmi Singapura oleh MUIS (Majlis Ugama Islam Singapura), pihak berkuasa Islam rasmi Singapura." : "Official Singapore prayer times by MUIS (Majlis Ugama Islam Singapura), the official Islamic authority of Singapore.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
                         } else if isIndonesiaMode {
                             HStack {
-                                Text("Calculation")
+                                Text(isMalay ? "Kiraan" : "Calculation")
                                 Spacer()
                                 Text("KEMENAG (Indonesia)")
                                     .foregroundColor(.secondary)
                             }
                             .font(.subheadline)
 
-                            Text("Official Indonesia prayer times by KEMENAG, automatically matched to your kabupaten/kota using GPS polygon lookup.")
+                            Text(isMalay ? "Waktu solat rasmi Indonesia oleh KEMENAG, dipadankan secara automatik dengan kabupaten/kota anda menggunakan padanan poligon GPS." : "Official Indonesia prayer times by KEMENAG, automatically matched to your kabupaten/kota using GPS polygon lookup.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
                         } else {
                             HStack {
-                                Text("Calculation")
+                                Text(isMalay ? "Kiraan" : "Calculation")
                                 Spacer()
                                 Menu {
                                     ForEach(globalCalculationMethods, id: \.self) { method in
@@ -556,7 +560,7 @@ struct AdhanSetupSheet: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: "location.fill")
                                         .font(.caption2)
-                                    Text("Using \(resolvedAutoMethodLabel)")
+                                    Text(isMalay ? "Menggunakan \(resolvedAutoMethodLabel)" : "Using \(resolvedAutoMethodLabel)")
                                         .font(.caption)
                                 }
                                 .foregroundColor(settings.accentColor.color)
@@ -570,22 +574,22 @@ struct AdhanSetupSheet: View {
                 Section(header: Text(debugSectionTitle)) {
                     #if DEBUG
                     Picker("Region Override", selection: $settings.prayerRegionDebugOverride) {
-                        Text("Auto").tag(0)
-                        Text("Malaysia").tag(1)
-                        Text("Global").tag(2)
+                        Text(appLocalized("Auto")).tag(0)
+                        Text(isMalay ? "Malaysia" : "Malaysia").tag(1)
+                        Text(isMalay ? "Global" : "Global").tag(2)
                     }
                     .pickerStyle(.segmented)
                     
                     Picker("Mode", selection: releaseWaktuModeBinding) {
-                        Text("Auto").tag(0)
-                        Text("Manual").tag(1)
+                        Text(appLocalized("Auto")).tag(0)
+                        Text(appLocalized("Manual")).tag(1)
                     }
                     .pickerStyle(.segmented)
                     
                     HStack {
-                        Text("Location")
+                        Text(appLocalized("Location"))
                         Spacer()
-                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? "Unknown")
+                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -595,23 +599,23 @@ struct AdhanSetupSheet: View {
 
                     if settings.shouldDisplayWaktuZoneTag,
                        let waktuZone = settings.currentWaktuZoneName {
-                        Text("Waktu Zone: \(waktuZone)")
+                        Text(appLocalized("Waktu Zone: %@", waktuZone))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
                     } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
-                        Text("Resolving Waktu Zone...")
+                        Text(appLocalized("Resolving Waktu Zone..."))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
                     }
 
-                    Text("Location is read-only. Use Waktu Zone in Manual mode for testing.")
+                    Text(appLocalized("Location is read-only. Use Waktu Zone in Manual mode for testing."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
 
-                    Text("Use this to test Malaysia (Malaysian Prayer Times/ JAKIM) and global coordinate-based Adhan behavior without changing physical location.")
+                    Text(appLocalized("Use this to test Malaysia (Malaysian Prayer Times/ JAKIM) and global coordinate-based Adhan behavior without changing physical location."))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
@@ -620,16 +624,16 @@ struct AdhanSetupSheet: View {
                     #if !DEBUG
                     if canConfigureWaktuZone {
                         Picker("Mode", selection: releaseWaktuModeBinding) {
-                            Text("Auto").tag(0)
-                            Text("Manual").tag(1)
+                            Text(appLocalized("Auto")).tag(0)
+                            Text(appLocalized("Manual")).tag(1)
                         }
                         .pickerStyle(.segmented)
                     }
 
                     HStack {
-                        Text("Location")
+                        Text(appLocalized("Location"))
                         Spacer()
-                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? "Unknown")
+                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -638,12 +642,12 @@ struct AdhanSetupSheet: View {
 
                     if settings.shouldDisplayWaktuZoneTag,
                        let waktuZone = settings.currentWaktuZoneName {
-                        Text("Waktu Zone: \(waktuZone)")
+                        Text(appLocalized("Waktu Zone: %@", waktuZone))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
                     } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
-                        Text("Resolving Waktu Zone...")
+                        Text(appLocalized("Resolving Waktu Zone..."))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
@@ -651,12 +655,12 @@ struct AdhanSetupSheet: View {
 
                     if canConfigureWaktuZone {
                         if releaseWaktuModeBinding.wrappedValue == 1 {
-                            Text("Manual mode lets you select a specific Waktu Zone.")
+                            Text(appLocalized("Manual mode lets you select a specific Waktu Zone."))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
                         } else {
-                            Text("Auto mode uses your current location to determine the prayer zone.")
+                            Text(appLocalized("Auto mode uses your current location to determine the prayer zone."))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 2)
@@ -668,7 +672,7 @@ struct AdhanSetupSheet: View {
                     if canConfigureWaktuZone {
                         Button(action: openWaktuZonePicker) {
                             HStack {
-                                Text("Waktu Zone")
+                                Text(appLocalized("Waktu Zone"))
                                 Spacer()
                                 HStack(spacing: 4) {
                                     Text(currentWaktuZoneLabel)
@@ -686,7 +690,7 @@ struct AdhanSetupSheet: View {
                     }
 
                     if canConfigureWaktuZone {
-                        Text("Auto matches your location to a prayer zone. Manual lets you choose a specific zone.")
+                        Text(appLocalized("Auto matches your location to a prayer zone. Manual lets you choose a specific zone."))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
@@ -695,11 +699,11 @@ struct AdhanSetupSheet: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Waktu Solat Setup")
+            .navigationTitle(appLocalized("Waktu Solat Setup"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    Button(appLocalized("Done")) {
                         settings.hapticFeedback()
                         dismiss()
                     }
@@ -745,7 +749,7 @@ struct AdhanSetupSheet: View {
     }
     
     private var debugSectionTitle: String {
-        return "PRAYER MODE"
+        return isMalay ? "MOD SOLAT" : "PRAYER MODE"
     }
 
     private var releaseWaktuModeBinding: Binding<Int> {
@@ -802,13 +806,13 @@ private struct WaktuZonePickerView: View {
         NavigationView {
             List {
                 if isLoading {
-                    Text("Loading Waktu Zone list...")
+                    Text(appLocalized("Loading Waktu Zone list..."))
                         .foregroundColor(.secondary)
                 } else if let errorMessage, items.isEmpty {
                     Text(errorMessage)
                         .foregroundColor(.secondary)
                 } else if filteredItems.isEmpty {
-                    Text("No Waktu Zones found.")
+                    Text(appLocalized("No Waktu Zones found."))
                         .foregroundColor(.secondary)
                 } else {
                     ForEach(filteredItems) { item in
@@ -843,10 +847,10 @@ private struct WaktuZonePickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button(appLocalized("Close")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button(appLocalized("Done")) { dismiss() }
                 }
             }
         }

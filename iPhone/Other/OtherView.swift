@@ -25,7 +25,8 @@ struct OtherView: View {
     private func loadDailyQuranQuote() {
         let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
         guard
-            let data = defaults?.data(forKey: "dailyInspirationCachedQuoteV1"),
+            let data = defaults?.data(forKey: "dailyInspirationCachedQuoteV2")
+                ?? defaults?.data(forKey: "dailyInspirationCachedQuoteV1"),
             let cached = try? JSONDecoder().decode(DailyQuranCachedQuote.self, from: data)
         else {
             dailyQuranQuote = nil
@@ -601,11 +602,11 @@ private enum QuranSurahAPI {
         }
 
         async let arabicEdition = fetchEdition(surahNumber: surahNumber, edition: "ar.alafasy")
-        async let englishEdition = fetchEdition(surahNumber: surahNumber, edition: "en.asad")
-        let (arabic, english) = try await (arabicEdition, englishEdition)
+        async let translationEdition = fetchEdition(surahNumber: surahNumber, edition: currentQuranTranslationEdition())
+        let (arabic, translation) = try await (arabicEdition, translationEdition)
 
         let englishByAyah = Dictionary(
-            uniqueKeysWithValues: english.ayahs.map { ($0.numberInSurah, $0.text) }
+            uniqueKeysWithValues: translation.ayahs.map { ($0.numberInSurah, $0.text) }
         )
 
         let mergedAyahs = arabic.ayahs.map {

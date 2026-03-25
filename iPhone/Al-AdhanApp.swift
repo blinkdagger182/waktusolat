@@ -9,6 +9,7 @@ extension Notification.Name {
     static let debugShowDailyQuranWidgetIntro = Notification.Name("debugShowDailyQuranWidgetIntro")
     static let debugShowSupportPromoToast = Notification.Name("debugShowSupportPromoToast")
     static let debugShowSupportPromoToastVariant = Notification.Name("debugShowSupportPromoToastVariant")
+    static let debugShowMalaysiaLocationToast = Notification.Name("debugShowMalaysiaLocationToast")
     static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
     static let uiContentHeartbeat = Notification.Name("uiContentHeartbeat")
 }
@@ -32,6 +33,7 @@ struct AlAdhanApp: App {
     @AppStorage("didShowDailyQuranWidgetIntroV1") private var didShowDailyQuranWidgetIntro = false
     @AppStorage("didTriggerFirstRunNotificationPromptV1") private var didTriggerFirstRunNotificationPrompt = false
     @AppStorage("remoteUIRecoveryEnabled") private var remoteUIRecoveryEnabled = true
+    @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
     @State var showAdhanSheet: Bool = false
     @State private var showDailyQuranWidgetIntro = false
     
@@ -39,11 +41,15 @@ struct AlAdhanApp: App {
     @State private var quranDeepLink: QuranDeepLinkPayload?
     @State private var selectedTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
+    @State private var showMalaysiaLocationToast = false
     @State private var pendingFirstRunNotificationPrompt = false
     @State private var supportPromoMessage = ""
     @State private var supportPromoPoolProgress: SupportPromoPoolProgress?
     @State private var supportPromoCountdownStart = Date()
     @State private var supportPromoAutoDismissAfter: TimeInterval = 8
+    @State private var malaysiaLocationToastPayload: MalaysiaLocationToastPayload?
+    @State private var malaysiaLocationToastCountdownStart = Date()
+    @State private var malaysiaZoneCatalog: [String: MalaysiaZoneMetadata] = [:]
     @State private var supportPromoSchedule = SupportPromoRemoteConfig.initialSchedule
     @State private var rootRefreshToken = UUID()
     @State private var lastUIHeartbeatAt = Date.distantPast
@@ -56,6 +62,7 @@ struct AlAdhanApp: App {
         RevenueCatManager.shared.configure()
         let defaults = UserDefaults.standard
         defaults.set(defaults.integer(forKey: "appLaunchCountV1") + 1, forKey: "appLaunchCountV1")
+        syncSharedAppLanguagePreference(defaults.string(forKey: AppLanguage.storageKey))
         Self.updateSupportPromoUsageStats(using: defaults)
     }
 
@@ -116,6 +123,7 @@ struct AlAdhanApp: App {
             .environmentObject(settings)
             .environmentObject(namesData)
             .environmentObject(revenueCat)
+            .environment(\.locale, appLocale(for: appLanguageCode))
             .accentColor(settings.accentColor.color)
             .tint(settings.accentColor.color)
             .preferredColorScheme(settings.colorScheme)
@@ -159,29 +167,43 @@ struct AlAdhanApp: App {
                 }
             }
             .overlay(alignment: .top) {
-                if showSupportPromoToast {
-                    SupportPromoToast(
-                        message: supportPromoMessage,
-                        poolProgress: supportPromoPoolProgress,
-                        countdownStartDate: supportPromoCountdownStart,
-                        autoDismissAfter: supportPromoAutoDismissAfter,
-                        onSupport: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showSupportPromoToast = false
-                            }
-                            selectedTab = .settings
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
-                            }
-                        },
-                        onDismiss: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showSupportPromoToast = false
-                            }
+                if showSupportPromoToast || (showMalaysiaLocationToast && malaysiaLocationToastPayload != nil) {
+                    VStack(spacing: 8) {
+                        if showSupportPromoToast {
+                            SupportPromoToast(
+                                message: supportPromoMessage,
+                                poolProgress: supportPromoPoolProgress,
+                                countdownStartDate: supportPromoCountdownStart,
+                                autoDismissAfter: supportPromoAutoDismissAfter,
+                                onSupport: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        showSupportPromoToast = false
+                                    }
+                                    selectedTab = .settings
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+                                    }
+                                },
+                                onDismiss: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        showSupportPromoToast = false
+                                    }
+                                }
+                            )
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
-                    )
+
+                        if showMalaysiaLocationToast, let malaysiaLocationToastPayload {
+                            MalaysiaLocationToast(
+                                payload: malaysiaLocationToastPayload,
+                                countdownStartDate: malaysiaLocationToastCountdownStart,
+                                autoDismissAfter: 7,
+                                onDismiss: dismissMalaysiaLocationToast
+                            )
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+                    }
                     .padding(.top, 10)
-                    .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(19)
                 }
             }
@@ -222,6 +244,12 @@ struct AlAdhanApp: App {
                     )
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .debugShowMalaysiaLocationToast)) { _ in
+                guard !isLaunching else { return }
+                Task {
+                    await presentDebugMalaysiaLocationToast()
+                }
+            }
         }
         .onChange(of: settings.accentColor) { _ in
             WidgetCenter.shared.reloadAllTimelines()
@@ -239,6 +267,22 @@ struct AlAdhanApp: App {
             settings.updateDates()
             WidgetCenter.shared.reloadAllTimelines()
         }
+        .onChange(of: appLanguageCode) { _ in
+            syncSharedAppLanguagePreference(appLanguageCode)
+            rootRefreshToken = UUID()
+            settings.updateDates()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+            .onChange(of: settings.prayersData) { _ in
+                Task {
+                    await handleMalaysiaZoneChange()
+                }
+            }
+            .onChange(of: settings.currentLocation?.city) { _ in
+                Task {
+                    await handleMalaysiaZoneChange()
+                }
+            }
             .onChange(of: settings.firstLaunch) { isFirstLaunch in
                 if !isFirstLaunch {
                     settings.requestLocationAuthorization()
@@ -333,6 +377,7 @@ struct AlAdhanApp: App {
         showAdhanSheet = false
         showDailyQuranWidgetIntro = false
         showSupportPromoToast = false
+        showMalaysiaLocationToast = false
         quranDeepLink = nil
         selectedTab = .adhan
         lastUIHeartbeatAt = .distantPast
@@ -584,6 +629,119 @@ struct AlAdhanApp: App {
         }
     }
 
+    @MainActor
+    private func dismissMalaysiaLocationToast() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showMalaysiaLocationToast = false
+        }
+    }
+
+    @MainActor
+    private func presentDebugMalaysiaLocationToast() async {
+        if let zoneCode = settings.currentMalaysiaWaktuZoneName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased(),
+           let info = await malaysiaZoneInfo(for: zoneCode) {
+            malaysiaLocationToastPayload = MalaysiaLocationToastPayload(
+                stateName: info.displayStateName,
+                locationName: settings.currentPhoneLocationName ?? info.displayStateName,
+                zoneLabel: info.fullLabel,
+                iconAssetName: info.stateIconAssetName
+            )
+        } else {
+            malaysiaLocationToastPayload = MalaysiaLocationToastPayload(
+                stateName: "Johor",
+                locationName: settings.currentPhoneLocationName ?? "Johor Bahru, Johor",
+                zoneLabel: "JHR01 · Johor · Pulau Aur dan Pulau Pemanggil",
+                iconAssetName: "StateJohor"
+            )
+        }
+
+        malaysiaLocationToastCountdownStart = Date()
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+            showMalaysiaLocationToast = true
+        }
+    }
+
+    @MainActor
+    private func handleMalaysiaZoneChange() async {
+        guard scenePhase == .active else { return }
+        guard !settings.firstLaunch else { return }
+        guard settings.currentLocation?.countryCode?.uppercased() == "MY" else { return }
+        guard let zoneCode = settings.currentMalaysiaWaktuZoneName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased(),
+              !zoneCode.isEmpty else { return }
+        guard let info = await malaysiaZoneInfo(for: zoneCode) else { return }
+
+        let defaults = UserDefaults.standard
+        let previousState = defaults.string(forKey: Self.lastObservedMalaysiaStateKey)
+        let previousZone = defaults.string(forKey: Self.lastObservedMalaysiaZoneKey)
+        let resolvedPreviousState: String?
+        if let previousState {
+            resolvedPreviousState = previousState
+        } else {
+            resolvedPreviousState = await previousMalaysiaStateName(for: previousZone)
+        }
+        defaults.set(info.normalizedStateName, forKey: Self.lastObservedMalaysiaStateKey)
+        defaults.set(zoneCode, forKey: Self.lastObservedMalaysiaZoneKey)
+
+        guard previousZone != zoneCode else { return }
+        guard let resolvedPreviousState, resolvedPreviousState != info.normalizedStateName else { return }
+
+        malaysiaLocationToastPayload = MalaysiaLocationToastPayload(
+            stateName: info.displayStateName,
+            locationName: settings.currentPhoneLocationName ?? info.displayStateName,
+            zoneLabel: info.fullLabel,
+            iconAssetName: info.stateIconAssetName
+        )
+        malaysiaLocationToastCountdownStart = Date()
+
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+            showMalaysiaLocationToast = true
+        }
+    }
+
+    @MainActor
+    private func malaysiaZoneInfo(for zoneCode: String) async -> MalaysiaZoneMetadata? {
+        let normalizedCode = zoneCode.uppercased()
+        if let info = malaysiaZoneCatalog[normalizedCode] {
+            return info
+        }
+
+        guard let url = URL(string: "https://api-waktusolat.vercel.app/zones") else { return nil }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            guard statusCode == 200 else { return nil }
+            let decoded = try JSONDecoder().decode([MalaysiaZoneMetadata].self, from: data)
+            let catalog = Dictionary(uniqueKeysWithValues: decoded.map { ($0.jakimCode.uppercased(), $0) })
+            malaysiaZoneCatalog = catalog
+            return catalog[normalizedCode]
+        } catch {
+            logger.debug("Failed to load Malaysia zone catalog: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    @MainActor
+    private func previousMalaysiaStateName(for previousZone: String?) async -> String? {
+        guard let previousZone else {
+            return nil
+        }
+        let normalizedZone = previousZone
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        guard !normalizedZone.isEmpty else {
+            return nil
+        }
+        return await malaysiaZoneInfo(for: normalizedZone)?.normalizedStateName
+    }
+
+    private static let lastObservedMalaysiaStateKey = "lastObservedMalaysiaStateNameV1"
+    private static let lastObservedMalaysiaZoneKey = "lastObservedMalaysiaZoneCodeV1"
+
 }
 
 private struct QuranDeepLinkPayload: Identifiable {
@@ -631,6 +789,125 @@ private struct SupportPromoPoolProgress {
         }
 
         return value.formatted(.number.precision(.fractionLength(2)))
+    }
+}
+
+private struct MalaysiaZoneMetadata: Decodable, Identifiable {
+    let jakimCode: String
+    let negeri: String
+    let daerah: String
+
+    var id: String { jakimCode }
+
+    var fullLabel: String {
+        "\(jakimCode) · \(displayStateName) · \(daerah)"
+    }
+
+    var displayStateName: String {
+        switch normalizedStateName {
+        case "Kuala Lumpur":
+            return "Kuala Lumpur"
+        case "Negeri Sembilan":
+            return "Negeri Sembilan"
+        case "Pulau Pinang":
+            return "Pulau Pinang"
+        default:
+            return negeri
+        }
+    }
+
+    var normalizedStateName: String {
+        let value = negeri
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .replacingOccurrences(of: "wilayah persekutuan ", with: "")
+
+        switch value.lowercased() {
+        case "johor":
+            return "Johor"
+        case "kedah":
+            return "Kedah"
+        case "kelantan":
+            return "Kelantan"
+        case "kuala lumpur":
+            return "Kuala Lumpur"
+        case "labuan":
+            return "Labuan"
+        case "melaka":
+            return "Melaka"
+        case "negeri sembilan":
+            return "Negeri Sembilan"
+        case "pahang":
+            return "Pahang"
+        case "pulau pinang", "penang":
+            return "Pulau Pinang"
+        case "perak":
+            return "Perak"
+        case "perlis":
+            return "Perlis"
+        case "putrajaya":
+            return "Putrajaya"
+        case "sabah":
+            return "Sabah"
+        case "sarawak":
+            return "Sarawak"
+        case "selangor":
+            return "Selangor"
+        case "terengganu":
+            return "Terengganu"
+        default:
+            return negeri
+        }
+    }
+
+    var stateIconAssetName: String? {
+        switch normalizedStateName {
+        case "Johor":
+            return "StateJohor"
+        case "Kedah":
+            return "StateKedah"
+        case "Kelantan":
+            return "StateKelantan"
+        case "Kuala Lumpur":
+            return "StateKualaLumpur"
+        case "Labuan":
+            return "StateLabuan"
+        case "Melaka":
+            return "StateMelaka"
+        case "Negeri Sembilan":
+            return "StateNegeriSembilan"
+        case "Pahang":
+            return "StatePahang"
+        case "Pulau Pinang":
+            return "StatePulauPinang"
+        case "Perak":
+            return "StatePerak"
+        case "Perlis":
+            return "StatePerlis"
+        case "Putrajaya":
+            return "StatePutrajaya"
+        case "Sabah":
+            return "StateSabah"
+        case "Sarawak":
+            return "StateSarawak"
+        case "Selangor":
+            return "StateSelangor"
+        case "Terengganu":
+            return "StateTerengganu"
+        default:
+            return nil
+        }
+    }
+}
+
+private struct MalaysiaLocationToastPayload: Identifiable, Equatable {
+    let stateName: String
+    let locationName: String
+    let zoneLabel: String
+    let iconAssetName: String?
+
+    var id: String {
+        "\(stateName)|\(locationName)|\(zoneLabel)"
     }
 }
 
@@ -725,6 +1002,109 @@ private struct SupportPromoToast: View {
                     .inset(by: 1.1)
                     .trim(from: 0, to: progress)
                     .stroke(.orange, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 8)
+        .padding(.horizontal, 14)
+        .task(id: countdownStartDate) {
+            try? await Task.sleep(nanoseconds: UInt64(autoDismissAfter * 1_000_000_000))
+            await MainActor.run {
+                onDismiss()
+            }
+        }
+    }
+}
+
+private struct MalaysiaLocationToast: View {
+    let payload: MalaysiaLocationToastPayload
+    let countdownStartDate: Date
+    let autoDismissAfter: TimeInterval
+    let onDismiss: () -> Void
+
+    private var isMalay: Bool {
+        effectiveAppLanguageCode().hasPrefix("ms")
+    }
+
+    private var titleText: String {
+        isMalay ? "Lokasi Malaysia dikemas kini" : "Malaysia location updated"
+    }
+
+    private var locationLabelText: String {
+        isMalay ? "Lokasi" : "Location"
+    }
+
+    private var waktuZoneLabelText: String {
+        isMalay ? "Zon waktu solat" : "Waktu zone"
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack {
+                Group {
+                    if let iconAssetName = payload.iconAssetName {
+                        Image(iconAssetName)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        Image(systemName: "mappin.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundStyle(.red)
+                    }
+                }
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(titleText)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(payload.stateName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text("\(locationLabelText): \(payload.locationName)")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+
+                Text("\(waktuZoneLabelText): \(payload.zoneLabel)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .layoutPriority(1)
+
+            Spacer(minLength: 4)
+
+            VStack {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+        .overlay(
+            TimelineView(.periodic(from: countdownStartDate, by: 0.05)) { context in
+                let elapsed = max(0, context.date.timeIntervalSince(countdownStartDate))
+                let progress = max(0, min(1, 1 - (elapsed / autoDismissAfter)))
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .inset(by: 1.1)
+                    .trim(from: 0, to: progress)
+                    .stroke(.blue, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             }
         )
         .shadow(color: Color.black.opacity(0.12), radius: 14, x: 0, y: 8)
@@ -1588,7 +1968,7 @@ private struct QuranVerseDetailsModal: View {
                     .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.9))
             }
 
-            Text("“\(details.englishText)”")
+            Text("“\(details.translationText)”")
                 .font(.system(size: 17, weight: .semibold, design: .rounded))
                 .lineSpacing(3)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.82))
@@ -1719,12 +2099,12 @@ private struct QuranVerseDetailsModal: View {
             Text("Verse details and recitation are fetched live from AlQuran Cloud.")
                 .font(.caption)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.82) : Color.black.opacity(0.72))
-            Text("Text edition: en.asad • Audio edition: ar.alafasy")
+            Text(appLocalized("Text edition: %@ • Audio edition: ar.alafasy", currentQuranTranslationEditionLabel()))
                 .font(.caption2)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.62) : Color.black.opacity(0.54))
             HStack(spacing: 12) {
                 Link("API Docs", destination: URL(string: "https://alquran.cloud/api")!)
-                Link("Open Verse Endpoint", destination: URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/en.asad")!)
+                Link("Open Verse Endpoint", destination: URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/\(currentQuranTranslationEdition())")!)
             }
             .font(.caption2.weight(.semibold))
         }
@@ -1835,7 +2215,7 @@ private struct QuranVerseDetailsModal: View {
     }
 
     private func lockScreenSummaryText(details: QuranVerseDetails) -> String {
-        let normalizedPrimary = details.englishText
+        let normalizedPrimary = details.translationText
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let referenceLabel = "\(details.surahNameEnglish) \(details.reference)"
@@ -1861,14 +2241,14 @@ private struct QuranVerseDetailsModal: View {
         case .fullVerse:
             return """
 Quran reflection from \(referenceLine).
-\(details.englishText)
+\(details.translationText)
 
 Get Waktu on the App Store: \(appLink)
 """
         case .englishTranslation:
             return """
-English translation from \(referenceLine).
-\(details.englishText)
+Bahasa Melayu translation from \(referenceLine).
+\(details.translationText)
 
 Get Waktu on the App Store: \(appLink)
 """
@@ -1978,7 +2358,7 @@ private enum QuranShareVariant: Int, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .fullVerse: return "Full Verse"
-        case .englishTranslation: return "English Translation"
+        case .englishTranslation: return "Bahasa Melayu Translation"
         case .summary: return "Summary"
         }
     }
@@ -2106,7 +2486,7 @@ private struct DailyQuranSharePreviewCard: View {
     let quranArabicFontName: String
 
     private var arabicLength: Int { details.arabicText?.count ?? 0 }
-    private var englishLength: Int { details.englishText.count }
+    private var englishLength: Int { details.translationText.count }
 
     private var arabicFontSize: CGFloat {
         switch arabicLength {
@@ -2158,7 +2538,7 @@ private struct DailyQuranSharePreviewCard: View {
                             .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.97) : Color.black.opacity(0.93))
                     }
 
-                    Text("“\(details.englishText)”")
+                    Text("“\(details.translationText)”")
                         .font(.system(size: englishFontSize, weight: .semibold, design: .rounded))
                         .lineSpacing(6)
                         .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.82))
@@ -2198,7 +2578,7 @@ private struct DailyQuranEnglishTranslationSharePreviewCard: View {
     let colorScheme: ColorScheme
     let accent: Color
 
-    private var englishLength: Int { details.englishText.count }
+    private var englishLength: Int { details.translationText.count }
     private var isDark: Bool { colorScheme == .dark }
     private var backgroundGradient: LinearGradient {
         LinearGradient(
@@ -2225,7 +2605,7 @@ private struct DailyQuranEnglishTranslationSharePreviewCard: View {
 
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("English Translation")
+                    Text("Bahasa Melayu Translation")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(titleColor)
                     Text("Surah \(details.surahNameEnglish) • \(details.reference)")
@@ -2233,7 +2613,7 @@ private struct DailyQuranEnglishTranslationSharePreviewCard: View {
                         .foregroundStyle(subtitleColor)
                 }
 
-                Text("“\(details.englishText)”")
+                Text("“\(details.translationText)”")
                     .font(.system(size: englishFontSize, weight: .semibold, design: .rounded))
                     .lineSpacing(6)
                     .foregroundStyle(bodyColor)
@@ -2278,7 +2658,7 @@ private struct DailyQuranSummarySharePreviewCard: View {
     }
 
     private var summaryFontSize: CGFloat {
-        min(QuranShareTypography.bodyFontSize(for: details.englishText.count), 24)
+        min(QuranShareTypography.bodyFontSize(for: details.translationText.count), 24)
     }
 
     var body: some View {
@@ -2388,7 +2768,7 @@ private enum LockScreenSummaryFallback {
 
 private struct QuranVerseDetails {
     let reference: String
-    let englishText: String
+    let translationText: String
     let arabicText: String?
     let surahNameEnglish: String
     let surahNameArabic: String
@@ -2403,24 +2783,24 @@ private struct QuranVerseDetails {
 
 private enum QuranVerseAPI {
     static func fetchDetails(reference: String) async throws -> QuranVerseDetails {
-        async let english = fetchEdition(reference: reference, edition: "en.asad")
+        async let translation = fetchEdition(reference: reference, edition: currentQuranTranslationEdition())
         async let arabic = fetchEdition(reference: reference, edition: "ar.alafasy")
 
-        let en = try await english
+        let translated = try await translation
         let ar = try? await arabic
 
-        let englishText = normalize(en.data.text)
+        let translationText = normalize(translated.data.text)
         let arabicText = ar.map { normalize($0.data.text) }
         return QuranVerseDetails(
             reference: reference,
-            englishText: englishText,
+            translationText: translationText,
             arabicText: arabicText,
-            surahNameEnglish: en.data.surah.englishName,
-            surahNameArabic: en.data.surah.name,
-            revelationType: en.data.surah.revelationType,
-            juz: en.data.juz,
-            page: en.data.page,
-            hizbQuarter: en.data.hizbQuarter,
+            surahNameEnglish: translated.data.surah.englishName,
+            surahNameArabic: translated.data.surah.name,
+            revelationType: translated.data.surah.revelationType,
+            juz: translated.data.juz,
+            page: translated.data.page,
+            hizbQuarter: translated.data.hizbQuarter,
             audioURL: ar?.data.audio ?? ar?.data.audioSecondary?.first
         )
     }

@@ -258,11 +258,11 @@ private struct CachedDailyInspiration: Codable {
 private struct DailyInspirationProvider: TimelineProvider {
     private let appGroup = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
     private let seedKey = "dailyInspirationUserSeed"
-    private let cacheKey = "dailyInspirationCachedQuoteV1"
+    private let cacheKey = "dailyInspirationCachedQuoteV2"
 
     func placeholder(in context: Context) -> DailyInspirationEntry {
         DailyInspirationEntry(date: Date(), verse: InspiringVerse(
-            text: "For indeed, with hardship comes ease.",
+            text: "Sesungguhnya bersama kesukaran ada kemudahan.",
             surahName: "Ash-Sharh",
             reference: "94:5"
         ))
@@ -312,7 +312,7 @@ private struct DailyInspirationProvider: TimelineProvider {
     private func reference(for date: Date) -> InspiringVerseReference {
         let pool = DailyInspirationPool.references
         guard !pool.isEmpty else {
-            return InspiringVerseReference(reference: "94:5", theme: "hope", fallbackText: "For indeed, with hardship comes ease.")
+            return InspiringVerseReference(reference: "94:5", theme: "hope", fallbackText: "Sesungguhnya bersama kesukaran ada kemudahan.")
         }
 
         let calendar = Calendar.current
@@ -347,7 +347,8 @@ private struct DailyInspirationProvider: TimelineProvider {
     }
 
     private func fetchVerseFromAPI(reference: String) async -> InspiringVerse? {
-        guard let url = URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/en.asad") else {
+        let edition = currentQuranTranslationEdition()
+        guard let url = URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/\(edition)") else {
             return nil
         }
 
@@ -397,7 +398,7 @@ private struct DailyInspirationProvider: TimelineProvider {
     }
 
     private func fallbackVerse(for selectedReference: InspiringVerseReference) -> InspiringVerse {
-        let fallbackText = selectedReference.fallbackText ?? "For indeed, with hardship comes ease."
+        let fallbackText = selectedReference.fallbackText ?? "Sesungguhnya bersama kesukaran ada kemudahan."
         return InspiringVerse(
             text: fallbackText,
             surahName: surahName(from: selectedReference.reference),
@@ -408,7 +409,7 @@ private struct DailyInspirationProvider: TimelineProvider {
     private func surahName(from reference: String) -> String {
         let comps = reference.split(separator: ":")
         guard comps.count == 2, let surah = Int(comps[0]), (1...114).contains(surah) else {
-            return "Quran"
+            return appLocalized("Daily Quran")
         }
         return SurahNames.english[surah - 1]
     }

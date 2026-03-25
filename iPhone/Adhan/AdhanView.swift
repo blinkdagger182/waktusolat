@@ -56,7 +56,8 @@ struct AdhanView: View {
     private func loadDailyQuranQuote() {
         let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
         guard
-            let data = defaults?.data(forKey: "dailyInspirationCachedQuoteV1"),
+            let data = defaults?.data(forKey: "dailyInspirationCachedQuoteV2")
+                ?? defaults?.data(forKey: "dailyInspirationCachedQuoteV1"),
             let cached = try? JSONDecoder().decode(DailyQuranCachedQuote.self, from: data)
         else {
             dailyQuranQuote = nil
@@ -299,7 +300,7 @@ struct AdhanView: View {
             .toolbar {
                 #if DEBUG
                 ToolbarItem(placement: .navigationBarLeading) { EmptyView() }
-                /*ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Menu {
                         Button {
                             NotificationCenter.default.post(name: .debugShowDailyQuranWidgetIntro, object: nil)
@@ -344,11 +345,19 @@ struct AdhanView: View {
                         } label: {
                             Label("Donation Toast (Monthly Pool)", systemImage: "calendar")
                         }
+
+                        Divider()
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugShowMalaysiaLocationToast, object: nil)
+                        } label: {
+                            Label("Malaysia Location Toast", systemImage: "mappin.circle")
+                        }
                     } label: {
                         Image(systemName: "ladybug")
                     }
                     .accessibilityLabel("Debug options")
-                }*/
+                }
                 #endif
 
                 ToolbarItem(placement: .navigationBarTrailing) {

@@ -132,7 +132,7 @@ struct NextPrayerLiveActivityWidget: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(context.state.prayerName)
+                    Text(localizedPrayerName(context.state.prayerName))
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -143,9 +143,9 @@ struct NextPrayerLiveActivityWidget: Widget {
                     HStack(spacing: 6) {
                         LiveActivityCountdownText(
                             prayerTime: context.state.prayerTime,
-                            reachedText: "It's time for \(context.state.prayerName)",
-                            countdownPrefix: "Next in",
-                            compactReachedText: "It's time for \(context.state.prayerName)",
+                            reachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
+                            countdownPrefix: appLocalized("Next in"),
+                            compactReachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
                             isStale: context.isStale,
                             compact: false
                         )
@@ -157,9 +157,9 @@ struct NextPrayerLiveActivityWidget: Widget {
             } compactTrailing: {
                 LiveActivityCountdownText(
                     prayerTime: context.state.prayerTime,
-                    reachedText: "It's time for \(context.state.prayerName)",
+                    reachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
                     countdownPrefix: nil,
-                    compactReachedText: context.state.prayerName,
+                    compactReachedText: localizedPrayerName(context.state.prayerName),
                     isStale: context.isStale,
                     compact: true
                 )
@@ -183,7 +183,7 @@ private struct NextPrayerLiveActivityContentView: View {
                 .fill(palette.bg)
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("\(context.state.prayerName) · \(LiveActivityTheme.prayerTimeText(context.state.prayerTime))")
+                    Text("\(localizedPrayerName(context.state.prayerName)) · \(LiveActivityTheme.prayerTimeText(context.state.prayerTime))")
                         .font(.system(.headline, design: .rounded).weight(.semibold))
                         .foregroundColor(palette.fg)
                     Spacer()
@@ -196,9 +196,9 @@ private struct NextPrayerLiveActivityContentView: View {
                 HStack(spacing: 6) {
                     LiveActivityCountdownText(
                         prayerTime: context.state.prayerTime,
-                        reachedText: "It's time for \(context.state.prayerName)",
-                        countdownPrefix: "Next in",
-                        compactReachedText: "It's time for \(context.state.prayerName)",
+                        reachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
+                        countdownPrefix: appLocalized("Next in"),
+                        compactReachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
                         isStale: context.isStale,
                         compact: false
                     )
@@ -239,7 +239,7 @@ private struct NextPrayerLiveActivityContentView: View {
                         Image(systemName: "moon.stars.fill")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(palette.muted)
-                        Text("Waktu")
+                        Text(appLocalized("Waktu"))
                             .font(.system(.caption, design: .rounded).weight(.semibold))
                             .foregroundColor(palette.muted)
                     }
@@ -272,7 +272,7 @@ private struct LiveActivityCountdownText: View {
                         Text(reachedText)
                             .font(.system(.title3, design: .rounded).weight(.bold))
                         Spacer()
-                        Text("Tap to Dismiss")
+                        Text(appLocalized("Tap to Dismiss"))
                             .font(.system(.caption, design: .rounded))
                             .opacity(0.55)
                     }

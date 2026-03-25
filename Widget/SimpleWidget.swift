@@ -16,7 +16,7 @@ struct SimpleEntryView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.calendar = hijriCalendar
         dateFormatter.dateStyle = .medium
-        dateFormatter.locale = Locale(identifier: "en")
+        dateFormatter.locale = appLocale()
 
         let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
         let referenceDate = Settings.islamicReferenceDate(prayers: sourcePrayers)
@@ -36,8 +36,11 @@ struct SimpleEntryView: View {
             } else {
                 if let currentPrayer = entry.currentPrayer, let nextPrayer = entry.nextPrayer {
                     VStack(alignment: .leading) {
-                        Text("Time left: \(nextPrayer.time, style: .timer)")
-                            .font(.caption2)
+                        HStack(spacing: 3) {
+                            Text(appLocalized("Time left:"))
+                            Text(nextPrayer.time, style: .timer)
+                        }
+                        .font(.caption2)
                         
                         Spacer()
                         
@@ -64,8 +67,11 @@ struct SimpleEntryView: View {
                         .foregroundColor(widgetIsShurooq(nextPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
                         .padding(.vertical, 1)
                         
-                        Text("Starts at \(nextPrayer.time, style: .time)")
-                            .font(.caption2)
+                        HStack(spacing: 3) {
+                            Text(appLocalized("Starts at"))
+                            Text(nextPrayer.time, style: .time)
+                        }
+                        .font(.caption2)
                     }
                 }
             }

@@ -2,25 +2,18 @@ import SwiftUI
 
 struct HijriCalendarView: View {
     @EnvironmentObject var settings: Settings
-    
+
     @State private var nearestEventId: String = ""
     @State private var hijriYear = 1445
     @State private var hijriMonth = 1
-    
-    private let gregorianCalendar = Calendar(identifier: .gregorian)
-    
-    private static let monthSymbols = [
-        "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
-        "Jumada al-Ula", "Jumada al-Thani", "Rajab", "Sha'ban",
-        "Ramadan", "Shawwal", "Dhul Qi'dah", "Dhul Hijjah"
-    ]
-    
-    private static let formatter: DateFormatter = {
+
+    private var gregorianFormatter: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "EEEE, MMMM d, yyyy"
+        f.locale = appLocale()
         return f
-    }()
-    
+    }
+
     private func updateInformation() {
         let currentDate = Date()
         let components = settings.hijriCalendar.dateComponents([.year, .month], from: currentDate)
@@ -52,9 +45,9 @@ struct HijriCalendarView: View {
                     Section(header: Text("IMPORTANT ISLAMIC DATES")) {
                         ForEach(settings.specialEvents, id: \.0) { event in
                             let date = settings.hijriCalendar.date(from: event.1)!
-                            let dateInEnglish = Self.formatter.string(from: date)
+                            let dateInEnglish = gregorianFormatter.string(from: date)
                             let comps = event.1
-                            let monthName = Self.monthSymbols[(comps.month ?? 1) - 1]
+                            let monthName = localizedHijriMonthName(comps.month ?? 1)
                             let hijriString = "\(comps.day ?? 1) \(monthName), \(String(comps.year ?? hijriYear)) AH"
                             
                             HStack {
@@ -135,6 +128,9 @@ struct HijriCalendarView: View {
                             proxy.scrollTo(nearestEventId, anchor: .top)
                         }
                     }
+                }
+                .onChange(of: settings.hijriDate?.english) { _ in
+                    updateInformation()
                 }
                 .applyConditionalListStyle(defaultView: settings.defaultView)
                 .navigationTitle("Hijri Calendar")

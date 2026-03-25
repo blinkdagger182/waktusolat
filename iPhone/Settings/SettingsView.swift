@@ -237,6 +237,7 @@ struct SettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("donationSuccessCount") private var donationSuccessCount: Int = 0
     @AppStorage("appLaunchCountV1") private var appLaunchCount: Int = 0
+    @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
     
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
@@ -287,6 +288,14 @@ struct SettingsView: View {
 
                     Section(header: Text("APPEARANCE")) {
                         SettingsAppearanceView()
+                    }
+
+                    Section(header: Text("LANGUAGE")) {
+                        Picker("Language", selection: $appLanguageCode) {
+                            ForEach(AppLanguage.allCases) { language in
+                                Text(language.displayName).tag(language.rawValue)
+                            }
+                        }
                     }
                     
                     Section(header: Text("CREDITS")) {
@@ -423,6 +432,9 @@ struct SettingsView: View {
                 Button(option.debugLabel) {
                     NotificationCenter.default.post(name: .debugShowSupportPromoToastVariant, object: option.triggerKey)
                 }
+            }
+            Button("Malaysia Location Toast") {
+                NotificationCenter.default.post(name: .debugShowMalaysiaLocationToast, object: nil)
             }
             Button("Cancel", role: .cancel) {}
         }

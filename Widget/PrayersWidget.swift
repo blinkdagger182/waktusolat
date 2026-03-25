@@ -34,7 +34,7 @@ struct PrayersEntryView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.calendar = hijriCalendar
         dateFormatter.dateStyle = .full
-        dateFormatter.locale = Locale(identifier: "en")
+        dateFormatter.locale = appLocale()
 
         let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
         let referenceDate = Settings.islamicReferenceDate(prayers: sourcePrayers)
@@ -149,9 +149,12 @@ struct PrayersEntryView: View {
                                     
                                     Spacer()
                                     
-                                    Text("Time left: \(nextPrayer.time, style: .timer)")
-                                        .font(.caption)
-                                        .padding(.trailing, 2)
+                                    HStack(spacing: 3) {
+                                        Text(appLocalized("Time left:"))
+                                        Text(nextPrayer.time, style: .timer)
+                                    }
+                                    .font(.caption)
+                                    .padding(.trailing, 2)
                                 }
                                 .padding(.leading, 4)
                             }
@@ -160,8 +163,11 @@ struct PrayersEntryView: View {
                                 Spacer()
                                 VStack(alignment: .trailing) {
                                     HStack {
-                                        Text("Starts at \(nextPrayer.time, style: .time)")
-                                            .font(.caption)
+                                        HStack(spacing: 3) {
+                                            Text(appLocalized("Starts at"))
+                                            Text(nextPrayer.time, style: .time)
+                                        }
+                                        .font(.caption)
                                         
                                         Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                                             .font(.title3)

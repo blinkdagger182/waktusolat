@@ -146,7 +146,7 @@ struct CountdownEntryView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.calendar = hijriCalendar
         dateFormatter.dateStyle = .medium
-        dateFormatter.locale = Locale(identifier: "en")
+        dateFormatter.locale = appLocale()
 
         let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
         let referenceDate = Settings.islamicReferenceDate(prayers: sourcePrayers)
