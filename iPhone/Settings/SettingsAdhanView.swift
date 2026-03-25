@@ -30,20 +30,20 @@ struct SettingsAdhanView: View {
             if showNotifications {
                 Section(header: Text("NOTIFICATIONS")) {
                     NavigationLink(destination: NotificationView()) {
-                        Label("Notification Settings", systemImage: "bell.badge")
+                        Label(appLocalized("Notification Settings"), systemImage: "bell.badge")
                     }
                     
                     #if os(iOS)
-                    Toggle("Live Next Prayer Activity", isOn: $settings.liveNextPrayerEnabled.animation(.easeInOut))
+                    Toggle(appLocalized("Live Next Prayer Activity"), isOn: $settings.liveNextPrayerEnabled.animation(.easeInOut))
                         .font(.subheadline)
                         .tint(settings.accentColor.toggleTint)
 
                     if settings.liveNextPrayerEnabled {
                         HStack {
-                            Text("Show Before Prayer")
+                            Text(appLocalized("Show Before Prayer"))
                                 .font(.subheadline)
                             Spacer()
-                            Text("\(max(0, settings.liveActivityLeadMinutes)) minutes")
+                            Text("\(max(0, settings.liveActivityLeadMinutes)) \(appLocalized("minutes"))")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -59,6 +59,7 @@ struct SettingsAdhanView: View {
                             .padding(.vertical, 2)
                     }
 
+                    /*
                     #if DEBUG
                     if #available(iOS 16.2, *) {
                         Button {
@@ -71,6 +72,7 @@ struct SettingsAdhanView: View {
                         .font(.subheadline)
                     }
                     #endif
+                    */
                     #endif
                 }
             }
@@ -132,7 +134,7 @@ struct SettingsAdhanView: View {
             
         }
         .applyConditionalListStyle(defaultView: true)
-        .navigationTitle("Waktu Solat Settings")
+        .navigationTitle(appLocalized("Waktu Solat Settings"))
         .onAppear {
             applyRegionDefaultCalculation()
         }
@@ -330,6 +332,7 @@ struct LiveActivitySettingsView: View {
             }
             #endif
 
+            /*
             #if DEBUG
             if #available(iOS 16.2, *) {
                 Section(header: Text("DEBUG LIVE ACTIVITY")) {
@@ -416,6 +419,7 @@ struct LiveActivitySettingsView: View {
                 }
             }
             #endif
+            */
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Live Activity Options")
@@ -442,14 +446,14 @@ struct NotificationView: View {
             }
             #endif
             
-            Section(header: Text("PRAYER REMINDERS")) {
+            Section(header: Text(appLocalized("PRAYER REMINDERS"))) {
                 NavigationLink(destination: MoreNotificationView()) {
-                    Label("Prayer Notifications", systemImage: "bell.fill")
+                    Label(appLocalized("Prayer Notifications"), systemImage: "bell.fill")
                         .font(.subheadline)
                 }
             }
 
-            Section(header: Text("PRAYER MESSAGE STYLE")) {
+            Section(header: Text(appLocalized("PRAYER MESSAGE STYLE"))) {
                 NotificationStylePreviewCard(
                     appName: "Waktu Solat",
                     title: prayerPreviewTitle,
@@ -458,7 +462,7 @@ struct NotificationView: View {
                 )
                 .listRowSeparator(.hidden)
 
-                Picker("Prayer Notification Style", selection: Binding(
+                Picker(appLocalized("Prayer Notification Style"), selection: Binding(
                     get: { settings.prayerNotificationMessageStyle },
                     set: { settings.prayerNotificationMessageStyle = $0 }
                 )) {
@@ -473,8 +477,8 @@ struct NotificationView: View {
                     .foregroundColor(.secondary)
             }
 
-            Section(header: Text("DAILY ZIKIR REMINDERS")) {
-                Toggle("Send Daily Zikir Notifications", isOn: $settings.zikirNotificationsEnabled.animation(.easeInOut))
+            Section(header: Text(appLocalized("DAILY ZIKIR REMINDERS"))) {
+                Toggle(appLocalized("Send Daily Zikir Notifications"), isOn: $settings.zikirNotificationsEnabled.animation(.easeInOut))
                     .font(.subheadline)
                     .tint(settings.accentColor.toggleTint)
 
@@ -487,7 +491,7 @@ struct NotificationView: View {
                     )
                     .listRowSeparator(.hidden)
 
-                    Picker("Zikir Notification Style", selection: Binding(
+                    Picker(appLocalized("Zikir Notification Style"), selection: Binding(
                         get: { settings.zikirNotificationMessageStyle },
                         set: { settings.zikirNotificationMessageStyle = $0 }
                     )) {
@@ -497,7 +501,7 @@ struct NotificationView: View {
                     }
                     .pickerStyle(.menu)
 
-                    Text("Zikir notifications rotate through morning, midday, evening, and night using the same prayer-aware timing as the zikir widget.")
+                    Text(appLocalized("Zikir notifications rotate through morning, midday, evening, and night using the same prayer-aware timing as the zikir widget."))
                         .font(.caption)
                         .foregroundColor(.secondary)
 
@@ -505,13 +509,13 @@ struct NotificationView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else {
-                    Text("Send a short Arabic zikir throughout the day, timed around your prayer windows.")
+                    Text(appLocalized("Send a short Arabic zikir throughout the day, timed around your prayer windows."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
 
-            Section(header: Text("NOTIFICATION SOUND")) {
+            Section(header: Text(appLocalized("NOTIFICATION SOUND"))) {
                 Picker(
                     selection: Binding(
                         get: { settings.notificationSoundOption },
@@ -525,7 +529,7 @@ struct NotificationView: View {
                         Text(option.title).tag(option)
                     }
                 } label: {
-                    Label("Notification Sound", systemImage: "speaker.wave.2.fill")
+                    Label(appLocalized("Notification Sound"), systemImage: "speaker.wave.2.fill")
                         .font(.subheadline)
                 }
                 .pickerStyle(.menu)
@@ -559,7 +563,7 @@ struct NotificationView: View {
             }
         }
         .applyConditionalListStyle(defaultView: true)
-        .navigationTitle("Notification Settings")
+        .navigationTitle(appLocalized("Notification Settings"))
     }
 
     private var prayerPreviewTitle: String {
@@ -842,7 +846,7 @@ private struct NotificationStylePreviewCard: View {
     let accentColor: Color
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Image("CurrentAppIcon")
                 .resizable()
                 .scaledToFill()
@@ -884,6 +888,8 @@ private struct NotificationStylePreviewCard: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .frame(maxWidth: 364)
+        .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(backgroundColor)
@@ -943,6 +949,340 @@ private struct NotificationStylePreviewCard: View {
         let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedAppName = appName.trimmingCharacters(in: .whitespacesAndNewlines)
         return !normalizedTitle.isEmpty && normalizedTitle.caseInsensitiveCompare(normalizedAppName) != .orderedSame
+    }
+}
+
+struct WidgetPreviewGalleryView: View {
+    @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(WidgetZikirAlignment.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var zikirAlignmentRaw = WidgetZikirAlignment.center.rawValue
+
+    private var zikirAlignment: WidgetZikirAlignment {
+        get { WidgetZikirAlignment(rawValue: zikirAlignmentRaw) ?? .center }
+        nonmutating set { zikirAlignmentRaw = newValue.rawValue }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(appLocalized("Widget Options"))
+                        .font(.headline)
+
+                    Picker(appLocalized("Zikir Text Alignment"), selection: Binding(
+                        get: { zikirAlignment },
+                        set: { zikirAlignment = $0 }
+                    )) {
+                        ForEach(WidgetZikirAlignment.allCases) { alignment in
+                            Text(alignment.title).tag(alignment)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Text(appLocalized("Choose how zikir text is aligned in the zikir widgets."))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                previewSection(
+                    title: appLocalized("Lock Screen Widgets"),
+                    subtitle: appLocalized("Preview the compact lock screen styles for quick prayer and zikir information."),
+                    content: {
+                        VStack(spacing: 14) {
+                            LockScreenRectangularPrayerPreviewCard(
+                                title: localizedPrayerName("Maghrib"),
+                                time: "7:26 PM",
+                                footer: "Taiping, Perak"
+                            )
+
+                            LockScreenRectangularZikirPreviewCard(
+                                helperTitle: isMalayAppLanguage() ? "Zikir malam" : "Night Zikir",
+                                arabic: "أَسْتَغْفِرُ اللَّهَ",
+                                translation: isMalayAppLanguage() ? "Aku memohon ampun kepada Allah." : "I seek forgiveness from Allah.",
+                                alignment: zikirAlignment
+                            )
+                        }
+                    }
+                )
+            }
+            .padding()
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(appLocalized("Widget Previews"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func previewSection<Content: View>(
+        title: String,
+        subtitle: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+
+            Text(subtitle)
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            content()
+        }
+    }
+}
+
+private struct HomePrayerWidgetPreviewCard: View {
+    let title: String
+    let time: String
+    let period: String
+    let countdown: String
+    let backgroundAssetName: String
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Image(backgroundAssetName)
+                .resizable()
+                .scaledToFill()
+                .frame(height: 170)
+                .frame(maxWidth: .infinity)
+                .clipped()
+
+            LinearGradient(
+                colors: [Color.black.opacity(0.08), Color.black.opacity(0.34)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "moon.stars.fill")
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(time)
+                        .font(.system(size: 44, weight: .bold))
+                    Text(period)
+                        .font(.title3.weight(.semibold))
+                }
+
+                Text(countdown)
+                    .font(.headline.weight(.semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .frame(height: 170)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+private struct HomeListWidgetPreviewCard: View {
+    let city: String
+    let nextPrayer: String
+    let nextTime: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image("CurrentAppIcon")
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                Text("Waktu Solat")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Text(city)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+
+            Divider()
+
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(nextPrayer)
+                        .font(.headline.weight(.semibold))
+                    Text(nextTime)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("4:32")
+                        .font(.title3.weight(.bold))
+                        .monospacedDigit()
+                    Text(isMalayAppLanguage() ? "Baki waktu" : "Time left")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct HomeZikirWidgetPreviewCard: View {
+    let helperTitle: String
+    let arabic: String
+    let translation: String
+    let alignment: WidgetZikirAlignment
+
+    private var horizontalAlignment: HorizontalAlignment {
+        alignment == .leading ? .leading : .center
+    }
+
+    private var textAlignment: TextAlignment {
+        alignment == .leading ? .leading : .center
+    }
+
+    var body: some View {
+        VStack(alignment: horizontalAlignment, spacing: 8) {
+            Text(helperTitle)
+                .font(.caption.weight(.medium))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            Text(arabic)
+                .font(.system(size: 28, weight: .regular))
+                .multilineTextAlignment(textAlignment)
+                .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .center)
+            Text(translation)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(textAlignment)
+                .lineLimit(2)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 170)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct LockScreenCircularPreviewCard: View {
+    let title: String
+    let time: String
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(.secondarySystemBackground))
+            Circle()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+
+            VStack(spacing: 3) {
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                Text(time)
+                    .font(.system(.caption, design: .rounded).weight(.bold))
+                    .monospacedDigit()
+            }
+            .padding(8)
+        }
+        .frame(width: 92, height: 92)
+    }
+}
+
+private struct LockScreenRectangularPrayerPreviewCard: View {
+    let title: String
+    let time: String
+    let footer: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+            }
+
+            Text(time)
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .monospacedDigit()
+
+            Spacer(minLength: 0)
+
+            Text(footer)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct LockScreenRectangularZikirPreviewCard: View {
+    let helperTitle: String
+    let arabic: String
+    let translation: String
+    let alignment: WidgetZikirAlignment
+
+    private var horizontalAlignment: HorizontalAlignment {
+        alignment == .leading ? .leading : .center
+    }
+
+    private var textAlignment: TextAlignment {
+        alignment == .leading ? .leading : .center
+    }
+
+    var body: some View {
+        VStack(alignment: horizontalAlignment, spacing: 3) {
+            Text(helperTitle)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            Text(arabic)
+                .font(.system(size: 19, weight: .regular))
+                .multilineTextAlignment(textAlignment)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .center)
+            Text(translation)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(textAlignment)
+                .lineLimit(1)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 
@@ -1007,7 +1347,7 @@ struct MoreNotificationView: View {
     @State private var showAlert: Bool = false
 
     private var notificationPageToggleTint: Color {
-        settings.accentColor == .adaptive ? Color.white : settings.accentColor.toggleTint
+        settings.accentColor.toggleTint
     }
     
     private func turnOffNaggingModeIfAllOff() {
@@ -1026,12 +1366,12 @@ struct MoreNotificationView: View {
     
     var body: some View {
         List {
-            Section(header: Text("NAGGING MODE")) {
-                Text("Nagging mode helps those who struggle to pray on time. Once enabled, you'll get a notification at the chosen start time before each prayer, then another every 15 minutes, plus final reminders at 10 and 5 minutes remaining.")
+            Section(header: Text(appLocalized("NAGGING MODE"))) {
+                Text(appLocalized("Nagging mode helps those who struggle to pray on time. Once enabled, you'll get a notification at the chosen start time before each prayer, then another every 15 minutes, plus final reminders at 10 and 5 minutes remaining."))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Toggle("Turn on Nagging Mode", isOn: Binding(
+                Toggle(appLocalized("Turn on Nagging Mode"), isOn: Binding(
                     get: { settings.naggingMode },
                     set: { newValue in
                         withAnimation {
@@ -1066,18 +1406,18 @@ struct MoreNotificationView: View {
                 .tint(notificationPageToggleTint)
                 
                 if settings.naggingMode {
-                    Picker("Starting Time", selection: $settings.naggingStartOffset.animation(.easeInOut)) {
-                        Text("45 mins").tag(45)
-                        Text("30 mins").tag(30)
-                        Text("15 mins").tag(15)
-                        Text("10 mins").tag(10)
+                    Picker(appLocalized("Starting Time"), selection: $settings.naggingStartOffset.animation(.easeInOut)) {
+                        Text(appLocalized("45 mins")).tag(45)
+                        Text(appLocalized("30 mins")).tag(30)
+                        Text(appLocalized("15 mins")).tag(15)
+                        Text(appLocalized("10 mins")).tag(10)
                     }
                     #if !os(watchOS)
                     .pickerStyle(.segmented)
                     #endif
                     
                     Group {
-                        Toggle("Nagging before Fajr", isOn: Binding(
+                        Toggle(appLocalized("Nagging before Fajr"), isOn: Binding(
                             get: { settings.naggingFajr },
                             set: { newValue in
                                 settings.naggingFajr = newValue
@@ -1085,7 +1425,7 @@ struct MoreNotificationView: View {
                             }
                         ).animation(.easeInOut))
                         
-                        Toggle("Nagging before Sunrise", isOn: Binding(
+                        Toggle(appLocalized("Nagging before Sunrise"), isOn: Binding(
                             get: { settings.naggingSunrise },
                             set: { newValue in
                                 settings.naggingSunrise = newValue
@@ -1093,7 +1433,7 @@ struct MoreNotificationView: View {
                             }
                         ).animation(.easeInOut))
                         
-                        Toggle("Nagging before Dhuhr", isOn: Binding(
+                        Toggle(appLocalized("Nagging before Dhuhr"), isOn: Binding(
                             get: { settings.naggingDhuhr },
                             set: { newValue in
                                 settings.naggingDhuhr = newValue
@@ -1101,7 +1441,7 @@ struct MoreNotificationView: View {
                             }
                         ).animation(.easeInOut))
                         
-                        Toggle("Nagging before Asr", isOn: Binding(
+                        Toggle(appLocalized("Nagging before Asr"), isOn: Binding(
                             get: { settings.naggingAsr },
                             set: { newValue in
                                 settings.naggingAsr = newValue
@@ -1109,7 +1449,7 @@ struct MoreNotificationView: View {
                             }
                         ).animation(.easeInOut))
                         
-                        Toggle("Nagging before Maghrib", isOn: Binding(
+                        Toggle(appLocalized("Nagging before Maghrib"), isOn: Binding(
                             get: { settings.naggingMaghrib },
                             set: { newValue in
                                 settings.naggingMaghrib = newValue
@@ -1117,7 +1457,7 @@ struct MoreNotificationView: View {
                             }
                         ).animation(.easeInOut))
                         
-                        Toggle("Nagging before Isha", isOn: Binding(
+                        Toggle(appLocalized("Nagging before Isha"), isOn: Binding(
                             get: { settings.naggingIsha },
                             set: { newValue in
                                 settings.naggingIsha = newValue
@@ -1130,8 +1470,8 @@ struct MoreNotificationView: View {
             }
             
             if !settings.naggingMode {
-                Section(header: Text("ALL PRAYER NOTIFICATIONS")) {
-                    Toggle("Turn On All Prayer Notifications", isOn: Binding(
+                Section(header: Text(appLocalized("ALL PRAYER NOTIFICATIONS"))) {
+                    Toggle(appLocalized("Turn On All Prayer Notifications"), isOn: Binding(
                         get: {
                             settings.notificationFajr &&
                             settings.notificationSunrise &&
@@ -1167,9 +1507,9 @@ struct MoreNotificationView: View {
                             }
                         }
                     ), in: 0...30, step: 5) {
-                        Text("All Prayer Prenotifications:")
+                        Text(appLocalized("All Prayer Prenotifications:"))
                             .font(.subheadline)
-                        Text("\(settings.preNotificationFajr) minute\(settings.preNotificationFajr != 1 ? "s" : "")")
+                        Text("\(settings.preNotificationFajr) \(appLocalized(settings.preNotificationFajr != 1 ? "minutes" : "minute"))")
                             .font(.subheadline)
                             .foregroundColor(settings.accentColor.color)
                     }
@@ -1223,10 +1563,10 @@ struct MoreNotificationView: View {
             }
             Button("Ignore", role: .cancel) { }
         } message: {
-            Text("Please go to Settings and enable notifications to be notified of prayer times.")
+            Text(appLocalized("Please go to Settings and enable notifications to be notified of prayer times."))
         }
         .applyConditionalListStyle(defaultView: true)
-        .navigationTitle("Prayer Notifications")
+        .navigationTitle(appLocalized("Prayer Notifications"))
     }
 
     private func syncNotificationSettingsPage() {
@@ -1252,21 +1592,21 @@ struct NotificationSettingsSection: View {
     @Binding var isNotificationOn: Bool
 
     private var notificationPageToggleTint: Color {
-        settings.accentColor == .adaptive ? Color.white : settings.accentColor.toggleTint
+        settings.accentColor.toggleTint
     }
 
     var body: some View {
-        Section(header: Text(prayerName.uppercased())) {
-            Toggle("Notification", isOn: $isNotificationOn.animation(.easeInOut))
+        Section(header: Text(localizedPrayerName(prayerName).uppercased())) {
+            Toggle(appLocalized("Notification"), isOn: $isNotificationOn.animation(.easeInOut))
                 .font(.subheadline)
                 .tint(notificationPageToggleTint)
             
             if isNotificationOn {
                 Stepper(value: $preNotificationTime.animation(.easeInOut), in: 0...30, step: 5) {
-                    Text("Prenotification Time:")
+                    Text(appLocalized("Prenotification Time:"))
                         .font(.subheadline)
                     
-                    Text("\(preNotificationTime) minute\(preNotificationTime != 1 ? "s" : "")")
+                    Text("\(preNotificationTime) \(appLocalized(preNotificationTime != 1 ? "minutes" : "minute"))")
                         .font(.subheadline)
                         .foregroundColor(settings.accentColor.color)
                 }

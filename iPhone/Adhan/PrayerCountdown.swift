@@ -52,6 +52,10 @@ private struct CurrentPrayerCell: View {
     
     let prayer: Prayer
 
+    private var startsAtFont: Font {
+        (isMalayAppLanguage() ? Font.footnote : Font.subheadline).weight(.semibold)
+    }
+
     var body: some View {
         ZStack {
             Color.white.opacity(0.0001)
@@ -66,7 +70,7 @@ private struct CurrentPrayerCell: View {
                         .layoutPriority(1)
                     Text(prayer.time, style: .time)
                 }
-                .font(.headline)
+                .font(startsAtFont)
                 
                 if settings.showCurrentInfo {
                     Divider()
@@ -222,7 +226,9 @@ private struct UpcomingPrayerCell: View {
     }
 
     private var timeInfo: some View {
-        HStack(spacing: 10) {
+        let countdownFont = (isMalayAppLanguage() ? Font.footnote : Font.subheadline).weight(.semibold)
+
+        return HStack(spacing: 10) {
             HStack(spacing: 4) {
                 Text(appLocalized("Time left:"))
                     .lineLimit(1)
@@ -230,7 +236,7 @@ private struct UpcomingPrayerCell: View {
                 Text(prayer.time, style: .timer)
                     .monospacedDigit()
             }
-            .font(.subheadline.weight(.semibold))
+            .font(countdownFont)
             .lineLimit(1)
             .minimumScaleFactor(isMalayAppLanguage() ? 0.64 : 0.72)
             .allowsTightening(true)
@@ -247,7 +253,7 @@ private struct UpcomingPrayerCell: View {
                     .monospacedDigit()
                     .fixedSize(horizontal: true, vertical: false)
             }
-            .font((isMalayAppLanguage() ? Font.footnote : Font.subheadline).weight(.semibold))
+            .font(countdownFont)
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
         }

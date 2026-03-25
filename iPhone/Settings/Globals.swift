@@ -111,6 +111,24 @@ func currentQuranTranslationEditionLabel(for storedCode: String? = storedAppLang
     effectiveAppLanguage(from: storedCode).quranTranslationEditionLabel
 }
 
+enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
+    static let storageKey = "widgetZikirAlignment"
+
+    case center
+    case leading
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .center:
+            return appLocalized("Centered")
+        case .leading:
+            return appLocalized("Left Aligned")
+        }
+    }
+}
+
 private func appLocalizedBundle(for storedCode: String? = storedAppLanguageCode()) -> Bundle {
     let languageCode = effectiveAppLanguageCode(from: storedCode)
     guard
@@ -255,7 +273,7 @@ func localizedPrayerDetailNote(for prayerName: String) -> String? {
 enum AccentColor: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 
-    case adaptive, red, orange, yellow, green, blue, indigo, cyan, teal, mint, purple, brown, lightPink, hotPink
+    case adaptive, red, orange, yellow, green, blue, indigo, cyan, teal, mint, purple, brown, lightPink, hotPink, emerald, coral
 
     var color: Color {
         switch self {
@@ -273,6 +291,8 @@ enum AccentColor: String, CaseIterable, Identifiable {
         case .brown: return .brown
         case .lightPink: return Color(red: 1.0, green: 182.0 / 255.0, blue: 193.0 / 255.0) // #ffb6c1
         case .hotPink: return Color(red: 1.0, green: 105.0 / 255.0, blue: 180.0 / 255.0)   // #ff69b4
+        case .emerald: return Color(red: 0.0, green: 168.0 / 255.0, blue: 107.0 / 255.0)   // #00a86b
+        case .coral: return Color(red: 1.0, green: 127.0 / 255.0, blue: 80.0 / 255.0)      // #ff7f50
         }
     }
 

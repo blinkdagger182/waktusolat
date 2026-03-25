@@ -96,6 +96,28 @@ private struct ZikirEntryView: View {
     @Environment(\.widgetFamily) private var family
     let entry: ZikirEntry
 
+    private var zikirAlignment: WidgetZikirAlignment {
+        guard
+            let rawValue = UserDefaults(suiteName: sharedAppGroupID)?.string(forKey: WidgetZikirAlignment.storageKey),
+            let alignment = WidgetZikirAlignment(rawValue: rawValue)
+        else {
+            return .center
+        }
+        return alignment
+    }
+
+    private var horizontalAlignment: HorizontalAlignment {
+        zikirAlignment == .leading ? .leading : .center
+    }
+
+    private var textAlignment: TextAlignment {
+        zikirAlignment == .leading ? .leading : .center
+    }
+
+    private var frameAlignment: Alignment {
+        zikirAlignment == .leading ? .leading : .center
+    }
+
     private var arabicFontName: String {
         let stored = UserDefaults(suiteName: sharedAppGroupID)?.string(forKey: "fontArabic") ?? ""
         let candidates = [
@@ -120,33 +142,33 @@ private struct ZikirEntryView: View {
     var body: some View {
         switch family {
         case .accessoryRectangular:
-            VStack(spacing: 3) {
+            VStack(alignment: horizontalAlignment, spacing: 3) {
                 Text(entry.helperTitle)
                     .font(.system(size: 10, weight: .medium, design: .default))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .frame(maxWidth: .infinity, alignment: frameAlignment)
                 Text(entry.phraseArabic)
                     .font(.custom(arabicFontName, size: 19))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(textAlignment)
+                    .frame(maxWidth: .infinity, alignment: frameAlignment)
                     .lineLimit(2)
                     .minimumScaleFactor(0.72)
                     .environment(\.layoutDirection, .rightToLeft)
                 Text(entry.translation)
                     .font(.system(size: 10, weight: .regular, design: .default))
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(textAlignment)
                     .lineLimit(1)
                     .minimumScaleFactor(0.76)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .frame(maxWidth: .infinity, alignment: frameAlignment)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(entry.accessibilityLabel)
         default:
-            VStack(spacing: 8) {
+            VStack(alignment: horizontalAlignment, spacing: 8) {
                 Text(entry.helperTitle)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
@@ -154,15 +176,15 @@ private struct ZikirEntryView: View {
                     .minimumScaleFactor(0.8)
                 Text(entry.phraseArabic)
                     .font(.custom(arabicFontName, size: 28))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(textAlignment)
+                    .frame(maxWidth: .infinity, alignment: frameAlignment)
                     .lineLimit(3)
                     .minimumScaleFactor(0.65)
                     .environment(\.layoutDirection, .rightToLeft)
                 Text(entry.translation)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(textAlignment)
                     .lineLimit(2)
                     .minimumScaleFactor(0.78)
                 Spacer(minLength: 0)

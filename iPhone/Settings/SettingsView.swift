@@ -273,6 +273,14 @@ struct SettingsView: View {
                             Label("Waktu Solat Settings", systemImage: "bell.and.waves.left.and.right")
                                 .foregroundColor(settings.accentColor.color)
                         }
+
+                        NavigationLink {
+                            WidgetPreviewGalleryView()
+                                .environmentObject(settings)
+                        } label: {
+                            Label("Widgets", systemImage: "square.grid.2x2")
+                                .foregroundColor(settings.accentColor.color)
+                        }
                     }
 
                     /*
@@ -830,6 +838,7 @@ struct SettingsAppearanceView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .labelsHidden()
             }
 
             Text(isMalay ? "Pilih bahasa yang akan digunakan oleh Waktu di dalam aplikasi." : "Choose how Waktu appears inside the app.")

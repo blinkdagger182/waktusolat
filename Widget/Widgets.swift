@@ -311,7 +311,7 @@ struct Widgets: WidgetBundle {
             LockScreen3Widget()
             LockScreen6Widget()
             LockScreenZikirWidget()
-            // LockScreen5Widget() // Temporarily disabled
+            // LockScreen5Widget()
             LockScreenVerseWidget()
             #if canImport(ActivityKit)
             if #available(iOSApplicationExtension 16.2, *) {
