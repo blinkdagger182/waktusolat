@@ -1640,7 +1640,7 @@ extension Settings {
                    let fullPrayers = getPrayerTimes(for: today, fullPrayers: true) {
                     prayers = Prayers(
                         day: today,
-                        city: currentPrayerAreaName ?? loc.city,
+                        city: effectivePrayerLocationDisplayName ?? currentPrayerAreaName ?? loc.city,
                         prayers: todayPrayers,
                         fullPrayers: fullPrayers,
                         setNotification: false
@@ -1672,9 +1672,13 @@ extension Settings {
                     let fullPrayers = getPrayerTimes(for: today, fullPrayers: true)
 
                     if let todayPrayers, let fullPrayers {
+                        syncActivePrayerContextAfterPrayerRefresh(
+                            fallbackLocationDisplayName: currentPrayerAreaName ?? loc.city,
+                            zoneIdentifier: currentPrayerZoneIdentifier
+                        )
                         prayers = Prayers(
                             day: today,
-                            city: currentPrayerAreaName ?? loc.city,
+                            city: effectivePrayerLocationDisplayName ?? currentPrayerAreaName ?? loc.city,
                             prayers: todayPrayers,
                             fullPrayers: fullPrayers,
                             setNotification: false
@@ -1710,9 +1714,13 @@ extension Settings {
                 let fullPrayers = getPrayerTimes(for: today, fullPrayers: true)
 
                 if let todayPrayers, let fullPrayers {
+                    syncActivePrayerContextAfterPrayerRefresh(
+                        fallbackLocationDisplayName: currentPrayerAreaName ?? loc.city,
+                        zoneIdentifier: currentPrayerZoneIdentifier
+                    )
                     prayers = Prayers(
                         day: today,
-                        city: currentPrayerAreaName ?? loc.city,
+                        city: effectivePrayerLocationDisplayName ?? currentPrayerAreaName ?? loc.city,
                         prayers: todayPrayers,
                         fullPrayers: fullPrayers,
                         setNotification: false
@@ -1821,7 +1829,7 @@ extension Settings {
         #if os(iOS) && canImport(ActivityKit)
         if #available(iOS 16.2, *) {
             let next = nextPrayer
-            let city = currentPrayerAreaName
+            let city = effectivePrayerLocationDisplayName
             let enabled = liveNextPrayerEnabled
             let prayerEnabled = isLiveActivityPrayerEnabled(for: nextPrayer)
             let inWindow = isWithinLiveActivityLeadWindow(for: nextPrayer)
@@ -1976,7 +1984,7 @@ extension Settings {
     ) {
         #if DEBUG && os(iOS) && canImport(ActivityKit)
         guard #available(iOS 16.2, *) else { return }
-        let city = currentPrayerAreaName ?? currentLocation?.city ?? "Current Location"
+        let city = effectivePrayerLocationDisplayName ?? currentLocation?.city ?? "Current Location"
         Task { @MainActor in
             PrayerLiveActivityCoordinator.shared.startDebugActivity(
                 city: city,
@@ -2147,7 +2155,7 @@ extension Settings {
         #if os(watchOS)
         return
         #else
-        guard let city = currentPrayerAreaName ?? currentLocation?.city, let prayerObj = prayers
+        guard let city = effectivePrayerLocationDisplayName ?? currentLocation?.city, let prayerObj = prayers
         else { return }
 
         let scheduleDay = Calendar.current.startOfDay(for: prayerObj.day).timeIntervalSince1970

@@ -62,7 +62,7 @@ struct PrayersProvider: TimelineProvider {
         return PrayersEntry(
             date: now,
             accentColor: settings.accentColor,
-            currentCity: settings.currentLocation?.city ?? "",
+            currentCity: settings.prayers?.city ?? settings.effectivePrayerLocationDisplayName ?? settings.currentLocation?.city ?? "",
             prayers: obj.prayers,
             fullPrayers: obj.fullPrayers,
             currentPrayer: current,

@@ -442,13 +442,50 @@ struct AdhanSetupSheet: View {
             settings.debugMalaysiaZoneCode = ""
             settings.prayerCalculation = "KEMENAG - Kementerian Agama Republik Indonesia"
             settings.hanafiMadhab = false
+            if let info = indonesiaZones.first(where: { $0.id == id }) {
+                settings.setActivePrayerContext(
+                    locationDisplayName: "\(ResolvedPrayerArea.prettyName(info.location)), \(ResolvedPrayerArea.prettyName(info.province))",
+                    zoneIdentifier: id,
+                    mode: .manual
+                )
+            } else {
+                settings.setActivePrayerContext(
+                    locationDisplayName: settings.currentPhoneLocationName ?? settings.effectivePrayerLocationDisplayName,
+                    zoneIdentifier: id,
+                    mode: .manual
+                )
+            }
         } else {
             waktuZoneModeSelection = 1
             settings.debugMalaysiaZoneCode = id
             settings.debugIndonesiaRegionId = ""
             settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
             settings.hanafiMadhab = false
+            let selectedZone = filteredZones.first(where: { $0.jakimCode == id })
+            settings.setActivePrayerContext(
+                locationDisplayName: selectedZone.flatMap(manualDisplayName(for:)) ?? settings.currentPhoneLocationName ?? settings.effectivePrayerLocationDisplayName,
+                zoneIdentifier: id,
+                mode: .manual
+            )
         }
+    }
+
+    private func manualDisplayName(for zone: MalaysiaZoneInfo) -> String {
+        if let currentPhoneLocation = settings.currentPhoneLocationName,
+           zone.daerah
+            .split(separator: ",")
+            .map({ $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
+            .contains(where: { district in
+                currentPhoneLocation.lowercased().contains(district)
+            }) {
+            return currentPhoneLocation
+        }
+
+        let primaryDistrict = zone.daerah
+            .split(separator: ",")
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? zone.negeri
+        return "\(primaryDistrict), \(zone.negeri)"
     }
 
     var body: some View {
@@ -589,7 +626,7 @@ struct AdhanSetupSheet: View {
                     HStack {
                         Text(appLocalized("Location"))
                         Spacer()
-                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
+                        Text(settings.effectivePrayerLocationDisplayName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -603,6 +640,20 @@ struct AdhanSetupSheet: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
+                    }
+
+                    if settings.shouldPromptSetAutoForPrayerLocationMismatch {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(settings.prayerLocationMismatchMessage)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Button(settings.prayerLocationAutoPromptText) {
+                                settings.setPrayerLocationModeToAuto()
+                            }
+                            .font(.caption.weight(.semibold))
+                        }
+                        .padding(.vertical, 2)
                     } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
                         Text(appLocalized("Resolving Waktu Zone..."))
                             .font(.caption)
@@ -633,7 +684,7 @@ struct AdhanSetupSheet: View {
                     HStack {
                         Text(appLocalized("Location"))
                         Spacer()
-                        Text(settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
+                        Text(settings.effectivePrayerLocationDisplayName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -646,6 +697,20 @@ struct AdhanSetupSheet: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 2)
+                    }
+
+                    if settings.shouldPromptSetAutoForPrayerLocationMismatch {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(settings.prayerLocationMismatchMessage)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Button(settings.prayerLocationAutoPromptText) {
+                                settings.setPrayerLocationModeToAuto()
+                            }
+                            .font(.caption.weight(.semibold))
+                        }
+                        .padding(.vertical, 2)
                     } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
                         Text(appLocalized("Resolving Waktu Zone..."))
                             .font(.caption)
@@ -759,18 +824,28 @@ struct AdhanSetupSheet: View {
                 waktuZoneModeSelection = newValue
                 let detectedZone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
                 if newValue == 0 {
-                    settings.debugMalaysiaZoneCode = ""
-                    settings.debugIndonesiaRegionId = ""
+                    settings.setPrayerLocationModeToAuto()
                 } else if isIndonesiaMode {
                     if settings.debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                        let resolvedPrayerArea = settings.resolvedPrayerArea {
                         settings.debugIndonesiaRegionId = resolvedPrayerArea.regionId
+                        settings.setActivePrayerContext(
+                            locationDisplayName: resolvedPrayerArea.displayName,
+                            zoneIdentifier: resolvedPrayerArea.regionId,
+                            mode: .manual
+                        )
                     }
                 } else if settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     if !detectedZone.isEmpty {
                         settings.debugMalaysiaZoneCode = detectedZone
                         settings.prayerCalculation = "Jabatan Kemajuan Islam Malaysia (JAKIM)"
                         settings.hanafiMadhab = false
+                        let selectedZone = filteredZones.first(where: { $0.jakimCode.uppercased() == detectedZone })
+                        settings.setActivePrayerContext(
+                            locationDisplayName: selectedZone.flatMap(manualDisplayName(for:)) ?? settings.currentPhoneLocationName ?? settings.effectivePrayerLocationDisplayName,
+                            zoneIdentifier: detectedZone,
+                            mode: .manual
+                        )
                     } else {
                         Task { @MainActor in
                             await refreshAutoDetectedZone()

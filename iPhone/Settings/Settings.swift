@@ -60,6 +60,11 @@ enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
     }
 }
 
+enum PrayerLocationMode: String, Codable {
+    case auto
+    case manual
+}
+
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
     #if os(iOS)
@@ -79,6 +84,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         "LockScreen4Widget"
     ]
     private static let preferredPrayerLockScreenFooterWidgetKindKey = "preferredPrayerLockScreenFooterWidgetKind"
+    private static let activePrayerLocationDisplayNameKey = "activePrayerLocationDisplayName"
+    private static let activePrayerZoneIdentifierKey = "activePrayerZoneIdentifier"
+    private static let activePrayerModeKey = "activePrayerMode"
     #endif
 
     /// Set by AppDelegate (main app only) so extension targets don't reference UIApplication.shared.
@@ -158,6 +166,11 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
         self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Auto (By Location)"
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
+        self.activePrayerLocationDisplayName = appGroupUserDefaults?.string(forKey: Self.activePrayerLocationDisplayNameKey)
+        self.activePrayerZoneIdentifier = appGroupUserDefaults?.string(forKey: Self.activePrayerZoneIdentifierKey)
+        self.activePrayerMode = PrayerLocationMode(
+            rawValue: appGroupUserDefaults?.string(forKey: Self.activePrayerModeKey) ?? ""
+        ) ?? .auto
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
             do {
@@ -305,6 +318,40 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
+    @Published var activePrayerLocationDisplayName: String? {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            let normalized = activePrayerLocationDisplayName?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if let normalized, !normalized.isEmpty {
+                appGroupUserDefaults?.setValue(normalized, forKey: Self.activePrayerLocationDisplayNameKey)
+            } else {
+                appGroupUserDefaults?.removeObject(forKey: Self.activePrayerLocationDisplayNameKey)
+            }
+        }
+    }
+
+    @Published var activePrayerZoneIdentifier: String? {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            let normalized = activePrayerZoneIdentifier?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .uppercased()
+            if let normalized, !normalized.isEmpty {
+                appGroupUserDefaults?.setValue(normalized, forKey: Self.activePrayerZoneIdentifierKey)
+            } else {
+                appGroupUserDefaults?.removeObject(forKey: Self.activePrayerZoneIdentifierKey)
+            }
+        }
+    }
+
+    @Published var activePrayerMode: PrayerLocationMode {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(activePrayerMode.rawValue, forKey: Self.activePrayerModeKey)
+        }
+    }
+
     @Published var resolvedPrayerArea: ResolvedPrayerArea? {
         didSet {
             guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
@@ -374,6 +421,11 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     #endif
 
     var currentPrayerAreaName: String? {
+        if isManualPrayerLocationMode,
+           let activePrayerLocationDisplayName,
+           !activePrayerLocationDisplayName.isEmpty {
+            return activePrayerLocationDisplayName
+        }
         if shouldUseIndonesiaPrayerAPI(for: currentLocation) {
             return resolvedPrayerArea?.displayName
         }
@@ -404,6 +456,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 
     var currentPrayerAreaSubtitle: String? {
+        if shouldPromptSetAutoForPrayerLocationMismatch {
+            return currentPhoneLocationName
+        }
         guard shouldUseIndonesiaPrayerAPI(for: currentLocation),
               let resolvedPrayerArea,
               let phoneLocation = currentLocation?.city,
@@ -417,13 +472,106 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         currentIndonesiaWaktuZoneName ?? currentMalaysiaWaktuZoneName
     }
 
+    var currentPrayerZoneIdentifier: String? {
+        if shouldUseIndonesiaPrayerAPI(for: currentLocation) {
+            let manualRegion = debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !manualRegion.isEmpty {
+                return manualRegion
+            }
+            return resolvedPrayerArea?.regionId
+        }
+
+        let manualZone = debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if !manualZone.isEmpty {
+            return manualZone
+        }
+        return currentMalaysiaWaktuZoneName
+    }
+
     var shouldDisplayWaktuZoneTag: Bool {
         shouldUseMalaysiaPrayerAPI(for: currentLocation) || shouldUseIndonesiaPrayerAPI(for: currentLocation)
     }
 
     var isResolvingAnyWaktuZone: Bool {
-        isResolvingIndonesiaWaktuZone ||
-        (shouldUseMalaysiaPrayerAPI(for: currentLocation) && currentMalaysiaWaktuZoneName == nil)
+        guard !isManualPrayerLocationMode else { return false }
+        return isResolvingIndonesiaWaktuZone ||
+            (shouldUseMalaysiaPrayerAPI(for: currentLocation) && currentMalaysiaWaktuZoneName == nil)
+    }
+
+    var effectivePrayerLocationDisplayName: String? {
+        currentPrayerAreaName ?? activePrayerLocationDisplayName ?? currentLocation?.city
+    }
+
+    var isManualPrayerLocationMode: Bool {
+        let selectedMode = UserDefaults.standard.integer(forKey: "waktuZoneModeSelection")
+        if selectedMode == 1 {
+            return true
+        }
+        return !debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            !debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var shouldPromptSetAutoForPrayerLocationMismatch: Bool {
+        guard isManualPrayerLocationMode else { return false }
+        guard let active = effectivePrayerLocationDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let phone = currentPhoneLocationName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !active.isEmpty,
+              !phone.isEmpty else {
+            return false
+        }
+        return active.caseInsensitiveCompare(phone) != .orderedSame
+    }
+
+    var prayerLocationMismatchMessage: String {
+        let pinned = effectivePrayerLocationDisplayName ?? appLocalized("Unknown")
+        return appLocalized("You're in a new location. Prayer times are still set to %@.", pinned)
+    }
+
+    var prayerLocationAutoPromptText: String {
+        appLocalized("Set to Auto to update.")
+    }
+
+    func setActivePrayerContext(
+        locationDisplayName: String?,
+        zoneIdentifier: String?,
+        mode: PrayerLocationMode
+    ) {
+        activePrayerMode = mode
+        activePrayerLocationDisplayName = locationDisplayName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        activePrayerZoneIdentifier = zoneIdentifier?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+    }
+
+    func syncActivePrayerContextAfterPrayerRefresh(
+        fallbackLocationDisplayName: String?,
+        zoneIdentifier: String?
+    ) {
+        let mode: PrayerLocationMode = isManualPrayerLocationMode ? .manual : .auto
+        let displayName: String?
+
+        if mode == .manual,
+           let activePrayerLocationDisplayName,
+           !activePrayerLocationDisplayName.isEmpty {
+            displayName = activePrayerLocationDisplayName
+        } else {
+            displayName = fallbackLocationDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        setActivePrayerContext(
+            locationDisplayName: displayName,
+            zoneIdentifier: zoneIdentifier,
+            mode: mode
+        )
+    }
+
+    func setPrayerLocationModeToAuto() {
+        UserDefaults.standard.set(0, forKey: "waktuZoneModeSelection")
+        debugMalaysiaZoneCode = ""
+        debugIndonesiaRegionId = ""
+        activePrayerMode = .auto
+        fetchPrayerTimes(force: true)
     }
     
     @Published var homeLocation: Location? {

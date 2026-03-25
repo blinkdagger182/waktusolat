@@ -81,6 +81,189 @@ struct AdhanView: View {
         NotificationCenter.default.post(name: .uiContentHeartbeat, object: nil)
     }
 
+    @ViewBuilder
+    private var dateAndLocationSection: some View {
+        Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
+            if let hijriDate = settings.hijriDate {
+                hijriDateRow(hijriDate)
+            }
+
+            locationCard
+
+            if settings.shouldPromptSetAutoForPrayerLocationMismatch {
+                prayerLocationAutoPrompt
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func hijriDateRow(_ hijriDate: HijriDate) -> some View {
+        #if !os(watchOS)
+        NavigationLink(destination: HijriCalendarView()) {
+            HStack {
+                Text(hijriDate.english)
+                    .multilineTextAlignment(.center)
+
+                Spacer()
+
+                Text(hijriDate.arabic)
+            }
+            .font(.footnote)
+            .foregroundColor(settings.accentColor.color)
+            .contextMenu {
+                Button(action: {
+                    settings.hapticFeedback()
+                    UIPasteboard.general.string = hijriDate.english
+                }) {
+                    Text("Copy English Date")
+                    Image(systemName: "doc.on.doc")
+                }
+
+                Button(action: {
+                    settings.hapticFeedback()
+                    UIPasteboard.general.string = hijriDate.arabic
+                }) {
+                    Text("Copy Arabic Date")
+                    Image(systemName: "doc.on.doc")
+                }
+            }
+        }
+        #else
+        HStack {
+            Spacer()
+
+            Text(hijriDate.english)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+        }
+        .font(.footnote)
+        .foregroundColor(settings.accentColor.color)
+        #endif
+    }
+
+    @ViewBuilder
+    private var locationCard: some View {
+        VStack {
+            HStack {
+                #if !os(watchOS)
+                if let currentLoc = settings.currentLocation {
+                    let currentDisplayLocation = settings.effectivePrayerLocationDisplayName ?? currentLoc.city
+                    let shouldDisplayWaktuZoneTag = settings.shouldDisplayWaktuZoneTag
+                    let currentWaktuZone = shouldDisplayWaktuZoneTag ? settings.currentWaktuZoneName : nil
+                    let isResolvingWaktuZone = shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone
+
+                    Image(systemName: "location.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.trailing, 8)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(currentDisplayLocation)
+                            .font(.subheadline)
+                            .lineLimit(nil)
+
+                        if let currentWaktuZone {
+                            Text("Waktu Zone: \(currentWaktuZone)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+
+                        if isResolvingWaktuZone {
+                            Text("Resolving Waktu Zone...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    .contextMenu {
+                        Button(action: {
+                            settings.hapticFeedback()
+                            UIPasteboard.general.string = currentDisplayLocation
+                        }) {
+                            Text("Copy Address")
+                            Image(systemName: "doc.on.doc")
+                        }
+
+                        if let currentWaktuZone {
+                            Button(action: {
+                                settings.hapticFeedback()
+                                UIPasteboard.general.string = currentWaktuZone
+                            }) {
+                                Text("Copy Waktu Zone")
+                                Image(systemName: "doc.on.doc")
+                            }
+                        }
+                    }
+                } else {
+                    Image(systemName: "location.slash")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.trailing, 8)
+
+                    Text("No location")
+                        .font(.subheadline)
+                        .lineLimit(nil)
+                }
+                #else
+                Group {
+                    if settings.prayers != nil, let currentLoc = settings.currentLocation {
+                        Text(currentLoc.city)
+                    } else {
+                        Text("No location")
+                    }
+                }
+                .font(.subheadline)
+                .lineLimit(2)
+                #endif
+
+                Spacer()
+
+                QiblaView(size: showBigQibla ? 100 : 50)
+                    .padding(.horizontal)
+            }
+            .foregroundColor(.primary)
+            .font(.subheadline)
+            .contentShape(Rectangle())
+
+            #if os(watchOS)
+            Text("Compass may not be accurate on Apple Watch")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            #endif
+        }
+        .animation(.easeInOut, value: showBigQibla)
+        #if !os(watchOS)
+        .onTapGesture {
+            withAnimation {
+                settings.hapticFeedback()
+                showBigQibla.toggle()
+            }
+        }
+        #endif
+    }
+
+    private var prayerLocationAutoPrompt: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(settings.prayerLocationMismatchMessage)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(3)
+
+            Button(settings.prayerLocationAutoPromptText) {
+                settings.setPrayerLocationModeToAuto()
+            }
+            .font(.caption.weight(.semibold))
+        }
+        .padding(.vertical, 2)
+    }
+
     var body: some View {
         NavigationView {
             List {
@@ -118,155 +301,8 @@ struct AdhanView: View {
 //                    }
 //                }
 
-                Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
-                    if let hijriDate = settings.hijriDate {
-                        #if !os(watchOS)
-                        NavigationLink(destination: HijriCalendarView()) {
-                            HStack {
-                                Text(hijriDate.english)
-                                    .multilineTextAlignment(.center)
-                                
-                                Spacer()
-                                
-                                Text(hijriDate.arabic)
-                            }
-                            .font(.footnote)
-                            .foregroundColor(settings.accentColor.color)
-                            .contextMenu {
-                                Button(action: {
-                                    settings.hapticFeedback()
-                                    
-                                    UIPasteboard.general.string = hijriDate.english
-                                }) {
-                                    Text("Copy English Date")
-                                    Image(systemName: "doc.on.doc")
-                                }
-                                
-                                Button(action: {
-                                    settings.hapticFeedback()
-                                    
-                                    UIPasteboard.general.string = hijriDate.arabic
-                                }) {
-                                    Text("Copy Arabic Date")
-                                    Image(systemName: "doc.on.doc")
-                                }
-                            }
-                        }
-                        #else
-                        HStack {
-                            Spacer()
-                            
-                            Text(hijriDate.english)
-                                .multilineTextAlignment(.center)
-                            
-                            Spacer()
-                        }
-                        .font(.footnote)
-                        .foregroundColor(settings.accentColor.color)
-                        #endif
-                    }
-                    
-                    VStack {
-                        HStack {
-                            #if !os(watchOS)
-                            if let currentLoc = settings.currentLocation {
-                                let currentDisplayLocation = settings.currentPhoneLocationName ?? settings.currentPrayerAreaName ?? currentLoc.city
-                                let shouldDisplayWaktuZoneTag = settings.shouldDisplayWaktuZoneTag
-                                let currentWaktuZone = shouldDisplayWaktuZoneTag ? settings.currentWaktuZoneName : nil
-                                let isResolvingWaktuZone = shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone
-                                Image(systemName: "location.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor.color)
-                                    .padding(.trailing, 8)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(currentDisplayLocation)
-                                        .font(.subheadline)
-                                        .lineLimit(nil)
-
-                                    if let currentWaktuZone {
-                                        Text("Waktu Zone: \(currentWaktuZone)")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(2)
-                                    } else if isResolvingWaktuZone {
-                                        Text("Resolving Waktu Zone...")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(2)
-                                    }
-                                }
-                                .contextMenu {
-                                    Button(action: {
-                                        settings.hapticFeedback()
-                                        UIPasteboard.general.string = currentDisplayLocation
-                                    }) {
-                                        Text("Copy Address")
-                                        Image(systemName: "doc.on.doc")
-                                    }
-
-                                    if let currentWaktuZone {
-                                        Button(action: {
-                                            settings.hapticFeedback()
-                                            UIPasteboard.general.string = currentWaktuZone
-                                        }) {
-                                            Text("Copy Waktu Zone")
-                                            Image(systemName: "doc.on.doc")
-                                        }
-                                    }
-                                }
-                            } else {
-                                Image(systemName: "location.slash")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor.color)
-                                    .padding(.trailing, 8)
-
-                                Text("No location")
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                            }
-                            #else
-                            Group {
-                                if settings.prayers != nil, let currentLoc = settings.currentLocation {
-                                    Text(currentLoc.city)
-                                } else {
-                                    Text("No location")
-                                }
-                            }
-                            .font(.subheadline)
-                            .lineLimit(2)
-                            #endif
-
-                            Spacer()
-
-                            QiblaView(size: showBigQibla ? 100 : 50)
-                                .padding(.horizontal)
-                        }
-                        .foregroundColor(.primary)
-                        .font(.subheadline)
-                        .contentShape(Rectangle())
-
-                        #if os(watchOS)
-                        Text("Compass may not be accurate on Apple Watch")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        #endif
-                    }
-                    .animation(.easeInOut, value: showBigQibla)
-                    #if !os(watchOS)
-                    .onTapGesture {
-                        withAnimation {
-                            settings.hapticFeedback()
-                            showBigQibla.toggle()
-                        }
-                    }
-                    #endif
-                }
+                DateAndLocationSectionView(showBigQibla: $showBigQibla)
+                    .environmentObject(settings)
                 
                 #if !os(watchOS)
                 if settings.prayers != nil && settings.currentLocation != nil {
@@ -367,9 +403,9 @@ struct AdhanView: View {
                         showingSettingsSheet = true
                     } label: {
                         Image(systemName: "gear")
+                        }
                     }
                 }
-            }
             .sheet(isPresented: $showingSettingsSheet) {
                 SettingsView()
             }
@@ -459,6 +495,193 @@ struct AdhanView: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+}
+
+private struct DateAndLocationSectionView: View {
+    @EnvironmentObject var settings: Settings
+    @Binding var showBigQibla: Bool
+
+    var body: some View {
+        Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
+            if let hijriDate = settings.hijriDate {
+                hijriDateRow(hijriDate)
+            }
+
+            locationCard
+
+            if settings.shouldPromptSetAutoForPrayerLocationMismatch {
+                prayerLocationAutoPrompt
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func hijriDateRow(_ hijriDate: HijriDate) -> some View {
+        #if !os(watchOS)
+        NavigationLink(destination: HijriCalendarView()) {
+            HStack {
+                Text(hijriDate.english)
+                    .multilineTextAlignment(.center)
+
+                Spacer()
+
+                Text(hijriDate.arabic)
+            }
+            .font(.footnote)
+            .foregroundColor(settings.accentColor.color)
+            .contextMenu {
+                Button(action: {
+                    settings.hapticFeedback()
+                    UIPasteboard.general.string = hijriDate.english
+                }) {
+                    Text("Copy English Date")
+                    Image(systemName: "doc.on.doc")
+                }
+
+                Button(action: {
+                    settings.hapticFeedback()
+                    UIPasteboard.general.string = hijriDate.arabic
+                }) {
+                    Text("Copy Arabic Date")
+                    Image(systemName: "doc.on.doc")
+                }
+            }
+        }
+        #else
+        HStack {
+            Spacer()
+
+            Text(hijriDate.english)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+        }
+        .font(.footnote)
+        .foregroundColor(settings.accentColor.color)
+        #endif
+    }
+
+    @ViewBuilder
+    private var locationCard: some View {
+        VStack {
+            HStack {
+                #if !os(watchOS)
+                if let currentLoc = settings.currentLocation {
+                    let currentDisplayLocation = settings.effectivePrayerLocationDisplayName ?? currentLoc.city
+                    let shouldDisplayWaktuZoneTag = settings.shouldDisplayWaktuZoneTag
+                    let currentWaktuZone = shouldDisplayWaktuZoneTag ? settings.currentWaktuZoneName : nil
+                    let isResolvingWaktuZone = shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone
+
+                    Image(systemName: "location.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.trailing, 8)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(currentDisplayLocation)
+                            .font(.subheadline)
+                            .lineLimit(nil)
+
+                        if let currentWaktuZone {
+                            Text("Waktu Zone: \(currentWaktuZone)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+
+                        if isResolvingWaktuZone {
+                            Text("Resolving Waktu Zone...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    .contextMenu {
+                        Button(action: {
+                            settings.hapticFeedback()
+                            UIPasteboard.general.string = currentDisplayLocation
+                        }) {
+                            Text("Copy Address")
+                            Image(systemName: "doc.on.doc")
+                        }
+
+                        if let currentWaktuZone {
+                            Button(action: {
+                                settings.hapticFeedback()
+                                UIPasteboard.general.string = currentWaktuZone
+                            }) {
+                                Text("Copy Waktu Zone")
+                                Image(systemName: "doc.on.doc")
+                            }
+                        }
+                    }
+                } else {
+                    Image(systemName: "location.slash")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.trailing, 8)
+
+                    Text("No location")
+                        .font(.subheadline)
+                        .lineLimit(nil)
+                }
+                #else
+                Group {
+                    if settings.prayers != nil, let currentLoc = settings.currentLocation {
+                        Text(currentLoc.city)
+                    } else {
+                        Text("No location")
+                    }
+                }
+                .font(.subheadline)
+                .lineLimit(2)
+                #endif
+
+                Spacer()
+
+                QiblaView(size: showBigQibla ? 100 : 50)
+                    .padding(.horizontal)
+            }
+            .foregroundColor(.primary)
+            .font(.subheadline)
+            .contentShape(Rectangle())
+
+            #if os(watchOS)
+            Text("Compass may not be accurate on Apple Watch")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            #endif
+        }
+        .animation(.easeInOut, value: showBigQibla)
+        #if !os(watchOS)
+        .onTapGesture {
+            withAnimation {
+                settings.hapticFeedback()
+                showBigQibla.toggle()
+            }
+        }
+        #endif
+    }
+
+    private var prayerLocationAutoPrompt: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(settings.prayerLocationMismatchMessage)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(3)
+
+            Button(settings.prayerLocationAutoPromptText) {
+                settings.setPrayerLocationModeToAuto()
+            }
+            .font(.caption.weight(.semibold))
+        }
+        .padding(.vertical, 2)
     }
 }
 
