@@ -23,6 +23,66 @@ enum NotificationSoundOption: String, CaseIterable, Identifiable {
     }
 }
 
+enum PrayerNotificationMessageStyle: String, CaseIterable, Identifiable {
+    case standard
+    case gentle
+    case concise
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .standard:
+            return appLocalized("Standard")
+        case .gentle:
+            return appLocalized("Gentle")
+        case .concise:
+            return appLocalized("Concise")
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .standard:
+            return appLocalized("Shows the full prayer reminder with time and location.")
+        case .gentle:
+            return appLocalized("Uses softer wording while keeping the prayer time clear.")
+        case .concise:
+            return appLocalized("Keeps the reminder short with just the essentials.")
+        }
+    }
+}
+
+enum ZikirNotificationMessageStyle: String, CaseIterable, Identifiable {
+    case guided
+    case reflective
+    case concise
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .guided:
+            return appLocalized("Guided")
+        case .reflective:
+            return appLocalized("Reflective")
+        case .concise:
+            return appLocalized("Concise")
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .guided:
+            return appLocalized("Shows a short helper line, the Arabic zikir, and its meaning.")
+        case .reflective:
+            return appLocalized("Highlights the meaning first, followed by the Arabic phrase.")
+        case .concise:
+            return appLocalized("Keeps the zikir notification minimal and glanceable.")
+        }
+    }
+}
+
 enum AuraPrayerBackgroundKey: String, CaseIterable, Identifiable {
     case subuh
     case syuruk
@@ -689,6 +749,15 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("notificationSoundOptionRaw") var notificationSoundOptionRaw: String = NotificationSoundOption.iosDefault.rawValue {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
+    @AppStorage("prayerNotificationMessageStyleRaw") var prayerNotificationMessageStyleRaw: String = PrayerNotificationMessageStyle.standard.rawValue {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("zikirNotificationsEnabled") var zikirNotificationsEnabled: Bool = false {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("zikirNotificationMessageStyleRaw") var zikirNotificationMessageStyleRaw: String = ZikirNotificationMessageStyle.guided.rawValue {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
 
     var notificationSoundOption: NotificationSoundOption {
         get {
@@ -707,6 +776,16 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     func setNotificationSoundOption(_ option: NotificationSoundOption) {
         objectWillChange.send()
         notificationSoundOptionRaw = option.rawValue
+    }
+
+    var prayerNotificationMessageStyle: PrayerNotificationMessageStyle {
+        get { PrayerNotificationMessageStyle(rawValue: prayerNotificationMessageStyleRaw) ?? .standard }
+        set { prayerNotificationMessageStyleRaw = newValue.rawValue }
+    }
+
+    var zikirNotificationMessageStyle: ZikirNotificationMessageStyle {
+        get { ZikirNotificationMessageStyle(rawValue: zikirNotificationMessageStyleRaw) ?? .guided }
+        set { zikirNotificationMessageStyleRaw = newValue.rawValue }
     }
     
     @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false

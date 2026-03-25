@@ -2168,6 +2168,9 @@ extension Settings {
             "city:\(city)",
             "times:\(prayerTimesSignature)",
             "dateNotif:\(dateNotifications)",
+            "prayerStyle:\(prayerNotificationMessageStyle.rawValue)",
+            "zikirEnabled:\(zikirNotificationsEnabled)",
+            "zikirStyle:\(zikirNotificationMessageStyle.rawValue)",
             "nagMode:\(naggingMode)",
             "nagStart:\(naggingStartOffset)",
             "f:\(notificationFajr)-\(preNotificationFajr)-\(naggingFajr)",
@@ -2209,7 +2212,11 @@ extension Settings {
                 )
             }
         }
-        
+
+        if zikirNotificationsEnabled {
+            scheduleZikirNotifications(for: prayerObj, city: city, using: center)
+        }
+
         let futureDays = naggingMode ? 1 : 3
         if futureDays > 0 {
             for dayOffset in 1...futureDays {
@@ -2226,6 +2233,17 @@ extension Settings {
                             city: city
                         )
                     }
+                }
+
+                if zikirNotificationsEnabled {
+                    let futurePrayers = Prayers(
+                        day: date,
+                        city: city,
+                        prayers: list,
+                        fullPrayers: list,
+                        setNotification: false
+                    )
+                    scheduleZikirNotifications(for: futurePrayers, city: city, using: center)
                 }
             }
         }
@@ -2256,6 +2274,40 @@ extension Settings {
         let travelingSuffix = travelingMode ? (isMalay ? " (musafir)" : " (traveling)") : ""
         let prayerTime = formatDate(prayer.time)
 
+        switch prayerNotificationMessageStyle {
+        case .concise:
+            if let m = minutesBefore {
+                return isMalay
+                    ? "\(m) minit lagi • \(prayerName) • \(city)"
+                    : "\(m)m • \(prayerName) • \(city)"
+            }
+
+            return isMalay
+                ? "\(prayerName) • \(prayerTime) • \(city)"
+                : "\(prayerName) • \(prayerTime) • \(city)"
+        case .gentle:
+            if let m = minutesBefore {
+                return isMalay
+                    ? "\(prayerName)\(specialSuffix) di \(city)\(travelingSuffix) akan bermula dalam \(m) minit."
+                    : "\(prayerName)\(specialSuffix) in \(city)\(travelingSuffix) begins in \(m) minutes."
+            }
+
+            if prayer.nameTransliteration == "Fajr",
+               let list = prayers?.prayers,
+               list.count > 1 {
+                let endsAt = formatDate(list[1].time)
+                return isMalay
+                    ? "Kini masuk waktu \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix). Berakhir pada \(endsAt)."
+                    : "It's now time for \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix). Ends at \(endsAt)."
+            }
+
+            return isMalay
+                ? "Kini masuk waktu \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix)."
+                : "It's now time for \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix)."
+        case .standard:
+            break
+        }
+
         if let m = minutesBefore {
             if isMalay {
                 return "\(m) minit sebelum \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix) [\(prayerTime)]"
@@ -2280,6 +2332,103 @@ extension Settings {
         }
 
         return "Time for \(prayerName)\(specialSuffix) at \(prayerTime) in \(city)\(travelingSuffix)"
+    }
+
+    private func zikirNotificationAnchorDates(for prayerList: [Prayer]) -> [(bucket: ZikirTimeBucket, date: Date)] {
+        func prayerTime(_ names: Set<String>) -> Date? {
+            prayerList.first {
+                names.contains($0.nameTransliteration.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+            }?.time
+        }
+
+        let fajr = prayerTime(["fajr", "subuh"])
+        let dhuhr = prayerTime(["dhuhr", "zuhur", "jumuah"])
+        let asr = prayerTime(["asr", "asar"])
+        let isha = prayerTime(["isha", "isya", "isyak"])
+
+        return [
+            fajr.map { (.morning, $0.addingTimeInterval(20 * 60)) },
+            dhuhr.map { (.midday, $0.addingTimeInterval(20 * 60)) },
+            asr.map { (.evening, $0.addingTimeInterval(20 * 60)) },
+            isha.map { (.night, $0.addingTimeInterval(20 * 60)) }
+        ].compactMap { $0 }
+    }
+
+    private func buildZikirNotificationContent(
+        for result: ZikirSelectionResult,
+        city: String
+    ) -> (title: String, body: String) {
+        let isMalay = isMalayAppLanguage()
+        switch zikirNotificationMessageStyle {
+        case .guided:
+            let title = result.helperTitle.isEmpty
+                ? appLocalized(result.bucket.titleKey)
+                : result.helperTitle
+            let body = "\(result.phrase.textArabic)\n\(result.phrase.localizedTranslation())"
+            return (title, body)
+        case .reflective:
+            let title = appLocalized(result.bucket.titleKey)
+            let body = isMalay
+                ? "\(result.phrase.localizedTranslation())\n\(result.phrase.textArabic)"
+                : "\(result.phrase.localizedTranslation())\n\(result.phrase.textArabic)"
+            return (title, body)
+        case .concise:
+            let title = result.phrase.textArabic
+            let body = isMalay
+                ? "\(result.phrase.localizedTranslation()) • \(city)"
+                : "\(result.phrase.localizedTranslation()) • \(city)"
+            return (title, body)
+        }
+    }
+
+    private func scheduleZikirNotifications(
+        for prayerObj: Prayers,
+        city: String,
+        using center: UNUserNotificationCenter
+    ) {
+        let anchors = zikirNotificationAnchorDates(for: prayerObj.prayers)
+        guard !anchors.isEmpty else { return }
+
+        for anchor in anchors {
+            let triggerTime = anchor.date
+            let now = Date()
+            if triggerTime <= now, now.timeIntervalSince(triggerTime) > 90 {
+                continue
+            }
+
+            let result = ZikirSelector.select(
+                for: .init(
+                    date: triggerTime,
+                    prayers: prayerObj.prayers,
+                    surface: .app
+                )
+            )
+            let message = buildZikirNotificationContent(for: result, city: city)
+            let content = UNMutableNotificationContent()
+            content.title = message.title
+            content.body = message.body
+            content.sound = .default
+
+            let trigger: UNNotificationTrigger
+            let identifier: String
+            if triggerTime > now {
+                let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
+                trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                identifier = "zikir-\(anchor.bucket.rawValue)-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)"
+            } else {
+                trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+                let comps = Calendar.current.dateComponents([.year, .month, .day], from: now)
+                identifier = "zikir-\(anchor.bucket.rawValue)-late-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)"
+            }
+
+            center.add(
+                UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+            ) { error in
+                if let error {
+                    logger.debug("Zikir notification add failed: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     private func availableSoundName(candidates: [String]) -> UNNotificationSoundName? {

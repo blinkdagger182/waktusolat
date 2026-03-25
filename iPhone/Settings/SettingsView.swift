@@ -818,15 +818,19 @@ struct SettingsAppearanceView: View {
 
         #if !os(watchOS)
         VStack(alignment: .leading) {
-            Text(isMalay ? "Bahasa" : "Language")
-                .font(.subheadline.weight(.semibold))
+            HStack {
+                Text(isMalay ? "Bahasa" : "Language")
+                    .font(.subheadline.weight(.semibold))
 
-            Picker(isMalay ? "Bahasa" : "Language", selection: $appLanguageCode) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(language.displayName).tag(language.rawValue)
+                Spacer()
+
+                Picker(isMalay ? "Bahasa" : "Language", selection: $appLanguageCode) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language.rawValue)
+                    }
                 }
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.segmented)
 
             Text(isMalay ? "Pilih bahasa yang akan digunakan oleh Waktu di dalam aplikasi." : "Choose how Waktu appears inside the app.")
                 .font(.caption)

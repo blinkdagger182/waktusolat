@@ -33,6 +33,7 @@ struct AdhanSetupSheet: View {
     @State private var waktuZoneLoadError: String?
     @State private var autoDetectedZoneCode: String = ""
     @State private var showingWaktuZonePicker = false
+    @State private var isLocationDetailsExpanded = false
 
     private var isMalay: Bool {
         effectiveAppLanguageCode().hasPrefix("ms")
@@ -295,6 +296,21 @@ struct AdhanSetupSheet: View {
             return releaseWaktuModeBinding.wrappedValue == 0 ? autoDetectedIndonesiaZoneLabel : selectedIndonesiaZoneLabel
         }
         return releaseWaktuModeBinding.wrappedValue == 0 ? autoDetectedZoneLabel : selectedMalaysiaZoneLabel
+    }
+
+    private var currentLocationSummary: String {
+        settings.effectivePrayerLocationDisplayName ?? (isMalay ? "Tidak diketahui" : "Unknown")
+    }
+
+    private var locationConfigurationSummary: String {
+        if canConfigureWaktuZone {
+            if releaseWaktuModeBinding.wrappedValue == 1 {
+                return appLocalized("Manual keeps prayer times pinned to the selected zone until you switch back to Auto.")
+            }
+            return appLocalized("Auto uses your current location to match the most relevant prayer zone.")
+        }
+
+        return appLocalized("Review the current prayer location and zone used for today's prayer times.")
     }
 
     private var isLoadingCurrentWaktuZoneList: Bool {
@@ -623,56 +639,12 @@ struct AdhanSetupSheet: View {
                     }
                     .pickerStyle(.segmented)
                     
-                    HStack {
-                        Text(appLocalized("Location"))
-                        Spacer()
-                        Text(settings.effectivePrayerLocationDisplayName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                            .truncationMode(.tail)
-                    }
-                    .font(.subheadline)
+                    locationDisclosure
 
-                    if settings.shouldDisplayWaktuZoneTag,
-                       let waktuZone = settings.currentWaktuZoneName {
-                        Text(appLocalized("Waktu Zone: %@", waktuZone))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
-
-                    if settings.shouldPromptSetAutoForPrayerLocationMismatch {
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(settings.prayerLocationMismatchMessage)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            Spacer(minLength: 12)
-
-                            Button(settings.prayerLocationAutoPromptText) {
-                                settings.setPrayerLocationModeToAuto()
-                            }
-                            .font(.caption.weight(.semibold))
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding(.vertical, 2)
-                    } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
-                        Text(appLocalized("Resolving Waktu Zone..."))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
-
-                    Text(appLocalized("Location is read-only. Use Waktu Zone in Manual mode for testing."))
+                    Text(appLocalized("Location is read-only. Use Manual mode only when you want to pin a specific prayer zone for testing."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
-
-                    Text(appLocalized("Use this to test Malaysia (Malaysian Prayer Times/ JAKIM) and global coordinate-based Adhan behavior without changing physical location."))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
                     #endif
                     
                     #if !DEBUG
@@ -684,59 +656,12 @@ struct AdhanSetupSheet: View {
                         .pickerStyle(.segmented)
                     }
 
-                    HStack {
-                        Text(appLocalized("Location"))
-                        Spacer()
-                        Text(settings.effectivePrayerLocationDisplayName ?? (isMalay ? "Tidak diketahui" : "Unknown"))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
-                    .font(.subheadline)
+                    locationDisclosure
 
-                    if settings.shouldDisplayWaktuZoneTag,
-                       let waktuZone = settings.currentWaktuZoneName {
-                        Text(appLocalized("Waktu Zone: %@", waktuZone))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
-
-                    if settings.shouldPromptSetAutoForPrayerLocationMismatch {
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(settings.prayerLocationMismatchMessage)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            Spacer(minLength: 12)
-
-                            Button(settings.prayerLocationAutoPromptText) {
-                                settings.setPrayerLocationModeToAuto()
-                            }
-                            .font(.caption.weight(.semibold))
-                            .buttonStyle(.borderedProminent)
-                        }
+                    Text(locationConfigurationSummary)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                         .padding(.vertical, 2)
-                    } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
-                        Text(appLocalized("Resolving Waktu Zone..."))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
-
-                    if canConfigureWaktuZone {
-                        if releaseWaktuModeBinding.wrappedValue == 1 {
-                            Text(appLocalized("Manual mode lets you select a specific Waktu Zone."))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.vertical, 2)
-                        } else {
-                            Text(appLocalized("Auto mode uses your current location to determine the prayer zone."))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.vertical, 2)
-                        }
-                    }
 
                     #endif
 
@@ -860,6 +785,65 @@ struct AdhanSetupSheet: View {
                 }
             }
         )
+    }
+}
+
+private extension AdhanSetupSheet {
+    @ViewBuilder
+    var locationDisclosure: some View {
+        DisclosureGroup(isExpanded: $isLocationDetailsExpanded) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(appLocalized("Location"))
+                    Spacer()
+                    Text(currentLocationSummary)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .truncationMode(.tail)
+                }
+                .font(.subheadline)
+
+                if settings.shouldDisplayWaktuZoneTag,
+                   let waktuZone = settings.currentWaktuZoneName {
+                    Text(appLocalized("Waktu Zone: %@", waktuZone))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                if settings.shouldPromptSetAutoForPrayerLocationMismatch {
+                    HStack(alignment: .center, spacing: 12) {
+                        Text(settings.prayerLocationMismatchMessage)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Spacer(minLength: 12)
+
+                        Button(settings.prayerLocationAutoPromptText) {
+                            settings.setPrayerLocationModeToAuto()
+                        }
+                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.borderedProminent)
+                    }
+                } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
+                    Text(appLocalized("Resolving Waktu Zone..."))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.top, 4)
+        } label: {
+            HStack {
+                Text(appLocalized("Location"))
+                Spacer()
+                Text(currentLocationSummary)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .truncationMode(.tail)
+            }
+            .font(.subheadline)
+        }
     }
 }
 

@@ -222,22 +222,35 @@ private struct UpcomingPrayerCell: View {
     }
 
     private var timeInfo: some View {
-        HStack {
-            Text(appLocalized("Time left:"))
-                .fixedSize(horizontal: true, vertical: false)
-                .layoutPriority(1)
-            Text(prayer.time, style: .timer)
+        HStack(spacing: 10) {
+            HStack(spacing: 4) {
+                Text(appLocalized("Time left:"))
+                    .lineLimit(1)
+                    .layoutPriority(1)
+                Text(prayer.time, style: .timer)
+                    .monospacedDigit()
+            }
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(isMalayAppLanguage() ? 0.64 : 0.72)
+            .allowsTightening(true)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer(minLength: 12)
+            Spacer(minLength: 6)
 
             HStack(spacing: 4) {
                 Text(appLocalized("Starts at"))
-                    .fixedSize(horizontal: true, vertical: false)
-                    .layoutPriority(1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .allowsTightening(true)
                 Text(prayer.time, style: .time)
+                    .monospacedDigit()
+                    .fixedSize(horizontal: true, vertical: false)
             }
+            .font((isMalayAppLanguage() ? Font.footnote : Font.subheadline).weight(.semibold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
         }
-        .font(.headline)
     }
 }
 

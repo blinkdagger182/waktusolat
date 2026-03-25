@@ -115,7 +115,7 @@ struct SettingsAdhanView: View {
                         .tint(settings.accentColor.toggleTint)
                         .disabled(settings.travelAutomatic)
                     
-                    Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
+                    Text("If you are traveling more than 48 mi (77.25 km), then it is permissible to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
@@ -449,6 +449,68 @@ struct NotificationView: View {
                 }
             }
 
+            Section(header: Text("PRAYER MESSAGE STYLE")) {
+                NotificationStylePreviewCard(
+                    appName: "Waktu Solat",
+                    title: prayerPreviewTitle,
+                    messageBody: prayerPreviewBody,
+                    accentColor: settings.accentColor.color
+                )
+                .listRowSeparator(.hidden)
+
+                Picker("Prayer Notification Style", selection: Binding(
+                    get: { settings.prayerNotificationMessageStyle },
+                    set: { settings.prayerNotificationMessageStyle = $0 }
+                )) {
+                    ForEach(PrayerNotificationMessageStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text(settings.prayerNotificationMessageStyle.summary)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Section(header: Text("DAILY ZIKIR REMINDERS")) {
+                Toggle("Send Daily Zikir Notifications", isOn: $settings.zikirNotificationsEnabled.animation(.easeInOut))
+                    .font(.subheadline)
+                    .tint(settings.accentColor.toggleTint)
+
+                if settings.zikirNotificationsEnabled {
+                    NotificationStylePreviewCard(
+                        appName: "Waktu Solat",
+                        title: zikirPreviewTitle,
+                        messageBody: zikirPreviewBody,
+                        accentColor: settings.accentColor.color
+                    )
+                    .listRowSeparator(.hidden)
+
+                    Picker("Zikir Notification Style", selection: Binding(
+                        get: { settings.zikirNotificationMessageStyle },
+                        set: { settings.zikirNotificationMessageStyle = $0 }
+                    )) {
+                        ForEach(ZikirNotificationMessageStyle.allCases) { style in
+                            Text(style.title).tag(style)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Text("Zikir notifications rotate through morning, midday, evening, and night using the same prayer-aware timing as the zikir widget.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text(settings.zikirNotificationMessageStyle.summary)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("Send a short Arabic zikir throughout the day, timed around your prayer windows.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
             Section(header: Text("NOTIFICATION SOUND")) {
                 Picker(
                     selection: Binding(
@@ -498,6 +560,62 @@ struct NotificationView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Notification Settings")
+    }
+
+    private var prayerPreviewTitle: String {
+        switch settings.prayerNotificationMessageStyle {
+        case .standard:
+            return "Waktu Solat"
+        case .gentle:
+            return isMalayAppLanguage() ? "Peringatan Solat" : "Prayer Reminder"
+        case .concise:
+            return localizedPrayerName("Asr")
+        }
+    }
+
+    private var prayerPreviewBody: String {
+        switch settings.prayerNotificationMessageStyle {
+        case .standard:
+            return isMalayAppLanguage()
+                ? "Waktu Asar pada 4:25 PTG di Taiping, Perak"
+                : "Time for Asr at 4:25 PM in Taiping, Perak"
+        case .gentle:
+            return isMalayAppLanguage()
+                ? "Kini masuk waktu Asar di Taiping, Perak."
+                : "It's now time for Asr in Taiping, Perak."
+        case .concise:
+            return isMalayAppLanguage()
+                ? "Asar • 4:25 PTG • Taiping, Perak"
+                : "Asr • 4:25 PM • Taiping, Perak"
+        }
+    }
+
+    private var zikirPreviewTitle: String {
+        switch settings.zikirNotificationMessageStyle {
+        case .guided:
+            return isMalayAppLanguage() ? "Zikir petang" : "Evening Zikir"
+        case .reflective:
+            return isMalayAppLanguage() ? "Makna zikir" : "Zikir Reflection"
+        case .concise:
+            return "سُبْحَانَ اللَّهِ"
+        }
+    }
+
+    private var zikirPreviewBody: String {
+        switch settings.zikirNotificationMessageStyle {
+        case .guided:
+            return isMalayAppLanguage()
+                ? "Ulang dengan hadir hati\nسُبْحَانَ اللَّهِ وَبِحَمْدِهِ"
+                : "Repeat with presence\nسُبْحَانَ اللَّهِ وَبِحَمْدِهِ"
+        case .reflective:
+            return isMalayAppLanguage()
+                ? "Maha Suci Allah dan segala puji bagi-Nya.\nسُبْحَانَ اللَّهِ وَبِحَمْدِهِ"
+                : "Glory be to Allah and praise be to Him.\nسُبْحَانَ اللَّهِ وَبِحَمْدِهِ"
+        case .concise:
+            return isMalayAppLanguage()
+                ? "Maha Suci Allah • Taiping, Perak"
+                : "Glory be to Allah • Taiping, Perak"
+        }
     }
 
     private func playPreviewIfNeeded(for option: NotificationSoundOption) {
@@ -712,6 +830,119 @@ struct NotificationView: View {
         @unknown default:
             requestAccessAlertMessage = "Unable to change notification settings."
         }
+    }
+}
+
+private struct NotificationStylePreviewCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let appName: String
+    let title: String
+    let messageBody: String
+    let accentColor: Color
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image("CurrentAppIcon")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 40, height: 40)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(appIconBorderColor, lineWidth: 0.8)
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(appName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(headerPrimaryTextColor)
+
+                    Spacer(minLength: 8)
+
+                    Text(isMalayAppLanguage() ? "12m lalu" : "12m ago")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(headerSecondaryTextColor)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+
+                if showsStandaloneTitle {
+                    Text(title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(primaryTextColor)
+                        .lineLimit(1)
+                }
+
+                Text(messageBody)
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(primaryTextColor)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(backgroundColor)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
+        )
+        .shadow(color: shadowColor, radius: 10, x: 0, y: 4)
+        .listRowInsets(EdgeInsets())
+        .padding(.vertical, 2)
+    }
+
+    private var backgroundColor: Color {
+        colorScheme == .dark
+            ? Color.black.opacity(0.9)
+            : Color(UIColor.secondarySystemBackground)
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark
+            ? Color.white.opacity(0.18)
+            : Color.black.opacity(0.08)
+    }
+
+    private var appIconBorderColor: Color {
+        colorScheme == .dark
+            ? Color.white.opacity(0.14)
+            : Color.black.opacity(0.10)
+    }
+
+    private var primaryTextColor: Color {
+        colorScheme == .dark
+            ? Color.white.opacity(0.96)
+            : Color.primary
+    }
+
+    private var headerPrimaryTextColor: Color {
+        colorScheme == .dark
+            ? Color.white.opacity(0.96)
+            : Color.black.opacity(0.9)
+    }
+
+    private var headerSecondaryTextColor: Color {
+        colorScheme == .dark
+            ? Color.white.opacity(0.62)
+            : Color.black.opacity(0.5)
+    }
+
+    private var shadowColor: Color {
+        colorScheme == .dark
+            ? .black.opacity(0.2)
+            : .black.opacity(0.08)
+    }
+
+    private var showsStandaloneTitle: Bool {
+        let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedAppName = appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !normalizedTitle.isEmpty && normalizedTitle.caseInsensitiveCompare(normalizedAppName) != .orderedSame
     }
 }
 
