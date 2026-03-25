@@ -303,6 +303,7 @@ struct Widgets: WidgetBundle {
         CountdownWidget()
         Prayers2Widget()
         PrayersWidget()
+        ZikirWidget()
         #if os(iOS)
         if #available(iOS 16.1, *) {
             LockScreen1Widget()

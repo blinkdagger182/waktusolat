@@ -250,16 +250,19 @@ struct AdhanView: View {
     }
 
     private var prayerLocationAutoPrompt: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .center, spacing: 12) {
             Text(settings.prayerLocationMismatchMessage)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .lineLimit(3)
 
+            Spacer(minLength: 12)
+
             Button(settings.prayerLocationAutoPromptText) {
                 settings.setPrayerLocationModeToAuto()
             }
             .font(.caption.weight(.semibold))
+            .buttonStyle(.borderedProminent)
         }
         .padding(.vertical, 2)
     }
@@ -670,16 +673,19 @@ private struct DateAndLocationSectionView: View {
     }
 
     private var prayerLocationAutoPrompt: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .center, spacing: 12) {
             Text(settings.prayerLocationMismatchMessage)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .lineLimit(3)
 
+            Spacer(minLength: 12)
+
             Button(settings.prayerLocationAutoPromptText) {
                 settings.setPrayerLocationModeToAuto()
             }
             .font(.caption.weight(.semibold))
+            .buttonStyle(.borderedProminent)
         }
         .padding(.vertical, 2)
     }

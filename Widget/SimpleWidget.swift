@@ -38,6 +38,8 @@ struct SimpleEntryView: View {
                     VStack(alignment: .leading) {
                         HStack(spacing: 3) {
                             Text(appLocalized("Time left:"))
+                                .fixedSize(horizontal: true, vertical: false)
+                                .layoutPriority(1)
                             Text(nextPrayer.time, style: .timer)
                         }
                         .font(.caption2)
@@ -69,6 +71,8 @@ struct SimpleEntryView: View {
                         
                         HStack(spacing: 3) {
                             Text(appLocalized("Starts at"))
+                                .fixedSize(horizontal: true, vertical: false)
+                                .layoutPriority(1)
                             Text(nextPrayer.time, style: .time)
                         }
                         .font(.caption2)

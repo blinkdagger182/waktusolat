@@ -32,10 +32,12 @@ struct AlAdhanApp: App {
     @AppStorage("firstLaunchSheet") var firstLaunchSheet: Bool = true
     @AppStorage("didShowDailyQuranWidgetIntroV1") private var didShowDailyQuranWidgetIntro = false
     @AppStorage("didTriggerFirstRunNotificationPromptV1") private var didTriggerFirstRunNotificationPrompt = false
+    @AppStorage("lastDismissedMarketingModalRevisionV1") private var lastDismissedMarketingModalRevision = ""
     @AppStorage("remoteUIRecoveryEnabled") private var remoteUIRecoveryEnabled = true
     @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
     @State var showAdhanSheet: Bool = false
     @State private var showDailyQuranWidgetIntro = false
+    @State private var showMarketingModal = false
     
     @State private var isLaunching = true
     @State private var quranDeepLink: QuranDeepLinkPayload?
@@ -47,6 +49,8 @@ struct AlAdhanApp: App {
     @State private var supportPromoPoolProgress: SupportPromoPoolProgress?
     @State private var supportPromoCountdownStart = Date()
     @State private var supportPromoAutoDismissAfter: TimeInterval = 8
+    @State private var marketingModalConfig = MarketingModalConfig.defaultValue
+    @State private var marketingModalRevision = ""
     @State private var malaysiaLocationToastPayload: MalaysiaLocationToastPayload?
     @State private var malaysiaLocationToastCountdownStart = Date()
     @State private var malaysiaZoneCatalog: [String: MalaysiaZoneMetadata] = [:]
@@ -99,6 +103,9 @@ struct AlAdhanApp: App {
                         } else {
                             presentDailyQuranWidgetIntroIfNeeded()
                             presentSupportPromoToastIfNeeded()
+                            Task {
+                                await checkForMarketingModalUpdate(force: false)
+                            }
                         }
                     }
                     .sheet(
@@ -142,8 +149,22 @@ struct AlAdhanApp: App {
                     .preferredColorScheme(settings.colorScheme)
             }
             .overlay {
+                if showMarketingModal {
+                    DailyQuranWidgetIntroModal(
+                        initialConfig: marketingModalConfig,
+                        shouldRefreshFromRemote: false,
+                        onDismiss: dismissMarketingModal
+                    )
+                    .environmentObject(settings)
+                    .transition(.opacity)
+                    .zIndex(21)
+                }
+            }
+            .overlay {
                 if showDailyQuranWidgetIntro {
                     DailyQuranWidgetIntroModal(
+                        initialConfig: nil,
+                        shouldRefreshFromRemote: true,
                         onDismiss: {
                             showDailyQuranWidgetIntro = false
                             didShowDailyQuranWidgetIntro = true
@@ -312,6 +333,9 @@ struct AlAdhanApp: App {
                 scheduleUIRecoveryWatchdog()
                 updateUnsupportedRegionModalVisibility()
                 scheduleFirstRunNotificationPromptIfNeeded()
+                Task {
+                    await checkForMarketingModalUpdate(force: false)
+                }
             }
         }
     }
@@ -376,6 +400,7 @@ struct AlAdhanApp: App {
         lastUIRecoveryAt = Date()
         showAdhanSheet = false
         showDailyQuranWidgetIntro = false
+        showMarketingModal = false
         showSupportPromoToast = false
         showMalaysiaLocationToast = false
         quranDeepLink = nil
@@ -395,6 +420,55 @@ struct AlAdhanApp: App {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             guard !didShowDailyQuranWidgetIntro else { return }
             showDailyQuranWidgetIntro = true
+        }
+    }
+
+    @MainActor
+    private func dismissMarketingModal() {
+        lastDismissedMarketingModalRevision = marketingModalRevision
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showMarketingModal = false
+        }
+    }
+
+    private func checkForMarketingModalUpdate(force: Bool) async {
+        guard !settings.firstLaunch else { return }
+        guard !showAdhanSheet else { return }
+        guard !showDailyQuranWidgetIntro else { return }
+        guard !showMarketingModal else { return }
+
+        guard let config = await loadMarketingModalConfig(force: force) else { return }
+        let revision = config.revisionIdentifier
+        guard !revision.isEmpty else { return }
+        guard revision != lastDismissedMarketingModalRevision else { return }
+
+        await MainActor.run {
+            marketingModalConfig = config
+            marketingModalRevision = revision
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showMarketingModal = true
+            }
+        }
+    }
+
+    private func loadMarketingModalConfig(force: Bool) async -> MarketingModalConfig? {
+        let url = force ? MarketingModalConfigURLResolver.resolveNoCacheURL() : MarketingModalConfigURLResolver.resolve()
+
+        do {
+            var request = URLRequest(url: url)
+            request.cachePolicy = force ? .reloadIgnoringLocalCacheData : .reloadRevalidatingCacheData
+            request.timeoutInterval = 12
+            if force {
+                request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+                request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+            }
+
+            let session = URLSession(configuration: .ephemeral)
+            let (data, _) = try await session.data(for: request)
+            let decoded = try JSONDecoder().decode(MarketingModalConfig.self, from: data)
+            return decoded.slides.isEmpty ? nil : decoded
+        } catch {
+            return nil
         }
     }
 
@@ -1462,6 +1536,8 @@ private enum SupportPromoConfigURLResolver {
 }
 
 private struct DailyQuranWidgetIntroModal: View {
+    let initialConfig: MarketingModalConfig?
+    let shouldRefreshFromRemote: Bool
     let onDismiss: () -> Void
 
     @State private var selectedIndex = 0
@@ -1555,7 +1631,12 @@ private struct DailyQuranWidgetIntroModal: View {
             }
         }
         .task {
-            await loadRemoteConfig()
+            if let initialConfig {
+                config = initialConfig
+            }
+            if shouldRefreshFromRemote {
+                await loadRemoteConfig()
+            }
         }
     }
 
@@ -1614,6 +1695,13 @@ private struct MarketingModalConfig: Codable {
         case subtitle
         case ctaText = "cta_text"
         case slides
+    }
+
+    var revisionIdentifier: String {
+        let slidePayload = slides.map {
+            [$0.title, $0.subtitle, $0.imageAsset ?? "", $0.imageURL ?? ""].joined(separator: "|")
+        }.joined(separator: "||")
+        return [title, subtitle, ctaText, slidePayload].joined(separator: "|||")
     }
 
     static let defaultValue = MarketingModalConfig(

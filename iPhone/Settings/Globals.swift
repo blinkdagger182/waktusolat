@@ -86,6 +86,10 @@ func effectiveAppLanguageCode(from storedCode: String? = storedAppLanguageCode()
     effectiveAppLanguage(from: storedCode).rawValue
 }
 
+func isMalayAppLanguage(_ storedCode: String? = storedAppLanguageCode()) -> Bool {
+    effectiveAppLanguageCode(from: storedCode).hasPrefix("ms")
+}
+
 func appLocale(for storedCode: String? = storedAppLanguageCode()) -> Locale {
     Locale(identifier: effectiveAppLanguage(from: storedCode).localeIdentifier ?? resolvedSystemLanguage.localeIdentifier ?? "en")
 }

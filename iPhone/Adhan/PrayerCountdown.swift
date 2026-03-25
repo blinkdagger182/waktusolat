@@ -62,6 +62,8 @@ private struct CurrentPrayerCell: View {
                 
                 HStack(spacing: 4) {
                     Text(appLocalized("Starts at"))
+                        .fixedSize(horizontal: true, vertical: false)
+                        .layoutPriority(1)
                     Text(prayer.time, style: .time)
                 }
                 .font(.headline)
@@ -222,12 +224,16 @@ private struct UpcomingPrayerCell: View {
     private var timeInfo: some View {
         HStack {
             Text(appLocalized("Time left:"))
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(1)
             Text(prayer.time, style: .timer)
 
             Spacer(minLength: 12)
 
             HStack(spacing: 4) {
                 Text(appLocalized("Starts at"))
+                    .fixedSize(horizontal: true, vertical: false)
+                    .layoutPriority(1)
                 Text(prayer.time, style: .time)
             }
         }

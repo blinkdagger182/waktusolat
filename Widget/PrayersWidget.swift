@@ -151,6 +151,8 @@ struct PrayersEntryView: View {
                                     
                                     HStack(spacing: 3) {
                                         Text(appLocalized("Time left:"))
+                                            .fixedSize(horizontal: true, vertical: false)
+                                            .layoutPriority(1)
                                         Text(nextPrayer.time, style: .timer)
                                     }
                                     .font(.caption)
@@ -165,6 +167,8 @@ struct PrayersEntryView: View {
                                     HStack {
                                         HStack(spacing: 3) {
                                             Text(appLocalized("Starts at"))
+                                                .fixedSize(horizontal: true, vertical: false)
+                                                .layoutPriority(1)
                                             Text(nextPrayer.time, style: .time)
                                         }
                                         .font(.caption)

@@ -68,6 +68,8 @@ struct Prayers2EntryView: View {
                             
                             HStack(spacing: 3) {
                                 Text(appLocalized("Time left:"))
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .layoutPriority(1)
                                 Text(nextPrayer.time, style: .timer)
                             }
                             .font(.subheadline)

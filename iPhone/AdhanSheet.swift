@@ -643,15 +643,18 @@ struct AdhanSetupSheet: View {
                     }
 
                     if settings.shouldPromptSetAutoForPrayerLocationMismatch {
-                        VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .center, spacing: 12) {
                             Text(settings.prayerLocationMismatchMessage)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+
+                            Spacer(minLength: 12)
 
                             Button(settings.prayerLocationAutoPromptText) {
                                 settings.setPrayerLocationModeToAuto()
                             }
                             .font(.caption.weight(.semibold))
+                            .buttonStyle(.borderedProminent)
                         }
                         .padding(.vertical, 2)
                     } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {
@@ -700,15 +703,18 @@ struct AdhanSetupSheet: View {
                     }
 
                     if settings.shouldPromptSetAutoForPrayerLocationMismatch {
-                        VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .center, spacing: 12) {
                             Text(settings.prayerLocationMismatchMessage)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+
+                            Spacer(minLength: 12)
 
                             Button(settings.prayerLocationAutoPromptText) {
                                 settings.setPrayerLocationModeToAuto()
                             }
                             .font(.caption.weight(.semibold))
+                            .buttonStyle(.borderedProminent)
                         }
                         .padding(.vertical, 2)
                     } else if settings.shouldDisplayWaktuZoneTag && settings.isResolvingAnyWaktuZone {

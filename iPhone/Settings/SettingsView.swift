@@ -290,14 +290,6 @@ struct SettingsView: View {
                         SettingsAppearanceView()
                     }
 
-                    Section(header: Text("LANGUAGE")) {
-                        Picker("Language", selection: $appLanguageCode) {
-                            ForEach(AppLanguage.allCases) { language in
-                                Text(language.displayName).tag(language.rawValue)
-                            }
-                        }
-                    }
-                    
                     Section(header: Text("CREDITS")) {
                         Text("Made by developers at Risk Creatives, powered by the Waktu Solat Project API.")
                             .font(.footnote)
@@ -773,6 +765,11 @@ private struct CannyWebView: View {
 
 struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings
+    @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
+
+    private var isMalay: Bool {
+        isMalayAppLanguage(appLanguageCode)
+    }
     
     var body: some View {
         #if !os(watchOS)
@@ -818,25 +815,55 @@ struct SettingsAppearanceView: View {
                 .padding(.vertical, 2)
             #endif
         }
-        
+
+        #if !os(watchOS)
+        VStack(alignment: .leading) {
+            Text(isMalay ? "Bahasa" : "Language")
+                .font(.subheadline.weight(.semibold))
+
+            Picker(isMalay ? "Bahasa" : "Language", selection: $appLanguageCode) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.displayName).tag(language.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text(isMalay ? "Pilih bahasa yang akan digunakan oleh Waktu di dalam aplikasi." : "Choose how Waktu appears inside the app.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+
+            Text(isMalay ? "Sistem akan mengikut bahasa iPhone anda. English dan Bahasa Melayu akan digunakan dalam aplikasi sebaik sahaja dipilih." : "System follows your iPhone language. English and Bahasa Melayu apply inside the app immediately after selection.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.bottom, 2)
+
+            Text(isMalay ? "Widget dan Live Activity akan mengikut bahasa aplikasi yang dikongsi selepas garis masa mereka dimuat semula." : "Widgets and Live Activities will follow the shared app language after the app refreshes their timelines.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        #endif
+
+        /*
         #if !os(watchOS)
         VStack(alignment: .leading) {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)
                 .tint(settings.accentColor.toggleTint)
-            
+
             Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting applies everywhere in the app except here in Settings.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
         }
         #endif
-        
+
         VStack(alignment: .leading) {
             Toggle("Haptic Feedback", isOn: $settings.hapticOn.animation(.easeInOut))
                 .font(.subheadline)
                 .tint(settings.accentColor.toggleTint)
         }
+        */
     }
 }
 

@@ -2241,34 +2241,45 @@ extension Settings {
     }
     
     private func buildBody(prayer: Prayer, minutesBefore: Int?, city: String) -> String {
-        let englishPart: String = {
+        let prayerName = localizedPrayerName(prayer.nameTransliteration)
+        let isMalay = isMalayAppLanguage()
+        let specialSuffix: String = {
             switch prayer.nameTransliteration {
             case "Shurooq":
-                return " (end of Fajr)"
+                return isMalay ? " (akhir waktu Subuh)" : " (end of Fajr)"
             case "Jumuah":
-                return " (Friday)"
+                return isMalay ? " (Jumaat)" : " (Friday)"
             default:
                 return ""
             }
         }()
+        let travelingSuffix = travelingMode ? (isMalay ? " (musafir)" : " (traveling)") : ""
+        let prayerTime = formatDate(prayer.time)
 
         if let m = minutesBefore {
-            // “n m until …”
-            return "\(m)m until \(prayer.nameTransliteration)\(englishPart) in \(city)"
-                 + (travelingMode ? " (traveling)" : "")
-                 + " [\(formatDate(prayer.time))]"
-        } else if prayer.nameTransliteration == "Fajr",
-                  let list = prayers?.prayers, list.count > 1 {
-            // Special Fajr “ends at …” text
-            return "Time for \(prayer.nameTransliteration)\(englishPart)"
-                 + " at \(formatDate(prayer.time)) in \(city)"
-                 + (travelingMode ? " (traveling)" : "")
-                 + " [ends at \(formatDate(list[1].time))]"
-        } else {
-            return "Time for \(prayer.nameTransliteration)\(englishPart)"
-                 + " at \(formatDate(prayer.time)) in \(city)"
-                 + (travelingMode ? " (traveling)" : "")
+            if isMalay {
+                return "\(m) minit sebelum \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix) [\(prayerTime)]"
+            }
+
+            return "\(m)m until \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix) [\(prayerTime)]"
         }
+
+        if prayer.nameTransliteration == "Fajr",
+           let list = prayers?.prayers,
+           list.count > 1 {
+            let endsAt = formatDate(list[1].time)
+            if isMalay {
+                return "Waktu \(prayerName)\(specialSuffix) pada \(prayerTime) di \(city)\(travelingSuffix) [berakhir \(endsAt)]"
+            }
+
+            return "Time for \(prayerName)\(specialSuffix) at \(prayerTime) in \(city)\(travelingSuffix) [ends at \(endsAt)]"
+        }
+
+        if isMalay {
+            return "Waktu \(prayerName)\(specialSuffix) pada \(prayerTime) di \(city)\(travelingSuffix)"
+        }
+
+        return "Time for \(prayerName)\(specialSuffix) at \(prayerTime) in \(city)\(travelingSuffix)"
     }
 
     private func availableSoundName(candidates: [String]) -> UNNotificationSoundName? {
