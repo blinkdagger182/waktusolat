@@ -1,106 +1,93 @@
 import SwiftUI
 import WidgetKit
+#if os(iOS)
+import UIKit
+#endif
 
 private struct ZikirEntry: TimelineEntry {
     let date: Date
-    let title: String
-    let message: String
-    let footnote: String
-}
-
-private struct ZikirSegment {
-    let hourRange: ClosedRange<Int>
-    let titleEN: String
-    let titleMS: String
-    let messageEN: String
-    let messageMS: String
-    let footnoteEN: String
-    let footnoteMS: String
+    let helperTitle: String
+    let phraseArabic: String
+    let translation: String
+    let accessibilityLabel: String
 }
 
 private struct ZikirProvider: TimelineProvider {
-    private let calendar = Calendar(identifier: .gregorian)
-
-    private let segments: [ZikirSegment] = [
-        .init(
-            hourRange: 5...10,
-            titleEN: "Morning Zikir",
-            titleMS: "Zikir Pagi",
-            messageEN: "Begin the morning with istighfar and selawat.",
-            messageMS: "Mulakan pagi dengan istighfar dan selawat.",
-            footnoteEN: "After Fajr",
-            footnoteMS: "Selepas Subuh"
-        ),
-        .init(
-            hourRange: 11...15,
-            titleEN: "Midday Reminder",
-            titleMS: "Zikir Tengah Hari",
-            messageEN: "Pause for tasbih, tahmid, and a short selawat.",
-            messageMS: "Berhenti seketika untuk tasbih, tahmid, dan selawat ringkas.",
-            footnoteEN: "Before and after Dhuhr",
-            footnoteMS: "Sebelum dan selepas Zuhur"
-        ),
-        .init(
-            hourRange: 16...18,
-            titleEN: "Afternoon Selawat",
-            titleMS: "Selawat Petang",
-            messageEN: "Keep the tongue moist with istighfar before Maghrib.",
-            messageMS: "Basahkan lidah dengan istighfar sebelum Maghrib.",
-            footnoteEN: "Asr to sunset",
-            footnoteMS: "Asar hingga matahari terbenam"
-        ),
-        .init(
-            hourRange: 19...23,
-            titleEN: "Night Reflection",
-            titleMS: "Zikir Malam",
-            messageEN: "Close the day with selawat and gratitude.",
-            messageMS: "Akhiri hari dengan selawat dan kesyukuran.",
-            footnoteEN: "After Maghrib and Isha",
-            footnoteMS: "Selepas Maghrib dan Isyak"
-        ),
-        .init(
-            hourRange: 0...4,
-            titleEN: "Quiet Reminder",
-            titleMS: "Peringatan Tenang",
-            messageEN: "Keep a gentle dhikr before rest or qiyam.",
-            messageMS: "Teruskan zikir ringkas sebelum berehat atau qiyam.",
-            footnoteEN: "Night hours",
-            footnoteMS: "Waktu malam"
-        )
-    ]
+    private let store = UserDefaults(suiteName: sharedAppGroupID)
 
     func placeholder(in context: Context) -> ZikirEntry {
-        entry(for: Date())
+        previewEntry()
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ZikirEntry) -> Void) {
-        completion(entry(for: Date()))
+        completion(context.isPreview ? previewEntry() : makeEntry(surface: surface(for: context.family)))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ZikirEntry>) -> Void) {
-        let now = Date()
-        let currentEntry = entry(for: now)
-
-        let nextRefresh: Date
-        if let nextHour = calendar.date(byAdding: .hour, value: 1, to: now),
-           let topOfHour = calendar.dateInterval(of: .hour, for: nextHour)?.start {
-            nextRefresh = topOfHour
-        } else {
-            nextRefresh = now.addingTimeInterval(3600)
-        }
-
-        completion(Timeline(entries: [currentEntry], policy: .after(nextRefresh)))
+        let surface = surface(for: context.family)
+        let result = makeSelectionResult(surface: surface, now: Date())
+        let entry = ZikirEntry(
+            date: result.slotStart,
+            helperTitle: result.helperTitle,
+            phraseArabic: result.phrase.textArabic,
+            translation: result.phrase.localizedTranslation(),
+            accessibilityLabel: result.accessibilityLabel
+        )
+        completion(Timeline(entries: [entry], policy: .after(result.refreshDate)))
     }
 
-    private func entry(for date: Date) -> ZikirEntry {
-        let hour = calendar.component(.hour, from: date)
-        let segment = segments.first(where: { $0.hourRange.contains(hour) }) ?? segments[0]
-        let isMalay = isMalayAppLanguage()
+    private func makeEntry(surface: ZikirSelectionContext.Surface) -> ZikirEntry {
+        let result = makeSelectionResult(surface: surface, now: Date())
         return ZikirEntry(
-            date: date,
-            title: isMalay ? segment.titleMS : segment.titleEN,
-            message: isMalay ? segment.messageMS : segment.messageEN,
-            footnote: isMalay ? segment.footnoteMS : segment.footnoteEN
+            date: result.slotStart,
+            helperTitle: result.helperTitle,
+            phraseArabic: result.phrase.textArabic,
+            translation: result.phrase.localizedTranslation(),
+            accessibilityLabel: result.accessibilityLabel
+        )
+    }
+
+    private func makeSelectionResult(surface: ZikirSelectionContext.Surface, now: Date) -> ZikirSelectionResult {
+        let prayers = loadPrayers()
+        return ZikirSelector.select(
+            for: .init(
+                date: now,
+                prayers: prayers,
+                surface: surface
+            )
+        )
+    }
+
+    private func loadPrayers() -> [Prayer] {
+        guard
+            let data = store?.data(forKey: "prayersData"),
+            let decoded = try? Settings.decoder.decode(Prayers.self, from: data)
+        else {
+            return []
+        }
+        return decoded.fullPrayers.isEmpty ? decoded.prayers : decoded.fullPrayers
+    }
+
+    private func surface(for family: WidgetFamily) -> ZikirSelectionContext.Surface {
+        switch family {
+        case .accessoryRectangular:
+            return .lockScreenWidget
+        default:
+            return .widget
+        }
+    }
+
+    private func previewEntry() -> ZikirEntry {
+        let phrase = ZikirLibrary.all.first { $0.id == "morning-la-ilaha" }
+            ?? ZikirLibrary.all[0]
+        let helper = phrase.localizedHelperTitles().first ?? appLocalized("Morning Zikir")
+        let translation = phrase.localizedTranslation()
+        return ZikirEntry(
+            date: Date(),
+            helperTitle: helper,
+            phraseArabic: phrase.textArabic,
+            translation: translation,
+            accessibilityLabel: "\(helper). \(phrase.textArabic). \(translation)"
         )
     }
 }
@@ -109,43 +96,87 @@ private struct ZikirEntryView: View {
     @Environment(\.widgetFamily) private var family
     let entry: ZikirEntry
 
+    private var arabicFontName: String {
+        let stored = UserDefaults(suiteName: sharedAppGroupID)?.string(forKey: "fontArabic") ?? ""
+        let candidates = [
+            stored,
+            "KFGQPCUthmanicScriptHAFS",
+            "Uthmani",
+            "KFGQPC Uthmanic Script HAFS",
+            "UthmanicHafs1 Ver09",
+            "AmiriQuran-Regular",
+            "Amiri Quran"
+        ]
+        #if os(iOS)
+        for name in candidates where !name.isEmpty {
+            if UIFont(name: name, size: 20) != nil {
+                return name
+            }
+        }
+        #endif
+        return stored.isEmpty ? "KFGQPCUthmanicScriptHAFS" : stored
+    }
+
     var body: some View {
         switch family {
         case .accessoryRectangular:
-            VStack(alignment: .leading, spacing: 4) {
-                Text(entry.title)
-                    .font(.caption.weight(.semibold))
+            VStack(spacing: 3) {
+                Text(entry.helperTitle)
+                    .font(.system(size: 10, weight: .medium, design: .default))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Text(entry.message)
-                    .font(.caption2)
+                    .minimumScaleFactor(0.82)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Text(entry.phraseArabic)
+                    .font(.custom(arabicFontName, size: 19))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
                     .lineLimit(2)
-                Text(entry.footnote)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .minimumScaleFactor(0.72)
+                    .environment(\.layoutDirection, .rightToLeft)
+                Text(entry.translation)
+                    .font(.system(size: 10, weight: .regular, design: .default))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.76)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(entry.accessibilityLabel)
         default:
-            VStack(alignment: .leading, spacing: 8) {
-                Text(entry.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                Text(entry.message)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(4)
-                Spacer(minLength: 0)
-                Text(entry.footnote)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            VStack(spacing: 8) {
+                Text(entry.helperTitle)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text(entry.phraseArabic)
+                    .font(.custom(arabicFontName, size: 28))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.65)
+                    .environment(\.layoutDirection, .rightToLeft)
+                Text(entry.translation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+                Spacer(minLength: 0)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(entry.accessibilityLabel)
         }
     }
 }
 
 struct ZikirWidget: Widget {
-    let kind: String = "ZikirWidget"
+    let kind = "ZikirWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ZikirProvider()) { entry in
@@ -154,18 +185,17 @@ struct ZikirWidget: Widget {
                     .containerBackground(for: .widget) { Color.clear }
             } else {
                 ZikirEntryView(entry: entry)
-                    .padding()
             }
         }
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Zikir & Selawat")
-        .description("Short zikir and selawat reminders that change throughout the day.")
+        .description("Short Arabic adhkar that rotate gently through the day.")
     }
 }
 
 @available(iOSApplicationExtension 16.0, *)
 struct LockScreenZikirWidget: Widget {
-    let kind: String = "LockScreenZikirWidget"
+    let kind = "LockScreenZikirWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ZikirProvider()) { entry in
@@ -178,6 +208,6 @@ struct LockScreenZikirWidget: Widget {
         }
         .supportedFamilies([.accessoryRectangular])
         .configurationDisplayName("Zikir & Selawat")
-        .description("Short zikir and selawat reminders for your Lock Screen.")
+        .description("Short Arabic adhkar for your Lock Screen.")
     }
 }

@@ -16,6 +16,10 @@
 		72537C1E2F04338E00829F59 /* AppReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1D2F04338E00829F59 /* AppReview.swift */; };
 		72537C202F04340600829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
 		72537C222F0434C500829F59 /* AdhanStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C1F2F04340600829F59 /* AdhanStructs.swift */; };
+		72537C242F0434D500829F59 /* ZikirContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C232F0434D500829F59 /* ZikirContent.swift */; };
+		72537C262F0434E500829F59 /* ZikirContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C232F0434D500829F59 /* ZikirContent.swift */; };
+		72537C282F0434F500829F59 /* ZikirSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C272F0434F500829F59 /* ZikirSelection.swift */; };
+		72537C2A2F04350500829F59 /* ZikirSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72537C272F0434F500829F59 /* ZikirSelection.swift */; };
 		72574CCC2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
 		72574CCF2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */; };
 		72574CD52E49F35600BFF138 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CD32E49F35600BFF138 /* AppIntents.swift */; };
@@ -122,6 +126,8 @@
 		722BBD372F0997DB004F3659 /* AdhanSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanSheet.swift; sourceTree = "<group>"; };
 		72537C1D2F04338E00829F59 /* AppReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReview.swift; sourceTree = "<group>"; };
 		72537C1F2F04340600829F59 /* AdhanStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanStructs.swift; sourceTree = "<group>"; };
+		72537C232F0434D500829F59 /* ZikirContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZikirContent.swift; sourceTree = "<group>"; };
+		72537C272F0434F500829F59 /* ZikirSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZikirSelection.swift; sourceTree = "<group>"; };
 		72574CCB2E49F26900BFF138 /* AdhanShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanShortcuts.swift; sourceTree = "<group>"; };
 		72574CD32E49F35600BFF138 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
 		72616D7F2D52F70D00A66C86 /* Info-Widget.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Widget.plist"; sourceTree = "<group>"; };
@@ -284,6 +290,8 @@
 			isa = PBXGroup;
 			children = (
 				72537C1F2F04340600829F59 /* AdhanStructs.swift */,
+				72537C232F0434D500829F59 /* ZikirContent.swift */,
+				72537C272F0434F500829F59 /* ZikirSelection.swift */,
 				72728CB32B3D19EE00FAA3B3 /* AdhanView.swift */,
 				72728CB82B3D1A6E00FAA3B3 /* QiblaView.swift */,
 				72728CBA2B3D1A7A00FAA3B3 /* PrayerCountdown.swift */,
@@ -560,6 +568,8 @@
 				72728CB22B3D19CF00FAA3B3 /* LaunchScreen.swift in Sources */,
 				720DEC682D2456FF006EA342 /* CreditsView.swift in Sources */,
 				72537C202F04340600829F59 /* AdhanStructs.swift in Sources */,
+				72537C242F0434D500829F59 /* ZikirContent.swift in Sources */,
+				72537C282F0434F500829F59 /* ZikirSelection.swift in Sources */,
 				72728CC22B3D1AA300FAA3B3 /* Settings.swift in Sources */,
 				72728C962B3D18E500FAA3B3 /* Al-AdhanApp.swift in Sources */,
 			);
@@ -589,6 +599,8 @@
 				A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */,
 				A4F510032F900AB100ABCDEF /* LockScreen6Widget.swift in Sources */,
 				720CCE432E3960BB002DD82E /* Globals.swift in Sources */,
+				72537C262F0434E500829F59 /* ZikirContent.swift in Sources */,
+				72537C2A2F04350500829F59 /* ZikirSelection.swift in Sources */,
 				72728CF92B3D51B200FAA3B3 /* PrayersWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
