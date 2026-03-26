@@ -107,15 +107,36 @@ private struct ZikirEntryView: View {
     }
 
     private var horizontalAlignment: HorizontalAlignment {
-        zikirAlignment == .leading ? .leading : .center
+        switch zikirAlignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        case .center:
+            return .center
+        }
     }
 
     private var textAlignment: TextAlignment {
-        zikirAlignment == .leading ? .leading : .center
+        switch zikirAlignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        case .center:
+            return .center
+        }
     }
 
     private var frameAlignment: Alignment {
-        zikirAlignment == .leading ? .leading : .center
+        switch zikirAlignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        case .center:
+            return .center
+        }
     }
 
     private var arabicFontName: String {

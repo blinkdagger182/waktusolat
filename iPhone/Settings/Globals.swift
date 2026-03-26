@@ -116,6 +116,7 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
 
     case center
     case leading
+    case trailing
 
     var id: String { rawValue }
 
@@ -125,6 +126,112 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
             return appLocalized("Centered")
         case .leading:
             return appLocalized("Left Aligned")
+        case .trailing:
+            return appLocalized("Right Aligned")
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .center:
+            return isMalayAppLanguage()
+                ? "Gaya lalai yang seimbang di tengah."
+                : "The balanced default centered style."
+        case .leading:
+            return isMalayAppLanguage()
+                ? "Teks diratakan ke kiri untuk rupa yang lebih editorial."
+                : "Aligns the content to the left for a more editorial look."
+        case .trailing:
+            return isMalayAppLanguage()
+                ? "Teks diratakan ke kanan untuk rupa yang lebih kemas."
+                : "Aligns the content to the right for a sharper layout."
+        }
+    }
+}
+
+enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "lockScreenPrayerCountdownStyle"
+
+    case prayerCountdown
+    case prayerTimeline
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .prayerCountdown:
+            return isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown"
+        case .prayerTimeline:
+            return isMalayAppLanguage() ? "Garis Masa Solat" : "Prayer Timeline"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .prayerCountdown:
+            return isMalayAppLanguage()
+                ? "Gaya titik yang ringkas untuk solat semasa dan solat seterusnya."
+                : "A compact dot-based style for the current and next prayer."
+        case .prayerTimeline:
+            return isMalayAppLanguage()
+                ? "Gaya graf garisan untuk melihat aliran waktu sepanjang hari."
+                : "A line-graph style to show prayer flow through the day."
+        }
+    }
+}
+
+enum LockScreenWidgetPreviewStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "selectedLockScreenWidgetPreviewStyle"
+
+    case nextPrayerCircular
+    case prayerTimeline
+    case prayerList
+    case prayerCountdown
+    case zikir
+    case dailyVerse
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .nextPrayerCircular:
+            return isMalayAppLanguage() ? "Bulatan Solat Seterusnya" : "Next Prayer Circle"
+        case .prayerTimeline:
+            return isMalayAppLanguage() ? "Garis Masa Solat" : "Prayer Timeline"
+        case .prayerList:
+            return isMalayAppLanguage() ? "Senarai Solat" : "Prayer List"
+        case .prayerCountdown:
+            return isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown"
+        case .zikir:
+            return isMalayAppLanguage() ? "Zikir & Selawat" : "Zikir & Selawat"
+        case .dailyVerse:
+            return isMalayAppLanguage() ? "Ayat Harian" : "Daily Verse"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .nextPrayerCircular:
+            return isMalayAppLanguage() ? "Paparan bulat yang ringkas untuk solat seterusnya." : "A compact circular style for the next prayer."
+        case .prayerTimeline:
+            return isMalayAppLanguage() ? "Fokus pada solat semasa, masa seterusnya, dan garis mini." : "Focuses on the current prayer, next time, and a mini graph."
+        case .prayerList:
+            return isMalayAppLanguage() ? "Paparan senarai yang menunjukkan beberapa waktu solat sekali gus." : "A list layout that shows several prayer times at once."
+        case .prayerCountdown:
+            return isMalayAppLanguage() ? "Kiraan detik yang jelas dengan bar kemajuan." : "A clearer countdown with a progress bar."
+        case .zikir:
+            return isMalayAppLanguage() ? "Zikir ringkas dalam susun atur yang tenang." : "A calm layout for short daily adhkar."
+        case .dailyVerse:
+            return isMalayAppLanguage() ? "Ayat harian ringkas untuk skrin kunci." : "A compact daily verse for the Lock Screen."
+        }
+    }
+
+    var familyName: String {
+        switch self {
+        case .nextPrayerCircular:
+            return isMalayAppLanguage() ? "Bulatan" : "Circular"
+        default:
+            return isMalayAppLanguage() ? "Segi empat" : "Rectangular"
         }
     }
 }

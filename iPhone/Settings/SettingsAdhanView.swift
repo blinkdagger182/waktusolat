@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import WidgetKit
 #if os(iOS)
 import AVFoundation
 import AudioToolbox
@@ -954,57 +955,83 @@ private struct NotificationStylePreviewCard: View {
 
 struct WidgetPreviewGalleryView: View {
     @EnvironmentObject var settings: Settings
-    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(LockScreenPrayerCountdownStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var countdownStyleRaw = LockScreenPrayerCountdownStyle.prayerCountdown.rawValue
     @AppStorage(WidgetZikirAlignment.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var zikirAlignmentRaw = WidgetZikirAlignment.center.rawValue
 
+    private var countdownStyle: LockScreenPrayerCountdownStyle {
+        LockScreenPrayerCountdownStyle(rawValue: countdownStyleRaw) ?? .prayerCountdown
+    }
+
     private var zikirAlignment: WidgetZikirAlignment {
-        get { WidgetZikirAlignment(rawValue: zikirAlignmentRaw) ?? .center }
-        nonmutating set { zikirAlignmentRaw = newValue.rawValue }
+        WidgetZikirAlignment(rawValue: zikirAlignmentRaw) ?? .center
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(appLocalized("Widget Options"))
-                        .font(.headline)
-
-                    Picker(appLocalized("Zikir Text Alignment"), selection: Binding(
-                        get: { zikirAlignment },
-                        set: { zikirAlignment = $0 }
-                    )) {
-                        ForEach(WidgetZikirAlignment.allCases) { alignment in
-                            Text(alignment.title).tag(alignment)
+                previewSection(
+                    title: isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih antara dua gaya untuk widget kiraan detik solat pada skrin kunci."
+                        : "Choose between the two Lock Screen styles for the prayer countdown widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(LockScreenPrayerCountdownStyle.allCases) { style in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        countdownStyleRaw = style.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    PrayerCountdownStyleCard(
+                                        style: style,
+                                        isSelected: countdownStyle == style
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
-                    .pickerStyle(.menu)
-
-                    Text(appLocalized("Choose how zikir text is aligned in the zikir widgets."))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
 
                 previewSection(
-                    title: appLocalized("Lock Screen Widgets"),
-                    subtitle: appLocalized("Preview the compact lock screen styles for quick prayer and zikir information."),
-                    content: {
-                        VStack(spacing: 14) {
-                            LockScreenRectangularPrayerPreviewCard(
-                                title: localizedPrayerName("Maghrib"),
-                                time: "7:26 PM",
-                                footer: "Taiping, Perak"
-                            )
-
-                            LockScreenRectangularZikirPreviewCard(
-                                helperTitle: isMalayAppLanguage() ? "Zikir malam" : "Night Zikir",
-                                arabic: "أَسْتَغْفِرُ اللَّهَ",
-                                translation: isMalayAppLanguage() ? "Aku memohon ampun kepada Allah." : "I seek forgiveness from Allah.",
-                                alignment: zikirAlignment
-                            )
+                    title: isMalayAppLanguage() ? "Zikir & Selawat" : "Zikir & Selawat",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih gaya susunan untuk widget zikir pada skrin kunci."
+                        : "Choose the layout style for the Lock Screen zikir widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(WidgetZikirAlignment.allCases) { alignment in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        zikirAlignmentRaw = alignment.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    ZikirStyleCard(
+                                        alignment: alignment,
+                                        isSelected: zikirAlignment == alignment
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
-                )
+                }
+
+                Text(isMalayAppLanguage()
+                     ? "Pilihan ini menandakan gaya pilihan anda di dalam aplikasi. iOS masih memerlukan pengguna menambah widget sebenar pada skrin kunci secara manual."
+                     : "This marks your preferred style inside the app. iOS still requires users to add the actual widget to the Lock Screen manually.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             .padding()
         }
@@ -1032,149 +1059,254 @@ struct WidgetPreviewGalleryView: View {
     }
 }
 
-private struct HomePrayerWidgetPreviewCard: View {
-    let title: String
-    let time: String
-    let period: String
-    let countdown: String
-    let backgroundAssetName: String
+private struct LockScreenSpotlightCard: View {
+    @EnvironmentObject var settings: Settings
 
-    var body: some View {
-        ZStack(alignment: .leading) {
-            Image(backgroundAssetName)
-                .resizable()
-                .scaledToFill()
-                .frame(height: 170)
-                .frame(maxWidth: .infinity)
-                .clipped()
+    let style: LockScreenWidgetPreviewStyle
+    let isSelected: Bool
 
-            LinearGradient(
-                colors: [Color.black.opacity(0.08), Color.black.opacity(0.34)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Image(systemName: "moon.stars.fill")
-                    Text(title)
-                        .font(.title2.weight(.bold))
-                }
-
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(time)
-                        .font(.system(size: 44, weight: .bold))
-                    Text(period)
-                        .font(.title3.weight(.semibold))
-                }
-
-                Text(countdown)
-                    .font(.headline.weight(.semibold))
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
-        .frame(height: 170)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    private var widgetWidth: CGFloat {
+        style == .nextPrayerCircular ? 160 : 188
     }
-}
 
-private struct HomeListWidgetPreviewCard: View {
-    let city: String
-    let nextPrayer: String
-    let nextTime: String
+    private var widgetHeight: CGFloat {
+        style == .nextPrayerCircular ? 206 : 220
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image("CurrentAppIcon")
-                    .resizable()
-                    .frame(width: 24, height: 24)
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                Text("Waktu Solat")
-                    .font(.caption.weight(.semibold))
-                Spacer()
-                Text(city)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            ZStack {
+                RoundedRectangle(cornerRadius: style == .nextPrayerCircular ? 40 : 28, style: .continuous)
+                    .fill(Color.black)
+
+                LinearGradient(
+                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: style == .nextPrayerCircular ? 40 : 28, style: .continuous))
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Thu 26")
+                        Spacer()
+                        Text("8:14")
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    Spacer()
+
+                    widgetBody
+                        .frame(width: widgetWidth)
+                        .padding(.bottom, style == .nextPrayerCircular ? 18 : 20)
+                }
+            }
+            .frame(width: widgetWidth, height: widgetHeight)
+            .overlay(
+                RoundedRectangle(cornerRadius: style == .nextPrayerCircular ? 40 : 28, style: .continuous)
+                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(style.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
+                Text(isSelected
+                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                     : style.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
+                    .lineLimit(2)
             }
-
-            Divider()
-
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(nextPrayer)
-                        .font(.headline.weight(.semibold))
-                    Text(nextTime)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("4:32")
-                        .font(.title3.weight(.bold))
-                        .monospacedDigit()
-                    Text(isMalayAppLanguage() ? "Baki waktu" : "Time left")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
+            .frame(width: widgetWidth, alignment: .leading)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        )
+    }
+
+    @ViewBuilder
+    private var widgetBody: some View {
+        switch style {
+        case .nextPrayerCircular:
+            LockScreenCircularPreviewCard(title: localizedPrayerName("Isha"), time: "19:31")
+        case .prayerTimeline:
+            PrayerTimelineGraphPreviewCard(
+                currentPrayer: localizedPrayerName("Maghrib"),
+                nextPrayer: localizedPrayerName("Isha"),
+                nextTime: "19:31",
+                footer: "Taiping, Perak",
+                accentColor: settings.accentColor.color
+            )
+        case .prayerList:
+            LockScreenPrayerListPreviewCard(footer: "Taiping, Perak")
+        case .prayerCountdown:
+            LockScreenCountdownPreviewCard(
+                prayer: localizedPrayerName("Isha"),
+                timerText: "19:31",
+                footer: "Taiping, Perak",
+                accentColor: settings.accentColor.color
+            )
+        case .zikir:
+            LockScreenRectangularZikirPreviewCard(
+                helperTitle: isMalayAppLanguage() ? "Zikir malam" : "Night Zikir",
+                arabic: "أَسْتَغْفِرُ اللَّهَ",
+                translation: isMalayAppLanguage() ? "Aku memohon ampun kepada Allah." : "I seek forgiveness from Allah.",
+                alignment: .center
+            )
+        case .dailyVerse:
+            LockScreenVersePreviewCard(
+                verse: isMalayAppLanguage() ? "Maha Suci Allah dan segala puji bagi-Nya." : "Glory be to Allah and praise be to Him.",
+                reference: "Al-Ahzab 56"
+            )
+        }
     }
 }
 
-private struct HomeZikirWidgetPreviewCard: View {
-    let helperTitle: String
-    let arabic: String
-    let translation: String
-    let alignment: WidgetZikirAlignment
+private struct PrayerCountdownStyleCard: View {
+    @EnvironmentObject var settings: Settings
 
-    private var horizontalAlignment: HorizontalAlignment {
-        alignment == .leading ? .leading : .center
-    }
-
-    private var textAlignment: TextAlignment {
-        alignment == .leading ? .leading : .center
-    }
+    let style: LockScreenPrayerCountdownStyle
+    let isSelected: Bool
 
     var body: some View {
-        VStack(alignment: horizontalAlignment, spacing: 8) {
-            Text(helperTitle)
-                .font(.caption.weight(.medium))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-            Text(arabic)
-                .font(.system(size: 28, weight: .regular))
-                .multilineTextAlignment(textAlignment)
-                .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .center)
-            Text(translation)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(textAlignment)
-                .lineLimit(2)
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color.black)
+
+                LinearGradient(
+                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Thu 26")
+                        Spacer()
+                        Text("8:14")
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    Spacer()
+
+                    if style == .prayerCountdown {
+                        LockScreenTimelinePreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: "Taiping, Perak",
+                            accentColor: settings.accentColor.color
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else {
+                        PrayerTimelineGraphPreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: "Taiping, Perak",
+                            accentColor: settings.accentColor.color
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    }
+                }
+            }
+            .frame(width: 188, height: 220)
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(style.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text(isSelected
+                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                     : style.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
+                    .lineLimit(2)
+            }
+            .frame(width: 188, alignment: .leading)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 170)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        )
+    }
+}
+
+private struct ZikirStyleCard: View {
+    @EnvironmentObject var settings: Settings
+
+    let alignment: WidgetZikirAlignment
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color.black)
+
+                LinearGradient(
+                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Thu 26")
+                        Spacer()
+                        Text("8:14")
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    Spacer()
+
+                    LockScreenRectangularZikirPreviewCard(
+                        helperTitle: isMalayAppLanguage() ? "Zikir malam" : "Night Zikir",
+                        arabic: "أَسْتَغْفِرُ اللَّهَ",
+                        translation: isMalayAppLanguage() ? "Aku memohon ampun kepada Allah." : "I seek forgiveness from Allah.",
+                        alignment: alignment
+                    )
+                    .frame(width: 188)
+                    .padding(.bottom, 20)
+                }
+            }
+            .frame(width: 188, height: 220)
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(alignment.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text(isSelected
+                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                     : alignment.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
+                    .lineLimit(2)
+            }
+            .frame(width: 188, alignment: .leading)
+        }
     }
 }
 
@@ -1199,30 +1331,135 @@ private struct LockScreenCircularPreviewCard: View {
             }
             .padding(8)
         }
-        .frame(width: 92, height: 92)
+        .frame(width: 98, height: 98)
     }
 }
 
-private struct LockScreenRectangularPrayerPreviewCard: View {
-    let title: String
-    let time: String
+private struct LockScreenTimelinePreviewCard: View {
+    let currentPrayer: String
+    let nextPrayer: String
+    let nextTime: String
     let footer: String
+    let accentColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 6) {
+                ForEach(0..<5, id: \.self) { index in
+                    Capsule(style: .continuous)
+                        .fill(index < 3 ? Color.primary.opacity(0.92) : Color.primary.opacity(0.26))
+                        .frame(width: index == 2 ? 14 : 8, height: index == 2 ? 14 : 8)
+                }
+            }
+            .frame(height: 16)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(currentPrayer)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(accentColor)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextTime)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextPrayer)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .lineLimit(1)
             }
 
-            Text(time)
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .monospacedDigit()
+            Text(footer)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
 
-            Spacer(minLength: 0)
+private struct LockScreenPrayerListPreviewCard: View {
+    let footer: String
+
+    private let rows: [(String, String)] = [
+        (localizedPrayerName("Asr"), "16:46"),
+        (localizedPrayerName("Maghrib"), "19:26"),
+        (localizedPrayerName("Isha"), "20:38")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(rows, id: \.0) { row in
+                HStack {
+                    Text(row.0)
+                        .fontWeight(.bold)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(row.1)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                }
+            }
+
+            Text(footer)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .padding(.top, 2)
+        }
+        .font(.caption)
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct LockScreenCountdownPreviewCard: View {
+    let prayer: String
+    let timerText: String
+    let footer: String
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(prayer)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                Spacer(minLength: 6)
+                Text(timerText)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+            }
+
+            ProgressView(value: 0.62)
+                .progressViewStyle(.linear)
+                .tint(accentColor)
+
+            Text(isMalayAppLanguage() ? "Berakhir pada 20:34" : "Ends at 20:34")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
 
             Text(footer)
                 .font(.system(size: 10, weight: .regular))
@@ -1249,11 +1486,25 @@ private struct LockScreenRectangularZikirPreviewCard: View {
     let alignment: WidgetZikirAlignment
 
     private var horizontalAlignment: HorizontalAlignment {
-        alignment == .leading ? .leading : .center
+        switch alignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        case .center:
+            return .center
+        }
     }
 
     private var textAlignment: TextAlignment {
-        alignment == .leading ? .leading : .center
+        switch alignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        case .center:
+            return .center
+        }
     }
 
     var body: some View {
@@ -1266,7 +1517,7 @@ private struct LockScreenRectangularZikirPreviewCard: View {
                 .font(.system(size: 19, weight: .regular))
                 .multilineTextAlignment(textAlignment)
                 .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .center)
+                .frame(maxWidth: .infinity, alignment: frameAlignment)
             Text(translation)
                 .font(.system(size: 10, weight: .regular))
                 .foregroundColor(.secondary)
@@ -1275,6 +1526,47 @@ private struct LockScreenRectangularZikirPreviewCard: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 92)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private var frameAlignment: Alignment {
+        switch alignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        case .center:
+            return .center
+        }
+    }
+}
+
+private struct LockScreenVersePreviewCard: View {
+    let verse: String
+    let reference: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(verse)
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(3)
+
+            Spacer(minLength: 0)
+
+            Text(reference)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(.secondarySystemBackground))
@@ -1580,6 +1872,141 @@ struct MoreNotificationView: View {
                 }
             }
         }
+    }
+}
+
+private struct PrayerTimelineGraphPreviewCard: View {
+    let currentPrayer: String
+    let nextPrayer: String
+    let nextTime: String
+    let footer: String
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            PreviewPrayerMiniGraph(
+                tint: accentColor,
+                dotCount: 6,
+                activeDotIndex: 2
+            )
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(currentPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(accentColor)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextTime)
+                    .font(.headline.monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+
+            Text(footer)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct PreviewPrayerMiniGraph: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let tint: Color
+    let dotCount: Int
+    let activeDotIndex: Int
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let height = max(geo.size.height, 1)
+            let p: (CGFloat, CGFloat) -> CGPoint = { x, y in .init(x: x * width, y: y * height) }
+
+            let p0 = p(0.06, 0.70)
+            let p1 = p(0.52, 0.10)
+            let p2 = p(0.78, 0.26)
+            let p3 = p(0.94, 0.66)
+            let c01a = p(0.22, 0.70)
+            let c01b = p(0.38, 0.08)
+            let c12a = p(0.60, 0.10)
+            let c12b = p(0.70, 0.24)
+            let c23a = p(0.84, 0.30)
+            let c23b = p(0.90, 0.66)
+            let clampedDots = min(max(dotCount, 2), 6)
+
+            let cubicPoint: (CGPoint, CGPoint, CGPoint, CGPoint, CGFloat) -> CGPoint = { a, b, c, d, t in
+                let oneMinusT = 1 - t
+                let x = (oneMinusT * oneMinusT * oneMinusT * a.x)
+                    + (3 * oneMinusT * oneMinusT * t * b.x)
+                    + (3 * oneMinusT * t * t * c.x)
+                    + (t * t * t * d.x)
+                let y = (oneMinusT * oneMinusT * oneMinusT * a.y)
+                    + (3 * oneMinusT * oneMinusT * t * b.y)
+                    + (3 * oneMinusT * t * t * c.y)
+                    + (t * t * t * d.y)
+                return CGPoint(x: x, y: y)
+            }
+
+            let baseLineColor = colorScheme == .light ? Color.black.opacity(0.42) : Color.white.opacity(0.68)
+            let activeLineColor = colorScheme == .light ? Color.black.opacity(0.90) : Color.white.opacity(0.95)
+            let futureDotStrokeColor = colorScheme == .light ? Color.black.opacity(0.55) : Color.white.opacity(0.72)
+            let clampedActiveIndex = min(max(activeDotIndex, -1), max(clampedDots - 1, -1))
+
+            let markers: [CGPoint] = {
+                let m1 = cubicPoint(p0, c01a, c01b, p1, 0.50)
+                let m3 = cubicPoint(p2, c23a, c23b, p3, 0.50)
+                return Array([p0, m1, p1, p2, m3, p3].prefix(clampedDots))
+            }()
+
+            let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
+
+            ZStack {
+                Path { path in
+                    path.move(to: p0)
+                    path.addCurve(to: p1, control1: c01a, control2: c01b)
+                    path.addCurve(to: p2, control1: c12a, control2: c12b)
+                    path.addCurve(to: p3, control1: c23a, control2: c23b)
+                }
+                .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+
+                ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                    let isReached = index <= clampedActiveIndex
+                    Circle()
+                        .fill(isReached ? activeLineColor : Color.clear)
+                        .overlay(
+                            Circle().stroke(
+                                isReached ? activeLineColor : futureDotStrokeColor,
+                                lineWidth: 1.8
+                            )
+                        )
+                        .frame(
+                            width: index == peakIndex ? 10 : 8,
+                            height: index == peakIndex ? 10 : 8
+                        )
+                        .position(point)
+                }
+            }
+        }
+        .frame(height: 20)
     }
 }
 
