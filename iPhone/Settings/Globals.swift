@@ -152,30 +152,40 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
 enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
     static let storageKey = "lockScreenPrayerCountdownStyle"
 
-    case prayerCountdown
-    case prayerTimeline
+    case prayerCountdownWithLocation
+    case prayerCountdownWithoutLocation
+    case prayerTimelineWithLocation
+    case prayerTimelineWithoutLocation
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .prayerCountdown:
+        case .prayerCountdownWithLocation, .prayerCountdownWithoutLocation:
             return isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown"
-        case .prayerTimeline:
+        case .prayerTimelineWithLocation, .prayerTimelineWithoutLocation:
             return isMalayAppLanguage() ? "Garis Masa Solat" : "Prayer Timeline"
         }
     }
 
     var summary: String {
         switch self {
-        case .prayerCountdown:
+        case .prayerCountdownWithLocation:
             return isMalayAppLanguage()
-                ? "Gaya titik yang ringkas untuk solat semasa dan solat seterusnya."
-                : "A compact dot-based style for the current and next prayer."
-        case .prayerTimeline:
+                ? "Gaya titik dengan lokasi aktif."
+                : "Dot-based style with the active location."
+        case .prayerCountdownWithoutLocation:
             return isMalayAppLanguage()
-                ? "Gaya graf garisan untuk melihat aliran waktu sepanjang hari."
-                : "A line-graph style to show prayer flow through the day."
+                ? "Gaya titik tanpa lokasi."
+                : "Dot-based style without the location."
+        case .prayerTimelineWithLocation:
+            return isMalayAppLanguage()
+                ? "Gaya graf garisan dengan lokasi aktif."
+                : "Line-graph style with the active location."
+        case .prayerTimelineWithoutLocation:
+            return isMalayAppLanguage()
+                ? "Gaya graf garisan tanpa lokasi."
+                : "Line-graph style without the location."
         }
     }
 }

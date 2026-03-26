@@ -956,12 +956,12 @@ private struct NotificationStylePreviewCard: View {
 struct WidgetPreviewGalleryView: View {
     @EnvironmentObject var settings: Settings
     @AppStorage(LockScreenPrayerCountdownStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
-    private var countdownStyleRaw = LockScreenPrayerCountdownStyle.prayerCountdown.rawValue
+    private var countdownStyleRaw = LockScreenPrayerCountdownStyle.prayerCountdownWithLocation.rawValue
     @AppStorage(WidgetZikirAlignment.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var zikirAlignmentRaw = WidgetZikirAlignment.center.rawValue
 
     private var countdownStyle: LockScreenPrayerCountdownStyle {
-        LockScreenPrayerCountdownStyle(rawValue: countdownStyleRaw) ?? .prayerCountdown
+        LockScreenPrayerCountdownStyle(rawValue: countdownStyleRaw) ?? .prayerCountdownWithLocation
     }
 
     private var zikirAlignment: WidgetZikirAlignment {
@@ -1197,8 +1197,28 @@ private struct PrayerCountdownStyleCard: View {
 
                     Spacer()
 
-                    if style == .prayerCountdown {
+                    if style == .prayerCountdownWithLocation {
                         LockScreenTimelinePreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: "Taiping, Perak",
+                            accentColor: settings.accentColor.color
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .prayerCountdownWithoutLocation {
+                        LockScreenTimelinePreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: nil,
+                            accentColor: settings.accentColor.color
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .prayerTimelineWithLocation {
+                        PrayerTimelineGraphPreviewCard(
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
@@ -1212,7 +1232,7 @@ private struct PrayerCountdownStyleCard: View {
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
-                            footer: "Taiping, Perak",
+                            footer: nil,
                             accentColor: settings.accentColor.color
                         )
                         .frame(width: 188)
@@ -1339,16 +1359,16 @@ private struct LockScreenTimelinePreviewCard: View {
     let currentPrayer: String
     let nextPrayer: String
     let nextTime: String
-    let footer: String
+    let footer: String?
     let accentColor: Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 6) {
-                ForEach(0..<5, id: \.self) { index in
-                    Capsule(style: .continuous)
+                ForEach(0..<6, id: \.self) { index in
+                    Circle()
                         .fill(index < 3 ? Color.primary.opacity(0.92) : Color.primary.opacity(0.26))
-                        .frame(width: index == 2 ? 14 : 8, height: index == 2 ? 14 : 8)
+                        .frame(width: index == 2 ? 10 : 8, height: index == 2 ? 10 : 8)
                 }
             }
             .frame(height: 16)
@@ -1373,10 +1393,12 @@ private struct LockScreenTimelinePreviewCard: View {
                     .lineLimit(1)
             }
 
-            Text(footer)
-                .font(.system(size: 10, weight: .regular))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+            if let footer, !footer.isEmpty {
+                Text(footer)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
@@ -1879,7 +1901,7 @@ private struct PrayerTimelineGraphPreviewCard: View {
     let currentPrayer: String
     let nextPrayer: String
     let nextTime: String
-    let footer: String
+    let footer: String?
     let accentColor: Color
 
     var body: some View {
@@ -1911,10 +1933,12 @@ private struct PrayerTimelineGraphPreviewCard: View {
                     .lineLimit(1)
             }
 
-            Text(footer)
-                .font(.system(size: 10, weight: .regular))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+            if let footer, !footer.isEmpty {
+                Text(footer)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)

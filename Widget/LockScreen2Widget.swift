@@ -9,7 +9,7 @@ private struct PrayerCountdownBarWindow {
 private func storedLockScreenPrayerCountdownStyle() -> LockScreenPrayerCountdownStyle {
     let rawValue = UserDefaults(suiteName: sharedAppGroupID)?
         .string(forKey: LockScreenPrayerCountdownStyle.storageKey)
-    return LockScreenPrayerCountdownStyle(rawValue: rawValue ?? "") ?? .prayerCountdown
+    return LockScreenPrayerCountdownStyle(rawValue: rawValue ?? "") ?? .prayerCountdownWithLocation
 }
 
 private func countdownBarPrayerWindow(for entry: PrayersProvider.Entry) -> PrayerCountdownBarWindow? {
@@ -160,6 +160,55 @@ private struct PrayerMiniGraph: View {
     }
 }
 
+private struct PrayerDotCountdown: View {
+    let currentPrayer: String
+    let nextPrayer: String
+    let nextTime: Date
+    let footer: String?
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 6) {
+                ForEach(0..<6, id: \.self) { index in
+                    Circle()
+                        .fill(index < 3 ? Color.primary.opacity(0.92) : Color.primary.opacity(0.26))
+                        .frame(width: index == 2 ? 10 : 8, height: index == 2 ? 10 : 8)
+                }
+            }
+            .frame(height: 16)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(currentPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(accentColor)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextTime, style: .time)
+                    .font(.headline.monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+
+            if let footer, !footer.isEmpty {
+                Text(footer)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+}
+
 struct LockScreen2EntryView: View {
     var entry: PrayersProvider.Entry
 
@@ -211,7 +260,7 @@ struct LockScreen2EntryView: View {
             } else if let currentPrayer = entry.currentPrayer,
                       let nextPrayer = entry.nextPrayer,
                       let window = countdownBarPrayerWindow(for: entry) {
-                if selectedStyle == .prayerTimeline {
+                if selectedStyle == .prayerTimelineWithLocation || selectedStyle == .prayerTimelineWithoutLocation {
                     let prayersForGraph = graphPrayers()
                     PrayerMiniGraph(
                         tint: entry.accentColor.color,
@@ -240,41 +289,17 @@ struct LockScreen2EntryView: View {
                             .lineLimit(1)
                     }
                 } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        HStack(spacing: 6) {
-                            Image(systemName: nextPrayer.image.contains("/") ? "hourglass" : nextPrayer.image)
-                                .font(.system(size: 12, weight: .semibold))
-                                .frame(width: 14)
-
-                            Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.65)
-                                .truncationMode(.tail)
-                        }
-
-                        Spacer(minLength: 8)
-
-                        Text(nextPrayer.time, style: .timer)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .multilineTextAlignment(.trailing)
-                    }
-
-                    TimelineView(.periodic(from: entry.date, by: 1)) { context in
-                        ProgressView(value: progressValue(at: context.date, for: window))
-                            .progressViewStyle(.linear)
-                    }
-
-                    Text("Ends at \(endTimeText(nextPrayer.time))")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    PrayerDotCountdown(
+                        currentPrayer: widgetPrayerDisplayName(currentPrayer.nameTransliteration),
+                        nextPrayer: widgetPrayerDisplayName(nextPrayer.nameTransliteration),
+                        nextTime: nextPrayer.time,
+                        footer: selectedStyle == .prayerCountdownWithLocation ? entry.currentCity : nil,
+                        accentColor: entry.accentColor.color
+                    )
                 }
-
-                WidgetLocationFooter(entry: entry, widgetKind: "LockScreen2Widget")
+                if selectedStyle == .prayerTimelineWithLocation {
+                    WidgetLocationFooter(entry: entry, widgetKind: "LockScreen2Widget")
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
