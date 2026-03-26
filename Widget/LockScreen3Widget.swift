@@ -111,15 +111,15 @@ struct LockScreen3Widget: Widget {
                 }
             }
             .supportedFamilies([.accessoryRectangular])
-            .configurationDisplayName("Prayer Times")
-            .description("Shows the next 3 prayer times, auto-flipping to the second half of the day")
+            .configurationDisplayName("Prayer List")
+            .description("Shows the next 3 prayer times in a compact list")
         } else {
             return StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
                 LockScreen3EntryView(entry: entry)
             }
             .supportedFamilies([.systemSmall])
-            .configurationDisplayName("Prayer Times")
-            .description("Shows the next 3 prayer times, auto-flipping to the second half of the day")
+            .configurationDisplayName("Prayer List")
+            .description("Shows the next 3 prayer times in a compact list")
         }
         #endif
     }

@@ -885,6 +885,7 @@ extension Settings {
         // Persist zone for push notification targeting (Malaysia/SG only)
         if !shouldUseIndonesiaPrayerAPI(for: currentLocation) {
             UserDefaults.standard.set(month.zone, forKey: "lastKnownMalaysiaZone")
+            Self.syncLiveActivityEnrollmentHandler?()
             resolvedPrayerArea = nil
         } else {
             UserDefaults.standard.set(month.zone, forKey: "lastKnownIndonesiaRegionId")

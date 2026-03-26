@@ -997,6 +997,34 @@ struct WidgetPreviewGalleryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 previewSection(
+                    title: isMalayAppLanguage() ? "Bulatan Solat Seterusnya" : "Next Prayer Circle",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih gaya untuk widget bulatan solat seterusnya."
+                        : "Choose the style for the circular next prayer widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(NextPrayerCircleStyle.allCases) { style in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        nextPrayerCircleStyleRaw = style.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    NextPrayerCircleStyleCard(
+                                        style: style,
+                                        isSelected: nextPrayerCircleStyle == style
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
                     title: isMalayAppLanguage() ? "Waktu Solat" : "Prayer Times",
                     subtitle: isMalayAppLanguage()
                         ? "Pilih gaya titik atau graf untuk widget waktu solat pada skrin kunci."
@@ -1025,7 +1053,35 @@ struct WidgetPreviewGalleryView: View {
                 }
 
                 previewSection(
-                    title: isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Time Countdown",
+                    title: isMalayAppLanguage() ? "Senarai Solat" : "Prayer List",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih gaya untuk widget senarai solat pada skrin kunci."
+                        : "Choose the style for the Lock Screen prayer list widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(PrayerListWidgetStyle.allCases) { style in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        prayerListStyleRaw = style.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    PrayerListStyleCard(
+                                        style: style,
+                                        isSelected: prayerListStyle == style
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown Bar",
                     subtitle: isMalayAppLanguage()
                         ? "Pilih paparan bar kiraan detik untuk widget kiraan detik solat."
                         : "Choose the progress-bar presentation for the Lock Screen prayer countdown widget."
@@ -1081,66 +1137,10 @@ struct WidgetPreviewGalleryView: View {
                 }
 
                 previewSection(
-                    title: isMalayAppLanguage() ? "Bulatan Solat Seterusnya" : "Next Prayer Circle",
+                    title: isMalayAppLanguage() ? "Inspirasi Al-Quran Harian" : "Daily Quran Inspiration",
                     subtitle: isMalayAppLanguage()
-                        ? "Pilih gaya untuk widget bulatan solat seterusnya."
-                        : "Choose the style for the circular next prayer widget."
-                ) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 16) {
-                            ForEach(NextPrayerCircleStyle.allCases) { style in
-                                Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
-                                        nextPrayerCircleStyleRaw = style.rawValue
-                                    }
-                                    WidgetCenter.shared.reloadAllTimelines()
-                                } label: {
-                                    NextPrayerCircleStyleCard(
-                                        style: style,
-                                        isSelected: nextPrayerCircleStyle == style
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                previewSection(
-                    title: isMalayAppLanguage() ? "Senarai Solat" : "Prayer List",
-                    subtitle: isMalayAppLanguage()
-                        ? "Pilih gaya untuk widget senarai solat pada skrin kunci."
-                        : "Choose the style for the Lock Screen prayer list widget."
-                ) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 16) {
-                            ForEach(PrayerListWidgetStyle.allCases) { style in
-                                Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
-                                        prayerListStyleRaw = style.rawValue
-                                    }
-                                    WidgetCenter.shared.reloadAllTimelines()
-                                } label: {
-                                    PrayerListStyleCard(
-                                        style: style,
-                                        isSelected: prayerListStyle == style
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                previewSection(
-                    title: isMalayAppLanguage() ? "Ayat Harian" : "Daily Verse",
-                    subtitle: isMalayAppLanguage()
-                        ? "Pilih gaya untuk widget ayat harian pada skrin kunci."
-                        : "Choose the style for the Lock Screen daily verse widget."
+                        ? "Pilih gaya untuk widget inspirasi Al-Quran harian pada skrin kunci."
+                        : "Choose the style for the Lock Screen daily Quran widget."
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
