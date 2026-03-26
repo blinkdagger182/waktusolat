@@ -1233,8 +1233,12 @@ private struct NextPrayerCircleStyleCard: View {
                             LockScreenCircularPreviewCard(title: localizedPrayerName("Isha"), time: "19:31")
                         } else if style == .minimal {
                             LockScreenCircularMinimalPreviewCard(title: localizedPrayerName("Isha"), time: "19:31")
-                        } else {
+                        } else if style == .countdownRing {
                             LockScreenCircularCountdownPreviewCard(title: localizedPrayerName("Maghrib"), progress: 0.34)
+                        } else if style == .dualCountdownRing {
+                            LockScreenCircularDualCountdownPreviewCard(title: localizedPrayerName("Maghrib"), innerProgress: 0.34, outerProgress: 0.62)
+                        } else {
+                            LockScreenCircularDualCountdownNextPrayerPreviewCard(title: localizedPrayerName("Isyak"), time: "19:31", innerProgress: 0.34, outerProgress: 0.62)
                         }
                     }
                     .padding(.bottom, 18)
@@ -1540,22 +1544,74 @@ private struct PrayerTimesStyleCard: View {
                     Spacer()
 
                     if style == .prayerCountdownWithLocation {
-                        LockScreenTimelinePreviewCard(
+                        PrayerDotsPreviewCard(
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
                             footer: "Taiping, Perak",
-                            accentColor: settings.accentColor.color
+                            accentColor: settings.accentColor.color,
+                            showsLabels: true,
+                            centered: false
                         )
                         .frame(width: 188)
                         .padding(.bottom, 20)
                     } else if style == .prayerCountdownWithoutLocation {
-                        LockScreenTimelinePreviewCard(
+                        PrayerDotsPreviewCard(
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
                             footer: nil,
-                            accentColor: settings.accentColor.color
+                            accentColor: settings.accentColor.color,
+                            showsLabels: true,
+                            centered: false
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .prayerCountdownClassicWithLocation {
+                        PrayerDotsPreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: "Taiping, Perak",
+                            accentColor: settings.accentColor.color,
+                            showsLabels: false,
+                            centered: false
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .prayerCountdownClassicWithoutLocation {
+                        PrayerDotsPreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: nil,
+                            accentColor: settings.accentColor.color,
+                            showsLabels: false,
+                            centered: false
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .prayerCountdownCenteredWithLocation {
+                        PrayerDotsPreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: "Taiping, Perak",
+                            accentColor: settings.accentColor.color,
+                            showsLabels: false,
+                            centered: true
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .prayerCountdownCenteredWithoutLocation {
+                        PrayerDotsPreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: nil,
+                            accentColor: settings.accentColor.color,
+                            showsLabels: false,
+                            centered: true
                         )
                         .frame(width: 188)
                         .padding(.bottom, 20)
@@ -1837,6 +1893,101 @@ private struct LockScreenCircularCountdownPreviewCard: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.55)
                 .padding(20)
+        }
+        .frame(width: 98, height: 98)
+    }
+}
+
+private struct LockScreenCircularDualCountdownPreviewCard: View {
+    let title: String
+    let innerProgress: Double
+    let outerProgress: Double
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(.secondarySystemBackground))
+            Circle()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+
+            Circle()
+                .stroke(Color.primary.opacity(0.10), lineWidth: 4)
+                .padding(8)
+
+            Circle()
+                .trim(from: 0, to: outerProgress)
+                .stroke(Color.primary.opacity(0.46), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .padding(8)
+
+            Circle()
+                .stroke(Color.primary.opacity(0.18), lineWidth: 6)
+                .padding(16)
+
+            Circle()
+                .trim(from: 0, to: innerProgress)
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .padding(16)
+
+            Text(title)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.55)
+                .padding(22)
+        }
+        .frame(width: 98, height: 98)
+    }
+}
+
+private struct LockScreenCircularDualCountdownNextPrayerPreviewCard: View {
+    let title: String
+    let time: String
+    let innerProgress: Double
+    let outerProgress: Double
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(.secondarySystemBackground))
+            Circle()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+
+            Circle()
+                .stroke(Color.primary.opacity(0.10), lineWidth: 4)
+                .padding(8)
+
+            Circle()
+                .trim(from: 0, to: outerProgress)
+                .stroke(Color.primary.opacity(0.46), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .padding(8)
+
+            Circle()
+                .stroke(Color.primary.opacity(0.18), lineWidth: 6)
+                .padding(16)
+
+            Circle()
+                .trim(from: 0, to: innerProgress)
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .padding(16)
+
+            VStack(spacing: 1) {
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.55)
+
+                Text(time)
+                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
+            }
+            .padding(16)
         }
         .frame(width: 98, height: 98)
     }
@@ -2710,6 +2861,80 @@ private struct PrayerTimelineGraphPreviewCard: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct PrayerDotsPreviewCard: View {
+    let currentPrayer: String
+    let nextPrayer: String
+    let nextTime: String
+    let footer: String?
+    let accentColor: Color
+    let showsLabels: Bool
+    let centered: Bool
+    private let labels = ["SB", "SY", "ZH", "AS", "MG", "IS"]
+
+    var body: some View {
+        VStack(alignment: centered ? .center : .leading, spacing: 7) {
+            HStack(spacing: 5) {
+                ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
+                    VStack(spacing: 3) {
+                        Circle()
+                            .fill(index <= 4 ? Color.primary.opacity(0.92) : Color.primary.opacity(0.26))
+                            .frame(width: index == 4 ? 10 : 8, height: index == 4 ? 10 : 8)
+
+                        if showsLabels {
+                            Text(label)
+                                .font(.system(size: 7, weight: .semibold, design: .rounded))
+                                .foregroundStyle(index == 4 ? accentColor : .secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: showsLabels ? 26 : 16)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(currentPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(accentColor)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextTime)
+                    .font(.headline.monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
+
+            if let footer, !footer.isEmpty {
+                Text(footer)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: centered ? .center : .leading)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(.secondarySystemBackground))

@@ -153,19 +153,16 @@ struct NextPrayerLiveActivityWidget: Widget {
                 }
             } compactLeading: {
                 Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
             } compactTrailing: {
-                LiveActivityCountdownText(
+                LiveActivityCompactTimerText(
                     prayerTime: context.state.prayerTime,
-                    reachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
-                    countdownPrefix: nil,
-                    compactReachedText: localizedPrayerName(context.state.prayerName),
-                    isStale: context.isStale,
-                    compact: true
+                    prayerName: context.state.prayerName,
+                    isStale: context.isStale
                 )
             } minimal: {
                 Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
             }
         }
     }
@@ -288,6 +285,43 @@ private struct LiveActivityCountdownText: View {
                 Text(timerInterval: Date()...prayerTime, countsDown: true)
                     .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)
                                   : .system(.subheadline, design: .rounded).weight(.bold))
+            }
+        }
+    }
+}
+
+@available(iOSApplicationExtension 16.2, *)
+private struct LiveActivityCompactTimerText: View {
+    let prayerTime: Date
+    let prayerName: String
+    let isStale: Bool
+
+    private var shortPrayerLabel: String {
+        let localized = localizedPrayerName(prayerName)
+        return String(localized.prefix(4))
+    }
+
+    private func shortRemainingString(now: Date) -> String {
+        let remaining = max(prayerTime.timeIntervalSince(now), 0)
+        let minutes = Int(remaining / 60)
+        let hours = minutes / 60
+        if hours >= 1 {
+            return "\(hours)h"
+        }
+        return "\(max(minutes, 1))m"
+    }
+
+    var body: some View {
+        TimelineView(.explicit([.distantPast, prayerTime])) { timeline in
+            if isStale || timeline.date >= prayerTime {
+                Text(shortPrayerLabel)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+            } else {
+                Text(shortRemainingString(now: timeline.date))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
             }
         }
     }

@@ -287,19 +287,34 @@ private struct PrayerDotCountdown: View {
     let currentPrayer: String
     let nextPrayer: String
     let nextTime: Date
+    let prayerLabels: [String]
+    let activeIndex: Int
     let footer: String?
     let accentColor: Color
+    let showsLabels: Bool
+    let centered: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 6) {
-                ForEach(0..<6, id: \.self) { index in
-                    Circle()
-                        .fill(index < 3 ? Color.primary.opacity(0.92) : Color.primary.opacity(0.26))
-                        .frame(width: index == 2 ? 10 : 8, height: index == 2 ? 10 : 8)
+        VStack(alignment: centered ? .center : .leading, spacing: 7) {
+            HStack(spacing: 5) {
+                ForEach(Array(prayerLabels.enumerated()), id: \.offset) { index, label in
+                    VStack(spacing: 3) {
+                        Circle()
+                            .fill(index <= activeIndex ? Color.primary.opacity(0.92) : Color.primary.opacity(0.26))
+                            .frame(width: index == activeIndex ? 10 : 8, height: index == activeIndex ? 10 : 8)
+
+                        if showsLabels {
+                            Text(label)
+                                .font(.system(size: 7, weight: .semibold, design: .rounded))
+                                .foregroundStyle(index == activeIndex ? accentColor : .secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
                 }
             }
-            .frame(height: 16)
+            .frame(height: showsLabels ? 26 : 16)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(currentPrayer)
@@ -321,14 +336,17 @@ private struct PrayerDotCountdown: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
 
             if let footer, !footer.isEmpty {
                 Text(footer)
                     .font(.system(size: 10, weight: .regular))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
             }
         }
+        .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
     }
 }
 
@@ -362,6 +380,25 @@ struct LockScreen2EntryView: View {
         let travelNames = ["Fajr", "Dhuhr", "Maghrib"]
         return travelNames.compactMap { target in
             sorted.first { widgetPrayerDisplayName($0.nameTransliteration) == target }
+        }
+    }
+
+    private func shortPrayerLabel(for prayer: Prayer) -> String {
+        switch widgetPrayerDisplayName(prayer.nameTransliteration) {
+        case "Fajr", "Subuh":
+            return isMalayAppLanguage() ? "SB" : "FJ"
+        case "Shurooq", "Syuruk":
+            return isMalayAppLanguage() ? "SY" : "SR"
+        case "Dhuhr", "Zuhur":
+            return "ZH"
+        case "Asr", "Asar":
+            return "AS"
+        case "Maghrib":
+            return "MG"
+        case "Isha", "Isyak":
+            return isMalayAppLanguage() ? "IS" : "IS"
+        default:
+            return String(widgetPrayerDisplayName(prayer.nameTransliteration).prefix(2)).uppercased()
         }
     }
 
@@ -425,12 +462,24 @@ struct LockScreen2EntryView: View {
                             .lineLimit(1)
                     }
                 } else {
+                    let prayersForDots = graphPrayers()
+                    let showsLocation = selectedStyle == .prayerCountdownWithLocation
+                        || selectedStyle == .prayerCountdownClassicWithLocation
+                        || selectedStyle == .prayerCountdownCenteredWithLocation
+                    let showsLabels = selectedStyle == .prayerCountdownWithLocation
+                        || selectedStyle == .prayerCountdownWithoutLocation
+                    let centeredDots = selectedStyle == .prayerCountdownCenteredWithLocation
+                        || selectedStyle == .prayerCountdownCenteredWithoutLocation
                     PrayerDotCountdown(
                         currentPrayer: widgetPrayerDisplayName(currentPrayer.nameTransliteration),
                         nextPrayer: widgetPrayerDisplayName(nextPrayer.nameTransliteration),
                         nextTime: nextPrayer.time,
-                        footer: selectedStyle == .prayerCountdownWithLocation ? entry.currentCity : nil,
-                        accentColor: entry.accentColor.color
+                        prayerLabels: prayersForDots.map(shortPrayerLabel(for:)),
+                        activeIndex: activeIndex(in: prayersForDots),
+                        footer: showsLocation ? entry.currentCity : nil,
+                        accentColor: entry.accentColor.color,
+                        showsLabels: showsLabels,
+                        centered: centeredDots
                     )
                 }
                 if selectedStyle == .prayerTimelineWithLocation || selectedStyle == .prayerTimelinePlusWithLocation {

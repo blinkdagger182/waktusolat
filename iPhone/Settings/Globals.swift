@@ -155,6 +155,8 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
     case classic
     case minimal
     case countdownRing
+    case dualCountdownRing
+    case dualCountdownRingNextPrayer
 
     var id: String { rawValue }
 
@@ -166,6 +168,10 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage() ? "Minimal" : "Minimal"
         case .countdownRing:
             return isMalayAppLanguage() ? "Bulatan Kiraan Detik" : "Countdown Ring"
+        case .dualCountdownRing:
+            return isMalayAppLanguage() ? "Bulatan Kiraan Ganda" : "Dual Countdown Ring"
+        case .dualCountdownRingNextPrayer:
+            return isMalayAppLanguage() ? "Bulatan Ganda Solat Seterusnya" : "Dual Ring Next Prayer"
         }
     }
 
@@ -183,6 +189,14 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Bulatan kemajuan yang mengira menuju solat seterusnya."
                 : "A circular progress ring counting down to the next prayer."
+        case .dualCountdownRing:
+            return isMalayAppLanguage()
+                ? "Bulatan dalam mengira ke solat seterusnya, dengan bulatan luar menunjukkan baki masa hari ini hingga tengah malam."
+                : "An inner ring for the next prayer, with an outer ring showing the remaining day until midnight."
+        case .dualCountdownRingNextPrayer:
+            return isMalayAppLanguage()
+                ? "Versi dua bulatan yang memaparkan nama dan waktu solat seterusnya di tengah."
+                : "A dual-ring style that shows the next prayer name and time in the center."
         }
     }
 }
@@ -304,6 +318,10 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
 
     case prayerCountdownWithLocation
     case prayerCountdownWithoutLocation
+    case prayerCountdownClassicWithLocation
+    case prayerCountdownClassicWithoutLocation
+    case prayerCountdownCenteredWithLocation
+    case prayerCountdownCenteredWithoutLocation
     case prayerTimelineWithLocation
     case prayerTimelineWithoutLocation
     case prayerTimelinePlusWithLocation
@@ -313,7 +331,12 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .prayerCountdownWithLocation, .prayerCountdownWithoutLocation:
+        case .prayerCountdownWithLocation,
+             .prayerCountdownWithoutLocation,
+             .prayerCountdownClassicWithLocation,
+             .prayerCountdownClassicWithoutLocation,
+             .prayerCountdownCenteredWithLocation,
+             .prayerCountdownCenteredWithoutLocation:
             return isMalayAppLanguage() ? "Waktu Solat" : "Prayer Times"
         case .prayerTimelineWithLocation, .prayerTimelineWithoutLocation:
             return isMalayAppLanguage() ? "Garis Masa Solat" : "Prayer Timeline"
@@ -326,12 +349,28 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
         switch self {
         case .prayerCountdownWithLocation:
             return isMalayAppLanguage()
-                ? "Gaya titik dengan lokasi aktif."
-                : "Dot-based style with the active location."
+                ? "Gaya titik berlabel dengan lokasi aktif."
+                : "Labeled dot style with the active location."
         case .prayerCountdownWithoutLocation:
             return isMalayAppLanguage()
-                ? "Gaya titik tanpa lokasi."
-                : "Dot-based style without the location."
+                ? "Gaya titik berlabel tanpa lokasi."
+                : "Labeled dot style without the location."
+        case .prayerCountdownClassicWithLocation:
+            return isMalayAppLanguage()
+                ? "Gaya titik asal tanpa label dengan lokasi aktif."
+                : "The original dot style without labels, with the active location."
+        case .prayerCountdownClassicWithoutLocation:
+            return isMalayAppLanguage()
+                ? "Gaya titik asal tanpa label dan tanpa lokasi."
+                : "The original dot style without labels or location."
+        case .prayerCountdownCenteredWithLocation:
+            return isMalayAppLanguage()
+                ? "Gaya titik tengah dengan lokasi aktif."
+                : "A centered dot style with the active location."
+        case .prayerCountdownCenteredWithoutLocation:
+            return isMalayAppLanguage()
+                ? "Gaya titik tengah tanpa lokasi."
+                : "A centered dot style without the location."
         case .prayerTimelineWithLocation:
             return isMalayAppLanguage()
                 ? "Gaya graf garisan dengan lokasi aktif."

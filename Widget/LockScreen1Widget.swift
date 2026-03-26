@@ -24,23 +24,25 @@ struct LockScreen1EntryView: View {
         return sorted[previousIndex]
     }
 
-    private func ringProgress(nextPrayer: Prayer) -> Double {
-        guard let currentPrayer = currentPrayerForRing(nextPrayer: nextPrayer) else { return 0 }
-
-        let start = currentPrayer.time
-        var end = nextPrayer.time
+    private func remainingPrayerProgress(nextPrayer: Prayer) -> Double {
         let now = entry.date
-
-        if end <= start {
-            end = end.addingTimeInterval(24 * 60 * 60)
+        var target = nextPrayer.time
+        if target <= now {
+            target = target.addingTimeInterval(24 * 60 * 60)
         }
+        let remaining = max(target.timeIntervalSince(now), 0)
+        return min(max(remaining / (24 * 60 * 60), 0), 1)
+    }
 
-        let adjustedNow = now < start ? now.addingTimeInterval(24 * 60 * 60) : now
-        let total = end.timeIntervalSince(start)
+    private var remainingDayProgress: Double {
+        let calendar = Calendar.current
+        let now = entry.date
+        let startOfDay = calendar.startOfDay(for: now)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return 0 }
+        let total = endOfDay.timeIntervalSince(startOfDay)
         guard total > 0 else { return 0 }
-
-        let elapsed = adjustedNow.timeIntervalSince(start)
-        return min(max(elapsed / total, 0), 1)
+        let remaining = endOfDay.timeIntervalSince(now)
+        return min(max(remaining / total, 0), 1)
     }
 
     var body: some View {
@@ -87,7 +89,7 @@ struct LockScreen1EntryView: View {
                         .allowsTightening(true)
 
                 case .countdownRing:
-                    let progress = ringProgress(nextPrayer: nextPrayer)
+                    let progress = remainingPrayerProgress(nextPrayer: nextPrayer)
                     let label = localizedPrayerName((currentPrayerForRing(nextPrayer: nextPrayer)?.nameTransliteration ?? nextPrayer.nameTransliteration))
 
                     ZStack {
@@ -110,6 +112,92 @@ struct LockScreen1EntryView: View {
                             .padding(10)
                     }
                     .frame(width: 54, height: 54)
+
+                case .dualCountdownRing:
+                    let innerProgress = remainingPrayerProgress(nextPrayer: nextPrayer)
+                    let outerProgress = remainingDayProgress
+                    let label = localizedPrayerName((currentPrayerForRing(nextPrayer: nextPrayer)?.nameTransliteration ?? nextPrayer.nameTransliteration))
+
+                    ZStack {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.10), lineWidth: 4)
+
+                        Circle()
+                            .trim(from: 0, to: outerProgress)
+                            .stroke(
+                                Color.primary.opacity(0.46),
+                                style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+
+                        Circle()
+                            .stroke(Color.primary.opacity(0.18), lineWidth: 6)
+                            .padding(8)
+
+                        Circle()
+                            .trim(from: 0, to: innerProgress)
+                            .stroke(
+                                Color.primary,
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+                            .padding(8)
+
+                        Text(label)
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.55)
+                            .padding(16)
+                    }
+                    .frame(width: 58, height: 58)
+
+                case .dualCountdownRingNextPrayer:
+                    let innerProgress = remainingPrayerProgress(nextPrayer: nextPrayer)
+                    let outerProgress = remainingDayProgress
+                    let nextPrayerLabel = localizedPrayerName(nextPrayer.nameTransliteration)
+
+                    ZStack {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.10), lineWidth: 4)
+
+                        Circle()
+                            .trim(from: 0, to: outerProgress)
+                            .stroke(
+                                Color.primary.opacity(0.46),
+                                style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+
+                        Circle()
+                            .stroke(Color.primary.opacity(0.18), lineWidth: 6)
+                            .padding(8)
+
+                        Circle()
+                            .trim(from: 0, to: innerProgress)
+                            .stroke(
+                                Color.primary,
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+                            .padding(8)
+
+                        VStack(spacing: 1) {
+                            Text(nextPrayerLabel)
+                                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.55)
+
+                            Text(nextPrayer.time, style: .time)
+                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.65)
+                        }
+                        .padding(16)
+                    }
+                    .frame(width: 58, height: 58)
                 }
             }
         }
