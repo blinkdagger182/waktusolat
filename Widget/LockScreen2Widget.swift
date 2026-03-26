@@ -319,21 +319,21 @@ private struct PrayerDotCountdown: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(currentPrayer)
                     .font(.headline.weight(.semibold))
-                    .foregroundColor(accentColor)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 Text(nextTime, style: .time)
                     .font(.headline.monospacedDigit())
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 Text(nextPrayer)
                     .font(.headline.weight(.semibold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
@@ -444,21 +444,21 @@ struct LockScreen2EntryView: View {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
                             .font(.headline.weight(.semibold))
-                            .foregroundColor(entry.accentColor.color)
+                            .foregroundStyle(.primary)
                             .lineLimit(1)
 
                         Spacer(minLength: 0)
 
                         Text(nextPrayer.time, style: .time)
                             .font(.headline.monospacedDigit())
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
 
                         Spacer(minLength: 0)
 
                         Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                             .font(.headline.weight(.semibold))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 } else {

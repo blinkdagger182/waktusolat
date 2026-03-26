@@ -1587,7 +1587,8 @@ private struct LockScreenSpotlightCard: View {
                 prayer: localizedPrayerName("Isha"),
                 timerText: "19:31",
                 footer: "Taiping, Perak",
-                accentColor: settings.accentColor.color
+                accentColor: settings.accentColor.color,
+                batteryStyle: false
             )
         case .zikir:
             LockScreenRectangularZikirPreviewCard(
@@ -1809,14 +1810,27 @@ private struct PrayerCountdownBarStyleCard: View {
 
                     Spacer()
 
-                    LockScreenCountdownPreviewCard(
-                        prayer: localizedPrayerName("Maghrib"),
-                        timerText: "19:31",
-                        footer: style == .withLocation ? "Taiping, Perak" : "",
-                        accentColor: settings.accentColor.color
-                    )
-                    .frame(width: 188)
-                    .padding(.bottom, 20)
+                    if style == .withLocation || style == .withoutLocation {
+                        LockScreenCountdownPreviewCard(
+                            prayer: localizedPrayerName("Maghrib"),
+                            timerText: "19:31",
+                            footer: style == .withLocation ? "Taiping, Perak" : "",
+                            accentColor: settings.accentColor.color,
+                            batteryStyle: false
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .batteryWithLocation || style == .batteryWithoutLocation {
+                        LockScreenCountdownPreviewCard(
+                            prayer: localizedPrayerName("Maghrib"),
+                            timerText: "1h 12m",
+                            footer: style == .batteryWithLocation ? "Taiping, Perak" : "",
+                            accentColor: settings.accentColor.color,
+                            batteryStyle: true
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    }
                 }
             }
             .frame(width: 188, height: 220)
@@ -2109,7 +2123,7 @@ private struct LockScreenTimelinePreviewCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(currentPrayer)
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundStyle(accentColor)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
@@ -2117,12 +2131,14 @@ private struct LockScreenTimelinePreviewCard: View {
                 Text(nextTime)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .monospacedDigit()
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 Text(nextPrayer)
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
 
@@ -2308,22 +2324,53 @@ private struct LockScreenCountdownPreviewCard: View {
     let timerText: String
     let footer: String
     let accentColor: Color
+    let batteryStyle: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(prayer)
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                 Spacer(minLength: 6)
-                Text(timerText)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .monospacedDigit()
+                if batteryStyle {
+                    Text(localizedPrayerName("Isyak"))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text(timerText)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
             }
 
-            ProgressView(value: 0.62)
-                .progressViewStyle(.linear)
-                .tint(accentColor)
+            if batteryStyle {
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.primary.opacity(0.28), lineWidth: 1.4)
+                        .frame(height: 28)
+
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(accentColor.opacity(0.9))
+                        .frame(width: 108, height: 22)
+                        .padding(.horizontal, 3)
+                        .padding(.vertical, 3)
+
+                    Text(timerText)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.black.opacity(0.82))
+                        .monospacedDigit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                .frame(height: 28)
+            } else {
+                ProgressView(value: 0.62)
+                    .progressViewStyle(.linear)
+                    .tint(accentColor)
+            }
 
             Text(isMalayAppLanguage() ? "Berakhir pada 20:34" : "Ends at 20:34")
                 .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -2456,21 +2503,21 @@ private struct CurvierPrayerTimelineGraphPreviewCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(currentPrayer)
                     .font(.headline.weight(.semibold))
-                    .foregroundColor(accentColor)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 Text(nextTime)
                     .font(.headline.monospacedDigit())
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 Text(nextPrayer)
                     .font(.headline.weight(.semibold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
 

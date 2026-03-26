@@ -304,21 +304,21 @@ private struct LockScreenPrayerDotCountdown: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(currentPrayer)
                     .font(.headline.weight(.semibold))
-                    .foregroundColor(accentColor)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 Text(nextTime, style: .time)
                     .font(.headline.monospacedDigit())
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 Text(nextPrayer)
                     .font(.headline.weight(.semibold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
 
@@ -351,6 +351,17 @@ struct LockScreen6EntryView: View {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
+    }
+
+    private func remainingIntervalText(at now: Date, until target: Date) -> String {
+        let remaining = max(target.timeIntervalSince(now), 0)
+        let totalMinutes = Int(remaining / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        return "\(minutes)m"
     }
 
     private func graphPrayers() -> [Prayer] {
@@ -388,21 +399,54 @@ struct LockScreen6EntryView: View {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
                                 .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.primary)
                                 .lineLimit(1)
 
                             Spacer(minLength: 6)
 
-                            Text(nextPrayer.time, style: .time)
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .monospacedDigit()
-                                .lineLimit(1)
+                            if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
+                                Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            } else {
+                                Text(nextPrayer.time, style: .time)
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                                    .lineLimit(1)
+                            }
                         }
                     }
 
                     TimelineView(.periodic(from: entry.date, by: 1)) { context in
-                        ProgressView(value: progressValue(at: context.date, for: window))
-                            .progressViewStyle(.linear)
-                            .tint(entry.accentColor.color)
+                        if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
+                            let progress = progressValue(at: context.date, for: window)
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(Color.primary.opacity(0.28), lineWidth: 1.4)
+                                    .frame(height: 28)
+
+                                GeometryReader { geo in
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                        .fill(entry.accentColor.color.opacity(0.9))
+                                        .frame(width: max(geo.size.width * CGFloat(progress), 10), height: 22)
+                                        .padding(.horizontal, 3)
+                                        .padding(.vertical, 3)
+                                }
+
+                                Text(remainingIntervalText(at: context.date, until: window.end))
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(progress > 0.45 ? Color.black.opacity(0.82) : .primary)
+                                    .monospacedDigit()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            }
+                            .frame(height: 28)
+                        } else {
+                            ProgressView(value: progressValue(at: context.date, for: window))
+                                .progressViewStyle(.linear)
+                                .tint(entry.accentColor.color)
+                        }
                     }
 
                     Text("Ends at \(endTimeText(nextPrayer.time))")
@@ -410,7 +454,7 @@ struct LockScreen6EntryView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
 
-                    if selectedStyle == .withLocation {
+                    if selectedStyle == .withLocation || selectedStyle == .batteryWithLocation {
                         WidgetLocationFooter(entry: entry, widgetKind: "LockScreen6Widget")
                     }
                 }

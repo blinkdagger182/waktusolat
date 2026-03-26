@@ -424,6 +424,8 @@ enum LockScreenPrayerCountdownBarStyle: String, CaseIterable, Identifiable {
 
     case withLocation
     case withoutLocation
+    case batteryWithLocation
+    case batteryWithoutLocation
 
     var id: String { rawValue }
 
@@ -441,6 +443,14 @@ enum LockScreenPrayerCountdownBarStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Bar kiraan detik penuh tanpa lokasi."
                 : "Full countdown bar without the location."
+        case .batteryWithLocation:
+            return isMalayAppLanguage()
+                ? "Gaya bar bateri yang lebih besar dengan lokasi aktif."
+                : "A larger battery-like countdown style with the active location."
+        case .batteryWithoutLocation:
+            return isMalayAppLanguage()
+                ? "Gaya bar bateri yang lebih besar tanpa lokasi."
+                : "A larger battery-like countdown style without the location."
         }
     }
 }
