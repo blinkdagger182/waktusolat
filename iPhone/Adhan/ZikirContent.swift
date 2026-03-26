@@ -90,7 +90,9 @@ enum ZikirLibrary {
     ]
 
     static func phrases(for bucket: ZikirTimeBucket, includeFridayBoosts: Bool) -> [ZikirPhrase] {
-        let bucketItems = all.filter { $0.category.rawValue == bucket.rawValue }
+        let bucketItems = all.filter {
+            $0.category.rawValue == bucket.rawValue && (includeFridayBoosts || !$0.isFridayBoost)
+        }
         guard includeFridayBoosts else { return bucketItems }
         return bucketItems + all.filter { $0.category == .friday }
     }
