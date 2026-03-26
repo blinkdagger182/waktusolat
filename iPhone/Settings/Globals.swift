@@ -223,15 +223,57 @@ enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
 
     case classic
     case centered
+    case classicBaskerville
+    case centeredBaskerville
 
     var id: String { rawValue }
+
+    var fontDisplayName: String {
+        switch self {
+        case .classic, .centered:
+            return "Georgia"
+        case .classicBaskerville, .centeredBaskerville:
+            return "Baskerville"
+        }
+    }
+
+    var verseFontName: String {
+        switch self {
+        case .classic, .centered:
+            return "Georgia"
+        case .classicBaskerville, .centeredBaskerville:
+            return "Baskerville"
+        }
+    }
+
+    var referenceFontName: String {
+        switch self {
+        case .classic, .centered:
+            return "Georgia-Bold"
+        case .classicBaskerville, .centeredBaskerville:
+            return "Baskerville-Bold"
+        }
+    }
+
+    var isCentered: Bool {
+        switch self {
+        case .centered, .centeredBaskerville:
+            return true
+        case .classic, .classicBaskerville:
+            return false
+        }
+    }
 
     var title: String {
         switch self {
         case .classic:
-            return isMalayAppLanguage() ? "Asal" : "Classic"
+            return isMalayAppLanguage() ? "Asal \(fontDisplayName)" : "Classic \(fontDisplayName)"
         case .centered:
-            return isMalayAppLanguage() ? "Tengah" : "Centered"
+            return isMalayAppLanguage() ? "Tengah \(fontDisplayName)" : "Centered \(fontDisplayName)"
+        case .classicBaskerville:
+            return isMalayAppLanguage() ? "Asal \(fontDisplayName)" : "Classic \(fontDisplayName)"
+        case .centeredBaskerville:
+            return isMalayAppLanguage() ? "Tengah \(fontDisplayName)" : "Centered \(fontDisplayName)"
         }
     }
 
@@ -245,6 +287,14 @@ enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Ayat diratakan ke tengah untuk rupa yang lebih tenang."
                 : "Centers the verse for a calmer presentation."
+        case .classicBaskerville:
+            return isMalayAppLanguage()
+                ? "Gaya asal dengan fon Baskerville berpenjuru kiri."
+                : "The classic leading layout with Baskerville."
+        case .centeredBaskerville:
+            return isMalayAppLanguage()
+                ? "Gaya tengah dengan fon Baskerville."
+                : "The centered layout with Baskerville."
         }
     }
 }

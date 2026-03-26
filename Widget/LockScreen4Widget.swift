@@ -425,6 +425,8 @@ struct LockScreenVerseEntryView: View {
     let verse: InspiringVerse
     @AppStorage(DailyVerseWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var styleRaw = DailyVerseWidgetStyle.classic.rawValue
+    private let verseFontSize: CGFloat = 13
+    private let referenceFontSize: CGFloat = 16
 
     private var style: DailyVerseWidgetStyle {
         DailyVerseWidgetStyle(rawValue: styleRaw) ?? .classic
@@ -432,15 +434,15 @@ struct LockScreenVerseEntryView: View {
 
     var body: some View {
         Group {
-            if style == .classic {
+            if style.isCentered == false {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verse.displayReference)
-                        .font(.system(size: 16, weight: .bold, design: .serif))
+                        .font(.custom(style.referenceFontName, size: referenceFontSize))
                         .foregroundStyle(Color(red: 0.93, green: 0.76, blue: 0.43))
                         .lineLimit(1)
 
                     Text(verse.text)
-                        .font(.system(size: 12, weight: .semibold, design: .serif))
+                        .font(.custom(style.verseFontName, size: verseFontSize))
                         .foregroundStyle(Color(red: 0.95, green: 0.83, blue: 0.57))
                         .lineLimit(3)
                         .minimumScaleFactor(0.8)
@@ -450,13 +452,13 @@ struct LockScreenVerseEntryView: View {
             } else {
                 VStack(spacing: 4) {
                     Text(verse.text)
-                        .font(.system(size: 12, weight: .semibold, design: .serif))
+                        .font(.custom(style.verseFontName, size: verseFontSize))
                         .foregroundStyle(Color(red: 0.95, green: 0.83, blue: 0.57))
                         .lineLimit(3)
                         .minimumScaleFactor(0.8)
 
                     Text(verse.displayReference)
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(.custom(style.referenceFontName, size: referenceFontSize))
                         .foregroundStyle(Color(red: 0.93, green: 0.76, blue: 0.43))
                         .lineLimit(1)
                 }

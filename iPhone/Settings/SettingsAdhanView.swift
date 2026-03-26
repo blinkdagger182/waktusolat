@@ -1360,23 +1360,25 @@ private struct DailyVerseStyleCard: View {
                     Spacer()
 
                     Group {
-                        if style == .classic {
+                        if style.isCentered == false {
                             LockScreenVersePreviewCard(
-                                verse: isMalayAppLanguage() ? "Maha Suci Allah dan segala puji bagi-Nya." : "Glory be to Allah and praise be to Him.",
-                                reference: "Al-Ahzab 56"
+                                verse: "Be grateful for the favor of Allah.",
+                                reference: "An-Nahl 16:114",
+                                style: style
                             )
                         } else {
                             LockScreenVerseCenteredPreviewCard(
-                                verse: isMalayAppLanguage() ? "Maha Suci Allah dan segala puji bagi-Nya." : "Glory be to Allah and praise be to Him.",
-                                reference: "Al-Ahzab 56"
+                                verse: "Be grateful for the favor of Allah.",
+                                reference: "An-Nahl 16:114",
+                                style: style
                             )
                         }
                     }
                     .frame(width: 188)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 14)
                 }
             }
-            .frame(width: 188, height: 220)
+            .frame(width: 188, height: 188)
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
@@ -1498,7 +1500,8 @@ private struct LockScreenSpotlightCard: View {
         case .dailyVerse:
             LockScreenVersePreviewCard(
                 verse: isMalayAppLanguage() ? "Maha Suci Allah dan segala puji bagi-Nya." : "Glory be to Allah and praise be to Him.",
-                reference: "Al-Ahzab 56"
+                reference: "Al-Ahzab 56",
+                style: .classic
             )
         }
     }
@@ -2294,29 +2297,36 @@ private struct CurvierPreviewPrayerMiniGraph: View {
 private struct LockScreenVersePreviewCard: View {
     let verse: String
     let reference: String
+    let style: DailyVerseWidgetStyle
+    private let verseFontSize: CGFloat = 13
+    private let referenceFontSize: CGFloat = 16
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(verse)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(3)
-
-            Spacer(minLength: 0)
-
+        VStack(alignment: .leading, spacing: 4) {
             Text(reference)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.secondary)
+                .font(.custom(style.referenceFontName, size: referenceFontSize))
+                .foregroundStyle(.white.opacity(0.9))
                 .lineLimit(1)
+
+            Text(verse)
+                .font(.custom(style.verseFontName, size: verseFontSize))
+                .foregroundStyle(.white.opacity(0.96))
+                .multilineTextAlignment(.leading)
+                .lineLimit(3)
+                .minimumScaleFactor(0.78)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 70, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.18), Color.white.opacity(0.12)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
         )
     }
 }
@@ -2324,30 +2334,36 @@ private struct LockScreenVersePreviewCard: View {
 private struct LockScreenVerseCenteredPreviewCard: View {
     let verse: String
     let reference: String
+    let style: DailyVerseWidgetStyle
+    private let verseFontSize: CGFloat = 13
+    private let referenceFontSize: CGFloat = 16
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             Text(verse)
-                .font(.system(size: 11, weight: .medium))
+                .font(.custom(style.verseFontName, size: verseFontSize))
+                .foregroundStyle(.white.opacity(0.96))
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
-
-            Spacer(minLength: 0)
+                .minimumScaleFactor(0.78)
 
             Text(reference)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.secondary)
+                .font(.custom(style.referenceFontName, size: referenceFontSize))
+                .foregroundStyle(.white.opacity(0.9))
                 .lineLimit(1)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 92, alignment: .center)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 70, alignment: .center)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.18), Color.white.opacity(0.12)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
         )
     }
 }
