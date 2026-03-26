@@ -85,6 +85,37 @@ struct LockScreen3EntryView: View {
                         }
                         .foregroundStyle(.secondary)
                     }
+
+                case .departuresBoard:
+                    let focused = Array(visiblePrayers.prefix(3))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        ForEach(focused) { prayer in
+                            HStack(spacing: 8) {
+                                Text(widgetPrayerDisplayName(prayer.nameTransliteration).uppercased())
+                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
+
+                                Spacer(minLength: 4)
+
+                                Text(prayer.time, style: .time)
+                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .monospacedDigit()
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(prayer.time <= entry.date ? Color.primary.opacity(0.16) : Color.primary.opacity(0.08))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(prayer.time <= entry.date ? Color.primary.opacity(0.28) : Color.primary.opacity(0.14), lineWidth: 0.8)
+                            )
+                        }
+                    }
                 }
 
                 WidgetLocationFooter(entry: entry, widgetKind: "LockScreen3Widget")

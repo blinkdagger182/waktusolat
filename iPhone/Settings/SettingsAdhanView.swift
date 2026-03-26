@@ -1301,8 +1301,10 @@ private struct PrayerListStyleCard: View {
                     Group {
                         if style == .classic {
                             LockScreenPrayerListPreviewCard(footer: "Taiping, Perak")
-                        } else {
+                        } else if style == .focus {
                             LockScreenPrayerListFocusPreviewCard(footer: "Taiping, Perak", accentColor: settings.accentColor.color)
+                        } else {
+                            LockScreenPrayerListDeparturesPreviewCard(footer: "Taiping, Perak")
                         }
                     }
                     .frame(width: 188)
@@ -2152,6 +2154,62 @@ private struct LockScreenPrayerListFocusPreviewCard: View {
     }
 }
 
+private struct LockScreenPrayerListDeparturesPreviewCard: View {
+    let footer: String
+
+    private let rows: [(String, String)] = [
+        (localizedPrayerName("Maghrib").uppercased(), "19:26"),
+        (localizedPrayerName("Isha").uppercased(), "20:38"),
+        (localizedPrayerName("Fajr").uppercased(), "05:52")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(rows, id: \.0) { row in
+                HStack(spacing: 8) {
+                    Text(row.0)
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+
+                    Spacer(minLength: 4)
+
+                    Text(row.1)
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.primary.opacity(0.08))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.primary.opacity(0.14), lineWidth: 0.8)
+                )
+            }
+
+            Text(footer)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .padding(.top, 2)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
 private struct LockScreenCountdownPreviewCard: View {
     let prayer: String
     let timerText: String
@@ -2884,7 +2942,7 @@ private struct PrayerDotsPreviewCard: View {
 
     var body: some View {
         VStack(alignment: centered ? .center : .leading, spacing: 7) {
-            HStack(spacing: 5) {
+            HStack(spacing: showsLabels ? 5 : 3) {
                 ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
                     VStack(spacing: 3) {
                         Circle()
@@ -2898,7 +2956,7 @@ private struct PrayerDotsPreviewCard: View {
                                 .lineLimit(1)
                         }
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: showsLabels ? .infinity : nil)
                 }
             }
             .frame(height: showsLabels ? 26 : 16)

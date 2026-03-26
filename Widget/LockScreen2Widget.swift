@@ -296,7 +296,7 @@ private struct PrayerDotCountdown: View {
 
     var body: some View {
         VStack(alignment: centered ? .center : .leading, spacing: 7) {
-            HStack(spacing: 5) {
+            HStack(spacing: showsLabels ? 5 : 3) {
                 ForEach(Array(prayerLabels.enumerated()), id: \.offset) { index, label in
                     VStack(spacing: 3) {
                         Circle()
@@ -311,7 +311,7 @@ private struct PrayerDotCountdown: View {
                                 .minimumScaleFactor(0.7)
                         }
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: showsLabels ? .infinity : nil)
                 }
             }
             .frame(height: showsLabels ? 26 : 16)

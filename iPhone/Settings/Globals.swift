@@ -206,6 +206,7 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
 
     case classic
     case focus
+    case departuresBoard
 
     var id: String { rawValue }
 
@@ -215,6 +216,8 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage() ? "Asal" : "Classic"
         case .focus:
             return isMalayAppLanguage() ? "Fokus" : "Focus"
+        case .departuresBoard:
+            return isMalayAppLanguage() ? "Papan Berlepas" : "Departures Board"
         }
     }
 
@@ -228,6 +231,10 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Menyerlahkan waktu terdekat dengan sokongan dua waktu lain."
                 : "Highlights the nearest prayer with two supporting rows."
+        case .departuresBoard:
+            return isMalayAppLanguage()
+                ? "Setiap solat diletakkan dalam petak seperti papan maklumat penerbangan."
+                : "Places each prayer inside a flight-information-style board."
         }
     }
 }
