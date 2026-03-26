@@ -130,12 +130,26 @@ private struct PrayerMiniGraph: View {
                 : 0
 
             ZStack {
-                graphData.curve
-                    .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+                ZStack {
+                    graphData.curve
+                        .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
 
-                graphData.curve
-                    .trim(from: 0, to: passedProgress)
-                    .stroke(activeLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+                    graphData.curve
+                        .trim(from: 0, to: passedProgress)
+                        .stroke(activeLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+
+                    ForEach(Array(graphData.markers.enumerated()), id: \.offset) { index, point in
+                        Circle()
+                            .fill(Color.black)
+                            .frame(
+                                width: index == graphData.peakIndex ? 13 : 11,
+                                height: index == graphData.peakIndex ? 13 : 11
+                            )
+                            .position(point)
+                            .blendMode(.destinationOut)
+                    }
+                }
+                .compositingGroup()
 
                 ForEach(Array(graphData.markers.enumerated()), id: \.offset) { index, point in
                     let isReached = index <= clampedActiveIndex

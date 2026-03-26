@@ -2004,13 +2004,29 @@ private struct PreviewPrayerMiniGraph: View {
             let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
 
             ZStack {
-                Path { path in
+                let curve = Path { path in
                     path.move(to: p0)
                     path.addCurve(to: p1, control1: c01a, control2: c01b)
                     path.addCurve(to: p2, control1: c12a, control2: c12b)
                     path.addCurve(to: p3, control1: c23a, control2: c23b)
                 }
-                .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+
+                ZStack {
+                    curve
+                        .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+
+                    ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                        Circle()
+                            .fill(Color.black)
+                            .frame(
+                                width: index == peakIndex ? 13 : 11,
+                                height: index == peakIndex ? 13 : 11
+                            )
+                            .position(point)
+                            .blendMode(.destinationOut)
+                    }
+                }
+                .compositingGroup()
 
                 ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
                     let isReached = index <= clampedActiveIndex
