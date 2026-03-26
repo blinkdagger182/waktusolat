@@ -20,6 +20,7 @@ struct AlAdhanApp: App {
 
     private enum AppTab: Hashable {
         case adhan
+        case library
         case settings
     }
 
@@ -86,6 +87,13 @@ struct AlAdhanApp: App {
                                 Text("Azan")
                             }
                             .tag(AppTab.adhan)
+
+                        OtherView()
+                            .tabItem {
+                                Image(systemName: "books.vertical")
+                                Text("Library")
+                            }
+                            .tag(AppTab.library)
 
                         SettingsView()
                             .tabItem {

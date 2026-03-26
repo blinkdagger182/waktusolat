@@ -10,6 +10,13 @@ struct LockScreen3EntryView: View {
         PrayerListWidgetStyle(rawValue: styleRaw) ?? .classic
     }
 
+    private func compactHourString(for prayer: Prayer) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "h:mm"
+        return formatter.string(from: prayer.time)
+    }
+
     var body: some View {
         let now = entry.date
 
@@ -114,6 +121,58 @@ struct LockScreen3EntryView: View {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .stroke(prayer.time <= entry.date ? Color.primary.opacity(0.28) : Color.primary.opacity(0.14), lineWidth: 0.8)
                             )
+                        }
+                    }
+
+                case .iconBoard:
+                    let focused = Array(visiblePrayers.prefix(3))
+
+                    HStack(alignment: .center, spacing: 8) {
+                        ForEach(focused) { prayer in
+                            VStack(spacing: 3) {
+                                Text(compactHourString(for: prayer))
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .monospacedDigit()
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+
+                                Image(systemName: prayer.image)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .frame(width: 18, height: 18)
+
+                                Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                            }
+                            .foregroundStyle(prayer.time <= entry.date ? .primary : .secondary)
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                case .iconBoardSix:
+                    let focused = Array(entry.prayers.prefix(6))
+
+                    HStack(alignment: .center, spacing: 8) {
+                        ForEach(focused) { prayer in
+                            VStack(spacing: 3) {
+                                Text(compactHourString(for: prayer))
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .monospacedDigit()
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.55)
+
+                                Image(systemName: prayer.image)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .frame(width: 16, height: 16)
+
+                                Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                                    .font(.system(size: 7, weight: .bold, design: .rounded))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.65)
+                            }
+                            .foregroundStyle(prayer.time <= entry.date ? .primary : .secondary)
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }

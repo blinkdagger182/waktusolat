@@ -34,6 +34,29 @@ struct LockScreen1EntryView: View {
         return min(max(remaining / (24 * 60 * 60), 0), 1)
     }
 
+    private func prayerWindowRemainingProgress(nextPrayer: Prayer) -> Double {
+        let now = entry.date
+        guard let current = currentPrayerForRing(nextPrayer: nextPrayer) else {
+            return 0
+        }
+
+        var start = current.time
+        var end = nextPrayer.time
+
+        if end <= start {
+            end = end.addingTimeInterval(24 * 60 * 60)
+        }
+
+        var adjustedNow = now
+        if adjustedNow < start {
+            adjustedNow = adjustedNow.addingTimeInterval(24 * 60 * 60)
+        }
+
+        let total = max(end.timeIntervalSince(start), 1)
+        let remaining = max(end.timeIntervalSince(adjustedNow), 0)
+        return min(max(remaining / total, 0), 1)
+    }
+
     private var remainingDayProgress: Double {
         let calendar = Calendar.current
         let now = entry.date
@@ -87,6 +110,37 @@ struct LockScreen1EntryView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.4)
                         .allowsTightening(true)
+
+                case .percentageRing:
+                    let currentPrayer = currentPrayerForRing(nextPrayer: nextPrayer) ?? nextPrayer
+                    let percentage = Int((prayerWindowRemainingProgress(nextPrayer: nextPrayer) * 100).rounded())
+
+                    ZStack {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.18), lineWidth: 6)
+
+                        Circle()
+                            .trim(from: 0, to: prayerWindowRemainingProgress(nextPrayer: nextPrayer))
+                            .stroke(
+                                Color.primary,
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+
+                        VStack(spacing: 1) {
+                            Text("\(percentage)%")
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+
+                            Image(systemName: currentPrayer.image)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(widgetIsShurooq(currentPrayer.nameTransliteration) ? .primary : .primary)
+                        }
+                        .padding(.top, 2)
+                    }
+                    .frame(width: 54, height: 54)
 
                 case .countdownRing:
                     let progress = remainingPrayerProgress(nextPrayer: nextPrayer)

@@ -154,6 +154,7 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
 
     case classic
     case minimal
+    case percentageRing
     case countdownRing
     case dualCountdownRing
     case dualCountdownRingNextPrayer
@@ -166,6 +167,8 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage() ? "Asal" : "Classic"
         case .minimal:
             return isMalayAppLanguage() ? "Minimal" : "Minimal"
+        case .percentageRing:
+            return isMalayAppLanguage() ? "Bulatan Peratus" : "Percentage Ring"
         case .countdownRing:
             return isMalayAppLanguage() ? "Bulatan Kiraan Detik" : "Countdown Ring"
         case .dualCountdownRing:
@@ -185,6 +188,10 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Susun atur yang lebih ringkas dengan masa lebih menonjol."
                 : "A cleaner layout with more emphasis on the time."
+        case .percentageRing:
+            return isMalayAppLanguage()
+                ? "Memaparkan peratus baki sebelum solat seterusnya dengan ikon solat semasa."
+                : "Shows the percentage left until the next prayer with the current prayer icon."
         case .countdownRing:
             return isMalayAppLanguage()
                 ? "Bulatan kemajuan yang mengira menuju solat seterusnya."
@@ -207,6 +214,8 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
     case classic
     case focus
     case departuresBoard
+    case iconBoard
+    case iconBoardSix
 
     var id: String { rawValue }
 
@@ -218,6 +227,10 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage() ? "Fokus" : "Focus"
         case .departuresBoard:
             return isMalayAppLanguage() ? "Papan Berlepas" : "Departures Board"
+        case .iconBoard:
+            return isMalayAppLanguage() ? "3 Ikon / Waktu" : "3 Icons / Times"
+        case .iconBoardSix:
+            return isMalayAppLanguage() ? "6 Ikon / Waktu" : "6 Icons / Times"
         }
     }
 
@@ -235,6 +248,14 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Setiap solat diletakkan dalam petak seperti papan maklumat penerbangan."
                 : "Places each prayer inside a flight-information-style board."
+        case .iconBoard:
+            return isMalayAppLanguage()
+                ? "Memaparkan tiga waktu solat sebagai lajur masa, ikon, dan huruf ringkas."
+                : "Shows three prayers as compact columns with time, icon, and initial."
+        case .iconBoardSix:
+            return isMalayAppLanguage()
+                ? "Memaparkan keenam-enam waktu solat dalam satu susun atur ikon penuh."
+                : "Shows all six prayers in a complete icon-board layout."
         }
     }
 }

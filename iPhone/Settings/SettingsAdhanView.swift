@@ -1233,6 +1233,8 @@ private struct NextPrayerCircleStyleCard: View {
                             LockScreenCircularPreviewCard(title: localizedPrayerName("Isha"), time: "19:31")
                         } else if style == .minimal {
                             LockScreenCircularMinimalPreviewCard(title: localizedPrayerName("Isha"), time: "19:31")
+                        } else if style == .percentageRing {
+                            LockScreenCircularPercentagePreviewCard(percentage: 60, iconName: "moon.stars.fill")
                         } else if style == .countdownRing {
                             LockScreenCircularCountdownPreviewCard(title: localizedPrayerName("Maghrib"), progress: 0.34)
                         } else if style == .dualCountdownRing {
@@ -1263,6 +1265,39 @@ private struct NextPrayerCircleStyleCard: View {
             }
             .frame(width: 160, alignment: .leading)
         }
+    }
+}
+
+private struct LockScreenCircularPercentagePreviewCard: View {
+    let percentage: Int
+    let iconName: String
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.white.opacity(0.25), lineWidth: 6)
+
+            Circle()
+                .trim(from: 0, to: 0.60)
+                .stroke(
+                    Color.white,
+                    style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+
+            VStack(spacing: 1) {
+                Text("\(percentage)%")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .monospacedDigit()
+
+                Image(systemName: iconName)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .padding(.top, 2)
+        }
+        .frame(width: 54, height: 54)
     }
 }
 
@@ -1303,8 +1338,12 @@ private struct PrayerListStyleCard: View {
                             LockScreenPrayerListPreviewCard(footer: "Taiping, Perak")
                         } else if style == .focus {
                             LockScreenPrayerListFocusPreviewCard(footer: "Taiping, Perak", accentColor: settings.accentColor.color)
-                        } else {
+                        } else if style == .departuresBoard {
                             LockScreenPrayerListDeparturesPreviewCard(footer: "Taiping, Perak")
+                        } else if style == .iconBoard {
+                            LockScreenPrayerListIconBoardPreviewCard(columns: 3)
+                        } else {
+                            LockScreenPrayerListIconBoardPreviewCard(columns: 6)
                         }
                     }
                     .frame(width: 188)
@@ -1333,6 +1372,60 @@ private struct PrayerListStyleCard: View {
     }
 }
 
+private struct LockScreenPrayerListIconBoardPreviewCard: View {
+    let columns: Int
+
+    private let samples: [(time: String, icon: String, name: String)] = [
+        ("6:16", "sun.horizon", "Subuh"),
+        ("7:28", "sunrise", "Syuruk"),
+        ("1:19", "sun.max", "Zuhur"),
+        ("4:42", "sun.min", "Asar"),
+        ("7:31", "sunset", "Maghrib"),
+        ("8:44", "moon.stars.fill", "Isyak")
+    ]
+
+    var body: some View {
+        let visibleSamples = Array(samples.prefix(columns))
+
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(Color.white.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .overlay {
+                HStack(alignment: .center, spacing: columns == 3 ? 10 : 6) {
+                    ForEach(Array(visibleSamples.enumerated()), id: \.offset) { index, sample in
+                        VStack(spacing: 3) {
+                            Text(sample.time)
+                                .font(.system(size: columns == 3 ? 10 : 8, weight: .bold, design: .rounded))
+                                .foregroundStyle(index < 2 ? .white : .white.opacity(0.72))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .minimumScaleFactor(columns == 3 ? 0.75 : 0.9)
+
+                            Image(systemName: sample.icon)
+                                .font(.system(size: columns == 3 ? 15 : 13, weight: .semibold))
+                                .foregroundStyle(index < 2 ? .white : .white.opacity(0.72))
+                                .frame(width: columns == 3 ? 18 : 16, height: columns == 3 ? 18 : 16)
+
+                            Text(sample.name)
+                                .font(.system(size: columns == 3 ? 9 : 7, weight: .bold, design: .rounded))
+                                .foregroundStyle(index < 2 ? .white : .white.opacity(0.72))
+                                .lineLimit(1)
+                                .minimumScaleFactor(columns == 3 ? 0.7 : 0.65)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.horizontal, columns == 3 ? 12 : 8)
+                .padding(.vertical, 10)
+            }
+            .frame(height: columns == 3 ? 74 : 78)
+            .padding(.horizontal, 8)
+    }
+}
 private struct DailyVerseStyleCard: View {
     @EnvironmentObject var settings: Settings
 
