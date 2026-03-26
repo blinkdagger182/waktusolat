@@ -3,6 +3,12 @@ import WidgetKit
 
 struct LockScreen3EntryView: View {
     var entry: PrayersProvider.Entry
+    @AppStorage(PrayerListWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var styleRaw = PrayerListWidgetStyle.classic.rawValue
+
+    private var style: PrayerListWidgetStyle {
+        PrayerListWidgetStyle(rawValue: styleRaw) ?? .classic
+    }
 
     var body: some View {
         let now = entry.date
@@ -10,15 +16,12 @@ struct LockScreen3EntryView: View {
         let visiblePrayers: [Prayer] = {
             guard !entry.prayers.isEmpty else { return [] }
             let half = entry.prayers.count / 2
-            // Pre-Fajr (all prayers still in future): show first half
             if entry.prayers.allSatisfy({ $0.time > now }) {
                 return Array(entry.prayers.prefix(half))
             }
-            // Post-Isha (all prayers passed): show last half
             if entry.prayers.allSatisfy({ $0.time <= now }) {
                 return Array(entry.prayers.suffix(half))
             }
-            // Mixed: use next prayer index to decide
             let nextIndex = entry.prayers.firstIndex(where: {
                 $0.nameTransliteration == entry.nextPrayer?.nameTransliteration
             }) ?? 0
@@ -26,28 +29,62 @@ struct LockScreen3EntryView: View {
                 ? Array(entry.prayers.prefix(half))
                 : Array(entry.prayers.suffix(half))
         }()
-        
+
         return VStack(alignment: .leading, spacing: 4) {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
             } else {
-                ForEach(visiblePrayers) { prayer in
-                    HStack {
-                        Image(systemName: prayer.image)
-                            .font(.caption)
-                            .frame(width: 10, alignment: .center)
+                switch style {
+                case .classic:
+                    ForEach(visiblePrayers) { prayer in
+                        HStack {
+                            Image(systemName: prayer.image)
+                                .font(.caption)
+                                .frame(width: 10, alignment: .center)
 
-                        Text(widgetPrayerDisplayName(prayer.nameTransliteration))
-                            .fontWeight(.bold)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
+                            Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                                .fontWeight(.bold)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
 
-                        Spacer()
+                            Spacer()
 
-                        Text(prayer.time, style: .time)
-                            .fontWeight(.bold)
+                            Text(prayer.time, style: .time)
+                                .fontWeight(.bold)
+                        }
+                        .foregroundColor(prayer.time <= entry.date ? .primary : .secondary)
                     }
-                    .foregroundColor(prayer.time <= entry.date ? .primary : .secondary)
+
+                case .focus:
+                    let focused = Array(visiblePrayers.prefix(3))
+
+                    if let lead = focused.first {
+                        HStack {
+                            Text(widgetPrayerDisplayName(lead.nameTransliteration))
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(lead.time, style: .time)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                        }
+                    }
+
+                    ForEach(Array(focused.dropFirst())) { prayer in
+                        HStack {
+                            Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .lineLimit(1)
+                            Spacer()
+                            Text(prayer.time, style: .time)
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(.secondary)
+                    }
                 }
 
                 WidgetLocationFooter(entry: entry, widgetKind: "LockScreen3Widget")

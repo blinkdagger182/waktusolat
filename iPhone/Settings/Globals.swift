@@ -149,6 +149,106 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
     }
 }
 
+enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "nextPrayerCircleStyle"
+
+    case classic
+    case minimal
+    case countdownRing
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .classic:
+            return isMalayAppLanguage() ? "Asal" : "Classic"
+        case .minimal:
+            return isMalayAppLanguage() ? "Minimal" : "Minimal"
+        case .countdownRing:
+            return isMalayAppLanguage() ? "Bulatan Kiraan Detik" : "Countdown Ring"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .classic:
+            return isMalayAppLanguage()
+                ? "Gaya bulatan asal untuk solat seterusnya."
+                : "The original circular next-prayer style."
+        case .minimal:
+            return isMalayAppLanguage()
+                ? "Susun atur yang lebih ringkas dengan masa lebih menonjol."
+                : "A cleaner layout with more emphasis on the time."
+        case .countdownRing:
+            return isMalayAppLanguage()
+                ? "Bulatan kemajuan yang mengira menuju solat seterusnya."
+                : "A circular progress ring counting down to the next prayer."
+        }
+    }
+}
+
+enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "prayerListWidgetStyle"
+
+    case classic
+    case focus
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .classic:
+            return isMalayAppLanguage() ? "Asal" : "Classic"
+        case .focus:
+            return isMalayAppLanguage() ? "Fokus" : "Focus"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .classic:
+            return isMalayAppLanguage()
+                ? "Paparan senarai asal dengan beberapa waktu solat."
+                : "The original list style with several prayer times."
+        case .focus:
+            return isMalayAppLanguage()
+                ? "Menyerlahkan waktu terdekat dengan sokongan dua waktu lain."
+                : "Highlights the nearest prayer with two supporting rows."
+        }
+    }
+}
+
+enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "dailyVerseWidgetStyle"
+
+    case classic
+    case centered
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .classic:
+            return isMalayAppLanguage() ? "Asal" : "Classic"
+        case .centered:
+            return isMalayAppLanguage() ? "Tengah" : "Centered"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .classic:
+            return isMalayAppLanguage()
+                ? "Ayat harian asal dengan teks berpenjuru kiri."
+                : "The original daily verse style with leading text."
+        case .centered:
+            return isMalayAppLanguage()
+                ? "Ayat diratakan ke tengah untuk rupa yang lebih tenang."
+                : "Centers the verse for a calmer presentation."
+        }
+    }
+}
+
 enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
     static let storageKey = "lockScreenPrayerCountdownStyle"
 

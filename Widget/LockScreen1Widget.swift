@@ -3,6 +3,45 @@ import WidgetKit
 
 struct LockScreen1EntryView: View {
     var entry: PrayersProvider.Entry
+    @AppStorage(NextPrayerCircleStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var styleRaw = NextPrayerCircleStyle.classic.rawValue
+
+    private var style: NextPrayerCircleStyle {
+        NextPrayerCircleStyle(rawValue: styleRaw) ?? .classic
+    }
+
+    private func currentPrayerForRing(nextPrayer: Prayer) -> Prayer? {
+        if let current = entry.currentPrayer {
+            return current
+        }
+
+        let sorted = entry.prayers.sorted { $0.time < $1.time }
+        guard let nextIndex = sorted.firstIndex(where: { $0.id == nextPrayer.id }) else {
+            return sorted.last
+        }
+        let previousIndex = nextIndex > 0 ? nextIndex - 1 : sorted.count - 1
+        guard sorted.indices.contains(previousIndex) else { return nil }
+        return sorted[previousIndex]
+    }
+
+    private func ringProgress(nextPrayer: Prayer) -> Double {
+        guard let currentPrayer = currentPrayerForRing(nextPrayer: nextPrayer) else { return 0 }
+
+        let start = currentPrayer.time
+        var end = nextPrayer.time
+        let now = entry.date
+
+        if end <= start {
+            end = end.addingTimeInterval(24 * 60 * 60)
+        }
+
+        let adjustedNow = now < start ? now.addingTimeInterval(24 * 60 * 60) : now
+        let total = end.timeIntervalSince(start)
+        guard total > 0 else { return 0 }
+
+        let elapsed = adjustedNow.timeIntervalSince(start)
+        return min(max(elapsed / total, 0), 1)
+    }
 
     var body: some View {
         VStack(alignment: .center, spacing: 3) {
@@ -10,26 +49,68 @@ struct LockScreen1EntryView: View {
                 Text("Open app to get prayer times")
                     .font(.caption)
             } else if let nextPrayer = entry.nextPrayer {
-                HStack(spacing: 2) {
-                    if !nextPrayer.nameTransliteration.contains("/") {
-                        Image(systemName: nextPrayer.image)
-                            .font(.system(size: 9, weight: .semibold))
+                switch style {
+                case .classic:
+                    HStack(spacing: 2) {
+                        if !nextPrayer.nameTransliteration.contains("/") {
+                            Image(systemName: nextPrayer.image)
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+
+                        Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.2)
+                            .allowsTightening(true)
+                            .layoutPriority(1)
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                    Text(nextPrayer.time, style: .time)
+                        .font(.system(.caption, design: .rounded).weight(.bold))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+
+                case .minimal:
+                    Text(nextPrayer.time, style: .time)
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
 
                     Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.2)
+                        .minimumScaleFactor(0.4)
                         .allowsTightening(true)
-                        .layoutPriority(1)
+
+                case .countdownRing:
+                    let progress = ringProgress(nextPrayer: nextPrayer)
+                    let label = localizedPrayerName((currentPrayerForRing(nextPrayer: nextPrayer)?.nameTransliteration ?? nextPrayer.nameTransliteration))
+
+                    ZStack {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.18), lineWidth: 6)
+
+                        Circle()
+                            .trim(from: 0, to: progress)
+                            .stroke(
+                                Color.primary,
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+
+                        Text(label)
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.55)
+                            .padding(10)
+                    }
+                    .frame(width: 54, height: 54)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
-                
-                Text(nextPrayer.time, style: .time)
-                    .font(.system(.caption, design: .rounded).weight(.bold))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
             }
         }
         .multilineTextAlignment(.center)

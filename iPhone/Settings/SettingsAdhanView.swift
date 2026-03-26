@@ -960,6 +960,12 @@ struct WidgetPreviewGalleryView: View {
     private var countdownStyleRaw = LockScreenPrayerCountdownStyle.prayerCountdownWithLocation.rawValue
     @AppStorage(WidgetZikirAlignment.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var zikirAlignmentRaw = WidgetZikirAlignment.center.rawValue
+    @AppStorage(NextPrayerCircleStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var nextPrayerCircleStyleRaw = NextPrayerCircleStyle.classic.rawValue
+    @AppStorage(PrayerListWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var prayerListStyleRaw = PrayerListWidgetStyle.classic.rawValue
+    @AppStorage(DailyVerseWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var dailyVerseStyleRaw = DailyVerseWidgetStyle.classic.rawValue
 
     private var countdownStyle: LockScreenPrayerCountdownStyle {
         LockScreenPrayerCountdownStyle(rawValue: countdownStyleRaw) ?? .prayerCountdownWithLocation
@@ -967,6 +973,18 @@ struct WidgetPreviewGalleryView: View {
 
     private var zikirAlignment: WidgetZikirAlignment {
         WidgetZikirAlignment(rawValue: zikirAlignmentRaw) ?? .center
+    }
+
+    private var nextPrayerCircleStyle: NextPrayerCircleStyle {
+        NextPrayerCircleStyle(rawValue: nextPrayerCircleStyleRaw) ?? .classic
+    }
+
+    private var prayerListStyle: PrayerListWidgetStyle {
+        PrayerListWidgetStyle(rawValue: prayerListStyleRaw) ?? .classic
+    }
+
+    private var dailyVerseStyle: DailyVerseWidgetStyle {
+        DailyVerseWidgetStyle(rawValue: dailyVerseStyleRaw) ?? .classic
     }
 
     var body: some View {
@@ -1028,6 +1046,90 @@ struct WidgetPreviewGalleryView: View {
                     }
                 }
 
+                previewSection(
+                    title: isMalayAppLanguage() ? "Bulatan Solat Seterusnya" : "Next Prayer Circle",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih gaya untuk widget bulatan solat seterusnya."
+                        : "Choose the style for the circular next prayer widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(NextPrayerCircleStyle.allCases) { style in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        nextPrayerCircleStyleRaw = style.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    NextPrayerCircleStyleCard(
+                                        style: style,
+                                        isSelected: nextPrayerCircleStyle == style
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: isMalayAppLanguage() ? "Senarai Solat" : "Prayer List",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih gaya untuk widget senarai solat pada skrin kunci."
+                        : "Choose the style for the Lock Screen prayer list widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(PrayerListWidgetStyle.allCases) { style in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        prayerListStyleRaw = style.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    PrayerListStyleCard(
+                                        style: style,
+                                        isSelected: prayerListStyle == style
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: isMalayAppLanguage() ? "Ayat Harian" : "Daily Verse",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih gaya untuk widget ayat harian pada skrin kunci."
+                        : "Choose the style for the Lock Screen daily verse widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(DailyVerseWidgetStyle.allCases) { style in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        dailyVerseStyleRaw = style.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    DailyVerseStyleCard(
+                                        style: style,
+                                        isSelected: dailyVerseStyle == style
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
                 Text(isMalayAppLanguage()
                      ? "Pilihan ini menandakan gaya pilihan anda di dalam aplikasi. iOS masih memerlukan pengguna menambah widget sebenar pada skrin kunci secara manual."
                      : "This marks your preferred style inside the app. iOS still requires users to add the actual widget to the Lock Screen manually.")
@@ -1056,6 +1158,208 @@ struct WidgetPreviewGalleryView: View {
                 .foregroundColor(.secondary)
 
             content()
+        }
+    }
+}
+
+private struct NextPrayerCircleStyleCard: View {
+    @EnvironmentObject var settings: Settings
+
+    let style: NextPrayerCircleStyle
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 40, style: .continuous)
+                    .fill(Color.black)
+
+                LinearGradient(
+                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Thu 26")
+                        Spacer()
+                        Text("8:14")
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    Spacer()
+
+                    Group {
+                        if style == .classic {
+                            LockScreenCircularPreviewCard(title: localizedPrayerName("Isha"), time: "19:31")
+                        } else if style == .minimal {
+                            LockScreenCircularMinimalPreviewCard(title: localizedPrayerName("Isha"), time: "19:31")
+                        } else {
+                            LockScreenCircularCountdownPreviewCard(title: localizedPrayerName("Maghrib"), progress: 0.34)
+                        }
+                    }
+                    .padding(.bottom, 18)
+                }
+            }
+            .frame(width: 160, height: 206)
+            .overlay(
+                RoundedRectangle(cornerRadius: 40, style: .continuous)
+                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(style.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
+                    .lineLimit(2)
+            }
+            .frame(width: 160, alignment: .leading)
+        }
+    }
+}
+
+private struct PrayerListStyleCard: View {
+    @EnvironmentObject var settings: Settings
+
+    let style: PrayerListWidgetStyle
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color.black)
+
+                LinearGradient(
+                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Thu 26")
+                        Spacer()
+                        Text("8:14")
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    Spacer()
+
+                    Group {
+                        if style == .classic {
+                            LockScreenPrayerListPreviewCard(footer: "Taiping, Perak")
+                        } else {
+                            LockScreenPrayerListFocusPreviewCard(footer: "Taiping, Perak", accentColor: settings.accentColor.color)
+                        }
+                    }
+                    .frame(width: 188)
+                    .padding(.bottom, 20)
+                }
+            }
+            .frame(width: 188, height: 220)
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(style.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
+                    .lineLimit(2)
+            }
+            .frame(width: 188, alignment: .leading)
+        }
+    }
+}
+
+private struct DailyVerseStyleCard: View {
+    @EnvironmentObject var settings: Settings
+
+    let style: DailyVerseWidgetStyle
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color.black)
+
+                LinearGradient(
+                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Thu 26")
+                        Spacer()
+                        Text("8:14")
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    Spacer()
+
+                    Group {
+                        if style == .classic {
+                            LockScreenVersePreviewCard(
+                                verse: isMalayAppLanguage() ? "Maha Suci Allah dan segala puji bagi-Nya." : "Glory be to Allah and praise be to Him.",
+                                reference: "Al-Ahzab 56"
+                            )
+                        } else {
+                            LockScreenVerseCenteredPreviewCard(
+                                verse: isMalayAppLanguage() ? "Maha Suci Allah dan segala puji bagi-Nya." : "Glory be to Allah and praise be to Him.",
+                                reference: "Al-Ahzab 56"
+                            )
+                        }
+                    }
+                    .frame(width: 188)
+                    .padding(.bottom, 20)
+                }
+            }
+            .frame(width: 188, height: 220)
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(style.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
+                    .lineLimit(2)
+            }
+            .frame(width: 188, alignment: .leading)
         }
     }
 }
@@ -1376,6 +1680,65 @@ private struct LockScreenCircularPreviewCard: View {
     }
 }
 
+private struct LockScreenCircularMinimalPreviewCard: View {
+    let title: String
+    let time: String
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(.secondarySystemBackground))
+            Circle()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+
+            VStack(spacing: 4) {
+                Text(time)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(8)
+        }
+        .frame(width: 98, height: 98)
+    }
+}
+
+private struct LockScreenCircularCountdownPreviewCard: View {
+    let title: String
+    let progress: Double
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(.secondarySystemBackground))
+            Circle()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+
+            Circle()
+                .stroke(Color.primary.opacity(0.18), lineWidth: 6)
+                .padding(12)
+
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .padding(12)
+
+            Text(title)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.55)
+                .padding(20)
+        }
+        .frame(width: 98, height: 98)
+    }
+}
+
 private struct LockScreenTimelinePreviewCard: View {
     let currentPrayer: String
     let nextPrayer: String
@@ -1464,6 +1827,64 @@ private struct LockScreenPrayerListPreviewCard: View {
                 .padding(.top, 2)
         }
         .font(.caption)
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct LockScreenPrayerListFocusPreviewCard: View {
+    let footer: String
+    let accentColor: Color
+
+    private let rows: [(String, String)] = [
+        (localizedPrayerName("Maghrib"), "19:26"),
+        (localizedPrayerName("Isha"), "20:38"),
+        (localizedPrayerName("Fajr"), "05:52")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(rows[0].0)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(accentColor)
+                    .lineLimit(1)
+                Spacer()
+                Text(rows[0].1)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+
+            ForEach(rows.dropFirst(), id: \.0) { row in
+                HStack {
+                    Text(row.0)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(row.1)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Text(footer)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .padding(.top, 2)
+        }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
         .background(
@@ -1789,6 +2210,37 @@ private struct LockScreenVersePreviewCard: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct LockScreenVerseCenteredPreviewCard: View {
+    let verse: String
+    let reference: String
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(verse)
+                .font(.system(size: 11, weight: .medium))
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+
+            Spacer(minLength: 0)
+
+            Text(reference)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .center)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(.secondarySystemBackground))

@@ -423,22 +423,47 @@ private enum SurahNames {
 
 struct LockScreenVerseEntryView: View {
     let verse: InspiringVerse
+    @AppStorage(DailyVerseWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var styleRaw = DailyVerseWidgetStyle.classic.rawValue
+
+    private var style: DailyVerseWidgetStyle {
+        DailyVerseWidgetStyle(rawValue: styleRaw) ?? .classic
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(verse.displayReference)
-                .font(.system(size: 16, weight: .bold, design: .serif))
-                .foregroundStyle(Color(red: 0.93, green: 0.76, blue: 0.43))
-                .lineLimit(1)
+        Group {
+            if style == .classic {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verse.displayReference)
+                        .font(.system(size: 16, weight: .bold, design: .serif))
+                        .foregroundStyle(Color(red: 0.93, green: 0.76, blue: 0.43))
+                        .lineLimit(1)
 
-            Text(verse.text)
-                .font(.system(size: 12, weight: .semibold, design: .serif))
-                .foregroundStyle(Color(red: 0.95, green: 0.83, blue: 0.57))
-                .lineLimit(3)
-                .minimumScaleFactor(0.8)
+                    Text(verse.text)
+                        .font(.system(size: 12, weight: .semibold, design: .serif))
+                        .foregroundStyle(Color(red: 0.95, green: 0.83, blue: 0.57))
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+            } else {
+                VStack(spacing: 4) {
+                    Text(verse.text)
+                        .font(.system(size: 12, weight: .semibold, design: .serif))
+                        .foregroundStyle(Color(red: 0.95, green: 0.83, blue: 0.57))
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.8)
+
+                    Text(verse.displayReference)
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.93, green: 0.76, blue: 0.43))
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .multilineTextAlignment(.center)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .multilineTextAlignment(.leading)
         .widgetURL(deepLinkURL)
     }
 
