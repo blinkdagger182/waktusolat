@@ -164,7 +164,7 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .classic:
-            return isMalayAppLanguage() ? "Asal" : "Classic"
+            return isMalayAppLanguage() ? "Featured" : "Classic"
         case .minimal:
             return isMalayAppLanguage() ? "Minimal" : "Minimal"
         case .percentageRing:
@@ -222,7 +222,7 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .classic:
-            return isMalayAppLanguage() ? "Asal" : "Classic"
+            return isMalayAppLanguage() ? "Featured" : "Classic"
         case .focus:
             return isMalayAppLanguage() ? "Fokus" : "Focus"
         case .departuresBoard:
@@ -309,11 +309,11 @@ enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .classic:
-            return isMalayAppLanguage() ? "Asal \(fontDisplayName)" : "Classic \(fontDisplayName)"
+            return isMalayAppLanguage() ? "Featured \(fontDisplayName)" : "Classic \(fontDisplayName)"
         case .centered:
             return isMalayAppLanguage() ? "Tengah \(fontDisplayName)" : "Centered \(fontDisplayName)"
         case .classicBaskerville:
-            return isMalayAppLanguage() ? "Asal \(fontDisplayName)" : "Classic \(fontDisplayName)"
+            return isMalayAppLanguage() ? "Featured \(fontDisplayName)" : "Classic \(fontDisplayName)"
         case .centeredBaskerville:
             return isMalayAppLanguage() ? "Tengah \(fontDisplayName)" : "Centered \(fontDisplayName)"
         }
@@ -359,16 +359,25 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .prayerCountdownWithLocation,
-             .prayerCountdownWithoutLocation,
-             .prayerCountdownClassicWithLocation,
-             .prayerCountdownClassicWithoutLocation,
-             .prayerCountdownCenteredWithLocation,
-             .prayerCountdownCenteredWithoutLocation:
-            return isMalayAppLanguage() ? "Waktu Solat" : "Prayer Times"
-        case .prayerTimelineWithLocation, .prayerTimelineWithoutLocation:
+        case .prayerCountdownWithLocation:
+            return isMalayAppLanguage() ? "Waktu Solat Berlabel + Lokasi" : "Prayer Dots + Location"
+        case .prayerCountdownWithoutLocation:
+            return isMalayAppLanguage() ? "Waktu Solat Berlabel" : "Prayer Dots"
+        case .prayerCountdownClassicWithLocation:
+            return isMalayAppLanguage() ? "Waktu Solat Featured + Lokasi" : "Featured Dots + Location"
+        case .prayerCountdownClassicWithoutLocation:
+            return isMalayAppLanguage() ? "Waktu Solat Featured" : "Featured Dots"
+        case .prayerCountdownCenteredWithLocation:
+            return isMalayAppLanguage() ? "Waktu Solat Tengah + Lokasi" : "Centered Dots + Location"
+        case .prayerCountdownCenteredWithoutLocation:
+            return isMalayAppLanguage() ? "Waktu Solat Tengah" : "Centered Dots"
+        case .prayerTimelineWithLocation:
+            return isMalayAppLanguage() ? "Garis Masa Solat + Lokasi" : "Prayer Timeline + Location"
+        case .prayerTimelineWithoutLocation:
             return isMalayAppLanguage() ? "Garis Masa Solat" : "Prayer Timeline"
-        case .prayerTimelinePlusWithLocation, .prayerTimelinePlusWithoutLocation:
+        case .prayerTimelinePlusWithLocation:
+            return isMalayAppLanguage() ? "Garis Masa Solat+ + Lokasi" : "Prayer Timeline+ + Location"
+        case .prayerTimelinePlusWithoutLocation:
             return isMalayAppLanguage() ? "Garis Masa Solat+" : "Prayer Timeline+"
         }
     }
@@ -430,7 +439,16 @@ enum LockScreenPrayerCountdownBarStyle: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
-        isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Time Countdown"
+        switch self {
+        case .withLocation, .withoutLocation:
+            return isMalayAppLanguage()
+                ? (self == .withLocation ? "Bar Kiraan Detik + Lokasi" : "Bar Kiraan Detik")
+                : (self == .withLocation ? "Countdown Bar + Location" : "Countdown Bar")
+        case .batteryWithLocation, .batteryWithoutLocation:
+            return isMalayAppLanguage()
+                ? (self == .batteryWithLocation ? "Bar Kiraan Bateri + Lokasi" : "Bar Kiraan Bateri")
+                : (self == .batteryWithLocation ? "Battery Countdown + Location" : "Battery Countdown")
+        }
     }
 
     var summary: String {
