@@ -174,6 +174,115 @@ private struct LockScreenPrayerMiniGraph: View {
     }
 }
 
+private struct LockScreenCurvierPrayerMiniGraph: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let prayers: [Prayer]
+    let activeDotIndex: Int
+
+    private func normalizedCurveY(_ t: CGFloat) -> CGFloat {
+        let clamped = min(max(t, 0), 1)
+        let p0: CGFloat = 0.76
+        let c1: CGFloat = 0.38
+        let c2: CGFloat = 0.02
+        let p3: CGFloat = 0.88
+        let oneMinusT = 1 - clamped
+        return
+            (oneMinusT * oneMinusT * oneMinusT * p0) +
+            (3 * oneMinusT * oneMinusT * clamped * c1) +
+            (3 * oneMinusT * clamped * clamped * c2) +
+            (clamped * clamped * clamped * p3)
+    }
+
+    private func markerPoints(in size: CGSize) -> [CGPoint] {
+        let source = prayers.sorted { $0.time < $1.time }
+        guard source.count > 1 else {
+            return [
+                CGPoint(x: size.width * 0.03, y: size.height * 0.82),
+                CGPoint(x: size.width * 0.97, y: size.height * 0.82)
+            ]
+        }
+
+        let first = source.first?.time.timeIntervalSince1970 ?? 0
+        let last = max(source.last?.time.timeIntervalSince1970 ?? first + 1, first + 1)
+        let range = max(last - first, 1)
+        let leftInset = size.width * 0.03
+        let usableWidth = size.width * 0.94
+
+        return source.map { prayer in
+            let normalized = CGFloat((prayer.time.timeIntervalSince1970 - first) / range)
+            let clamped = min(max(normalized, 0), 1)
+            let x = leftInset + usableWidth * clamped
+            let y = size.height * normalizedCurveY(clamped)
+            return CGPoint(x: x, y: y)
+        }
+    }
+
+    private func sampledCurvePath(in size: CGSize) -> Path {
+        var path = Path()
+        let leftInset = size.width * 0.03
+        let usableWidth = size.width * 0.94
+        let steps = 48
+        for step in 0...steps {
+            let t = CGFloat(step) / CGFloat(steps)
+            let point = CGPoint(
+                x: leftInset + usableWidth * t,
+                y: size.height * normalizedCurveY(t)
+            )
+            if step == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        return path
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let markers = markerPoints(in: geo.size)
+            let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
+            let clampedActiveIndex = min(max(activeDotIndex, -1), max(markers.count - 1, -1))
+            let baseLineColor = colorScheme == .light ? Color.black.opacity(0.42) : Color.white.opacity(0.68)
+            let activeLineColor = colorScheme == .light ? Color.black.opacity(0.90) : Color.white.opacity(0.95)
+            let futureDotStrokeColor = colorScheme == .light ? Color.black.opacity(0.55) : Color.white.opacity(0.72)
+
+            ZStack {
+                let curve = sampledCurvePath(in: geo.size)
+
+                ZStack {
+                    curve
+                        .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+
+                    ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: index == peakIndex ? 13 : 11, height: index == peakIndex ? 13 : 11)
+                            .position(point)
+                            .blendMode(.destinationOut)
+                    }
+                }
+                .compositingGroup()
+
+                ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                    let isReached = index <= clampedActiveIndex
+                    Circle()
+                        .fill(isReached ? activeLineColor : Color.clear)
+                        .overlay(
+                            Circle().stroke(
+                                isReached ? activeLineColor : futureDotStrokeColor,
+                                lineWidth: 1.8
+                            )
+                        )
+                        .frame(width: index == peakIndex ? 10 : 8, height: index == peakIndex ? 10 : 8)
+                        .shadow(radius: isReached ? 0.6 : 0)
+                        .position(point)
+                }
+            }
+        }
+        .frame(height: 30)
+    }
+}
+
 private struct LockScreenPrayerDotCountdown: View {
     let currentPrayer: String
     let nextPrayer: String
@@ -274,14 +383,27 @@ struct LockScreen6EntryView: View {
                     .font(.caption)
             } else if let nextPrayer = entry.nextPrayer,
                       let window = countdownBarPrayerWindow(for: entry) {
-                if selectedStyle == .prayerTimelineWithLocation || selectedStyle == .prayerTimelineWithoutLocation {
+                if selectedStyle == .prayerTimelineWithLocation
+                    || selectedStyle == .prayerTimelineWithoutLocation
+                    || selectedStyle == .prayerTimelinePlusWithLocation
+                    || selectedStyle == .prayerTimelinePlusWithoutLocation {
                     let prayersForGraph = graphPrayers()
                     let currentPrayer = entry.currentPrayer
 
-                    LockScreenPrayerMiniGraph(
-                        dotCount: max(prayersForGraph.count, 2),
-                        activeDotIndex: activeIndex(in: prayersForGraph)
-                    )
+                    Group {
+                        if selectedStyle == .prayerTimelinePlusWithLocation
+                            || selectedStyle == .prayerTimelinePlusWithoutLocation {
+                            LockScreenCurvierPrayerMiniGraph(
+                                prayers: prayersForGraph,
+                                activeDotIndex: activeIndex(in: prayersForGraph)
+                            )
+                        } else {
+                            LockScreenPrayerMiniGraph(
+                                dotCount: max(prayersForGraph.count, 2),
+                                activeDotIndex: activeIndex(in: prayersForGraph)
+                            )
+                        }
+                    }
 
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(widgetPrayerDisplayName(currentPrayer?.nameTransliteration ?? nextPrayer.nameTransliteration))
@@ -323,7 +445,7 @@ struct LockScreen6EntryView: View {
                         .lineLimit(1)
                 }
 
-                if selectedStyle == .prayerTimelineWithLocation {
+                if selectedStyle == .prayerTimelineWithLocation || selectedStyle == .prayerTimelinePlusWithLocation {
                     WidgetLocationFooter(entry: entry, widgetKind: "LockScreen6Widget")
                 }
             }

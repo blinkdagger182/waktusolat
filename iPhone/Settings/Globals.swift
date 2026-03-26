@@ -156,6 +156,8 @@ enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
     case prayerCountdownWithoutLocation
     case prayerTimelineWithLocation
     case prayerTimelineWithoutLocation
+    case prayerTimelinePlusWithLocation
+    case prayerTimelinePlusWithoutLocation
 
     var id: String { rawValue }
 
@@ -165,6 +167,8 @@ enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown"
         case .prayerTimelineWithLocation, .prayerTimelineWithoutLocation:
             return isMalayAppLanguage() ? "Garis Masa Solat" : "Prayer Timeline"
+        case .prayerTimelinePlusWithLocation, .prayerTimelinePlusWithoutLocation:
+            return isMalayAppLanguage() ? "Garis Masa Solat+" : "Prayer Timeline+"
         }
     }
 
@@ -186,6 +190,14 @@ enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Gaya graf garisan tanpa lokasi."
                 : "Line-graph style without the location."
+        case .prayerTimelinePlusWithLocation:
+            return isMalayAppLanguage()
+                ? "Graf yang lebih lembut, tinggi, dan melengkung dengan lokasi aktif."
+                : "A softer, taller, curvier graph with the active location."
+        case .prayerTimelinePlusWithoutLocation:
+            return isMalayAppLanguage()
+                ? "Graf yang lebih lembut, tinggi, dan melengkung tanpa lokasi."
+                : "A softer, taller, curvier graph without the location."
         }
     }
 }

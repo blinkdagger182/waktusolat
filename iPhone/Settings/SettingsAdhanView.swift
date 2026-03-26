@@ -4,6 +4,7 @@ import WidgetKit
 #if os(iOS)
 import AVFoundation
 import AudioToolbox
+import UIKit
 #endif
 
 struct SettingsAdhanView: View {
@@ -1227,8 +1228,28 @@ private struct PrayerCountdownStyleCard: View {
                         )
                         .frame(width: 188)
                         .padding(.bottom, 20)
-                    } else {
+                    } else if style == .prayerTimelineWithoutLocation {
                         PrayerTimelineGraphPreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: nil,
+                            accentColor: settings.accentColor.color
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else if style == .prayerTimelinePlusWithLocation {
+                        CurvierPrayerTimelineGraphPreviewCard(
+                            currentPrayer: localizedPrayerName("Maghrib"),
+                            nextPrayer: localizedPrayerName("Isha"),
+                            nextTime: "19:31",
+                            footer: "Taiping, Perak",
+                            accentColor: settings.accentColor.color
+                        )
+                        .frame(width: 188)
+                        .padding(.bottom, 20)
+                    } else {
+                        CurvierPrayerTimelineGraphPreviewCard(
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
@@ -1502,6 +1523,8 @@ private struct LockScreenCountdownPreviewCard: View {
 }
 
 private struct LockScreenRectangularZikirPreviewCard: View {
+    @EnvironmentObject var settings: Settings
+
     let helperTitle: String
     let arabic: String
     let translation: String
@@ -1529,6 +1552,26 @@ private struct LockScreenRectangularZikirPreviewCard: View {
         }
     }
 
+    private var quranArabicFontName: String {
+        let candidates = [
+            settings.fontArabic,
+            "KFGQPCUthmanicScriptHAFS",
+            "Uthmani",
+            "KFGQPC Uthmanic Script HAFS",
+            "UthmanicHafs1 Ver09",
+            "AmiriQuran-Regular",
+            "Amiri Quran"
+        ]
+        #if os(iOS)
+        for name in candidates where !name.isEmpty {
+            if UIFont(name: name, size: 19) != nil {
+                return name
+            }
+        }
+        #endif
+        return settings.fontArabic
+    }
+
     var body: some View {
         VStack(alignment: horizontalAlignment, spacing: 3) {
             Text(helperTitle)
@@ -1536,7 +1579,7 @@ private struct LockScreenRectangularZikirPreviewCard: View {
                 .foregroundColor(.secondary)
                 .lineLimit(1)
             Text(arabic)
-                .font(.system(size: 19, weight: .regular))
+                .font(.custom(quranArabicFontName, size: 19))
                 .multilineTextAlignment(textAlignment)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: frameAlignment)
@@ -1567,6 +1610,163 @@ private struct LockScreenRectangularZikirPreviewCard: View {
         case .center:
             return .center
         }
+    }
+}
+
+private struct CurvierPrayerTimelineGraphPreviewCard: View {
+    let currentPrayer: String
+    let nextPrayer: String
+    let nextTime: String
+    let footer: String?
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            CurvierPreviewPrayerMiniGraph(
+                sampleMinutes: [330, 430, 780, 1000, 1166, 1238],
+                activeDotIndex: 2
+            )
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(currentPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(accentColor)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextTime)
+                    .font(.headline.monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text(nextPrayer)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+
+            if let footer, !footer.isEmpty {
+                Text(footer)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct CurvierPreviewPrayerMiniGraph: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let sampleMinutes: [Double]
+    let activeDotIndex: Int
+
+    private func normalizedCurveY(_ t: CGFloat) -> CGFloat {
+        let clamped = min(max(t, 0), 1)
+        let p0: CGFloat = 0.76
+        let c1: CGFloat = 0.38
+        let c2: CGFloat = 0.02
+        let p3: CGFloat = 0.88
+        let oneMinusT = 1 - clamped
+        return
+            (oneMinusT * oneMinusT * oneMinusT * p0) +
+            (3 * oneMinusT * oneMinusT * clamped * c1) +
+            (3 * oneMinusT * clamped * clamped * c2) +
+            (clamped * clamped * clamped * p3)
+    }
+
+    private func markerPoints(in size: CGSize) -> [CGPoint] {
+        let width = max(size.width, 1)
+        let height = max(size.height, 1)
+        let values = sampleMinutes.isEmpty ? [0, 1] : sampleMinutes
+        let first = values.first ?? 0
+        let last = max(values.last ?? 1, first + 1)
+        let range = max(last - first, 1)
+        let leftInset = width * 0.03
+        let usableWidth = width * 0.94
+
+        return values.map { minute in
+            let t = CGFloat((minute - first) / range)
+            let x = leftInset + usableWidth * t
+            let y = height * normalizedCurveY(t)
+            return CGPoint(x: x, y: y)
+        }
+    }
+
+    private func sampledCurvePath(in size: CGSize) -> Path {
+        var path = Path()
+        let leftInset = size.width * 0.03
+        let usableWidth = size.width * 0.94
+        let steps = 48
+        for step in 0...steps {
+            let t = CGFloat(step) / CGFloat(steps)
+            let point = CGPoint(
+                x: leftInset + usableWidth * t,
+                y: size.height * normalizedCurveY(t)
+            )
+            if step == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        return path
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let baseLineColor = colorScheme == .light ? Color.black.opacity(0.42) : Color.white.opacity(0.68)
+            let futureDotStrokeColor = colorScheme == .light ? Color.black.opacity(0.55) : Color.white.opacity(0.72)
+            let activeLineColor = colorScheme == .light ? Color.black.opacity(0.90) : Color.white.opacity(0.95)
+            let markers = markerPoints(in: geo.size)
+            let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
+            let clampedActiveIndex = min(max(activeDotIndex, -1), max(markers.count - 1, -1))
+
+            ZStack {
+                let curve = sampledCurvePath(in: geo.size)
+
+                ZStack {
+                    curve
+                        .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+
+                    ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: index == peakIndex ? 13 : 11, height: index == peakIndex ? 13 : 11)
+                            .position(point)
+                            .blendMode(.destinationOut)
+                    }
+                }
+                .compositingGroup()
+
+                ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                    let isReached = index <= clampedActiveIndex
+                    Circle()
+                        .fill(isReached ? activeLineColor : Color.clear)
+                        .overlay(
+                            Circle().stroke(
+                                isReached ? activeLineColor : futureDotStrokeColor,
+                                lineWidth: 1.8
+                            )
+                        )
+                        .frame(width: index == peakIndex ? 10 : 8, height: index == peakIndex ? 10 : 8)
+                        .position(point)
+                }
+            }
+        }
+        .frame(height: 30)
     }
 }
 
