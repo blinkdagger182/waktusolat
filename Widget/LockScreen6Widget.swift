@@ -6,10 +6,10 @@ private struct PrayerCountdownBarWindow {
     let end: Date
 }
 
-private func storedLockScreenPrayerCountdownStyle() -> LockScreenPrayerCountdownStyle {
+private func storedLockScreenPrayerCountdownBarStyle() -> LockScreenPrayerCountdownBarStyle {
     let rawValue = UserDefaults(suiteName: sharedAppGroupID)?
-        .string(forKey: LockScreenPrayerCountdownStyle.storageKey)
-    return LockScreenPrayerCountdownStyle(rawValue: rawValue ?? "") ?? .prayerCountdownWithLocation
+        .string(forKey: LockScreenPrayerCountdownBarStyle.storageKey)
+    return LockScreenPrayerCountdownBarStyle(rawValue: rawValue ?? "") ?? .withLocation
 }
 
 private func countdownBarPrayerWindow(for entry: PrayersProvider.Entry) -> PrayerCountdownBarWindow? {
@@ -336,8 +336,8 @@ private struct LockScreenPrayerDotCountdown: View {
 struct LockScreen6EntryView: View {
     var entry: PrayersProvider.Entry
 
-    private var selectedStyle: LockScreenPrayerCountdownStyle {
-        storedLockScreenPrayerCountdownStyle()
+    private var selectedStyle: LockScreenPrayerCountdownBarStyle {
+        storedLockScreenPrayerCountdownBarStyle()
     }
 
     private func progressValue(at now: Date, for window: PrayerCountdownBarWindow) -> Double {
@@ -383,70 +383,36 @@ struct LockScreen6EntryView: View {
                     .font(.caption)
             } else if let nextPrayer = entry.nextPrayer,
                       let window = countdownBarPrayerWindow(for: entry) {
-                if selectedStyle == .prayerTimelineWithLocation
-                    || selectedStyle == .prayerTimelineWithoutLocation
-                    || selectedStyle == .prayerTimelinePlusWithLocation
-                    || selectedStyle == .prayerTimelinePlusWithoutLocation {
-                    let prayersForGraph = graphPrayers()
-                    let currentPrayer = entry.currentPrayer
+                VStack(alignment: .leading, spacing: 6) {
+                    if let currentPrayer = entry.currentPrayer {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .lineLimit(1)
 
-                    Group {
-                        if selectedStyle == .prayerTimelinePlusWithLocation
-                            || selectedStyle == .prayerTimelinePlusWithoutLocation {
-                            LockScreenCurvierPrayerMiniGraph(
-                                prayers: prayersForGraph,
-                                activeDotIndex: activeIndex(in: prayersForGraph)
-                            )
-                        } else {
-                            LockScreenPrayerMiniGraph(
-                                dotCount: max(prayersForGraph.count, 2),
-                                activeDotIndex: activeIndex(in: prayersForGraph)
-                            )
+                            Spacer(minLength: 6)
+
+                            Text(nextPrayer.time, style: .time)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                                .lineLimit(1)
                         }
                     }
 
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(widgetPrayerDisplayName(currentPrayer?.nameTransliteration ?? nextPrayer.nameTransliteration))
-                            .font(.headline.weight(.semibold))
-                            .foregroundColor(entry.accentColor.color)
-                            .lineLimit(1)
-
-                        Spacer(minLength: 0)
-
-                        Text(nextPrayer.time, style: .time)
-                            .font(.headline.monospacedDigit())
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-
-                        Spacer(minLength: 0)
-
-                        Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
-                            .font(.headline.weight(.semibold))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                    }
-                } else if let currentPrayer = entry.currentPrayer {
-                    LockScreenPrayerDotCountdown(
-                        currentPrayer: widgetPrayerDisplayName(currentPrayer.nameTransliteration),
-                        nextPrayer: widgetPrayerDisplayName(nextPrayer.nameTransliteration),
-                        nextTime: nextPrayer.time,
-                        footer: selectedStyle == .prayerCountdownWithLocation ? entry.currentCity : nil,
-                        accentColor: entry.accentColor.color
-                    )
-                } else {
                     TimelineView(.periodic(from: entry.date, by: 1)) { context in
                         ProgressView(value: progressValue(at: context.date, for: window))
                             .progressViewStyle(.linear)
+                            .tint(entry.accentColor.color)
                     }
 
                     Text("Ends at \(endTimeText(nextPrayer.time))")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                }
 
-                if selectedStyle == .prayerTimelineWithLocation || selectedStyle == .prayerTimelinePlusWithLocation {
-                    WidgetLocationFooter(entry: entry, widgetKind: "LockScreen6Widget")
+                    if selectedStyle == .withLocation {
+                        WidgetLocationFooter(entry: entry, widgetKind: "LockScreen6Widget")
+                    }
                 }
             }
         }

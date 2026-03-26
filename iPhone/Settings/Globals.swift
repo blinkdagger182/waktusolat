@@ -249,7 +249,7 @@ enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
     }
 }
 
-enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
+enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
     static let storageKey = "lockScreenPrayerCountdownStyle"
 
     case prayerCountdownWithLocation
@@ -264,7 +264,7 @@ enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .prayerCountdownWithLocation, .prayerCountdownWithoutLocation:
-            return isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown"
+            return isMalayAppLanguage() ? "Waktu Solat" : "Prayer Times"
         case .prayerTimelineWithLocation, .prayerTimelineWithoutLocation:
             return isMalayAppLanguage() ? "Garis Masa Solat" : "Prayer Timeline"
         case .prayerTimelinePlusWithLocation, .prayerTimelinePlusWithoutLocation:
@@ -298,6 +298,32 @@ enum LockScreenPrayerCountdownStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Graf yang lebih lembut, tinggi, dan melengkung tanpa lokasi."
                 : "A softer, taller, curvier graph without the location."
+        }
+    }
+}
+
+enum LockScreenPrayerCountdownBarStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "lockScreenPrayerCountdownBarStyle"
+
+    case withLocation
+    case withoutLocation
+
+    var id: String { rawValue }
+
+    var title: String {
+        isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Time Countdown"
+    }
+
+    var summary: String {
+        switch self {
+        case .withLocation:
+            return isMalayAppLanguage()
+                ? "Bar kiraan detik penuh dengan lokasi aktif."
+                : "Full countdown bar with the active location."
+        case .withoutLocation:
+            return isMalayAppLanguage()
+                ? "Bar kiraan detik penuh tanpa lokasi."
+                : "Full countdown bar without the location."
         }
     }
 }

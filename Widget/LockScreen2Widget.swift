@@ -6,10 +6,10 @@ private struct PrayerCountdownBarWindow {
     let end: Date
 }
 
-private func storedLockScreenPrayerCountdownStyle() -> LockScreenPrayerCountdownStyle {
+private func storedLockScreenPrayerTimesStyle() -> LockScreenPrayerTimesStyle {
     let rawValue = UserDefaults(suiteName: sharedAppGroupID)?
-        .string(forKey: LockScreenPrayerCountdownStyle.storageKey)
-    return LockScreenPrayerCountdownStyle(rawValue: rawValue ?? "") ?? .prayerCountdownWithLocation
+        .string(forKey: LockScreenPrayerTimesStyle.storageKey)
+    return LockScreenPrayerTimesStyle(rawValue: rawValue ?? "") ?? .prayerCountdownWithLocation
 }
 
 private func countdownBarPrayerWindow(for entry: PrayersProvider.Entry) -> PrayerCountdownBarWindow? {
@@ -335,8 +335,8 @@ private struct PrayerDotCountdown: View {
 struct LockScreen2EntryView: View {
     var entry: PrayersProvider.Entry
 
-    private var selectedStyle: LockScreenPrayerCountdownStyle {
-        storedLockScreenPrayerCountdownStyle()
+    private var selectedStyle: LockScreenPrayerTimesStyle {
+        storedLockScreenPrayerTimesStyle()
     }
 
     private func progressValue(at now: Date, for window: PrayerCountdownBarWindow) -> Double {

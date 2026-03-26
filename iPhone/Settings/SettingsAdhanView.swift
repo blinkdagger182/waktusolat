@@ -956,8 +956,10 @@ private struct NotificationStylePreviewCard: View {
 
 struct WidgetPreviewGalleryView: View {
     @EnvironmentObject var settings: Settings
-    @AppStorage(LockScreenPrayerCountdownStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
-    private var countdownStyleRaw = LockScreenPrayerCountdownStyle.prayerCountdownWithLocation.rawValue
+    @AppStorage(LockScreenPrayerTimesStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var prayerTimesStyleRaw = LockScreenPrayerTimesStyle.prayerCountdownWithLocation.rawValue
+    @AppStorage(LockScreenPrayerCountdownBarStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var countdownBarStyleRaw = LockScreenPrayerCountdownBarStyle.withLocation.rawValue
     @AppStorage(WidgetZikirAlignment.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var zikirAlignmentRaw = WidgetZikirAlignment.center.rawValue
     @AppStorage(NextPrayerCircleStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
@@ -967,8 +969,12 @@ struct WidgetPreviewGalleryView: View {
     @AppStorage(DailyVerseWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var dailyVerseStyleRaw = DailyVerseWidgetStyle.classic.rawValue
 
-    private var countdownStyle: LockScreenPrayerCountdownStyle {
-        LockScreenPrayerCountdownStyle(rawValue: countdownStyleRaw) ?? .prayerCountdownWithLocation
+    private var prayerTimesStyle: LockScreenPrayerTimesStyle {
+        LockScreenPrayerTimesStyle(rawValue: prayerTimesStyleRaw) ?? .prayerCountdownWithLocation
+    }
+
+    private var countdownBarStyle: LockScreenPrayerCountdownBarStyle {
+        LockScreenPrayerCountdownBarStyle(rawValue: countdownBarStyleRaw) ?? .withLocation
     }
 
     private var zikirAlignment: WidgetZikirAlignment {
@@ -991,24 +997,52 @@ struct WidgetPreviewGalleryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 previewSection(
-                    title: isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Countdown",
+                    title: isMalayAppLanguage() ? "Waktu Solat" : "Prayer Times",
                     subtitle: isMalayAppLanguage()
-                        ? "Pilih antara dua gaya untuk widget kiraan detik solat pada skrin kunci."
-                        : "Choose between the two Lock Screen styles for the prayer countdown widget."
+                        ? "Pilih gaya titik atau graf untuk widget waktu solat pada skrin kunci."
+                        : "Choose the dotted or graph styles for the Lock Screen prayer times widget."
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            ForEach(LockScreenPrayerCountdownStyle.allCases) { style in
+                            ForEach(LockScreenPrayerTimesStyle.allCases) { style in
                                 Button {
                                     settings.hapticFeedback()
                                     withAnimation(.easeInOut) {
-                                        countdownStyleRaw = style.rawValue
+                                        prayerTimesStyleRaw = style.rawValue
                                     }
                                     WidgetCenter.shared.reloadAllTimelines()
                                 } label: {
-                                    PrayerCountdownStyleCard(
+                                    PrayerTimesStyleCard(
                                         style: style,
-                                        isSelected: countdownStyle == style
+                                        isSelected: prayerTimesStyle == style
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: isMalayAppLanguage() ? "Kiraan Detik Solat" : "Prayer Time Countdown",
+                    subtitle: isMalayAppLanguage()
+                        ? "Pilih paparan bar kiraan detik untuk widget kiraan detik solat."
+                        : "Choose the progress-bar presentation for the Lock Screen prayer countdown widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(LockScreenPrayerCountdownBarStyle.allCases) { style in
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        countdownBarStyleRaw = style.rawValue
+                                    }
+                                    WidgetCenter.shared.reloadAllTimelines()
+                                } label: {
+                                    PrayerCountdownBarStyleCard(
+                                        style: style,
+                                        isSelected: countdownBarStyle == style
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -1470,10 +1504,10 @@ private struct LockScreenSpotlightCard: View {
     }
 }
 
-private struct PrayerCountdownStyleCard: View {
+private struct PrayerTimesStyleCard: View {
     @EnvironmentObject var settings: Settings
 
-    let style: LockScreenPrayerCountdownStyle
+    let style: LockScreenPrayerTimesStyle
     let isSelected: Bool
 
     var body: some View {
@@ -1563,6 +1597,72 @@ private struct PrayerCountdownStyleCard: View {
                         .frame(width: 188)
                         .padding(.bottom, 20)
                     }
+                }
+            }
+            .frame(width: 188, height: 220)
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(style.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text(isSelected
+                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                     : style.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
+                    .lineLimit(2)
+            }
+            .frame(width: 188, alignment: .leading)
+        }
+    }
+}
+
+private struct PrayerCountdownBarStyleCard: View {
+    @EnvironmentObject var settings: Settings
+
+    let style: LockScreenPrayerCountdownBarStyle
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color.black)
+
+                LinearGradient(
+                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Thu 26")
+                        Spacer()
+                        Text("8:14")
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    Spacer()
+
+                    LockScreenCountdownPreviewCard(
+                        prayer: localizedPrayerName("Maghrib"),
+                        timerText: "19:31",
+                        footer: style == .withLocation ? "Taiping, Perak" : "",
+                        accentColor: settings.accentColor.color
+                    )
+                    .frame(width: 188)
+                    .padding(.bottom, 20)
                 }
             }
             .frame(width: 188, height: 220)
