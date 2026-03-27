@@ -6,6 +6,7 @@ import UIKit
 
 struct QuranSurahDetailsView: View {
     let surahNumber: Int
+    let initialAyahNumber: Int?
     let dailyAyahNumber: Int?
 
     @EnvironmentObject private var settings: Settings
@@ -74,7 +75,7 @@ struct QuranSurahDetailsView: View {
             .safeAreaInset(edge: .bottom) {
                 if let details, currentPlaybackAyah != nil || recitationPlayer != nil || isRecitationLoading {
                     QuranRecitationControlBar(
-                        surahTitle: details.englishName,
+                        surahTitle: localizedSurahName(number: details.number, englishName: details.englishName),
                         ayahNumber: currentPlaybackAyah,
                         isReciting: isReciting,
                         isLoading: isRecitationLoading,
@@ -123,7 +124,7 @@ struct QuranSurahDetailsView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 14) {
-                            Text("\(details.englishName) (\(details.arabicName))")
+                            Text("\(localizedSurahName(number: details.number, englishName: details.englishName)) (\(details.arabicName))")
                                 .font(.headline)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -267,7 +268,7 @@ struct QuranSurahDetailsView: View {
                     .coordinateSpace(name: "surahScrollView")
                     .onAppear {
                         guard !didRestorePosition else { return }
-                        let target = pendingRestoreAyah ?? dailyAyahNumber
+                        let target = pendingRestoreAyah ?? initialAyahNumber ?? dailyAyahNumber
                         guard let target else {
                             didRestorePosition = true
                             return
@@ -297,7 +298,7 @@ struct QuranSurahDetailsView: View {
                         guard trackedAyah != lastSavedAyah else { return }
                         lastSavedAyah = trackedAyah
                         saveLastReadAyah(trackedAyah, for: surahNumber)
-                        saveResumeSelection(surahNumber: surahNumber, ayahNumber: trackedAyah)
+                        saveViewedResumeSelection(surahNumber: surahNumber, ayahNumber: trackedAyah)
                     }
                 }
             } else {
@@ -316,14 +317,14 @@ struct QuranSurahDetailsView: View {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
-        pendingRestoreAyah = loadLastReadAyah(for: surahNumber)
+        pendingRestoreAyah = initialAyahNumber ?? loadLastReadAyah(for: surahNumber)
         didRestorePosition = false
         lastSavedAyah = pendingRestoreAyah
-        saveResumeSelection(surahNumber: surahNumber, ayahNumber: pendingRestoreAyah ?? dailyAyahNumber)
+        saveViewedResumeSelection(surahNumber: surahNumber, ayahNumber: pendingRestoreAyah ?? dailyAyahNumber)
 
         do {
             details = try await QuranSurahAPI.fetchSurahDetails(surahNumber: surahNumber)
-            let focusedAyah = pendingRestoreAyah ?? dailyAyahNumber
+            let focusedAyah = pendingRestoreAyah ?? initialAyahNumber ?? dailyAyahNumber
             currentPlaybackAyah = focusedAyah
             if let focusedAyah,
                let focusedAyahDetails = details?.ayahs.first(where: { $0.numberInSurah == focusedAyah }) {
@@ -361,7 +362,7 @@ struct QuranSurahDetailsView: View {
             return
         }
 
-        let startingAyah = currentPlaybackAyah ?? pendingRestoreAyah ?? dailyAyahNumber ?? 1
+        let startingAyah = currentPlaybackAyah ?? pendingRestoreAyah ?? initialAyahNumber ?? dailyAyahNumber ?? 1
         playRecitation(fromAyah: startingAyah)
     }
 
@@ -406,7 +407,8 @@ struct QuranSurahDetailsView: View {
         playbackSequenceIndex = 0
         currentPlaybackAyah = playbackAyahSequence.first
         currentPlaybackWordPosition = resolvedStartingWordPosition ?? startingAyahDetails?.words.first?.position
-        saveResumeSelection(surahNumber: surahNumber, ayahNumber: validAyah)
+        saveViewedResumeSelection(surahNumber: surahNumber, ayahNumber: validAyah)
+        savePlayedResumeSelection(surahNumber: surahNumber, ayahNumber: validAyah)
 
         let player = AVQueuePlayer(items: itemsWithAyah.map(\.1))
         recitationPlayer = player
@@ -427,7 +429,8 @@ struct QuranSurahDetailsView: View {
                 currentPlaybackAyah = nextAyah
                 let nextAyahDetails = details.ayahs.first(where: { $0.numberInSurah == nextAyah })
                 currentPlaybackWordPosition = nextAyahDetails?.words.first?.position
-                saveResumeSelection(surahNumber: surahNumber, ayahNumber: nextAyah)
+                saveViewedResumeSelection(surahNumber: surahNumber, ayahNumber: nextAyah)
+                savePlayedResumeSelection(surahNumber: surahNumber, ayahNumber: nextAyah)
             } else {
                 isReciting = false
             }
@@ -488,11 +491,19 @@ struct QuranSurahDetailsView: View {
         UserDefaults.standard.set(ayahNumber, forKey: storageKey(for: surahNumber))
     }
 
-    private func saveResumeSelection(surahNumber: Int, ayahNumber: Int?) {
+    private func saveViewedResumeSelection(surahNumber: Int, ayahNumber: Int?) {
         let defaults = UserDefaults.standard
         defaults.set(surahNumber, forKey: FullQuranResumeStorage.lastSurahKey)
         if let ayahNumber, ayahNumber > 0 {
             defaults.set(ayahNumber, forKey: FullQuranResumeStorage.lastAyahKey)
+        }
+    }
+
+    private func savePlayedResumeSelection(surahNumber: Int, ayahNumber: Int?) {
+        let defaults = UserDefaults.standard
+        defaults.set(surahNumber, forKey: FullQuranResumeStorage.lastPlayedSurahKey)
+        if let ayahNumber, ayahNumber > 0 {
+            defaults.set(ayahNumber, forKey: FullQuranResumeStorage.lastPlayedAyahKey)
         }
     }
 

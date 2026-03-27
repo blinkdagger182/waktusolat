@@ -15,6 +15,12 @@ struct DailyQuranHeroCard: View {
         return "Source: Muhammad Asad"
     }
 
+    private var localizedSurahTitle: String {
+        let surahNumber = Int(quote.reference.split(separator: ":").first ?? "")
+        guard let surahNumber else { return quote.surahName }
+        return localizedSurahName(number: surahNumber, englishName: quote.surahName)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ")
@@ -32,7 +38,7 @@ struct DailyQuranHeroCard: View {
                 Spacer()
 
                 SurahReferenceBadge(
-                    title: quote.surahName,
+                    title: localizedSurahTitle,
                     reference: quote.reference
                 )
             }

@@ -53,7 +53,7 @@ struct QuranSurahExpandableCard: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(surah.englishName)
+                        Text(localizedSurahName(number: surah.number, englishName: surah.englishName))
                             .font(.headline.weight(.semibold))
                             .foregroundStyle(.primary)
                             .lineLimit(1)

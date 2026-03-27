@@ -190,15 +190,18 @@ private enum LibraryDailyInspirationPool {
     }
 }
 
-struct FullSurahSelection: Identifiable {
+struct FullSurahSelection: Identifiable, Equatable {
     let surahNumber: Int
-    let ayahNumber: Int?
-    var id: String { "\(surahNumber):\(ayahNumber ?? 0)" }
+    let initialAyahNumber: Int?
+    let dailyAyahNumber: Int?
+    var id: String { "\(surahNumber):\(initialAyahNumber ?? 0):\(dailyAyahNumber ?? 0)" }
 }
 
 enum FullQuranResumeStorage {
     static let lastSurahKey = "fullQuranLastViewedSurahV1"
     static let lastAyahKey = "fullQuranLastViewedAyahV1"
+    static let lastPlayedSurahKey = "fullQuranLastPlayedSurahV1"
+    static let lastPlayedAyahKey = "fullQuranLastPlayedAyahV1"
 }
 
 private struct DailyQuranReferenceParts {
@@ -219,12 +222,17 @@ struct OtherView: View {
     @State private var expandedSurahNumber: Int?
     @State private var dailyQuranArabicText: String?
 
+    private var isSearchingSurahs: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var filteredSurahs: [QuranSurahIndexItem] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !query.isEmpty else { return surahs }
         return surahs.filter {
             "\($0.number)".contains(query)
             || $0.englishName.lowercased().contains(query)
+            || localizedSurahName(number: $0.number, englishName: $0.englishName).lowercased().contains(query)
             || $0.arabicName.contains(query)
         }
     }
@@ -357,20 +365,29 @@ struct OtherView: View {
     private func openDailyQuranFullSurah() {
         guard let reference = dailyQuranQuote?.reference,
               let parsed = parseReference(reference) else { return }
-        selectedFullSurah = FullSurahSelection(surahNumber: parsed.surahNumber, ayahNumber: parsed.ayahNumber)
+        selectedFullSurah = FullSurahSelection(
+            surahNumber: parsed.surahNumber,
+            initialAyahNumber: parsed.ayahNumber,
+            dailyAyahNumber: parsed.ayahNumber
+        )
     }
 
     private func loadResumeSelection() {
         let defaults = UserDefaults.standard
-        let surah = defaults.integer(forKey: FullQuranResumeStorage.lastSurahKey)
-        let ayah = defaults.integer(forKey: FullQuranResumeStorage.lastAyahKey)
+        let playedSurah = defaults.integer(forKey: FullQuranResumeStorage.lastPlayedSurahKey)
+        let playedAyah = defaults.integer(forKey: FullQuranResumeStorage.lastPlayedAyahKey)
+        let viewedSurah = defaults.integer(forKey: FullQuranResumeStorage.lastSurahKey)
+        let viewedAyah = defaults.integer(forKey: FullQuranResumeStorage.lastAyahKey)
+        let surah = (1...114).contains(playedSurah) ? playedSurah : viewedSurah
+        let ayah = (1...114).contains(playedSurah) ? playedAyah : viewedAyah
         guard (1...114).contains(surah) else {
             resumeSelection = nil
             return
         }
         resumeSelection = FullSurahSelection(
             surahNumber: surah,
-            ayahNumber: ayah > 0 ? ayah : nil
+            initialAyahNumber: ayah > 0 ? ayah : nil,
+            dailyAyahNumber: nil
         )
     }
 
@@ -398,49 +415,53 @@ struct OtherView: View {
     var body: some View {
         NavigationView {
             List {
-                Section {
-                    LibraryIntroHeader()
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                        .listRowSeparator(.hidden)
+                if !isSearchingSurahs {
+                    Section {
+                        LibraryIntroHeader()
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .listRowSeparator(.hidden)
 
-                    if let quote = dailyQuranQuote {
-                        DailyQuranHeroCard(
-                            quote: quote,
-                            arabicText: dailyQuranArabicText,
-                            accentColor: settings.accentColor.color,
-                            arabicFontName: preferredQuranArabicFontName(settings: settings, size: 29),
-                            onOpenVerse: openDailyQuranModal,
-                            onOpenSurah: openDailyQuranFullSurah
-                        )
-                        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
-                        .listRowSeparator(.hidden)
-                    } else {
-                        Text(isMalayAppLanguage()
-                             ? "Buka widget Al-Quran Harian sekali untuk memuatkan ayat hari ini di sini."
-                             : "Open the Daily Quran widget once to load today’s verse here.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        if let quote = dailyQuranQuote {
+                            DailyQuranHeroCard(
+                                quote: quote,
+                                arabicText: dailyQuranArabicText,
+                                accentColor: settings.accentColor.color,
+                                arabicFontName: preferredQuranArabicFontName(settings: settings, size: 29),
+                                onOpenVerse: openDailyQuranModal,
+                                onOpenSurah: openDailyQuranFullSurah
+                            )
                             .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
                             .listRowSeparator(.hidden)
-                    }
+                        } else {
+                            Text(isMalayAppLanguage()
+                                 ? "Buka widget Al-Quran Harian sekali untuk memuatkan ayat hari ini di sini."
+                                 : "Open the Daily Quran widget once to load today’s verse here.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
+                                .listRowSeparator(.hidden)
+                        }
 
-                    if let resumeSelection {
-                        QuranResumeCard(
-                            surahTitle: surahTitle(for: resumeSelection.surahNumber),
-                            surahNumber: resumeSelection.surahNumber,
-                            ayahNumber: resumeSelection.ayahNumber,
-                            totalAyahCount: QuranSurahVerseCounts.count(for: resumeSelection.surahNumber),
-                            accentColor: settings.accentColor.color,
-                            onResume: {
-                                selectedFullSurah = resumeSelection
-                            }
-                        )
-                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 14, trailing: 16))
-                        .listRowSeparator(.hidden)
+                        if let resumeSelection {
+                            QuranResumeCard(
+                                surahTitle: surahTitle(for: resumeSelection.surahNumber),
+                                surahNumber: resumeSelection.surahNumber,
+                                ayahNumber: resumeSelection.initialAyahNumber,
+                                totalAyahCount: QuranSurahVerseCounts.count(for: resumeSelection.surahNumber),
+                                accentColor: settings.accentColor.color,
+                                onResume: {
+                                    selectedFullSurah = resumeSelection
+                                }
+                            )
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 14, trailing: 16))
+                            .listRowSeparator(.hidden)
+                        }
                     }
                 }
 
-                Section(header: Text(isMalayAppLanguage() ? "SENARAI SURAH" : "SURAH LIST")) {
+                Section(header: Text(isSearchingSurahs
+                                     ? (isMalayAppLanguage() ? "HASIL CARIAN SURAH" : "SURAH SEARCH RESULTS")
+                                     : (isMalayAppLanguage() ? "SENARAI SURAH" : "SURAH LIST"))) {
                     if isLoadingSurahs {
                         ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
                     } else if let surahListErrorMessage {
@@ -461,10 +482,18 @@ struct OtherView: View {
                                     }
                                 },
                                 onOpen: {
-                                    selectedFullSurah = FullSurahSelection(surahNumber: surah.number, ayahNumber: nil)
+                                    selectedFullSurah = FullSurahSelection(
+                                        surahNumber: surah.number,
+                                        initialAyahNumber: nil,
+                                        dailyAyahNumber: nil
+                                    )
                                 },
                                 onResume: {
-                                    selectedFullSurah = FullSurahSelection(surahNumber: surah.number, ayahNumber: loadLastReadAyah(for: surah.number))
+                                    selectedFullSurah = FullSurahSelection(
+                                        surahNumber: surah.number,
+                                        initialAyahNumber: loadLastReadAyah(for: surah.number),
+                                        dailyAyahNumber: nil
+                                    )
                                 }
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
@@ -581,11 +610,17 @@ struct OtherView: View {
             .task(id: effectiveAppLanguageCode()) {
                 await loadDailyQuranQuote()
             }
+            .onChange(of: selectedFullSurah) { selection in
+                if selection == nil {
+                    loadResumeSelection()
+                }
+            }
             .sheet(item: $selectedFullSurah) { selection in
                 NavigationView {
                     QuranSurahDetailsView(
                         surahNumber: selection.surahNumber,
-                        dailyAyahNumber: selection.ayahNumber
+                        initialAyahNumber: selection.initialAyahNumber,
+                        dailyAyahNumber: selection.dailyAyahNumber
                     )
                         .environmentObject(settings)
                         .navigationTitle(surahTitle(for: selection.surahNumber))
@@ -611,7 +646,7 @@ struct OtherView: View {
 
     private func surahTitle(for surahNumber: Int) -> String {
         if let surah = surahs.first(where: { $0.number == surahNumber }) {
-            return surah.englishName
+            return localizedSurahName(number: surah.number, englishName: surah.englishName)
         }
         return isMalayAppLanguage() ? "Surah \(surahNumber)" : "Surah \(surahNumber)"
     }

@@ -15,6 +15,7 @@ struct QuranSurahBrowserView: View {
         return surahs.filter {
             "\($0.number)".contains(query)
             || $0.englishName.lowercased().contains(query)
+            || localizedSurahName(number: $0.number, englishName: $0.englishName).lowercased().contains(query)
             || $0.arabicName.contains(query)
         }
     }
@@ -37,7 +38,11 @@ struct QuranSurahBrowserView: View {
             } else {
                 List(filteredSurahs) { surah in
                     Button {
-                        selectedSurah = FullSurahSelection(surahNumber: surah.number, ayahNumber: nil)
+                        selectedSurah = FullSurahSelection(
+                            surahNumber: surah.number,
+                            initialAyahNumber: nil,
+                            dailyAyahNumber: nil
+                        )
                         dismiss()
                     } label: {
                         HStack(spacing: 12) {
@@ -47,7 +52,7 @@ struct QuranSurahBrowserView: View {
                                 .frame(width: 28)
 
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(surah.englishName)
+                                Text(localizedSurahName(number: surah.number, englishName: surah.englishName))
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.primary)
                                 Text(surah.arabicName)
