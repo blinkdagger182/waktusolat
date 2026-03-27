@@ -247,7 +247,10 @@ private struct CachedDailyInspiration: Codable {
 private struct DailyInspirationProvider: TimelineProvider {
     private let appGroup = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
     private let seedKey = "dailyInspirationUserSeed"
-    private let cacheKey = "dailyInspirationCachedQuoteV2"
+
+    private var cacheKey: String {
+        "dailyInspirationCachedQuoteV3.\(quranContentLanguageCode())"
+    }
 
     func placeholder(in context: Context) -> DailyInspirationEntry {
         DailyInspirationEntry(date: Date(), verse: InspiringVerse(

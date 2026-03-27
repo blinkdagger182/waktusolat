@@ -86,7 +86,7 @@ struct QuranSurahExpandableCard: View {
                         .padding(.trailing, 12)
                 }
                 .contentShape(Rectangle())
-                .padding(.horizontal, 2)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 18)
             }
             .buttonStyle(.plain)
@@ -131,8 +131,8 @@ struct QuranSurahExpandableCard: View {
                         }
                     }
                 }
-                .padding(.leading, 62)
-                .padding(.trailing, 4)
+                .padding(.leading, 70)
+                .padding(.trailing, 12)
                 .padding(.bottom, 16)
                 .transition(
                     .asymmetric(
@@ -143,7 +143,8 @@ struct QuranSurahExpandableCard: View {
             }
 
             Divider()
-                .padding(.leading, 62)
+                .padding(.leading, 70)
+                .padding(.trailing, 10)
         }
         .contentShape(Rectangle())
         .animation(.spring(response: 0.46, dampingFraction: 0.9), value: isExpanded)

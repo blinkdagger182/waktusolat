@@ -7,6 +7,189 @@ struct LibraryDailyQuranQuote: Codable {
     let surahName: String
 }
 
+private struct LibraryQuranAyahAPIResponse: Decodable {
+    let translationText: String
+    let surahNameEnglish: String
+}
+
+private struct LibraryInspiringVerseReference: Hashable {
+    let reference: String
+    let theme: String
+    let fallbackText: String?
+}
+
+private struct LibraryInspiringVerseReferencePayload: Decodable {
+    let reference: String
+    let theme: String
+}
+
+private struct LibraryQuotesJSONPayload: Decodable {
+    let reference: String
+    let ayat: String
+}
+
+private enum LibraryDailyInspirationPool {
+    static let seedKey = "dailyInspirationUserSeed"
+
+    static let fallbackBaseReferences: [LibraryInspiringVerseReference] = [
+        .init(reference: "94:5", theme: "hope", fallbackText: nil),
+        .init(reference: "94:6", theme: "hope", fallbackText: nil),
+        .init(reference: "2:286", theme: "trust", fallbackText: nil),
+        .init(reference: "65:3", theme: "trust", fallbackText: nil),
+        .init(reference: "2:152", theme: "remembrance", fallbackText: nil),
+        .init(reference: "6:54", theme: "mercy", fallbackText: nil),
+        .init(reference: "7:156", theme: "mercy", fallbackText: nil),
+        .init(reference: "30:60", theme: "patience", fallbackText: nil),
+        .init(reference: "2:153", theme: "patience", fallbackText: nil),
+        .init(reference: "2:45", theme: "patience", fallbackText: nil),
+        .init(reference: "3:159", theme: "trust", fallbackText: nil),
+        .init(reference: "3:139", theme: "hope", fallbackText: nil),
+        .init(reference: "4:96", theme: "mercy", fallbackText: nil),
+        .init(reference: "3:150", theme: "trust", fallbackText: nil),
+        .init(reference: "16:128", theme: "perseverance", fallbackText: nil),
+        .init(reference: "50:16", theme: "remembrance", fallbackText: nil),
+        .init(reference: "13:28", theme: "peace", fallbackText: nil),
+        .init(reference: "11:88", theme: "trust", fallbackText: nil),
+        .init(reference: "93:5", theme: "hope", fallbackText: nil),
+        .init(reference: "93:6", theme: "mercy", fallbackText: nil),
+        .init(reference: "17:70", theme: "gratitude", fallbackText: nil),
+        .init(reference: "2:257", theme: "trust", fallbackText: nil),
+        .init(reference: "14:7", theme: "gratitude", fallbackText: nil),
+        .init(reference: "40:60", theme: "remembrance", fallbackText: nil),
+        .init(reference: "5:93", theme: "mercy", fallbackText: nil),
+        .init(reference: "7:56", theme: "mercy", fallbackText: nil),
+        .init(reference: "2:185", theme: "hope", fallbackText: nil),
+        .init(reference: "42:19", theme: "trust", fallbackText: nil),
+        .init(reference: "93:3", theme: "hope", fallbackText: nil),
+        .init(reference: "29:69", theme: "perseverance", fallbackText: nil),
+        .init(reference: "50:39", theme: "patience", fallbackText: nil),
+        .init(reference: "11:61", theme: "trust", fallbackText: nil),
+        .init(reference: "65:2", theme: "trust", fallbackText: nil),
+        .init(reference: "10:64", theme: "hope", fallbackText: nil),
+        .init(reference: "10:58", theme: "gratitude", fallbackText: nil),
+        .init(reference: "57:4", theme: "peace", fallbackText: nil),
+        .init(reference: "7:180", theme: "remembrance", fallbackText: nil),
+        .init(reference: "10:62", theme: "peace", fallbackText: nil),
+        .init(reference: "99:7", theme: "perseverance", fallbackText: nil),
+        .init(reference: "93:7", theme: "hope", fallbackText: nil)
+    ]
+
+    static let baseReferences: [LibraryInspiringVerseReference] = {
+        if let loaded = loadFromQuotesJSON(), !loaded.isEmpty {
+            return loaded
+        }
+        if let loaded = loadFromJSON(), !loaded.isEmpty {
+            return loaded
+        }
+        return fallbackBaseReferences
+    }()
+
+    static let references: [LibraryInspiringVerseReference] = {
+        let source = baseReferences
+        guard !source.isEmpty else { return [] }
+
+        if source.count >= 365 {
+            return Array(source.prefix(365))
+        }
+
+        return (0..<365).map { idx in
+            let mixed = (idx * 37 + idx / 7 + 11) % source.count
+            return source[mixed]
+        }
+    }()
+
+    static func reference(for date: Date, defaults: UserDefaults?) -> LibraryInspiringVerseReference {
+        let pool = references
+        guard !pool.isEmpty else {
+            return LibraryInspiringVerseReference(
+                reference: "94:5",
+                theme: "hope",
+                fallbackText: "Sesungguhnya bersama kesukaran ada kemudahan."
+            )
+        }
+
+        let calendar = Calendar.current
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
+        let userSeed = loadUserSeed(defaults: defaults)
+        let cycleIndex = (userSeed &+ UInt64(dayOfYear * 48271)) % 365
+        return pool[Int(cycleIndex % UInt64(pool.count))]
+    }
+
+    private static func loadUserSeed(defaults: UserDefaults?) -> UInt64 {
+        if let number = defaults?.object(forKey: seedKey) as? NSNumber {
+            return number.uint64Value
+        }
+        if let existingInt = defaults?.object(forKey: seedKey) as? Int {
+            return UInt64(max(existingInt, 1))
+        }
+        if let existingString = defaults?.string(forKey: seedKey), let parsed = UInt64(existingString) {
+            return parsed
+        }
+        if let existingData = defaults?.data(forKey: seedKey),
+           let parsed = try? JSONDecoder().decode(UInt64.self, from: existingData) {
+            return parsed
+        }
+
+        let newSeed = UInt64.random(in: 1...UInt64.max / 2)
+        defaults?.set(NSNumber(value: newSeed), forKey: seedKey)
+        return newSeed
+    }
+
+    private static func loadFromJSON() -> [LibraryInspiringVerseReference]? {
+        let possibleURLs: [URL?] = [
+            Bundle.main.url(forResource: "QuranInspirationReferences", withExtension: "json"),
+            Bundle.main.url(forResource: "QuranInspirationReferences", withExtension: "json", subdirectory: "Shared"),
+            Bundle.main.url(forResource: "QuranInspirationReferences", withExtension: "json", subdirectory: "Resources/JSONs")
+        ]
+
+        guard let fileURL = possibleURLs.compactMap({ $0 }).first,
+              let data = try? Data(contentsOf: fileURL),
+              let payload = try? JSONDecoder().decode([LibraryInspiringVerseReferencePayload].self, from: data)
+        else {
+            return nil
+        }
+
+        let filtered = payload
+            .filter { isSingleAyahReference($0.reference) }
+            .map { LibraryInspiringVerseReference(reference: $0.reference, theme: $0.theme, fallbackText: nil) }
+
+        return filtered.isEmpty ? nil : filtered
+    }
+
+    private static func loadFromQuotesJSON() -> [LibraryInspiringVerseReference]? {
+        let possibleURLs: [URL?] = [
+            Bundle.main.url(forResource: "quotes", withExtension: "json"),
+            Bundle.main.url(forResource: "quotes", withExtension: "json", subdirectory: "Resources"),
+            Bundle.main.url(forResource: "quotes", withExtension: "json", subdirectory: "Resources/JSONs")
+        ]
+
+        guard let fileURL = possibleURLs.compactMap({ $0 }).first,
+              let data = try? Data(contentsOf: fileURL),
+              let payload = try? JSONDecoder().decode([LibraryQuotesJSONPayload].self, from: data)
+        else {
+            return nil
+        }
+
+        var seen = Set<String>()
+        var parsed: [LibraryInspiringVerseReference] = []
+        for row in payload {
+            guard isSingleAyahReference(row.reference) else { continue }
+            if seen.insert(row.reference).inserted {
+                parsed.append(.init(reference: row.reference, theme: "inspiration", fallbackText: row.ayat))
+            }
+        }
+
+        return parsed.isEmpty ? nil : parsed
+    }
+
+    private static func isSingleAyahReference(_ reference: String) -> Bool {
+        let comps = reference.split(separator: ":")
+        guard comps.count == 2 else { return false }
+        guard !comps[0].contains("-"), !comps[1].contains("-") else { return false }
+        return Int(comps[0]) != nil && Int(comps[1]) != nil
+    }
+}
+
 struct FullSurahSelection: Identifiable {
     let surahNumber: Int
     let ayahNumber: Int?
@@ -46,17 +229,89 @@ struct OtherView: View {
         }
     }
 
-    private func loadDailyQuranQuote() {
+    private func currentDayKey(for date: Date = Date()) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.timeZone = .current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    private func loadDailyQuranQuoteFromCache() -> Bool {
         let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        let languageAwareKey = "dailyInspirationCachedQuoteV3.\(quranContentLanguageCode())"
         guard
-            let data = defaults?.data(forKey: "dailyInspirationCachedQuoteV2")
-                ?? defaults?.data(forKey: "dailyInspirationCachedQuoteV1"),
-            let cached = try? JSONDecoder().decode(LibraryDailyQuranQuote.self, from: data)
+            let data = defaults?.data(forKey: languageAwareKey)
+                ?? (!isMalayAppLanguage() ? defaults?.data(forKey: "dailyInspirationCachedQuoteV2") : nil)
+                ?? (!isMalayAppLanguage() ? defaults?.data(forKey: "dailyInspirationCachedQuoteV1") : nil),
+            let cached = try? JSONDecoder().decode(LibraryDailyQuranQuote.self, from: data),
+            cached.dayKey == currentDayKey()
         else {
             dailyQuranQuote = nil
-            return
+            return false
         }
         dailyQuranQuote = cached
+        return true
+    }
+
+    @MainActor
+    private func loadDailyQuranQuote() async {
+        let loadedFromCache = loadDailyQuranQuoteFromCache()
+        if loadedFromCache {
+            await loadDailyQuranArabicIfNeeded()
+            return
+        }
+
+        do {
+            let fetched = try await fetchDailyQuranQuoteFromAPI()
+            dailyQuranQuote = fetched
+            saveDailyQuranQuoteToCache(fetched)
+            await loadDailyQuranArabicIfNeeded()
+        } catch {
+            dailyQuranQuote = nil
+            dailyQuranArabicText = nil
+        }
+    }
+
+    private func saveDailyQuranQuoteToCache(_ quote: LibraryDailyQuranQuote) {
+        guard let data = try? JSONEncoder().encode(quote) else { return }
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        let languageAwareKey = "dailyInspirationCachedQuoteV3.\(quranContentLanguageCode())"
+        defaults?.set(data, forKey: languageAwareKey)
+    }
+
+    private func fetchDailyQuranQuoteFromAPI(for date: Date = Date()) async throws -> LibraryDailyQuranQuote {
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        let selectedReference = LibraryDailyInspirationPool.reference(for: date, defaults: defaults)
+        let dayKey = currentDayKey(for: date)
+
+        guard var components = URLComponents(url: quranProxyBaseURL(bundle: .main), resolvingAgainstBaseURL: false) else {
+            throw URLError(.badURL)
+        }
+        components.path += "/ayah/\(selectedReference.reference)"
+        components.queryItems = [URLQueryItem(name: "lang", value: quranContentLanguageCode())]
+
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoded = try JSONDecoder().decode(LibraryQuranAyahAPIResponse.self, from: data)
+        let normalizedText = decoded.translationText
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return LibraryDailyQuranQuote(
+            dayKey: dayKey,
+            reference: selectedReference.reference,
+            text: normalizedText.isEmpty ? (selectedReference.fallbackText ?? decoded.translationText) : normalizedText,
+            surahName: decoded.surahNameEnglish
+        )
     }
 
     @MainActor
@@ -145,7 +400,7 @@ struct OtherView: View {
             List {
                 Section {
                     LibraryIntroHeader()
-                        .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                         .listRowSeparator(.hidden)
 
                     if let quote = dailyQuranQuote {
@@ -157,7 +412,7 @@ struct OtherView: View {
                             onOpenVerse: openDailyQuranModal,
                             onOpenSurah: openDailyQuranFullSurah
                         )
-                        .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 10, trailing: 0))
+                        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
                         .listRowSeparator(.hidden)
                     } else {
                         Text(isMalayAppLanguage()
@@ -165,7 +420,7 @@ struct OtherView: View {
                              : "Open the Daily Quran widget once to load today’s verse here.")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 10, trailing: 0))
+                            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
                             .listRowSeparator(.hidden)
                     }
 
@@ -180,7 +435,7 @@ struct OtherView: View {
                                 selectedFullSurah = resumeSelection
                             }
                         )
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 14, trailing: 0))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 14, trailing: 16))
                         .listRowSeparator(.hidden)
                     }
                 }
@@ -212,7 +467,7 @@ struct OtherView: View {
                                     selectedFullSurah = FullSurahSelection(surahNumber: surah.number, ayahNumber: loadLastReadAyah(for: surah.number))
                                 }
                             )
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
                             .listRowSeparator(.hidden)
                         }
                     }
@@ -319,10 +574,12 @@ struct OtherView: View {
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle(isMalayAppLanguage() ? "Pustaka" : "Library")
             .onAppear {
-                loadDailyQuranQuote()
                 loadResumeSelection()
                 Task { await loadSurahsIfNeeded() }
-                Task { await loadDailyQuranArabicIfNeeded() }
+                Task { await loadDailyQuranQuote() }
+            }
+            .task(id: effectiveAppLanguageCode()) {
+                await loadDailyQuranQuote()
             }
             .sheet(item: $selectedFullSurah) { selection in
                 NavigationView {

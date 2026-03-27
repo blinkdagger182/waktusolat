@@ -8,8 +8,22 @@ struct DailyQuranHeroCard: View {
     let onOpenVerse: () -> Void
     let onOpenSurah: () -> Void
 
+    private var reflectionSourceLabel: String {
+        if isMalayAppLanguage() {
+            return "Sumber: Abdullah Basmeih"
+        }
+        return "Source: Muhammad Asad"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            Text("بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ")
+                .font(.custom(arabicFontName, size: 18))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
+
             HStack {
                 Text(isMalayAppLanguage() ? "Refleksi Harian" : "Daily Reflection")
                     .font(.caption.weight(.semibold))
@@ -26,8 +40,8 @@ struct DailyQuranHeroCard: View {
             VStack(alignment: .center, spacing: 10) {
                 if let arabicText, !arabicText.isEmpty {
                     Text(arabicText)
-                        .font(.custom(arabicFontName, size: 29))
-                        .lineSpacing(8)
+                        .font(.custom(arabicFontName, size: 24))
+                        .lineSpacing(6)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
@@ -41,7 +55,14 @@ struct DailyQuranHeroCard: View {
                     .frame(maxWidth: 430)
                     .frame(maxWidth: .infinity)
                     .fixedSize(horizontal: false, vertical: true)
+
+                Text(reflectionSourceLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
             }
+            .padding(.horizontal, 6)
 
             VStack(alignment: .leading, spacing: 12) {
                 Button(action: onOpenVerse) {
@@ -72,8 +93,10 @@ struct DailyQuranHeroCard: View {
                 }
                 .buttonStyle(.plain)
             }
+            .padding(.horizontal, 2)
         }
-        .padding(18)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(
