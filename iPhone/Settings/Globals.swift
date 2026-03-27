@@ -574,13 +574,14 @@ func appLocalized(_ key: String, _ args: CVarArg...) -> String {
 }
 
 func localizedPrayerName(_ raw: String) -> String {
+    let isMalay = isMalayAppLanguage()
     switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
     case "subuh", "fajr":
         return appLocalized("Fajr")
     case "syuruk", "shurooq", "sunrise":
         return appLocalized("Shurooq")
     case "zuhur", "dhuhr", "jumuah":
-        return appLocalized("Dhuhr")
+        return isMalay ? "Jumaat" : appLocalized("Dhuhr")
     case "asar", "asr":
         return appLocalized("Asr")
     case "isyak", "isya", "isha":

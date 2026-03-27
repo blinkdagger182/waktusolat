@@ -388,17 +388,17 @@ struct LockScreen6EntryView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
                     .font(.caption)
             } else if let nextPrayer = entry.nextPrayer,
                       let window = countdownBarPrayerWindow(for: entry) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 4) {
                     if let currentPrayer = entry.currentPrayer {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
 
@@ -406,12 +406,12 @@ struct LockScreen6EntryView: View {
 
                             if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
                                 Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
-                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                             } else {
                                 Text(nextPrayer.time, style: .time)
-                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
                                     .foregroundStyle(.secondary)
                                     .monospacedDigit()
                                     .lineLimit(1)
@@ -425,23 +425,23 @@ struct LockScreen6EntryView: View {
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .stroke(Color.primary.opacity(0.28), lineWidth: 1.4)
-                                    .frame(height: 28)
+                                    .frame(height: 24)
 
                                 GeometryReader { geo in
                                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                                         .fill(entry.accentColor.color.opacity(0.9))
-                                        .frame(width: max(geo.size.width * CGFloat(progress), 10), height: 22)
+                                        .frame(width: max(geo.size.width * CGFloat(progress), 10), height: 18)
                                         .padding(.horizontal, 3)
                                         .padding(.vertical, 3)
                                 }
 
                                 Text(remainingIntervalText(at: context.date, until: window.end))
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
                                     .foregroundStyle(progress > 0.45 ? Color.black.opacity(0.82) : .primary)
                                     .monospacedDigit()
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                             }
-                            .frame(height: 28)
+                            .frame(height: 24)
                         } else {
                             ProgressView(value: progressValue(at: context.date, for: window))
                                 .progressViewStyle(.linear)
@@ -450,7 +450,7 @@ struct LockScreen6EntryView: View {
                     }
 
                     Text("Ends at \(endTimeText(nextPrayer.time))")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
 

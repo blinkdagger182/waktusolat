@@ -1198,6 +1198,7 @@ struct WidgetPreviewGalleryView: View {
 
 private struct NextPrayerCircleStyleCard: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
 
     let style: NextPrayerCircleStyle
     let isSelected: Bool
@@ -1206,10 +1207,13 @@ private struct NextPrayerCircleStyleCard: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 40, style: .continuous)
-                    .fill(Color.black)
+                    .fill(colorScheme == .dark ? Color.black : Color(.systemBackground))
 
                 LinearGradient(
-                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    colors: [
+                        colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                        settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1222,7 +1226,7 @@ private struct NextPrayerCircleStyleCard: View {
                         Text("8:14")
                     }
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.primary.opacity(0.82))
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
 
@@ -1269,18 +1273,19 @@ private struct NextPrayerCircleStyleCard: View {
 }
 
 private struct LockScreenCircularPercentagePreviewCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     let percentage: Int
     let iconName: String
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.25), lineWidth: 6)
+                .stroke(Color.primary.opacity(0.25), lineWidth: 6)
 
             Circle()
                 .trim(from: 0, to: 0.60)
                 .stroke(
-                    Color.white,
+                    Color.primary,
                     style: StrokeStyle(lineWidth: 6, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
@@ -1288,12 +1293,12 @@ private struct LockScreenCircularPercentagePreviewCard: View {
             VStack(spacing: 1) {
                 Text("\(percentage)%")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.primary)
                     .monospacedDigit()
 
                 Image(systemName: iconName)
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.9) : Color.primary.opacity(0.85))
             }
             .padding(.top, 2)
         }
@@ -1303,6 +1308,7 @@ private struct LockScreenCircularPercentagePreviewCard: View {
 
 private struct PrayerListStyleCard: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
 
     let style: PrayerListWidgetStyle
     let isSelected: Bool
@@ -1311,10 +1317,13 @@ private struct PrayerListStyleCard: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black)
+                    .fill(colorScheme == .dark ? Color.black : Color(.systemBackground))
 
                 LinearGradient(
-                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    colors: [
+                        colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                        settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1327,7 +1336,7 @@ private struct PrayerListStyleCard: View {
                         Text("8:14")
                     }
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.primary.opacity(0.82))
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
 
@@ -1373,6 +1382,7 @@ private struct PrayerListStyleCard: View {
 }
 
 private struct LockScreenPrayerListIconBoardPreviewCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     let columns: Int
 
     private let samples: [(time: String, icon: String, name: String)] = [
@@ -1388,10 +1398,10 @@ private struct LockScreenPrayerListIconBoardPreviewCard: View {
         let visibleSamples = Array(samples.prefix(columns))
 
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(Color.white.opacity(0.08))
+            .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.primary.opacity(0.05))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(colorScheme == .dark ? Color.white.opacity(0.12) : Color.primary.opacity(0.10), lineWidth: 1)
             )
             .overlay {
                 HStack(alignment: .center, spacing: columns == 3 ? 10 : 6) {
@@ -1399,7 +1409,7 @@ private struct LockScreenPrayerListIconBoardPreviewCard: View {
                         VStack(spacing: 3) {
                             Text(sample.time)
                                 .font(.system(size: columns == 3 ? 10 : 8, weight: .bold, design: .rounded))
-                                .foregroundStyle(index < 2 ? .white : .white.opacity(0.72))
+                                .foregroundStyle(index < 2 ? Color.primary : Color.secondary)
                                 .monospacedDigit()
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
@@ -1407,12 +1417,12 @@ private struct LockScreenPrayerListIconBoardPreviewCard: View {
 
                             Image(systemName: sample.icon)
                                 .font(.system(size: columns == 3 ? 15 : 13, weight: .semibold))
-                                .foregroundStyle(index < 2 ? .white : .white.opacity(0.72))
+                                .foregroundStyle(index < 2 ? Color.primary : Color.secondary)
                                 .frame(width: columns == 3 ? 18 : 16, height: columns == 3 ? 18 : 16)
 
                             Text(sample.name)
                                 .font(.system(size: columns == 3 ? 9 : 7, weight: .bold, design: .rounded))
-                                .foregroundStyle(index < 2 ? .white : .white.opacity(0.72))
+                                .foregroundStyle(index < 2 ? Color.primary : Color.secondary)
                                 .lineLimit(1)
                                 .minimumScaleFactor(columns == 3 ? 0.7 : 0.65)
                         }
@@ -1428,6 +1438,7 @@ private struct LockScreenPrayerListIconBoardPreviewCard: View {
 }
 private struct DailyVerseStyleCard: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
 
     let style: DailyVerseWidgetStyle
     let isSelected: Bool
@@ -1436,10 +1447,13 @@ private struct DailyVerseStyleCard: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black)
+                    .fill(colorScheme == .dark ? Color.black : Color(.systemBackground))
 
                 LinearGradient(
-                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    colors: [
+                        colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                        settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1452,7 +1466,7 @@ private struct DailyVerseStyleCard: View {
                         Text("8:14")
                     }
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.primary.opacity(0.82))
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
 
@@ -1501,6 +1515,7 @@ private struct DailyVerseStyleCard: View {
 
 private struct LockScreenSpotlightCard: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
 
     let style: LockScreenWidgetPreviewStyle
     let isSelected: Bool
@@ -1517,10 +1532,13 @@ private struct LockScreenSpotlightCard: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: style == .nextPrayerCircular ? 40 : 28, style: .continuous)
-                    .fill(Color.black)
+                    .fill(colorScheme == .dark ? Color.black : Color(.systemBackground))
 
                 LinearGradient(
-                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    colors: [
+                        colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                        settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1533,7 +1551,7 @@ private struct LockScreenSpotlightCard: View {
                         Text("8:14")
                     }
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.primary.opacity(0.82))
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
 
@@ -1609,6 +1627,7 @@ private struct LockScreenSpotlightCard: View {
 
 private struct PrayerTimesStyleCard: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
 
     let style: LockScreenPrayerTimesStyle
     let isSelected: Bool
@@ -1617,10 +1636,13 @@ private struct PrayerTimesStyleCard: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black)
+                    .fill(colorScheme == .dark ? Color.black : Color(.systemBackground))
 
                 LinearGradient(
-                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    colors: [
+                        colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                        settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1633,7 +1655,7 @@ private struct PrayerTimesStyleCard: View {
                         Text("8:14")
                     }
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.primary.opacity(0.82))
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
 
@@ -1780,6 +1802,7 @@ private struct PrayerTimesStyleCard: View {
 
 private struct PrayerCountdownBarStyleCard: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
 
     let style: LockScreenPrayerCountdownBarStyle
     let isSelected: Bool
@@ -1788,10 +1811,13 @@ private struct PrayerCountdownBarStyleCard: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black)
+                    .fill(colorScheme == .dark ? Color.black : Color(.systemBackground))
 
                 LinearGradient(
-                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    colors: [
+                        colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                        settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1804,7 +1830,7 @@ private struct PrayerCountdownBarStyleCard: View {
                         Text("8:14")
                     }
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.primary.opacity(0.82))
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
 
@@ -1859,6 +1885,7 @@ private struct PrayerCountdownBarStyleCard: View {
 
 private struct ZikirStyleCard: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
 
     let alignment: WidgetZikirAlignment
     let isSelected: Bool
@@ -1867,10 +1894,13 @@ private struct ZikirStyleCard: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black)
+                    .fill(colorScheme == .dark ? Color.black : Color(.systemBackground))
 
                 LinearGradient(
-                    colors: [Color.white.opacity(0.05), settings.accentColor.color.opacity(0.12)],
+                    colors: [
+                        colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                        settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1883,7 +1913,7 @@ private struct ZikirStyleCard: View {
                         Text("8:14")
                     }
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.92) : Color.primary.opacity(0.82))
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
 
@@ -2667,6 +2697,7 @@ private struct CurvierPreviewPrayerMiniGraph: View {
 }
 
 private struct LockScreenVersePreviewCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     let verse: String
     let reference: String
     let style: DailyVerseWidgetStyle
@@ -2677,12 +2708,12 @@ private struct LockScreenVersePreviewCard: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(reference)
                 .font(.custom(style.referenceFontName, size: referenceFontSize))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.9) : Color.primary.opacity(0.82))
                 .lineLimit(1)
 
             Text(verse)
                 .font(.custom(style.verseFontName, size: verseFontSize))
-                .foregroundStyle(.white.opacity(0.96))
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.96) : Color.primary)
                 .multilineTextAlignment(.leading)
                 .lineLimit(3)
                 .minimumScaleFactor(0.78)
@@ -2694,7 +2725,9 @@ private struct LockScreenVersePreviewCard: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.white.opacity(0.18), Color.white.opacity(0.12)],
+                        colors: colorScheme == .dark
+                            ? [Color.white.opacity(0.18), Color.white.opacity(0.12)]
+                            : [Color.black.opacity(0.06), Color.black.opacity(0.03)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -2704,6 +2737,7 @@ private struct LockScreenVersePreviewCard: View {
 }
 
 private struct LockScreenVerseCenteredPreviewCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     let verse: String
     let reference: String
     let style: DailyVerseWidgetStyle
@@ -2714,14 +2748,14 @@ private struct LockScreenVerseCenteredPreviewCard: View {
         VStack(spacing: 4) {
             Text(verse)
                 .font(.custom(style.verseFontName, size: verseFontSize))
-                .foregroundStyle(.white.opacity(0.96))
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.96) : Color.primary)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .minimumScaleFactor(0.78)
 
             Text(reference)
                 .font(.custom(style.referenceFontName, size: referenceFontSize))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.9) : Color.primary.opacity(0.82))
                 .lineLimit(1)
         }
         .padding(.horizontal, 14)
@@ -2731,7 +2765,9 @@ private struct LockScreenVerseCenteredPreviewCard: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.white.opacity(0.18), Color.white.opacity(0.12)],
+                        colors: colorScheme == .dark
+                            ? [Color.white.opacity(0.18), Color.white.opacity(0.12)]
+                            : [Color.black.opacity(0.06), Color.black.opacity(0.03)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
