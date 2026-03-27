@@ -696,30 +696,47 @@ private struct QuranSurahDetailsView: View {
 
                             ForEach(details.ayahs) { ayah in
                                 let isDailyAyah = dailyAyahNumber == ayah.numberInSurah
+                                let isPlayingAyah = currentPlaybackAyah == ayah.numberInSurah && isReciting
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("\(ayah.numberInSurah)")
-                                        .font(.caption2.weight(.bold))
-                                        .foregroundStyle(.secondary)
+                                    HStack(spacing: 8) {
+                                        Text("\(ayah.numberInSurah)")
+                                            .font(.caption2.weight(.bold))
+                                            .foregroundStyle(isPlayingAyah ? settings.accentColor.color : .secondary)
+
+                                        if isPlayingAyah {
+                                            Text(isMalayAppLanguage() ? "Sedang dimainkan" : "Now playing")
+                                                .font(.caption2.weight(.semibold))
+                                                .foregroundStyle(settings.accentColor.color)
+                                        }
+                                    }
 
                                     Text(ayah.arabicText)
                                         .font(.custom(quranArabicFontName, size: 30))
                                         .frame(maxWidth: .infinity, alignment: .trailing)
                                         .multilineTextAlignment(.trailing)
+                                        .foregroundStyle(isPlayingAyah ? settings.accentColor.color : .primary)
 
                                     if let translation = ayah.translationText, !translation.isEmpty {
                                         Text(translation)
                                             .font(.subheadline)
-                                            .foregroundStyle(.primary)
+                                            .foregroundStyle(isPlayingAyah ? settings.accentColor.color : .primary)
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                 }
                                 .padding(12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color.primary.opacity(0.04))
+                                        .fill(
+                                            isPlayingAyah
+                                                ? settings.accentColor.color.opacity(0.12)
+                                                : Color.primary.opacity(0.04)
+                                        )
                                 )
                                 .overlay {
-                                    if isDailyAyah {
+                                    if isPlayingAyah {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(settings.accentColor.color, lineWidth: 2)
+                                    } else if isDailyAyah {
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                                             .stroke(settings.accentColor.color, lineWidth: 2)
                                     }
@@ -766,6 +783,12 @@ private struct QuranSurahDetailsView: View {
                         DispatchQueue.main.async {
                             proxy.scrollTo(target, anchor: .top)
                             didRestorePosition = true
+                        }
+                    }
+                    .onChange(of: currentPlaybackAyah) { ayah in
+                        guard let ayah else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo(ayah, anchor: .center)
                         }
                     }
                     .onPreferenceChange(AyahMinYPreferenceKey.self) { positions in
