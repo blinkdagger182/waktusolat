@@ -193,7 +193,6 @@ struct QuranSurahDetailsView: View {
                                         highlightedWordPosition: isActiveAyah
                                             ? currentPlaybackWordPosition
                                             : (isCompletedAyah ? (ayah.words.last?.position ?? Int.max) : nil),
-                                        cursorWordPosition: isActiveAyah && !isReciting ? currentPlaybackWordPosition : nil,
                                         fontName: quranArabicFontName,
                                         fontSize: 30,
                                         accentColor: settings.accentColor.color,
@@ -561,7 +560,6 @@ private struct InteractiveArabicAyahTextView: UIViewRepresentable {
     let words: [QuranSurahDetails.Word]
     let fallbackText: String
     let highlightedWordPosition: Int?
-    let cursorWordPosition: Int?
     let fontName: String
     let fontSize: CGFloat
     let accentColor: Color
@@ -598,7 +596,6 @@ private struct InteractiveArabicAyahTextView: UIViewRepresentable {
             words: words,
             fallbackText: fallbackText,
             highlightedWordPosition: highlightedWordPosition,
-            cursorWordPosition: cursorWordPosition,
             fontName: fontName,
             fontSize: fontSize,
             accentColor: UIColor(accentColor),
@@ -627,7 +624,6 @@ private struct InteractiveArabicAyahTextView: UIViewRepresentable {
 private final class InteractiveArabicTextView: UITextView {
     weak var delegateProxy: InteractiveArabicAyahTextView.Coordinator?
     private let wordPositionAttribute = NSAttributedString.Key("waktuWordPosition")
-    private var cursorLayer: CALayer?
 
     override var intrinsicContentSize: CGSize {
         let fitting = sizeThatFits(CGSize(width: bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width - 64, height: .greatestFiniteMagnitude))
@@ -638,7 +634,6 @@ private final class InteractiveArabicTextView: UITextView {
         words: [QuranSurahDetails.Word],
         fallbackText: String,
         highlightedWordPosition: Int?,
-        cursorWordPosition: Int?,
         fontName: String,
         fontSize: CGFloat,
         accentColor: UIColor,
@@ -687,7 +682,6 @@ private final class InteractiveArabicTextView: UITextView {
         DispatchQueue.main.async {
             self.invalidateIntrinsicContentSize()
             self.superview?.invalidateIntrinsicContentSize()
-            self.updateCursor(for: cursorWordPosition, color: accentColor)
         }
     }
 
@@ -737,58 +731,12 @@ private final class InteractiveArabicTextView: UITextView {
         guard let bestMatch else { return nil }
         return bestMatch.position
     }
-
-    private func updateCursor(for activeWordPosition: Int?, color: UIColor) {
-        cursorLayer?.removeFromSuperlayer()
-        cursorLayer = nil
-
-        guard let activeWordPosition else { return }
-        guard let range = rangeForWordPosition(activeWordPosition) else { return }
-
-        let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
-        var rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
-        rect.origin.x += textContainerInset.left
-        rect.origin.y += textContainerInset.top
-
-        let cursor = CALayer()
-        cursor.backgroundColor = color.cgColor
-        cursor.cornerRadius = 1
-        cursor.frame = CGRect(
-            x: max(rect.minX, textContainerInset.left),
-            y: rect.minY + 1,
-            width: 2,
-            height: max(rect.height - 2, 18)
-        )
-
-        let animation = CABasicAnimation(keyPath: "opacity")
-        animation.fromValue = 1
-        animation.toValue = 0.2
-        animation.duration = 0.55
-        animation.autoreverses = true
-        animation.repeatCount = .infinity
-        cursor.add(animation, forKey: "blink")
-
-        layer.addSublayer(cursor)
-        cursorLayer = cursor
-    }
-
-    private func rangeForWordPosition(_ wordPosition: Int) -> NSRange? {
-        var found: NSRange?
-        textStorage.enumerateAttribute(wordPositionAttribute, in: NSRange(location: 0, length: textStorage.length)) { value, range, stop in
-            if let position = value as? Int, position == wordPosition {
-                found = range
-                stop.pointee = true
-            }
-        }
-        return found
-    }
 }
 #else
 private struct InteractiveArabicAyahTextView: View {
     let words: [QuranSurahDetails.Word]
     let fallbackText: String
     let highlightedWordPosition: Int?
-    let cursorWordPosition: Int?
     let fontName: String
     let fontSize: CGFloat
     let accentColor: Color

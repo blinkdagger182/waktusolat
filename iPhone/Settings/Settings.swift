@@ -221,6 +221,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     private override init() {
+        let seededLegacyWidgetStyles = Self.seedLegacyWidgetStyleDefaultsIfNeeded(defaults: appGroupUserDefaults)
         self.accentColor = AccentColor.fromStoredValue(appGroupUserDefaults?.string(forKey: "accentColor"))
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
@@ -263,10 +264,33 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         super.init()
         Self.locationManager.delegate = self
         #if os(iOS)
+        if seededLegacyWidgetStyles {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
         configurePassiveLocationMonitoring()
         refreshCustomAuraBackgroundState()
         configureLiveActivitySyncLifecycle()
         #endif
+    }
+
+    private static func seedLegacyWidgetStyleDefaultsIfNeeded(defaults: UserDefaults?) -> Bool {
+        guard let defaults else { return false }
+        let legacyDefaults: [(String, String)] = [
+            (NextPrayerCircleStyle.storageKey, NextPrayerCircleStyle.classic.rawValue),
+            (LockScreenPrayerTimesStyle.storageKey, LockScreenPrayerTimesStyle.prayerCountdownClassicWithLocation.rawValue),
+            (PrayerListWidgetStyle.storageKey, PrayerListWidgetStyle.classic.rawValue),
+            (LockScreenPrayerCountdownBarStyle.storageKey, LockScreenPrayerCountdownBarStyle.withLocation.rawValue),
+            (WidgetZikirAlignment.storageKey, WidgetZikirAlignment.center.rawValue),
+            (DailyVerseWidgetStyle.storageKey, DailyVerseWidgetStyle.classic.rawValue)
+        ]
+
+        var didSeed = false
+        for (key, value) in legacyDefaults where defaults.string(forKey: key) == nil {
+            defaults.set(value, forKey: key)
+            didSeed = true
+        }
+
+        return didSeed
     }
     
     func hapticFeedback() {

@@ -2385,7 +2385,7 @@ private struct LockScreenCountdownPreviewCard: View {
 
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(accentColor.opacity(0.9))
-                        .frame(width: 108, height: 22)
+                        .frame(width: 44, height: 22)
                         .padding(.horizontal, 3)
                         .padding(.vertical, 3)
 

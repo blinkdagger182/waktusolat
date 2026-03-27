@@ -12,13 +12,30 @@ private func storedLockScreenPrayerCountdownBarStyle() -> LockScreenPrayerCountd
     return LockScreenPrayerCountdownBarStyle(rawValue: rawValue ?? "") ?? .withLocation
 }
 
-private func countdownBarPrayerWindow(for entry: PrayersProvider.Entry) -> PrayerCountdownBarWindow? {
+private func resolvedCountdownNextPrayer(for entry: PrayersProvider.Entry) -> Prayer? {
     guard let nextPrayer = entry.nextPrayer else { return nil }
+    guard nextPrayer.time <= entry.date else { return nextPrayer }
+
+    let shiftedTime = Calendar.current.date(byAdding: .day, value: 1, to: nextPrayer.time) ?? nextPrayer.time
+    return Prayer(
+        nameArabic: nextPrayer.nameArabic,
+        nameTransliteration: nextPrayer.nameTransliteration,
+        nameEnglish: nextPrayer.nameEnglish,
+        time: shiftedTime,
+        image: nextPrayer.image,
+        rakah: nextPrayer.rakah,
+        sunnahBefore: nextPrayer.sunnahBefore,
+        sunnahAfter: nextPrayer.sunnahAfter
+    )
+}
+
+private func countdownBarPrayerWindow(for entry: PrayersProvider.Entry) -> PrayerCountdownBarWindow? {
+    guard let nextPrayer = resolvedCountdownNextPrayer(for: entry) else { return nil }
 
     let source = (entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers).sorted { $0.time < $1.time }
     let now = entry.date
 
-    if let currentPrayer = entry.currentPrayer, currentPrayer.time < nextPrayer.time, currentPrayer.time <= now {
+    if let currentPrayer = entry.currentPrayer, currentPrayer.time <= now {
         return PrayerCountdownBarWindow(start: currentPrayer.time, end: nextPrayer.time)
     }
 
@@ -346,6 +363,12 @@ struct LockScreen6EntryView: View {
         return elapsed / total
     }
 
+    private func remainingProgressValue(at now: Date, for window: PrayerCountdownBarWindow) -> Double {
+        let total = max(window.end.timeIntervalSince(window.start), 1)
+        let remaining = min(max(window.end.timeIntervalSince(now), 0), total)
+        return remaining / total
+    }
+
     private func endTimeText(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -392,7 +415,7 @@ struct LockScreen6EntryView: View {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
                     .font(.caption)
-            } else if let nextPrayer = entry.nextPrayer,
+            } else if let nextPrayer = resolvedCountdownNextPrayer(for: entry),
                       let window = countdownBarPrayerWindow(for: entry) {
                 VStack(alignment: .leading, spacing: 4) {
                     if let currentPrayer = entry.currentPrayer {
@@ -420,8 +443,9 @@ struct LockScreen6EntryView: View {
                     }
 
                     TimelineView(.periodic(from: entry.date, by: 1)) { context in
+                        let liveNow = Date()
                         if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
-                            let progress = progressValue(at: context.date, for: window)
+                            let progress = remainingProgressValue(at: liveNow, for: window)
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .stroke(Color.primary.opacity(0.28), lineWidth: 1.4)
@@ -435,7 +459,7 @@ struct LockScreen6EntryView: View {
                                         .padding(.vertical, 3)
                                 }
 
-                                Text(remainingIntervalText(at: context.date, until: window.end))
+                                Text(remainingIntervalText(at: liveNow, until: window.end))
                                     .font(.system(size: 11, weight: .bold, design: .rounded))
                                     .foregroundStyle(progress > 0.45 ? Color.black.opacity(0.82) : .primary)
                                     .monospacedDigit()
@@ -443,7 +467,7 @@ struct LockScreen6EntryView: View {
                             }
                             .frame(height: 24)
                         } else {
-                            ProgressView(value: progressValue(at: context.date, for: window))
+                            ProgressView(value: progressValue(at: liveNow, for: window))
                                 .progressViewStyle(.linear)
                                 .tint(entry.accentColor.color)
                         }

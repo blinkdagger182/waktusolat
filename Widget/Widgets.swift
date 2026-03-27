@@ -152,8 +152,7 @@ struct NextPrayerLiveActivityWidget: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 10, weight: .bold))
+                EmptyView()
             } compactTrailing: {
                 LiveActivityCompactTimerText(
                     prayerTime: context.state.prayerTime,
@@ -260,7 +259,8 @@ private struct LiveActivityCountdownText: View {
 
     var body: some View {
         TimelineView(.explicit([.distantPast, prayerTime])) { timeline in
-            if isStale || timeline.date >= prayerTime {
+            let liveNow = Date()
+            if isStale || liveNow >= prayerTime {
                 if compact {
                     Text(compactReachedText)
                         .font(.system(.caption2, design: .rounded).weight(.semibold))
@@ -278,11 +278,11 @@ private struct LiveActivityCountdownText: View {
                 HStack(spacing: 6) {
                     Text(countdownPrefix)
                         .font(.system(.title3, design: .rounded).weight(.bold))
-                    Text(timerInterval: Date()...prayerTime, countsDown: true)
+                    Text(timerInterval: liveNow...prayerTime, countsDown: true)
                         .font(.system(.title3, design: .rounded).weight(.black))
                 }
             } else {
-                Text(timerInterval: Date()...prayerTime, countsDown: true)
+                Text(timerInterval: liveNow...prayerTime, countsDown: true)
                     .font(compact ? .system(.caption2, design: .rounded).weight(.semibold)
                                   : .system(.subheadline, design: .rounded).weight(.bold))
             }
@@ -313,12 +313,13 @@ private struct LiveActivityCompactTimerText: View {
 
     var body: some View {
         TimelineView(.explicit([.distantPast, prayerTime])) { timeline in
-            if isStale || timeline.date >= prayerTime {
+            let liveNow = Date()
+            if isStale || liveNow >= prayerTime {
                 Text(shortPrayerLabel)
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .lineLimit(1)
             } else {
-                Text(shortRemainingString(now: timeline.date))
+                Text(shortRemainingString(now: liveNow))
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .lineLimit(1)
