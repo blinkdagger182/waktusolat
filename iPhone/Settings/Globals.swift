@@ -111,6 +111,22 @@ func currentQuranTranslationEditionLabel(for storedCode: String? = storedAppLang
     effectiveAppLanguage(from: storedCode).quranTranslationEditionLabel
 }
 
+func quranContentLanguageCode(for storedCode: String? = storedAppLanguageCode()) -> String {
+    isMalayAppLanguage(storedCode) ? "ms" : "en"
+}
+
+func quranProxyBaseURL(bundle: Bundle = .main) -> URL {
+    if
+        let raw = bundle.object(forInfoDictionaryKey: "QuranProxyBaseURL") as? String,
+        let url = URL(string: raw.trimmingCharacters(in: .whitespacesAndNewlines)),
+        !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    {
+        return url
+    }
+
+    return URL(string: "https://api-waktusolat.vercel.app/api/quran")!
+}
+
 enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
     static let storageKey = "widgetZikirAlignment"
 

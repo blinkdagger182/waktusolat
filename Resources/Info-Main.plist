@@ -23,6 +23,8 @@
 	<string>https://api-waktusolat.vercel.app/api/donations/pool/current</string>
 	<key>SupportPromoScheduleURL</key>
 	<string>https://api-waktusolat.vercel.app/api/support/toasts/schedule</string>
+	<key>QuranProxyBaseURL</key>
+	<string>https://api-waktusolat.vercel.app/api/quran</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Uthmani.otf</string>

@@ -2225,16 +2225,21 @@ private struct QuranVerseDetailsModal: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.70) : Color.black.opacity(0.60))
             Text(isMalayAppLanguage()
-                 ? "Butiran ayat dan bacaan dimuatkan secara langsung daripada AlQuran Cloud."
-                 : "Verse details and recitation are fetched live from AlQuran Cloud.")
+                 ? "Butiran ayat dan bacaan dimuatkan melalui proksi Quran Foundation."
+                 : "Verse details and recitation are fetched through the Quran Foundation proxy.")
                 .font(.caption)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.82) : Color.black.opacity(0.72))
-            Text(appLocalized("Text edition: %@ • Audio edition: ar.alafasy", currentQuranTranslationEditionLabel()))
+            Text(isMalayAppLanguage()
+                 ? "Bahasa: \(currentQuranTranslationEditionLabel()) • Audio: Quran Foundation"
+                 : "Language: \(currentQuranTranslationEditionLabel()) • Audio: Quran Foundation")
                 .font(.caption2)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.62) : Color.black.opacity(0.54))
             HStack(spacing: 12) {
-                Link(isMalayAppLanguage() ? "Dokumen API" : "API Docs", destination: URL(string: "https://alquran.cloud/api")!)
-                Link(isMalayAppLanguage() ? "Buka Endpoint Ayat" : "Open Verse Endpoint", destination: URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/\(currentQuranTranslationEdition())")!)
+                Link(isMalayAppLanguage() ? "Dokumen API" : "API Docs", destination: URL(string: "https://api-docs.quran.foundation/docs/quickstart/")!)
+                Link(
+                    isMalayAppLanguage() ? "Buka Endpoint Ayat" : "Open Verse Endpoint",
+                    destination: quranVerseEndpointURL(reference: reference)
+                )
             }
             .font(.caption2.weight(.semibold))
         }
@@ -2913,41 +2918,38 @@ private struct QuranVerseDetails {
 
 private enum QuranVerseAPI {
     static func fetchDetails(reference: String) async throws -> QuranVerseDetails {
-        async let translation = fetchEdition(reference: reference, edition: currentQuranTranslationEdition())
-        async let arabic = fetchEdition(reference: reference, edition: "ar.alafasy")
-
-        let translated = try await translation
-        let ar = try? await arabic
-
-        let translationText = normalize(translated.data.text)
-        let arabicText = ar.map { normalize($0.data.text) }
+        let details = try await fetchVerse(reference: reference)
         return QuranVerseDetails(
-            reference: reference,
-            translationText: translationText,
-            arabicText: arabicText,
-            surahNameEnglish: translated.data.surah.englishName,
-            surahNameArabic: translated.data.surah.name,
-            revelationType: translated.data.surah.revelationType,
-            juz: translated.data.juz,
-            page: translated.data.page,
-            hizbQuarter: translated.data.hizbQuarter,
-            audioURL: ar?.data.audio ?? ar?.data.audioSecondary?.first
+            reference: details.reference,
+            translationText: normalize(details.translationText),
+            arabicText: details.arabicText.map(normalize),
+            surahNameEnglish: details.surahNameEnglish,
+            surahNameArabic: details.surahNameArabic,
+            revelationType: details.revelationType,
+            juz: details.juz,
+            page: details.page,
+            hizbQuarter: details.hizbQuarter,
+            audioURL: details.audioURL
         )
     }
 
-    private static func fetchEdition(reference: String, edition: String) async throws -> QuranEditionResponse {
-        guard let url = URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/\(edition)") else {
+    private static func fetchVerse(reference: String) async throws -> QuranVerseProxyResponse {
+        guard var components = URLComponents(url: quranProxyBaseURL(), resolvingAgainstBaseURL: false) else {
             throw QuranVerseAPIError.invalidURL
         }
+        components.path += "/ayah/\(reference)"
+        components.queryItems = [
+            URLQueryItem(name: "lang", value: quranContentLanguageCode())
+        ]
+        guard let url = components.url else {
+            throw QuranVerseAPIError.invalidURL
+        }
+
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw QuranVerseAPIError.badResponse
         }
-        let decoded = try JSONDecoder().decode(QuranEditionResponse.self, from: data)
-        guard decoded.status.uppercased() == "OK" else {
-            throw QuranVerseAPIError.badResponse
-        }
-        return decoded
+        return try JSONDecoder().decode(QuranVerseProxyResponse.self, from: data)
     }
 
     private static func normalize(_ text: String) -> String {
@@ -2971,25 +2973,55 @@ private enum QuranVerseAPIError: LocalizedError {
     }
 }
 
-private struct QuranEditionResponse: Decodable {
-    let status: String
-    let data: QuranEditionAyahData
-}
-
-private struct QuranEditionAyahData: Decodable {
-    let text: String
+private struct QuranVerseProxyResponse: Decodable {
+    let reference: String
+    let translationText: String
+    let arabicText: String?
+    let surahNameEnglish: String
+    let surahNameArabic: String
+    let revelationType: String?
     let juz: Int?
     let page: Int?
-    let hizbQuarter: Int?
+    let hizbQuarter: Int?    
     let audio: String?
-    let audioSecondary: [String]?
-    let surah: QuranEditionSurahData
+    let audioURL: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case reference
+        case translationText
+        case arabicText
+        case surahNameEnglish
+        case surahNameArabic
+        case revelationType
+        case juz
+        case page
+        case hizbQuarter
+        case audioURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        reference = try c.decode(String.self, forKey: .reference)
+        translationText = try c.decode(String.self, forKey: .translationText)
+        arabicText = try c.decodeIfPresent(String.self, forKey: .arabicText)
+        surahNameEnglish = try c.decode(String.self, forKey: .surahNameEnglish)
+        surahNameArabic = try c.decode(String.self, forKey: .surahNameArabic)
+        revelationType = try c.decodeIfPresent(String.self, forKey: .revelationType)
+        juz = try c.decodeIfPresent(Int.self, forKey: .juz)
+        page = try c.decodeIfPresent(Int.self, forKey: .page)
+        hizbQuarter = try c.decodeIfPresent(Int.self, forKey: .hizbQuarter)
+        audioURL = try c.decodeIfPresent(String.self, forKey: .audioURL)
+        audio = audioURL
+    }
 }
 
-private struct QuranEditionSurahData: Decodable {
-    let englishName: String
-    let name: String
-    let revelationType: String?
+private func quranVerseEndpointURL(reference: String) -> URL {
+    var components = URLComponents(url: quranProxyBaseURL(), resolvingAgainstBaseURL: false)!
+    components.path += "/ayah/\(reference)"
+    components.queryItems = [
+        URLQueryItem(name: "lang", value: quranContentLanguageCode())
+    ]
+    return components.url!
 }
 
 private struct UnsupportedRegionModal: View {

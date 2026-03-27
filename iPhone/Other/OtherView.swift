@@ -1095,33 +1095,32 @@ private enum QuranSurahAPI {
             throw QuranSurahAPIError.invalidURL
         }
 
-        async let arabicEdition = fetchEdition(surahNumber: surahNumber, edition: "ar.alafasy")
-        async let translationEdition = fetchEdition(surahNumber: surahNumber, edition: currentQuranTranslationEdition())
-        let (arabic, translation) = try await (arabicEdition, translationEdition)
-
-        let englishByAyah = Dictionary(
-            uniqueKeysWithValues: translation.ayahs.map { ($0.numberInSurah, $0.text) }
-        )
-
-        let mergedAyahs = arabic.ayahs.map {
-            QuranSurahDetails.Ayah(
-                numberInSurah: $0.numberInSurah,
-                arabicText: $0.text,
-                translationText: englishByAyah[$0.numberInSurah],
-                audioURL: $0.audio
-            )
-        }
+        let decoded = try await fetchSurah(surahNumber: surahNumber)
 
         return QuranSurahDetails(
-            number: arabic.surah.number,
-            englishName: arabic.surah.englishName,
-            arabicName: arabic.surah.name,
-            ayahs: mergedAyahs
+            number: decoded.number,
+            englishName: decoded.englishName,
+            arabicName: decoded.arabicName,
+            ayahs: decoded.ayahs.map {
+                QuranSurahDetails.Ayah(
+                    numberInSurah: $0.numberInSurah,
+                    arabicText: $0.arabicText,
+                    translationText: $0.translationText,
+                    audioURL: $0.audioURL
+                )
+            }
         )
     }
 
-    private static func fetchEdition(surahNumber: Int, edition: String) async throws -> QuranSurahEditionData {
-        guard let url = URL(string: "https://api.alquran.cloud/v1/surah/\(surahNumber)/\(edition)") else {
+    private static func fetchSurah(surahNumber: Int) async throws -> QuranSurahProxyResponse {
+        guard var components = URLComponents(url: quranProxyBaseURL(), resolvingAgainstBaseURL: false) else {
+            throw QuranSurahAPIError.invalidURL
+        }
+        components.path += "/surah/\(surahNumber)"
+        components.queryItems = [
+            URLQueryItem(name: "lang", value: quranContentLanguageCode())
+        ]
+        guard let url = components.url else {
             throw QuranSurahAPIError.invalidURL
         }
 
@@ -1130,11 +1129,7 @@ private enum QuranSurahAPI {
             throw QuranSurahAPIError.badResponse
         }
 
-        let decoded = try JSONDecoder().decode(QuranSurahEditionResponse.self, from: data)
-        if let code = decoded.code, code != 200 {
-            throw QuranSurahAPIError.badResponse
-        }
-        return decoded.data
+        return try JSONDecoder().decode(QuranSurahProxyResponse.self, from: data)
     }
 }
 
@@ -1143,66 +1138,11 @@ private enum QuranSurahAPIError: Error {
     case badResponse
 }
 
-private struct QuranSurahEditionResponse: Decodable {
-    let code: Int?
-    let data: QuranSurahEditionData
-
-    private enum CodingKeys: String, CodingKey {
-        case code
-        case data
-    }
-
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        if let intCode = try? c.decode(Int.self, forKey: .code) {
-            code = intCode
-        } else if let stringCode = try? c.decode(String.self, forKey: .code),
-                  let intCode = Int(stringCode) {
-            code = intCode
-        } else {
-            code = nil
-        }
-        data = try c.decode(QuranSurahEditionData.self, forKey: .data)
-    }
-}
-
-private struct QuranSurahEditionData: Decodable {
-    let surah: QuranSurahMeta
-    let ayahs: [QuranSurahAyah]
-
-    private enum CodingKeys: String, CodingKey {
-        case surah
-        case ayahs
-        case number
-        case name
-        case englishName
-    }
-
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        if let nestedSurah = try? c.decode(QuranSurahMeta.self, forKey: .surah) {
-            surah = nestedSurah
-        } else {
-            surah = QuranSurahMeta(
-                number: try c.decode(Int.self, forKey: .number),
-                name: try c.decode(String.self, forKey: .name),
-                englishName: try c.decode(String.self, forKey: .englishName)
-            )
-        }
-        ayahs = try c.decode([QuranSurahAyah].self, forKey: .ayahs)
-    }
-}
-
-private struct QuranSurahMeta: Decodable {
+private struct QuranSurahProxyResponse: Decodable {
     let number: Int
-    let name: String
     let englishName: String
-}
-
-private struct QuranSurahAyah: Decodable {
-    let numberInSurah: Int
-    let text: String
-    let audio: String?
+    let arabicName: String
+    let ayahs: [QuranSurahProxyAyah]
 }
 
 private struct QuranSurahIndexItem: Decodable, Identifiable {
@@ -1220,13 +1160,14 @@ private struct QuranSurahIndexItem: Decodable, Identifiable {
 }
 
 private struct QuranSurahIndexResponse: Decodable {
-    let code: Int?
-    let data: [QuranSurahIndexItem]
+    let chapters: [QuranSurahIndexItem]
+
+    var data: [QuranSurahIndexItem] { chapters }
 }
 
 private enum QuranSurahIndexAPI {
     static func fetchAll() async throws -> [QuranSurahIndexItem] {
-        guard let url = URL(string: "https://api.alquran.cloud/v1/surah") else {
+        guard let url = URL(string: "\(quranProxyBaseURL().absoluteString)/chapters") else {
             throw QuranSurahAPIError.invalidURL
         }
         let (data, response) = try await URLSession.shared.data(from: url)
@@ -1234,11 +1175,15 @@ private enum QuranSurahIndexAPI {
             throw QuranSurahAPIError.badResponse
         }
         let decoded = try JSONDecoder().decode(QuranSurahIndexResponse.self, from: data)
-        if let code = decoded.code, code != 200 {
-            throw QuranSurahAPIError.badResponse
-        }
         return decoded.data
     }
+}
+
+private struct QuranSurahProxyAyah: Decodable {
+    let numberInSurah: Int
+    let arabicText: String
+    let translationText: String?
+    let audioURL: String?
 }
 
 private func preferredQuranArabicFontName(settings: Settings, size: CGFloat) -> String {

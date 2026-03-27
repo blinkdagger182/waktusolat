@@ -233,19 +233,8 @@ private struct DailyInspirationEntry: TimelineEntry {
 }
 
 private struct QuranAyahAPIResponse: Decodable {
-    let status: String
-    let data: QuranAyahData
-}
-
-private struct QuranAyahData: Decodable {
-    let text: String
-    let numberInSurah: Int
-    let surah: QuranSurahData
-}
-
-private struct QuranSurahData: Decodable {
-    let number: Int
-    let englishName: String
+    let translationText: String
+    let surahNameEnglish: String
 }
 
 private struct CachedDailyInspiration: Codable {
@@ -347,10 +336,14 @@ private struct DailyInspirationProvider: TimelineProvider {
     }
 
     private func fetchVerseFromAPI(reference: String) async -> InspiringVerse? {
-        let edition = currentQuranTranslationEdition()
-        guard let url = URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/\(edition)") else {
+        guard var components = URLComponents(url: quranProxyBaseURL(bundle: .main), resolvingAgainstBaseURL: false) else {
             return nil
         }
+        components.path += "/ayah/\(reference)"
+        components.queryItems = [
+            URLQueryItem(name: "lang", value: quranContentLanguageCode())
+        ]
+        guard let url = components.url else { return nil }
 
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
@@ -358,15 +351,14 @@ private struct DailyInspirationProvider: TimelineProvider {
                 return nil
             }
             let decoded = try JSONDecoder().decode(QuranAyahAPIResponse.self, from: data)
-            guard decoded.status.uppercased() == "OK" else { return nil }
 
-            let normalizedText = decoded.data.text
+            let normalizedText = decoded.translationText
                 .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
 
             let verse = InspiringVerse(
                 text: normalizedText,
-                surahName: decoded.data.surah.englishName,
+                surahName: decoded.surahNameEnglish,
                 reference: reference
             )
 
