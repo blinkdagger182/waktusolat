@@ -57,6 +57,15 @@
 		728E2EEB2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
 		728E2EEC2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
 		72BC6B242E2B9D9300ACD832 /* OtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CEA2B3D209E00FAA3B3 /* OtherView.swift */; };
+		A51000112F91000100ABCDEF /* LibraryIntroHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */; };
+		A51000122F91000100ABCDEF /* DailyQuranHeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000022F91000100ABCDEF /* DailyQuranHeroCard.swift */; };
+		A51000132F91000100ABCDEF /* QuranResumeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000032F91000100ABCDEF /* QuranResumeCard.swift */; };
+		A51000142F91000100ABCDEF /* QuranSurahExpandableCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000042F91000100ABCDEF /* QuranSurahExpandableCard.swift */; };
+		A51000152F91000100ABCDEF /* SurahReferenceBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000052F91000100ABCDEF /* SurahReferenceBadge.swift */; };
+		A51000162F91000100ABCDEF /* QuranSurahData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000062F91000100ABCDEF /* QuranSurahData.swift */; };
+		A51000172F91000100ABCDEF /* QuranSurahDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */; };
+		A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */; };
+		A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */; };
 		72C30E8D2BCC648400F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E8C2BCC648400F54570 /* Adhan */; };
 		72C30E8F2BCC649400F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E8E2BCC649400F54570 /* Adhan */; };
 		72C7DD782D79AA0C00FC6058 /* SimpleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C7DD772D79AA0C00FC6058 /* SimpleWidget.swift */; };
@@ -184,6 +193,15 @@
 		C10000002F90000100ABCDEF /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen5Widget.swift; sourceTree = "<group>"; };
 		A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen6Widget.swift; sourceTree = "<group>"; };
+		A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIntroHeader.swift; sourceTree = "<group>"; };
+		A51000022F91000100ABCDEF /* DailyQuranHeroCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyQuranHeroCard.swift; sourceTree = "<group>"; };
+		A51000032F91000100ABCDEF /* QuranResumeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranResumeCard.swift; sourceTree = "<group>"; };
+		A51000042F91000100ABCDEF /* QuranSurahExpandableCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahExpandableCard.swift; sourceTree = "<group>"; };
+		A51000052F91000100ABCDEF /* SurahReferenceBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahReferenceBadge.swift; sourceTree = "<group>"; };
+		A51000062F91000100ABCDEF /* QuranSurahData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahData.swift; sourceTree = "<group>"; };
+		A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahDetailsView.swift; sourceTree = "<group>"; };
+		A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahBrowserView.swift; sourceTree = "<group>"; };
+		A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDisabledSections.swift; sourceTree = "<group>"; };
 		FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -280,6 +298,15 @@
 			isa = PBXGroup;
 			children = (
 				72728CEA2B3D209E00FAA3B3 /* OtherView.swift */,
+				A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */,
+				A51000022F91000100ABCDEF /* DailyQuranHeroCard.swift */,
+				A51000032F91000100ABCDEF /* QuranResumeCard.swift */,
+				A51000042F91000100ABCDEF /* QuranSurahExpandableCard.swift */,
+				A51000052F91000100ABCDEF /* SurahReferenceBadge.swift */,
+				A51000062F91000100ABCDEF /* QuranSurahData.swift */,
+				A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */,
+				A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */,
+				A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */,
 				72728CAA2B3D198300FAA3B3 /* ToolsView.swift */,
 				72CCAE722D42CFE700871A6A /* Arabic */,
 			);
@@ -561,6 +588,15 @@
 				72728CAD2B3D198300FAA3B3 /* ToolsView.swift in Sources */,
 				72728CC02B3D1AA000FAA3B3 /* SettingsView.swift in Sources */,
 				72728CBB2B3D1A7A00FAA3B3 /* PrayerCountdown.swift in Sources */,
+				A51000112F91000100ABCDEF /* LibraryIntroHeader.swift in Sources */,
+				A51000122F91000100ABCDEF /* DailyQuranHeroCard.swift in Sources */,
+				A51000132F91000100ABCDEF /* QuranResumeCard.swift in Sources */,
+				A51000142F91000100ABCDEF /* QuranSurahExpandableCard.swift in Sources */,
+				A51000152F91000100ABCDEF /* SurahReferenceBadge.swift in Sources */,
+				A51000162F91000100ABCDEF /* QuranSurahData.swift in Sources */,
+				A51000172F91000100ABCDEF /* QuranSurahDetailsView.swift in Sources */,
+				A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */,
+				A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */,
 				72574CD52E49F35600BFF138 /* AppIntents.swift in Sources */,
 				72BC6B242E2B9D9300ACD832 /* OtherView.swift in Sources */,
 				72CCAE682D42CE2B00871A6A /* DismissKeyboard.swift in Sources */,
