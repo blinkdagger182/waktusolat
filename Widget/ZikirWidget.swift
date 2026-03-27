@@ -176,70 +176,224 @@ private struct ZikirEntryView: View {
     }
 
     private var supportingTextFont: Font {
+        let size = compactSupportingTextSize
         if zikirAlignment == .centerAmiri {
-            return .system(size: 10, weight: .regular, design: .serif)
+            return .system(size: size, weight: .regular, design: .serif)
         }
-        return .system(size: 10, weight: .regular, design: .default)
+        return .system(size: size, weight: .regular, design: .default)
     }
 
     private var supportingCaptionFont: Font {
+        let size = compactCaptionSize
         if zikirAlignment == .centerAmiri {
-            return .system(.caption, design: .serif)
+            return .system(size: size, weight: .regular, design: .serif)
         }
-        return .system(.caption, design: .default)
+        return .system(size: size, weight: .regular, design: .default)
+    }
+
+    private var contentDensityScore: Int {
+        entry.helperTitle.count + entry.phraseArabic.count + entry.translation.count
+    }
+
+    private var lockScreenArabicFontSize: CGFloat {
+        let arabicLength = entry.phraseArabic.count
+        switch (arabicLength, contentDensityScore) {
+        case let (length, score) where length > 65 || score > 220:
+            return 11
+        case let (length, score) where length > 55 || score > 190:
+            return 12
+        case let (length, score) where length > 45 || score > 165:
+            return 13
+        case let (length, score) where length > 35 || score > 135:
+            return 14.5
+        default:
+            return 16
+        }
+    }
+
+    private var widgetArabicFontSize: CGFloat {
+        let arabicLength = entry.phraseArabic.count
+        switch (arabicLength, contentDensityScore) {
+        case let (length, score) where length > 65 || score > 220:
+            return 16
+        case let (length, score) where length > 55 || score > 190:
+            return 18
+        case let (length, score) where length > 45 || score > 165:
+            return 20
+        case let (length, score) where length > 35 || score > 135:
+            return 22
+        default:
+            return 24
+        }
+    }
+
+    private var compactSupportingTextSize: CGFloat {
+        switch contentDensityScore {
+        case 191...:
+            return 8
+        case 151...190:
+            return 8.5
+        case 121...150:
+            return 9
+        default:
+            return 10
+        }
+    }
+
+    private var compactCaptionSize: CGFloat {
+        switch contentDensityScore {
+        case 191...:
+            return 9
+        case 151...190:
+            return 10
+        case 121...150:
+            return 11
+        default:
+            return 12
+        }
+    }
+
+    @ViewBuilder
+    private func zikirStack(
+        helperSize: CGFloat,
+        arabicSize: CGFloat,
+        translationSize: CGFloat,
+        spacing: CGFloat,
+        lineSpacing: CGFloat,
+        helperLimit: Int,
+        translationLimit: Int
+    ) -> some View {
+        VStack(alignment: horizontalAlignment, spacing: spacing) {
+            Text(entry.helperTitle)
+                .font(
+                    zikirAlignment == .centerAmiri
+                        ? .system(size: helperSize, weight: .medium, design: .serif)
+                        : .system(size: helperSize, weight: .medium, design: .default)
+                )
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(textAlignment)
+                .lineLimit(helperLimit)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, alignment: frameAlignment)
+                .layoutPriority(3)
+
+            Text(entry.phraseArabic)
+                .font(.custom(arabicFontName, size: arabicSize))
+                .multilineTextAlignment(textAlignment)
+                .frame(maxWidth: .infinity, alignment: frameAlignment)
+                .lineLimit(nil)
+                .minimumScaleFactor(0.55)
+                .lineSpacing(lineSpacing)
+                .layoutPriority(1)
+
+            Text(entry.translation)
+                .font(
+                    zikirAlignment == .centerAmiri
+                        ? .system(size: translationSize, weight: .regular, design: .serif)
+                        : .system(size: translationSize, weight: .regular, design: .default)
+                )
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(textAlignment)
+                .lineLimit(translationLimit)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, alignment: frameAlignment)
+                .layoutPriority(3)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     var body: some View {
         switch family {
         case .accessoryRectangular:
-            VStack(alignment: horizontalAlignment, spacing: 3) {
-                Text(entry.helperTitle)
-                    .font(zikirAlignment == .centerAmiri ? .system(size: 10, weight: .medium, design: .serif) : .system(size: 10, weight: .medium, design: .default))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: frameAlignment)
-                    .multilineTextAlignment(textAlignment)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(entry.phraseArabic)
-                    .font(.custom(arabicFontName, size: 19))
-                    .multilineTextAlignment(textAlignment)
-                    .frame(maxWidth: .infinity, alignment: frameAlignment)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(entry.translation)
-                    .font(supportingTextFont)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(textAlignment)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: frameAlignment)
+            Group {
+                if #available(iOSApplicationExtension 16.0, *) {
+                    ViewThatFits(in: .vertical) {
+                        zikirStack(
+                            helperSize: compactSupportingTextSize,
+                            arabicSize: lockScreenArabicFontSize,
+                            translationSize: compactSupportingTextSize,
+                            spacing: 3,
+                            lineSpacing: 0.5,
+                            helperLimit: 2,
+                            translationLimit: 2
+                        )
+                        zikirStack(
+                            helperSize: max(compactSupportingTextSize - 0.5, 7),
+                            arabicSize: max(lockScreenArabicFontSize - 2, 10),
+                            translationSize: max(compactSupportingTextSize - 0.5, 7),
+                            spacing: 2,
+                            lineSpacing: 0.25,
+                            helperLimit: 2,
+                            translationLimit: 2
+                        )
+                        zikirStack(
+                            helperSize: 7,
+                            arabicSize: 10,
+                            translationSize: 7,
+                            spacing: 1.5,
+                            lineSpacing: 0,
+                            helperLimit: 1,
+                            translationLimit: 2
+                        )
+                    }
+                } else {
+                    zikirStack(
+                        helperSize: max(compactSupportingTextSize - 0.5, 7),
+                        arabicSize: max(lockScreenArabicFontSize - 2, 10),
+                        translationSize: max(compactSupportingTextSize - 0.5, 7),
+                        spacing: 2,
+                        lineSpacing: 0.25,
+                        helperLimit: 2,
+                        translationLimit: 2
+                    )
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(entry.accessibilityLabel)
         default:
-            VStack(alignment: horizontalAlignment, spacing: 8) {
-                Text(entry.helperTitle)
-                    .font(zikirAlignment == .centerAmiri ? .system(.caption, design: .serif).weight(.medium) : .caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(textAlignment)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(entry.phraseArabic)
-                    .font(.custom(arabicFontName, size: 28))
-                    .multilineTextAlignment(textAlignment)
-                    .frame(maxWidth: .infinity, alignment: frameAlignment)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(entry.translation)
-                    .font(supportingCaptionFont)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(textAlignment)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
+            Group {
+                if #available(iOSApplicationExtension 16.0, *) {
+                    ViewThatFits(in: .vertical) {
+                        zikirStack(
+                            helperSize: compactCaptionSize,
+                            arabicSize: widgetArabicFontSize,
+                            translationSize: compactCaptionSize,
+                            spacing: 6,
+                            lineSpacing: 0.5,
+                            helperLimit: 2,
+                            translationLimit: 3
+                        )
+                        zikirStack(
+                            helperSize: max(compactCaptionSize - 1, 8),
+                            arabicSize: max(widgetArabicFontSize - 3, 14),
+                            translationSize: max(compactCaptionSize - 1, 8),
+                            spacing: 4,
+                            lineSpacing: 0.25,
+                            helperLimit: 2,
+                            translationLimit: 2
+                        )
+                        zikirStack(
+                            helperSize: 8,
+                            arabicSize: 14,
+                            translationSize: 8,
+                            spacing: 3,
+                            lineSpacing: 0,
+                            helperLimit: 1,
+                            translationLimit: 2
+                        )
+                    }
+                } else {
+                    zikirStack(
+                        helperSize: max(compactCaptionSize - 1, 8),
+                        arabicSize: max(widgetArabicFontSize - 3, 14),
+                        translationSize: max(compactCaptionSize - 1, 8),
+                        spacing: 4,
+                        lineSpacing: 0.25,
+                        helperLimit: 2,
+                        translationLimit: 2
+                    )
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding()
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(entry.accessibilityLabel)
