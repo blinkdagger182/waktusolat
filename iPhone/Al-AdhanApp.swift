@@ -91,7 +91,7 @@ struct AlAdhanApp: App {
                         OtherView()
                             .tabItem {
                                 Image(systemName: "books.vertical")
-                                Text("Library")
+                                Text(isMalayAppLanguage() ? "Pustaka" : "Library")
                             }
                             .tag(AppTab.library)
 
@@ -1999,7 +1999,7 @@ private struct QuranVerseDetailsModal: View {
 
                 Group {
                     if isLoading {
-                        ProgressView("Loading verse...")
+                        ProgressView(isMalayAppLanguage() ? "Memuatkan ayat..." : "Loading verse...")
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     } else if let details {
                         ScrollView(showsIndicators: false) {
@@ -2015,9 +2015,9 @@ private struct QuranVerseDetailsModal: View {
                         }
                     } else {
                         VStack(spacing: 10) {
-                            Text("Unable to load verse details.")
+                            Text(isMalayAppLanguage() ? "Tidak dapat memuatkan butiran ayat." : "Unable to load verse details.")
                                 .font(.headline)
-                            Text(errorMessage ?? "Please try again.")
+                            Text(errorMessage ?? (isMalayAppLanguage() ? "Sila cuba lagi." : "Please try again."))
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
@@ -2044,11 +2044,11 @@ private struct QuranVerseDetailsModal: View {
                     .zIndex(10)
                 }
             }
-            .navigationTitle("Daily Quran")
+            .navigationTitle(isMalayAppLanguage() ? "Al-Quran Harian" : "Daily Quran")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(isMalayAppLanguage() ? "Selesai" : "Done") { dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: presentSharePreview) {
@@ -2103,7 +2103,11 @@ private struct QuranVerseDetailsModal: View {
                     Button(action: { togglePlayback(audioURL: audioURL) }) {
                         HStack(spacing: 8) {
                             Image(systemName: isAudioLoading ? "hourglass" : (isPlaying ? "pause.fill" : "play.fill"))
-                            Text(isAudioLoading ? "Loading audio..." : (isPlaying ? "Pause Recitation" : "Play Recitation"))
+                            Text(isAudioLoading
+                                 ? (isMalayAppLanguage() ? "Memuatkan audio..." : "Loading audio...")
+                                 : (isPlaying
+                                    ? (isMalayAppLanguage() ? "Jeda Bacaan" : "Pause Recitation")
+                                    : (isMalayAppLanguage() ? "Mainkan Bacaan" : "Play Recitation")))
                                 .fontWeight(.semibold)
                         }
                         .font(.footnote)
@@ -2138,12 +2142,12 @@ private struct QuranVerseDetailsModal: View {
     private func metadataGrid(_ details: QuranVerseDetails) -> some View {
         let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
         return LazyVGrid(columns: columns, spacing: 10) {
-            metaTile("Reference", details.reference)
-            metaTile("Surah", details.surahNameEnglish)
+            metaTile(isMalayAppLanguage() ? "Rujukan" : "Reference", details.reference)
+            metaTile(isMalayAppLanguage() ? "Surah" : "Surah", details.surahNameEnglish)
             metaTile("Juz", details.juz.map(String.init) ?? "-")
-            metaTile("Page", details.page.map(String.init) ?? "-")
-            metaTile("Hizb Quarter", details.hizbQuarter.map(String.init) ?? "-")
-            metaTile("Revelation", details.revelationType ?? "-")
+            metaTile(isMalayAppLanguage() ? "Halaman" : "Page", details.page.map(String.init) ?? "-")
+            metaTile(isMalayAppLanguage() ? "Hizb Suku" : "Hizb Quarter", details.hizbQuarter.map(String.init) ?? "-")
+            metaTile(isMalayAppLanguage() ? "Penurunan" : "Revelation", details.revelationType ?? "-")
         }
     }
 
@@ -2217,18 +2221,20 @@ private struct QuranVerseDetailsModal: View {
         VStack(alignment: .leading, spacing: 6) {
             Divider()
                 .overlay(colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.10))
-            Text("Source")
+            Text(isMalayAppLanguage() ? "Sumber" : "Source")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.70) : Color.black.opacity(0.60))
-            Text("Verse details and recitation are fetched live from AlQuran Cloud.")
+            Text(isMalayAppLanguage()
+                 ? "Butiran ayat dan bacaan dimuatkan secara langsung daripada AlQuran Cloud."
+                 : "Verse details and recitation are fetched live from AlQuran Cloud.")
                 .font(.caption)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.82) : Color.black.opacity(0.72))
             Text(appLocalized("Text edition: %@ • Audio edition: ar.alafasy", currentQuranTranslationEditionLabel()))
                 .font(.caption2)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.62) : Color.black.opacity(0.54))
             HStack(spacing: 12) {
-                Link("API Docs", destination: URL(string: "https://alquran.cloud/api")!)
-                Link("Open Verse Endpoint", destination: URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/\(currentQuranTranslationEdition())")!)
+                Link(isMalayAppLanguage() ? "Dokumen API" : "API Docs", destination: URL(string: "https://alquran.cloud/api")!)
+                Link(isMalayAppLanguage() ? "Buka Endpoint Ayat" : "Open Verse Endpoint", destination: URL(string: "https://api.alquran.cloud/v1/ayah/\(reference)/\(currentQuranTranslationEdition())")!)
             }
             .font(.caption2.weight(.semibold))
         }
@@ -2413,7 +2419,7 @@ Get Waktu on the App Store: \(appLink)
         }
 
         guard let url = URL(string: audioURL) else {
-            audioErrorMessage = "Invalid audio URL."
+            audioErrorMessage = isMalayAppLanguage() ? "URL audio tidak sah." : "Invalid audio URL."
             return
         }
 
@@ -2425,7 +2431,7 @@ Get Waktu on the App Store: \(appLink)
             try session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
             try session.setActive(true)
         } catch {
-            audioErrorMessage = "Audio session failed."
+            audioErrorMessage = isMalayAppLanguage() ? "Sesi audio gagal." : "Audio session failed."
         }
 
         let newPlayer = AVPlayer(url: url)

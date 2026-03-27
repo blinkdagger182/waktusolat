@@ -117,6 +117,7 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
     case center
     case leading
     case trailing
+    case centerAmiri
 
     var id: String { rawValue }
 
@@ -128,6 +129,8 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
             return appLocalized("Left Aligned")
         case .trailing:
             return appLocalized("Right Aligned")
+        case .centerAmiri:
+            return isMalayAppLanguage() ? "Tengah Amiri" : "Centered Amiri"
         }
     }
 
@@ -145,6 +148,10 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Teks diratakan ke kanan untuk rupa yang lebih kemas."
                 : "Aligns the content to the right for a sharper layout."
+        case .centerAmiri:
+            return isMalayAppLanguage()
+                ? "Gaya tengah dengan fon Amiri yang lebih klasik."
+                : "A centered style using the Amiri font for a more classical look."
         }
     }
 }

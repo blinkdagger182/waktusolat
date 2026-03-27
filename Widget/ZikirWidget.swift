@@ -112,7 +112,7 @@ private struct ZikirEntryView: View {
             return .leading
         case .trailing:
             return .trailing
-        case .center:
+        case .center, .centerAmiri:
             return .center
         }
     }
@@ -123,7 +123,7 @@ private struct ZikirEntryView: View {
             return .leading
         case .trailing:
             return .trailing
-        case .center:
+        case .center, .centerAmiri:
             return .center
         }
     }
@@ -134,12 +134,27 @@ private struct ZikirEntryView: View {
             return .leading
         case .trailing:
             return .trailing
-        case .center:
+        case .center, .centerAmiri:
             return .center
         }
     }
 
     private var arabicFontName: String {
+        if zikirAlignment == .centerAmiri {
+            let amiriCandidates = [
+                "AmiriQuran-Regular",
+                "Amiri Quran",
+                "Amiri-Regular",
+                "Amiri"
+            ]
+            #if os(iOS)
+            for name in amiriCandidates where !name.isEmpty {
+                if UIFont(name: name, size: 20) != nil {
+                    return name
+                }
+            }
+            #endif
+        }
         let stored = UserDefaults(suiteName: sharedAppGroupID)?.string(forKey: "fontArabic") ?? ""
         let candidates = [
             stored,
@@ -160,12 +175,26 @@ private struct ZikirEntryView: View {
         return stored.isEmpty ? "KFGQPCUthmanicScriptHAFS" : stored
     }
 
+    private var supportingTextFont: Font {
+        if zikirAlignment == .centerAmiri {
+            return .system(size: 10, weight: .regular, design: .serif)
+        }
+        return .system(size: 10, weight: .regular, design: .default)
+    }
+
+    private var supportingCaptionFont: Font {
+        if zikirAlignment == .centerAmiri {
+            return .system(.caption, design: .serif)
+        }
+        return .system(.caption, design: .default)
+    }
+
     var body: some View {
         switch family {
         case .accessoryRectangular:
             VStack(alignment: horizontalAlignment, spacing: 3) {
                 Text(entry.helperTitle)
-                    .font(.system(size: 10, weight: .medium, design: .default))
+                    .font(zikirAlignment == .centerAmiri ? .system(size: 10, weight: .medium, design: .serif) : .system(size: 10, weight: .medium, design: .default))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: frameAlignment)
@@ -178,7 +207,7 @@ private struct ZikirEntryView: View {
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(entry.translation)
-                    .font(.system(size: 10, weight: .regular, design: .default))
+                    .font(supportingTextFont)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(textAlignment)
                     .lineLimit(nil)
@@ -191,7 +220,7 @@ private struct ZikirEntryView: View {
         default:
             VStack(alignment: horizontalAlignment, spacing: 8) {
                 Text(entry.helperTitle)
-                    .font(.caption.weight(.medium))
+                    .font(zikirAlignment == .centerAmiri ? .system(.caption, design: .serif).weight(.medium) : .caption.weight(.medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .multilineTextAlignment(textAlignment)
@@ -203,7 +232,7 @@ private struct ZikirEntryView: View {
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(entry.translation)
-                    .font(.caption)
+                    .font(supportingCaptionFont)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(textAlignment)
                     .lineLimit(nil)

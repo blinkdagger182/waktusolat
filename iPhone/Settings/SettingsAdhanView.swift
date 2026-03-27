@@ -1173,7 +1173,7 @@ struct WidgetPreviewGalleryView: View {
             .padding()
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(appLocalized("Widget Previews"))
+        .navigationTitle(appLocalized("Widgets"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -2409,7 +2409,7 @@ private struct LockScreenRectangularZikirPreviewCard: View {
             return .leading
         case .trailing:
             return .trailing
-        case .center:
+        case .center, .centerAmiri:
             return .center
         }
     }
@@ -2420,12 +2420,33 @@ private struct LockScreenRectangularZikirPreviewCard: View {
             return .leading
         case .trailing:
             return .trailing
-        case .center:
+        case .center, .centerAmiri:
             return .center
         }
     }
 
+    private var supportingFont: Font {
+        alignment == .centerAmiri
+            ? .system(size: 10, weight: .regular, design: .serif)
+            : .system(size: 10, weight: .regular)
+    }
+
     private var quranArabicFontName: String {
+        if alignment == .centerAmiri {
+            let amiriCandidates = [
+                "AmiriQuran-Regular",
+                "Amiri Quran",
+                "Amiri-Regular",
+                "Amiri"
+            ]
+            #if os(iOS)
+            for name in amiriCandidates where !name.isEmpty {
+                if UIFont(name: name, size: 19) != nil {
+                    return name
+                }
+            }
+            #endif
+        }
         let candidates = [
             settings.fontArabic,
             "KFGQPCUthmanicScriptHAFS",
@@ -2448,19 +2469,21 @@ private struct LockScreenRectangularZikirPreviewCard: View {
     var body: some View {
         VStack(alignment: horizontalAlignment, spacing: 3) {
             Text(helperTitle)
-                .font(.system(size: 10, weight: .medium))
+                .font(alignment == .centerAmiri ? .system(size: 10, weight: .medium, design: .serif) : .system(size: 10, weight: .medium))
                 .foregroundColor(.secondary)
-                .lineLimit(1)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             Text(arabic)
                 .font(.custom(quranArabicFontName, size: 19))
                 .multilineTextAlignment(textAlignment)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: frameAlignment)
             Text(translation)
-                .font(.system(size: 10, weight: .regular))
+                .font(supportingFont)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(textAlignment)
-                .lineLimit(1)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 92)
@@ -2480,7 +2503,7 @@ private struct LockScreenRectangularZikirPreviewCard: View {
             return .leading
         case .trailing:
             return .trailing
-        case .center:
+        case .center, .centerAmiri:
             return .center
         }
     }
