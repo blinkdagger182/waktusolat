@@ -958,7 +958,7 @@ struct WidgetPreviewGalleryView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
     @AppStorage(LockScreenPrayerTimesStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
-    private var prayerTimesStyleRaw = LockScreenPrayerTimesStyle.prayerCountdownWithLocation.rawValue
+    private var prayerTimesStyleRaw = LockScreenPrayerTimesStyle.prayerTimelineWithLocation.rawValue
     @AppStorage(LockScreenPrayerCountdownBarStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var countdownBarStyleRaw = LockScreenPrayerCountdownBarStyle.withLocation.rawValue
     @AppStorage(WidgetZikirAlignment.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
@@ -992,6 +992,34 @@ struct WidgetPreviewGalleryView: View {
 
     private var dailyVerseStyle: DailyVerseWidgetStyle {
         (DailyVerseWidgetStyle(rawValue: dailyVerseStyleRaw) ?? .classic).resolvedForWidgetAccess
+    }
+
+    private var sortedNextPrayerCircleStyles: [NextPrayerCircleStyle] {
+        orderedStyles(NextPrayerCircleStyle.allCases) { $0.requiresPremiumWidgets }
+    }
+
+    private var sortedPrayerTimesStyles: [LockScreenPrayerTimesStyle] {
+        orderedStyles(LockScreenPrayerTimesStyle.allCases) { $0.requiresPremiumWidgets }
+    }
+
+    private var sortedPrayerListStyles: [PrayerListWidgetStyle] {
+        orderedStyles(PrayerListWidgetStyle.allCases) { $0.requiresPremiumWidgets }
+    }
+
+    private var sortedCountdownBarStyles: [LockScreenPrayerCountdownBarStyle] {
+        orderedStyles(LockScreenPrayerCountdownBarStyle.allCases) { $0.requiresPremiumWidgets }
+    }
+
+    private var sortedZikirAlignments: [WidgetZikirAlignment] {
+        orderedStyles(WidgetZikirAlignment.allCases) { $0.requiresPremiumWidgets }
+    }
+
+    private var sortedDailyVerseStyles: [DailyVerseWidgetStyle] {
+        orderedStyles(DailyVerseWidgetStyle.allCases) { $0.requiresPremiumWidgets }
+    }
+
+    private func orderedStyles<Style>(_ styles: [Style], requiresPremium: (Style) -> Bool) -> [Style] {
+        styles.filter { !requiresPremium($0) } + styles.filter(requiresPremium)
     }
 
     private var hasPremiumWidgetAccess: Bool {
@@ -1034,7 +1062,7 @@ struct WidgetPreviewGalleryView: View {
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            ForEach(NextPrayerCircleStyle.allCases) { style in
+                            ForEach(sortedNextPrayerCircleStyles) { style in
                                 Button {
                                     handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         nextPrayerCircleStyleRaw = style.rawValue
@@ -1061,7 +1089,7 @@ struct WidgetPreviewGalleryView: View {
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            ForEach(LockScreenPrayerTimesStyle.allCases) { style in
+                            ForEach(sortedPrayerTimesStyles) { style in
                                 Button {
                                     handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         prayerTimesStyleRaw = style.rawValue
@@ -1088,7 +1116,7 @@ struct WidgetPreviewGalleryView: View {
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            ForEach(PrayerListWidgetStyle.allCases) { style in
+                            ForEach(sortedPrayerListStyles) { style in
                                 Button {
                                     handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         prayerListStyleRaw = style.rawValue
@@ -1115,7 +1143,7 @@ struct WidgetPreviewGalleryView: View {
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            ForEach(LockScreenPrayerCountdownBarStyle.allCases) { style in
+                            ForEach(sortedCountdownBarStyles) { style in
                                 Button {
                                     handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         countdownBarStyleRaw = style.rawValue
@@ -1142,7 +1170,7 @@ struct WidgetPreviewGalleryView: View {
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            ForEach(WidgetZikirAlignment.allCases) { alignment in
+                            ForEach(sortedZikirAlignments) { alignment in
                                 Button {
                                     handleWidgetStyleSelection(requiresPremiumWidgets: alignment.requiresPremiumWidgets) {
                                         zikirAlignmentRaw = alignment.rawValue
@@ -1169,7 +1197,7 @@ struct WidgetPreviewGalleryView: View {
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            ForEach(DailyVerseWidgetStyle.allCases) { style in
+                            ForEach(sortedDailyVerseStyles) { style in
                                 Button {
                                     handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         dailyVerseStyleRaw = style.rawValue
@@ -1222,15 +1250,15 @@ struct WidgetPreviewGalleryView: View {
 
 private struct PremiumWidgetBadge: View {
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 9, weight: .bold))
-            Text("Premium")
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-        }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 4)
-        .background(.ultraThinMaterial, in: Capsule())
+        Image(systemName: "lock.fill")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.secondary)
+            .padding(7)
+            .background(.ultraThinMaterial, in: Circle())
+            .overlay(
+                Circle()
+                    .stroke(Color.primary.opacity(0.12), lineWidth: 0.8)
+            )
     }
 }
 
@@ -1307,7 +1335,7 @@ private struct NextPrayerCircleStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isLocked ? "Premium" : (isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary))
+                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1325,7 +1353,13 @@ private struct LockScreenCircularPercentagePreviewCard: View {
     var body: some View {
         ZStack {
             Circle()
+                .fill(Color(.secondarySystemBackground))
+            Circle()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+
+            Circle()
                 .stroke(Color.primary.opacity(0.25), lineWidth: 6)
+                .padding(12)
 
             Circle()
                 .trim(from: 0, to: 0.60)
@@ -1334,20 +1368,21 @@ private struct LockScreenCircularPercentagePreviewCard: View {
                     style: StrokeStyle(lineWidth: 6, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
+                .padding(12)
 
             VStack(spacing: 1) {
                 Text("\(percentage)%")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.system(size: 19, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.primary)
                     .monospacedDigit()
 
                 Image(systemName: iconName)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.9) : Color.primary.opacity(0.85))
             }
             .padding(.top, 2)
         }
-        .frame(width: 54, height: 54)
+        .frame(width: 98, height: 98)
     }
 }
 
@@ -1423,7 +1458,7 @@ private struct PrayerListStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isLocked ? "Premium" : (isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary))
+                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1562,7 +1597,7 @@ private struct DailyVerseStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isLocked ? "Premium" : (isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary))
+                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1854,11 +1889,9 @@ private struct PrayerTimesStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isLocked
-                     ? "Premium"
-                     : (isSelected
-                        ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
-                        : style.summary))
+                Text(isSelected
+                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                     : style.summary)
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1946,11 +1979,9 @@ private struct PrayerCountdownBarStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isLocked
-                     ? "Premium"
-                     : (isSelected
-                        ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
-                        : style.summary))
+                Text(isSelected
+                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                     : style.summary)
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -2025,11 +2056,9 @@ private struct ZikirStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isLocked
-                     ? "Premium"
-                     : (isSelected
-                        ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
-                        : alignment.summary))
+                Text(isSelected
+                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                     : alignment.summary)
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)

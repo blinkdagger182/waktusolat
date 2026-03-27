@@ -855,12 +855,26 @@ extension Settings {
 
         let key = monthCacheKey(for: year, month: month)
         if let inMemory = Self.monthCacheInMemory[key] {
+            if shouldUseMalaysiaPrayerAPI(for: currentLocation) {
+                let normalizedZone = inMemory.zone.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                if !normalizedZone.isEmpty, malaysiaWaktuZoneCode != normalizedZone {
+                    UserDefaults.standard.set(normalizedZone, forKey: Settings.malaysiaWaktuZoneCodeKey)
+                    malaysiaWaktuZoneCode = normalizedZone
+                }
+            }
             return inMemory
         }
 
         if let data = appGroupStore()?.data(forKey: key),
            let cached = decodeMonthCache(from: data) {
             Self.monthCacheInMemory[key] = cached
+            if shouldUseMalaysiaPrayerAPI(for: currentLocation) {
+                let normalizedZone = cached.zone.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                if !normalizedZone.isEmpty, malaysiaWaktuZoneCode != normalizedZone {
+                    UserDefaults.standard.set(normalizedZone, forKey: Settings.malaysiaWaktuZoneCodeKey)
+                    malaysiaWaktuZoneCode = normalizedZone
+                }
+            }
             return cached
         }
 
@@ -874,6 +888,19 @@ extension Settings {
         }
 
         return nil
+    }
+
+    func restoreMalaysiaWaktuZoneFromCacheIfNeeded(for date: Date = Date()) {
+        guard shouldUseMalaysiaPrayerAPI(for: currentLocation) else { return }
+
+        let normalizedStoredZone = malaysiaWaktuZoneCode?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        if let normalizedStoredZone, !normalizedStoredZone.isEmpty {
+            return
+        }
+
+        _ = loadMonthCache(for: date)
     }
 
     private func saveMonthCache(_ month: GPSMonthResponse) {
@@ -1626,7 +1653,8 @@ extension Settings {
         let usesMalaysiaPipeline = shouldUseMalaysiaPrayerAPI(for: loc)
         let usesZonePipeline = usesMalaysiaPipeline || usesIndonesiaPipeline
         let unresolvedIndonesiaZone = usesIndonesiaPipeline && resolvedPrayerArea == nil
-        let staleCity  = unresolvedIndonesiaZone || stored?.city != currentPrayerAreaName
+        let targetPrayerCity = effectivePrayerLocationDisplayName ?? currentPrayerAreaName ?? loc.city
+        let staleCity  = unresolvedIndonesiaZone || stored?.city != targetPrayerCity
         let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
         let emptyList  = stored?.prayers.isEmpty ?? true
         let missingCacheForToday = usesZonePipeline
@@ -1643,7 +1671,7 @@ extension Settings {
                    let fullPrayers = getPrayerTimes(for: today, fullPrayers: true) {
                     prayers = Prayers(
                         day: today,
-                        city: effectivePrayerLocationDisplayName ?? currentPrayerAreaName ?? loc.city,
+                        city: targetPrayerCity,
                         prayers: todayPrayers,
                         fullPrayers: fullPrayers,
                         setNotification: false
@@ -1681,7 +1709,7 @@ extension Settings {
                         )
                         prayers = Prayers(
                             day: today,
-                            city: effectivePrayerLocationDisplayName ?? currentPrayerAreaName ?? loc.city,
+                            city: targetPrayerCity,
                             prayers: todayPrayers,
                             fullPrayers: fullPrayers,
                             setNotification: false
@@ -1723,7 +1751,7 @@ extension Settings {
                     )
                     prayers = Prayers(
                         day: today,
-                        city: effectivePrayerLocationDisplayName ?? currentPrayerAreaName ?? loc.city,
+                        city: targetPrayerCity,
                         prayers: todayPrayers,
                         fullPrayers: fullPrayers,
                         setNotification: false
@@ -1742,6 +1770,15 @@ extension Settings {
         } else if notification {
             schedulePrayerTimeNotifications()
             printAllScheduledNotifications()
+            WidgetCenter.shared.reloadAllTimelines()
+        } else if let stored, stored.city != targetPrayerCity {
+            prayers = Prayers(
+                day: stored.day,
+                city: targetPrayerCity,
+                prayers: stored.prayers,
+                fullPrayers: stored.fullPrayers,
+                setNotification: stored.setNotification
+            )
             WidgetCenter.shared.reloadAllTimelines()
         }
         

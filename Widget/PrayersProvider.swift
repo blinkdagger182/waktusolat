@@ -101,9 +101,8 @@ struct PrayersProvider: TimelineProvider {
         return PrayersEntry(
             date: date,
             accentColor: baseContext.accent,
-            currentCity: obj.city.isEmpty
-                ? (settings.effectivePrayerLocationDisplayName ?? baseContext.location?.city ?? "")
-                : obj.city,
+            currentCity: settings.effectivePrayerLocationDisplayName
+                ?? (obj.city.isEmpty ? (baseContext.location?.city ?? "") : obj.city),
             prayers: obj.prayers,
             fullPrayers: obj.fullPrayers,
             currentPrayer: inferred.current,

@@ -496,10 +496,10 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
         }
     }
 
-    static var freeDefault: LockScreenPrayerTimesStyle { .prayerCountdownClassicWithLocation }
+    static var freeDefault: LockScreenPrayerTimesStyle { .prayerTimelineWithLocation }
 
     var requiresPremiumWidgets: Bool {
-        self != .prayerCountdownClassicWithLocation
+        self != .prayerTimelineWithLocation
     }
 
     var resolvedForWidgetAccess: LockScreenPrayerTimesStyle {

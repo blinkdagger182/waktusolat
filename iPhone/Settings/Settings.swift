@@ -251,7 +251,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 logger.debug("Failed to decode resolved prayer area: \(error)")
             }
         }
-        
+
         if let homeLocationData = appGroupUserDefaults?.data(forKey: "homeLocationData") {
             do {
                 let homeLocation = try Self.decoder.decode(Location.self, from: homeLocationData)
@@ -262,6 +262,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
         
         super.init()
+        restoreMalaysiaWaktuZoneFromCacheIfNeeded()
         Self.locationManager.delegate = self
         #if os(iOS)
         if seededLegacyWidgetStyles {
@@ -277,7 +278,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let defaults else { return false }
         let legacyDefaults: [(String, String)] = [
             (NextPrayerCircleStyle.storageKey, NextPrayerCircleStyle.classic.rawValue),
-            (LockScreenPrayerTimesStyle.storageKey, LockScreenPrayerTimesStyle.prayerCountdownClassicWithLocation.rawValue),
+            (LockScreenPrayerTimesStyle.storageKey, LockScreenPrayerTimesStyle.prayerTimelineWithLocation.rawValue),
             (PrayerListWidgetStyle.storageKey, PrayerListWidgetStyle.classic.rawValue),
             (LockScreenPrayerCountdownBarStyle.storageKey, LockScreenPrayerCountdownBarStyle.withLocation.rawValue),
             (WidgetZikirAlignment.storageKey, WidgetZikirAlignment.center.rawValue),
@@ -534,7 +535,21 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     var currentMalaysiaWaktuZoneName: String? {
         guard shouldUseMalaysiaPrayerAPI(for: currentLocation) else { return nil }
-        return malaysiaWaktuZoneCode
+        let normalizedStoredZone = malaysiaWaktuZoneCode?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        if let normalizedStoredZone, !normalizedStoredZone.isEmpty {
+            return normalizedStoredZone
+        }
+
+        let normalizedActiveZone = activePrayerZoneIdentifier?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        if let normalizedActiveZone, !normalizedActiveZone.isEmpty {
+            return normalizedActiveZone
+        }
+
+        return nil
     }
 
     var isResolvingIndonesiaWaktuZone: Bool {

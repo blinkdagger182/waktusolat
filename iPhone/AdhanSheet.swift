@@ -251,12 +251,22 @@ struct AdhanSetupSheet: View {
     }
 
     private var autoDetectedZoneLabel: String {
-        let zone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let zone = resolvedAutoDetectedZoneCode
         guard !zone.isEmpty else { return isMalay ? "Sedang mengesan..." : "Detecting..." }
         guard let info = malaysiaZones.first(where: { $0.jakimCode.uppercased() == zone }) else {
             return zone
         }
         return "\(info.jakimCode) · \(info.negeri) · \(info.daerah)"
+    }
+
+    private var resolvedAutoDetectedZoneCode: String {
+        let localDetectedZone = autoDetectedZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if !localDetectedZone.isEmpty {
+            return localDetectedZone
+        }
+        return settings.currentMalaysiaWaktuZoneName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased() ?? ""
     }
 
     private var autoDetectedIndonesiaZoneLabel: String {
@@ -372,6 +382,12 @@ struct AdhanSetupSheet: View {
         guard let location = settings.currentLocation else {
             autoDetectedZoneCode = ""
             return
+        }
+        if let resolvedZone = settings.currentMalaysiaWaktuZoneName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased(),
+           !resolvedZone.isEmpty {
+            autoDetectedZoneCode = resolvedZone
         }
         let lat = String(format: "%.6f", location.latitude)
         let lon = String(format: "%.6f", location.longitude)
