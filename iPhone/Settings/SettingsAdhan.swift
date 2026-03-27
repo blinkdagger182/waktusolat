@@ -837,7 +837,8 @@ extension Settings {
     }
 
     func invalidateMalaysiaZoneState(for date: Date = Date()) {
-        UserDefaults.standard.removeObject(forKey: "lastKnownMalaysiaZone")
+        UserDefaults.standard.removeObject(forKey: Settings.malaysiaWaktuZoneCodeKey)
+        malaysiaWaktuZoneCode = nil
 
         let comps = Self.gregorian.dateComponents([.year, .month], from: date)
         guard let year = comps.year, let month = comps.month else { return }
@@ -884,7 +885,8 @@ extension Settings {
         appGroupStore()?.setValue(data, forKey: Self.legacyMonthCacheKey)
         // Persist zone for push notification targeting (Malaysia/SG only)
         if !shouldUseIndonesiaPrayerAPI(for: currentLocation) {
-            UserDefaults.standard.set(month.zone, forKey: "lastKnownMalaysiaZone")
+            UserDefaults.standard.set(month.zone, forKey: Settings.malaysiaWaktuZoneCodeKey)
+            malaysiaWaktuZoneCode = month.zone
             Self.syncLiveActivityEnrollmentHandler?()
             resolvedPrayerArea = nil
         } else {

@@ -147,6 +147,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     private static let activePrayerLocationDisplayNameKey = "activePrayerLocationDisplayName"
     private static let activePrayerZoneIdentifierKey = "activePrayerZoneIdentifier"
     private static let activePrayerModeKey = "activePrayerMode"
+    static let malaysiaWaktuZoneCodeKey = "lastKnownMalaysiaZone"
     #endif
 
     /// Set by AppDelegate (main app only) so extension targets don't reference UIApplication.shared.
@@ -231,6 +232,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.activePrayerMode = PrayerLocationMode(
             rawValue: appGroupUserDefaults?.string(forKey: Self.activePrayerModeKey) ?? ""
         ) ?? .auto
+        self.malaysiaWaktuZoneCode = UserDefaults.standard.string(forKey: Self.malaysiaWaktuZoneCodeKey)
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
             do {
@@ -412,6 +414,8 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
+    @Published var malaysiaWaktuZoneCode: String?
+
     @Published var resolvedPrayerArea: ResolvedPrayerArea? {
         didSet {
             guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
@@ -506,7 +510,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     var currentMalaysiaWaktuZoneName: String? {
         guard shouldUseMalaysiaPrayerAPI(for: currentLocation) else { return nil }
-        return UserDefaults.standard.string(forKey: "lastKnownMalaysiaZone")
+        return malaysiaWaktuZoneCode
     }
 
     var isResolvingIndonesiaWaktuZone: Bool {

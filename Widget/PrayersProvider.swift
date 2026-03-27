@@ -7,6 +7,9 @@ private let preferredPrayerLockScreenFooterWidgetKindKey = "preferredPrayerLockS
 struct PrayersProvider: TimelineProvider {
     private let store = UserDefaults(suiteName: widgetAppGroupID)
     private let settings = Settings.shared
+    private let minuteInterval: TimeInterval = 60
+    private let fiveMinuteInterval: TimeInterval = 5 * 60
+    private let maxDenseTimelineEntries = 180
 
     func placeholder(in context: Context) -> PrayersEntry { previewEntry() }
 
@@ -14,24 +17,30 @@ struct PrayersProvider: TimelineProvider {
         if ctx.isPreview {
             completion(previewEntry())
         } else {
-            completion(makeEntry())
+            let now = Date()
+            let baseContext = loadBaseContext()
+            completion(makeEntry(at: now, baseContext: baseContext))
         }
     }
 
     func getTimeline(in ctx: Context, completion: @escaping (Timeline<PrayersEntry>) -> Void) {
-        let entry = makeEntry()
         let now = Date()
         let cal = Calendar.current
         let nextMidnight = cal.startOfDay(for: cal.date(byAdding: .day, value: 1, to: now) ?? now)
-        // Only use nextPrayer time if it's actually in the future — otherwise asking
-        // WidgetKit to refresh at a past time leaves it budget-throttled for hours.
-        let nextPrayerRefresh = entry.nextPrayer.flatMap { $0.time > now ? $0.time : nil }
-        let refresh = [nextPrayerRefresh, nextMidnight].compactMap { $0 }.min() ?? nextMidnight
-        completion(Timeline(entries: [entry], policy: .after(refresh)))
+        let baseContext = loadBaseContext()
+        let currentEntry = makeEntry(at: now, baseContext: baseContext)
+        let nextPrayerRefresh = currentEntry.nextPrayer.flatMap { $0.time > now ? $0.time : nil }
+        let refreshBoundary = [nextPrayerRefresh, nextMidnight].compactMap { $0 }.min() ?? nextMidnight
+        let entries = makeTimelineEntries(
+            startingFrom: now,
+            refreshBoundary: refreshBoundary,
+            baseContext: baseContext
+        )
+
+        completion(Timeline(entries: entries, policy: .after(refreshBoundary)))
     }
 
-    private func makeEntry() -> PrayersEntry {
-        let now = Date()
+    private func loadBaseContext() -> (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool) {
         if let data = store?.data(forKey: "prayersData"),
            let prayers = try? Settings.decoder.decode(Prayers.self, from: data) {
             settings.prayers = prayers
@@ -47,35 +56,67 @@ struct PrayersProvider: TimelineProvider {
         settings.hanafiMadhab = store?.bool(forKey: "hanafiMadhab") ?? false
         settings.prayerCalculation = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"
         settings.hijriOffset = store?.integer(forKey: "hijriOffset") ?? 0
-        let isMalaysia = settings.shouldUseMalaysiaPrayerAPI(for: settings.currentLocation)
 
         settings.fetchPrayerTimes()
 
-        guard let obj = settings.prayers else {
-            return emptyEntry(accent: settings.accentColor)
+        let prayers = settings.prayers
+        let location = settings.currentLocation
+        let accent = settings.accentColor
+        let isMalaysia = settings.shouldUseMalaysiaPrayerAPI(for: location)
+        return (prayers, location, accent, isMalaysia)
+    }
+
+    private func makeTimelineEntries(
+        startingFrom now: Date,
+        refreshBoundary: Date,
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+    ) -> [PrayersEntry] {
+        var entries = [makeEntry(at: now, baseContext: baseContext)]
+        guard refreshBoundary > now else { return entries }
+
+        let totalInterval = refreshBoundary.timeIntervalSince(now)
+        let step = totalInterval / minuteInterval <= Double(maxDenseTimelineEntries)
+            ? minuteInterval
+            : fiveMinuteInterval
+
+        var nextDate = now.addingTimeInterval(step)
+        while nextDate < refreshBoundary {
+            entries.append(makeEntry(at: nextDate, baseContext: baseContext))
+            nextDate = nextDate.addingTimeInterval(step)
         }
 
-        let inferred = inferCurrentAndNext(from: obj.prayers, at: now)
-        let current = settings.currentPrayer ?? inferred.current
-        let next = settings.nextPrayer ?? inferred.next
+        return entries
+    }
+
+    private func makeEntry(
+        at date: Date,
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+    ) -> PrayersEntry {
+        guard let obj = baseContext.prayers else {
+            return emptyEntry(at: date, accent: baseContext.accent)
+        }
+
+        let inferred = inferCurrentAndNext(from: obj.prayers, at: date)
 
         return PrayersEntry(
-            date: now,
-            accentColor: settings.accentColor,
-            currentCity: settings.prayers?.city ?? settings.effectivePrayerLocationDisplayName ?? settings.currentLocation?.city ?? "",
+            date: date,
+            accentColor: baseContext.accent,
+            currentCity: obj.city.isEmpty
+                ? (settings.effectivePrayerLocationDisplayName ?? baseContext.location?.city ?? "")
+                : obj.city,
             prayers: obj.prayers,
             fullPrayers: obj.fullPrayers,
-            currentPrayer: current,
-            nextPrayer: next,
+            currentPrayer: inferred.current,
+            nextPrayer: inferred.next,
             hijriOffset: settings.hijriOffset,
-            isMalaysia: isMalaysia,
+            isMalaysia: baseContext.isMalaysia,
             travelingMode: settings.travelingMode
         )
     }
 
-    private func emptyEntry(accent: AccentColor) -> PrayersEntry {
+    private func emptyEntry(at date: Date, accent: AccentColor) -> PrayersEntry {
         .init(
-            date: Date(),
+            date: date,
             accentColor: accent,
             currentCity: "",
             prayers: [],
