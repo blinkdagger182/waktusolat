@@ -11,6 +11,10 @@ private struct DailyQuranCachedQuote: Codable {
     let surahName: String
 }
 
+private struct DailyQuranArabicPayload: Decodable {
+    let arabicText: String?
+}
+
 private struct FullSurahSelection: Identifiable {
     let surahNumber: Int
     let ayahNumber: Int?
@@ -22,13 +26,33 @@ private enum FullQuranResumeStorage {
     static let lastAyahKey = "fullQuranLastViewedAyahV1"
 }
 
+private struct DailyQuranReferenceParts {
+    let surahNumber: Int
+    let ayahNumber: Int?
+}
+
 struct OtherView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
     @State private var dailyQuranQuote: DailyQuranCachedQuote?
     @State private var selectedFullSurah: FullSurahSelection?
-    @State private var showQuranBrowser = false
     @State private var resumeSelection: FullSurahSelection?
+    @State private var surahs: [QuranSurahIndexItem] = []
+    @State private var isLoadingSurahs = true
+    @State private var surahListErrorMessage: String?
+    @State private var searchText = ""
+    @State private var expandedSurahNumber: Int?
+    @State private var dailyQuranArabicText: String?
+
+    private var filteredSurahs: [QuranSurahIndexItem] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return surahs }
+        return surahs.filter {
+            "\($0.number)".contains(query)
+            || $0.englishName.lowercased().contains(query)
+            || $0.arabicName.contains(query)
+        }
+    }
 
     private func loadDailyQuranQuote() {
         let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
@@ -43,6 +67,20 @@ struct OtherView: View {
         dailyQuranQuote = cached
     }
 
+    @MainActor
+    private func loadDailyQuranArabicIfNeeded() async {
+        guard let quote = dailyQuranQuote else {
+            dailyQuranArabicText = nil
+            return
+        }
+
+        do {
+            dailyQuranArabicText = try await DailyQuranArabicAPI.fetchArabicText(reference: quote.reference)
+        } catch {
+            dailyQuranArabicText = nil
+        }
+    }
+
     private func openDailyQuranModal() {
         guard let reference = dailyQuranQuote?.reference else { return }
         var components = URLComponents()
@@ -53,7 +91,7 @@ struct OtherView: View {
         openURL(url)
     }
 
-    private func parseReference(_ reference: String) -> (surah: Int, ayah: Int?)? {
+    private func parseReference(_ reference: String) -> DailyQuranReferenceParts? {
         let parts = reference.split(separator: ":")
         guard let first = parts.first,
               let surah = Int(first),
@@ -66,13 +104,13 @@ struct OtherView: View {
         } else {
             ayah = nil
         }
-        return (surah, ayah)
+        return DailyQuranReferenceParts(surahNumber: surah, ayahNumber: ayah)
     }
 
-    private func openFullSurahSheet() {
+    private func openDailyQuranFullSurah() {
         guard let reference = dailyQuranQuote?.reference,
               let parsed = parseReference(reference) else { return }
-        selectedFullSurah = FullSurahSelection(surahNumber: parsed.surah, ayahNumber: parsed.ayah)
+        selectedFullSurah = FullSurahSelection(surahNumber: parsed.surahNumber, ayahNumber: parsed.ayahNumber)
     }
 
     private func loadResumeSelection() {
@@ -88,38 +126,71 @@ struct OtherView: View {
             ayahNumber: ayah > 0 ? ayah : nil
         )
     }
+
+    @MainActor
+    private func loadSurahsIfNeeded() async {
+        guard surahs.isEmpty else { return }
+        isLoadingSurahs = true
+        surahListErrorMessage = nil
+        defer { isLoadingSurahs = false }
+
+        do {
+            surahs = try await QuranSurahIndexAPI.fetchAll()
+        } catch {
+            let reason = error.localizedDescription
+            if reason.isEmpty || reason == "The operation couldn’t be completed." {
+                surahListErrorMessage = isMalayAppLanguage()
+                    ? "Tidak dapat memuatkan senarai surah sekarang. Sila cuba lagi."
+                    : "Unable to load the surah list right now. Please try again."
+            } else {
+                surahListErrorMessage = reason
+            }
+        }
+    }
     
     var body: some View {
         NavigationView {
             List {
                 Section(header: Text(isMalayAppLanguage() ? "AL-QURAN HARIAN" : "DAILY QURAN")) {
                     if let quote = dailyQuranQuote {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .center, spacing: 12) {
                             Button(action: openDailyQuranModal) {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "book.closed.fill")
-                                            .foregroundColor(settings.accentColor.color)
-                                        Text("\(quote.surahName) \(quote.reference)")
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundColor(.primary)
+                                VStack(alignment: .center, spacing: 10) {
+                                    if let dailyQuranArabicText, !dailyQuranArabicText.isEmpty {
+                                        Text(dailyQuranArabicText)
+                                            .font(.custom(preferredQuranArabicFontName(settings: settings, size: 28), size: 28))
+                                            .multilineTextAlignment(.center)
+                                            .foregroundStyle(.primary)
+                                            .frame(maxWidth: .infinity, alignment: .center)
                                     }
+
                                     Text(quote.text)
-                                        .font(.footnote)
-                                        .multilineTextAlignment(.leading)
+                                        .font(.title3.weight(.semibold))
+                                        .lineLimit(nil)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(.primary)
+                                        .frame(maxWidth: .infinity, alignment: .center)
+
+                                    Text("\(quote.surahName) \(quote.reference)")
+                                        .font(.subheadline.weight(.semibold))
                                         .foregroundColor(.secondary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .multilineTextAlignment(.center)
                                 }
-                                .padding(.vertical, 4)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .padding(.horizontal, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .fill(.thinMaterial)
+                                )
                             }
                             .buttonStyle(.plain)
 
-                            Button(isMalayAppLanguage() ? "Baca Surah Penuh" : "Read Full Surah") {
-                                openFullSurahSheet()
-                            }
-                            .font(.footnote.weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                            .buttonStyle(.plain)
+                            Button(isMalayAppLanguage() ? "Baca Surah Penuh" : "Read Full Surah", action: openDailyQuranFullSurah)
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(settings.accentColor.color)
+                                .buttonStyle(.plain)
                         }
                     } else {
                         Text(isMalayAppLanguage()
@@ -131,49 +202,44 @@ struct OtherView: View {
                 }
 
                 Section(header: Text(isMalayAppLanguage() ? "AL-QURAN PENUH" : "FULL QURAN")) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(isMalayAppLanguage() ? "Al-Quran Penuh" : "Full Quran")
-                                    .font(.headline)
-                                Text(isMalayAppLanguage()
-                                     ? "Terokai semua 114 surah, sambung bacaan terakhir, dan mainkan bacaan mengikut ayat."
-                                     : "Browse all 114 surahs, resume your last position, and play recitation by ayah.")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            Spacer(minLength: 12)
-
-                            if let resumeSelection {
-                                Button(isMalayAppLanguage() ? "Sambung" : "Resume") {
-                                    selectedFullSurah = resumeSelection
-                                }
-                                .font(.footnote.weight(.semibold))
-                                .foregroundColor(settings.accentColor.color)
-                                .buttonStyle(.plain)
-                            }
+                    if let resumeSelection {
+                        Button(isMalayAppLanguage() ? "Sambung Bacaan Terakhir" : "Resume Last Reading") {
+                            selectedFullSurah = resumeSelection
                         }
-
-                        Button {
-                            showQuranBrowser = true
-                        } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: "books.vertical.fill")
-                                    .foregroundStyle(settings.accentColor.color)
-                                Text(isMalayAppLanguage() ? "Buka Senarai Surah" : "Open Surah Browser")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
+                        .font(.footnote.weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
                         .buttonStyle(.plain)
                     }
-                    .padding(.vertical, 4)
+
+                    if isLoadingSurahs {
+                        ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
+                    } else if let surahListErrorMessage {
+                        Text(surahListErrorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(filteredSurahs) { surah in
+                            QuranSurahExpandableCard(
+                                surah: surah,
+                                isExpanded: expandedSurahNumber == surah.number,
+                                accentColor: settings.accentColor.color,
+                                progressAyah: loadLastReadAyah(for: surah.number),
+                                onToggle: {
+                                    withAnimation(.spring(response: 0.46, dampingFraction: 0.9)) {
+                                        expandedSurahNumber = expandedSurahNumber == surah.number ? nil : surah.number
+                                    }
+                                },
+                                onOpen: {
+                                    selectedFullSurah = FullSurahSelection(surahNumber: surah.number, ayahNumber: nil)
+                                },
+                                onResume: {
+                                    selectedFullSurah = FullSurahSelection(surahNumber: surah.number, ayahNumber: loadLastReadAyah(for: surah.number))
+                                }
+                            )
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowSeparator(.hidden)
+                        }
+                    }
                 }
 
                 #if false
@@ -266,7 +332,9 @@ struct OtherView: View {
                 }
                 #endif
                 
+                #if false
                 ProphetQuote()
+                #endif
                 
                 #if false
                 AlIslamAppsSection()
@@ -277,6 +345,8 @@ struct OtherView: View {
             .onAppear {
                 loadDailyQuranQuote()
                 loadResumeSelection()
+                Task { await loadSurahsIfNeeded() }
+                Task { await loadDailyQuranArabicIfNeeded() }
             }
             .sheet(item: $selectedFullSurah) { selection in
                 NavigationView {
@@ -285,8 +355,9 @@ struct OtherView: View {
                         dailyAyahNumber: selection.ayahNumber
                     )
                         .environmentObject(settings)
-                        .navigationTitle(isMalayAppLanguage() ? "Surah Penuh" : "Full Surah")
+                        .navigationTitle(surahTitle(for: selection.surahNumber))
                         .navigationBarTitleDisplayMode(.inline)
+                        .interactiveDismissDisabled()
                         .toolbar {
                             ToolbarItem(placement: .navigationBarTrailing) {
                                 Button(isMalayAppLanguage() ? "Selesai" : "Done") {
@@ -296,22 +367,168 @@ struct OtherView: View {
                         }
                 }
             }
-            .sheet(isPresented: $showQuranBrowser) {
-                NavigationView {
-                    QuranSurahBrowserView(selectedSurah: $selectedFullSurah)
-                        .environmentObject(settings)
-                        .navigationTitle(isMalayAppLanguage() ? "Al-Quran" : "Quran")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button(isMalayAppLanguage() ? "Selesai" : "Done") {
-                                    showQuranBrowser = false
-                                }
+            .searchable(text: $searchText, prompt: isMalayAppLanguage() ? "Cari surah" : "Search surah")
+        }
+    }
+
+    private func loadLastReadAyah(for surahNumber: Int) -> Int? {
+        let ayah = UserDefaults.standard.integer(forKey: "fullSurahLastReadAyahV1.\(surahNumber)")
+        return ayah > 0 ? ayah : nil
+    }
+
+    private func surahTitle(for surahNumber: Int) -> String {
+        if let surah = surahs.first(where: { $0.number == surahNumber }) {
+            return surah.englishName
+        }
+        return isMalayAppLanguage() ? "Surah \(surahNumber)" : "Surah \(surahNumber)"
+    }
+}
+
+private struct QuranSurahExpandableCard: View {
+    let surah: QuranSurahIndexItem
+    let isExpanded: Bool
+    let accentColor: Color
+    let progressAyah: Int?
+    let onToggle: () -> Void
+    let onOpen: () -> Void
+    let onResume: () -> Void
+
+    private var totalAyahCount: Int? {
+        QuranSurahVerseCounts.count(for: surah.number)
+    }
+
+    private var progressFraction: CGFloat? {
+        guard let progressAyah, let totalAyahCount, totalAyahCount > 0 else { return nil }
+        let clamped = min(max(progressAyah, 0), totalAyahCount)
+        return CGFloat(clamped) / CGFloat(totalAyahCount)
+    }
+
+    private var progressText: String? {
+        guard let progressAyah else { return nil }
+        return isMalayAppLanguage()
+            ? "Ayat terakhir: \(progressAyah)"
+            : "Last focused ayah: \(progressAyah)"
+    }
+
+    private var metadataText: String {
+        isMalayAppLanguage()
+            ? "Surah \(surah.number)"
+            : "Surah \(surah.number)"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: onToggle) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.primary.opacity(0.05))
+                            .frame(width: 48, height: 48)
+                        if let progressFraction {
+                            Circle()
+                                .trim(from: 0, to: progressFraction)
+                                .stroke(
+                                    accentColor,
+                                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                                )
+                                .rotationEffect(.degrees(-90))
+                                .frame(width: 48, height: 48)
+                        }
+                        Text("\(surah.number)")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(accentColor)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(surah.englishName)
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        Text(surah.arabicName)
+                            .font(.custom(preferredQuranArabicFontName(settings: .shared, size: 22), size: 22))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+
+                        HStack(spacing: 8) {
+                            Text(metadataText)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+
+                            if let progressText {
+                                Text(progressText)
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(accentColor)
+                                    .lineLimit(1)
                             }
                         }
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        .padding(.trailing, 8)
                 }
+                .contentShape(Rectangle())
+                .padding(.horizontal, 2)
+                .padding(.vertical, 16)
             }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(
+                        isMalayAppLanguage()
+                            ? "Buka surah penuh, atau sambung dari ayat terakhir yang anda tumpukan."
+                            : "Open the full surah, or continue from the last ayah you focused on."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 10) {
+                        Button(action: onOpen) {
+                            Text(isMalayAppLanguage() ? "Buka Surah" : "Open Surah")
+                                .font(.footnote.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.primary.opacity(0.06))
+                                )
+                        }
+                        .buttonStyle(.plain)
+
+                        if progressAyah != nil {
+                            Button(action: onResume) {
+                                Text(isMalayAppLanguage() ? "Sambung" : "Resume")
+                                    .font(.footnote.weight(.semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(accentColor.opacity(0.16))
+                                    )
+                                    .foregroundStyle(accentColor)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.leading, 62)
+                .padding(.trailing, 4)
+                .padding(.bottom, 16)
+                .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .top)), removal: .opacity.combined(with: .move(edge: .top))))
+            }
+
+            Divider()
+                .padding(.leading, 62)
         }
+        .contentShape(Rectangle())
+        .animation(.spring(response: 0.46, dampingFraction: 0.9), value: isExpanded)
     }
 }
 
@@ -604,7 +821,7 @@ private struct QuranSurahDetailsView: View {
             stopRecitation()
         }
         .safeAreaInset(edge: .bottom) {
-            if let details, recitationPlayer != nil || isRecitationLoading {
+            if let details, currentPlaybackAyah != nil || recitationPlayer != nil || isRecitationLoading {
                 QuranRecitationControlBar(
                     surahTitle: details.englishName,
                     ayahNumber: currentPlaybackAyah,
@@ -698,53 +915,68 @@ private struct QuranSurahDetailsView: View {
 
                             ForEach(details.ayahs) { ayah in
                                 let isDailyAyah = dailyAyahNumber == ayah.numberInSurah
-                                let isPlayingAyah = currentPlaybackAyah == ayah.numberInSurah && isReciting
-                                HStack(alignment: .top, spacing: 12) {
-                                    AyahPlaybackCursor(
-                                        isActive: isPlayingAyah,
-                                        accentColor: settings.accentColor.color
+                                let isActiveAyah = currentPlaybackAyah == ayah.numberInSurah
+                                let isPlayingAyah = isActiveAyah && isReciting
+                                let isCompletedAyah = currentPlaybackAyah.map { ayah.numberInSurah < $0 } ?? false
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(spacing: 8) {
+                                        Text("\(ayah.numberInSurah)")
+                                            .font(.caption2.weight(.bold))
+                                            .foregroundStyle((isActiveAyah || isCompletedAyah) ? settings.accentColor.color : .secondary)
+
+                                        if isPlayingAyah {
+                                            Text(isMalayAppLanguage() ? "Sedang dimainkan" : "Now playing")
+                                                .font(.caption2.weight(.semibold))
+                                                .foregroundStyle(settings.accentColor.color)
+                                        } else if isActiveAyah {
+                                            Text(isMalayAppLanguage() ? "Dijeda" : "Paused")
+                                                .font(.caption2.weight(.semibold))
+                                                .foregroundStyle(settings.accentColor.color)
+                                        }
+                                    }
+
+                                    InteractiveArabicAyahTextView(
+                                        words: ayah.words,
+                                        fallbackText: ayah.arabicText,
+                                        highlightedWordPosition: isActiveAyah
+                                            ? currentPlaybackWordPosition
+                                            : (isCompletedAyah ? (ayah.words.last?.position ?? Int.max) : nil),
+                                        cursorWordPosition: isActiveAyah && !isReciting ? currentPlaybackWordPosition : nil,
+                                        fontName: quranArabicFontName,
+                                        fontSize: 30,
+                                        accentColor: settings.accentColor.color,
+                                        fullyHighlighted: isCompletedAyah,
+                                        onTapWord: { wordPosition in
+                                            playRecitation(fromAyah: ayah.numberInSurah, startingWordPosition: wordPosition)
+                                        }
                                     )
-                                    .padding(.top, 6)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
 
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack(spacing: 8) {
-                                            Text("\(ayah.numberInSurah)")
-                                                .font(.caption2.weight(.bold))
-                                                .foregroundStyle(isPlayingAyah ? settings.accentColor.color : .secondary)
-
-                                            if isPlayingAyah {
-                                                Text(isMalayAppLanguage() ? "Sedang dimainkan" : "Now playing")
-                                                    .font(.caption2.weight(.semibold))
-                                                    .foregroundStyle(settings.accentColor.color)
-                                            }
-                                        }
-
-                                        highlightedArabicText(for: ayah, isPlayingAyah: isPlayingAyah)
-                                            .font(.custom(quranArabicFontName, size: 30))
-                                            .frame(maxWidth: .infinity, alignment: .trailing)
-                                            .multilineTextAlignment(.trailing)
-
-                                        if let translation = ayah.translationText, !translation.isEmpty {
-                                            Text(translation)
-                                                .font(.subheadline)
-                                                .foregroundStyle(isPlayingAyah ? settings.accentColor.color : .primary)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                        }
+                                    if let translation = ayah.translationText, !translation.isEmpty {
+                                        Text(translation)
+                                            .font(.subheadline)
+                                            .foregroundStyle((isActiveAyah || isCompletedAyah) ? settings.accentColor.color : .primary)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                 }
                                 .padding(12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(
-                                            isPlayingAyah
+                                            isActiveAyah
                                                 ? settings.accentColor.color.opacity(0.12)
-                                                : Color.primary.opacity(0.04)
+                                                : (isCompletedAyah
+                                                    ? settings.accentColor.color.opacity(0.06)
+                                                    : Color.primary.opacity(0.04))
                                         )
                                 )
                                 .overlay {
-                                    if isPlayingAyah {
+                                    if isActiveAyah {
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                                             .stroke(settings.accentColor.color, lineWidth: 2)
+                                    } else if isCompletedAyah {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(settings.accentColor.color.opacity(0.35), lineWidth: 1)
                                     } else if isDailyAyah {
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                                             .stroke(settings.accentColor.color, lineWidth: 2)
@@ -841,6 +1073,14 @@ private struct QuranSurahDetailsView: View {
 
         do {
             details = try await QuranSurahAPI.fetchSurahDetails(surahNumber: surahNumber)
+            let focusedAyah = pendingRestoreAyah ?? dailyAyahNumber
+            currentPlaybackAyah = focusedAyah
+            if let focusedAyah,
+               let focusedAyahDetails = details?.ayahs.first(where: { $0.numberInSurah == focusedAyah }) {
+                currentPlaybackWordPosition = focusedAyahDetails.words.first?.position
+            } else {
+                currentPlaybackWordPosition = nil
+            }
         } catch {
             details = nil
             let reason = error.localizedDescription
@@ -876,10 +1116,11 @@ private struct QuranSurahDetailsView: View {
     }
 
     @MainActor
-    private func playRecitation(fromAyah ayahNumber: Int) {
+    private func playRecitation(fromAyah ayahNumber: Int, startingWordPosition: Int? = nil) {
         recitationErrorMessage = nil
         guard let details else { return }
         let validAyah = min(max(ayahNumber, 1), details.ayahs.count)
+        let startingAyahDetails = details.ayahs.first(where: { $0.numberInSurah == validAyah })
         let slice = details.ayahs.filter { $0.numberInSurah >= validAyah }
         let itemsWithAyah = slice.compactMap { ayah -> (Int, AVPlayerItem)? in
             guard let audioURL = ayah.audioURL, let url = URL(string: audioURL) else { return nil }
@@ -906,10 +1147,15 @@ private struct QuranSurahDetailsView: View {
         }
         #endif
 
+        let resolvedStartingWordPosition = resolvedWordPosition(
+            requested: startingWordPosition,
+            in: startingAyahDetails
+        )
+
         playbackAyahSequence = itemsWithAyah.map(\.0)
         playbackSequenceIndex = 0
         currentPlaybackAyah = playbackAyahSequence.first
-        currentPlaybackWordPosition = details.ayahs.first(where: { $0.numberInSurah == validAyah })?.words.first?.position
+        currentPlaybackWordPosition = resolvedStartingWordPosition ?? startingAyahDetails?.words.first?.position
         saveResumeSelection(surahNumber: surahNumber, ayahNumber: validAyah)
 
         let player = AVQueuePlayer(items: itemsWithAyah.map(\.1))
@@ -929,15 +1175,17 @@ private struct QuranSurahDetailsView: View {
                 playbackSequenceIndex += 1
                 let nextAyah = playbackAyahSequence[playbackSequenceIndex]
                 currentPlaybackAyah = nextAyah
-                currentPlaybackWordPosition = details.ayahs.first(where: { $0.numberInSurah == nextAyah })?.words.first?.position
+                let nextAyahDetails = details.ayahs.first(where: { $0.numberInSurah == nextAyah })
+                currentPlaybackWordPosition = nextAyahDetails?.words.first?.position
                 saveResumeSelection(surahNumber: surahNumber, ayahNumber: nextAyah)
             } else {
                 isReciting = false
-                currentPlaybackAyah = nil
-                currentPlaybackWordPosition = nil
             }
         }
         player.play()
+        if let startMs = wordStartMs(for: startingAyahDetails, wordPosition: resolvedStartingWordPosition) {
+            player.seek(to: CMTime(value: CMTimeValue(startMs), timescale: 1000))
+        }
         isRecitationLoading = false
         isReciting = true
     }
@@ -998,25 +1246,20 @@ private struct QuranSurahDetailsView: View {
         }
     }
 
-    private func highlightedArabicText(for ayah: QuranSurahDetails.Ayah, isPlayingAyah: Bool) -> Text {
-        guard isPlayingAyah, !ayah.words.isEmpty else {
-            return Text(ayah.arabicText)
-                .foregroundColor(isPlayingAyah ? settings.accentColor.color : .primary)
-        }
+    private func wordStartMs(for ayah: QuranSurahDetails.Ayah?, wordPosition: Int?) -> Int? {
+        guard let ayah, let wordPosition else { return nil }
+        return ayah.wordTimings.first(where: { $0.wordPosition == wordPosition })?.startMs
+    }
 
-        let activePosition = currentPlaybackWordPosition
-        return ayah.words.enumerated().reduce(Text("")) { partial, element in
-            let (index, word) = element
-            let cursor = activePosition == word.position
-                ? Text("▏").foregroundColor(settings.accentColor.color)
-                : Text("")
-            let token = Text(word.textArabic)
-                .foregroundColor(activePosition == word.position ? settings.accentColor.color : .primary)
-            if index == 0 {
-                return cursor + token
-            }
-            return partial + Text(" ") + cursor + token
+    private func resolvedWordPosition(requested: Int?, in ayah: QuranSurahDetails.Ayah?) -> Int? {
+        guard let requested, let ayah else { return requested }
+        if ayah.wordTimings.contains(where: { $0.wordPosition == requested }) {
+            return requested
         }
+        if let nextAvailable = ayah.wordTimings.first(where: { $0.wordPosition >= requested }) {
+            return nextAvailable.wordPosition
+        }
+        return ayah.wordTimings.last?.wordPosition ?? requested
     }
 
     private func updateCurrentPlaybackWord(for time: CMTime) {
@@ -1044,38 +1287,6 @@ private struct QuranSurahDetailsView: View {
     }
 }
 
-private struct AyahPlaybackCursor: View {
-    let isActive: Bool
-    let accentColor: Color
-
-    @State private var isVisible = true
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-            .fill(isActive ? accentColor : Color.secondary.opacity(0.16))
-            .frame(width: 3, height: isActive ? 46 : 28)
-            .opacity(isActive ? (isVisible ? 1 : 0.2) : 1)
-            .animation(
-                isActive
-                    ? .easeInOut(duration: 0.55).repeatForever(autoreverses: true)
-                    : .easeOut(duration: 0.2),
-                value: isVisible
-            )
-            .onAppear {
-                guard isActive else { return }
-                isVisible = false
-            }
-            .onChange(of: isActive) { active in
-                if active {
-                    isVisible = false
-                } else {
-                    isVisible = true
-                }
-            }
-            .accessibilityHidden(true)
-    }
-}
-
 private struct AyahMinYPreferenceKey: PreferenceKey {
     static var defaultValue: [Int: CGFloat] = [:]
 
@@ -1083,6 +1294,256 @@ private struct AyahMinYPreferenceKey: PreferenceKey {
         value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
+
+#if os(iOS)
+private struct InteractiveArabicAyahTextView: UIViewRepresentable {
+    let words: [QuranSurahDetails.Word]
+    let fallbackText: String
+    let highlightedWordPosition: Int?
+    let cursorWordPosition: Int?
+    let fontName: String
+    let fontSize: CGFloat
+    let accentColor: Color
+    let fullyHighlighted: Bool
+    let onTapWord: (Int) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onTapWord: onTapWord)
+    }
+
+    func makeUIView(context: Context) -> InteractiveArabicTextView {
+        let view = InteractiveArabicTextView()
+        view.backgroundColor = .clear
+        view.isEditable = false
+        view.isSelectable = false
+        view.isScrollEnabled = false
+        view.textContainerInset = .zero
+        view.textContainer.lineFragmentPadding = 0
+        view.textContainer.maximumNumberOfLines = 0
+        view.textContainer.lineBreakMode = .byWordWrapping
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        view.setContentHuggingPriority(.required, for: .vertical)
+        view.delegateProxy = context.coordinator
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        view.addGestureRecognizer(tap)
+        context.coordinator.textView = view
+        return view
+    }
+
+    func updateUIView(_ uiView: InteractiveArabicTextView, context: Context) {
+        context.coordinator.onTapWord = onTapWord
+        context.coordinator.textView = uiView
+        uiView.configure(
+            words: words,
+            fallbackText: fallbackText,
+            highlightedWordPosition: highlightedWordPosition,
+            cursorWordPosition: cursorWordPosition,
+            fontName: fontName,
+            fontSize: fontSize,
+            accentColor: UIColor(accentColor)
+            ,
+            fullyHighlighted: fullyHighlighted
+        )
+    }
+
+    final class Coordinator: NSObject {
+        var onTapWord: (Int) -> Void
+        weak var textView: InteractiveArabicTextView?
+
+        init(onTapWord: @escaping (Int) -> Void) {
+            self.onTapWord = onTapWord
+        }
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard let textView else { return }
+            let point = gesture.location(in: textView)
+            if let wordPosition = textView.wordPosition(at: point) {
+                onTapWord(wordPosition)
+            }
+        }
+    }
+}
+
+private final class InteractiveArabicTextView: UITextView {
+    weak var delegateProxy: InteractiveArabicAyahTextView.Coordinator?
+    private let wordPositionAttribute = NSAttributedString.Key("waktuWordPosition")
+    private var cursorLayer: CALayer?
+
+    override var intrinsicContentSize: CGSize {
+        let fitting = sizeThatFits(CGSize(width: bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width - 64, height: .greatestFiniteMagnitude))
+        return CGSize(width: UIView.noIntrinsicMetric, height: fitting.height)
+    }
+
+    func configure(
+        words: [QuranSurahDetails.Word],
+        fallbackText: String,
+        highlightedWordPosition: Int?,
+        cursorWordPosition: Int?,
+        fontName: String,
+        fontSize: CGFloat,
+        accentColor: UIColor,
+        fullyHighlighted: Bool
+    ) {
+        let attributed = NSMutableAttributedString()
+        let textColor = UIColor.label
+        let baseFont = UIFont(name: fontName, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+
+        if words.isEmpty {
+            attributed.append(NSAttributedString(string: fallbackText, attributes: [
+                .font: baseFont,
+                .foregroundColor: fullyHighlighted ? accentColor : textColor,
+            ]))
+        } else {
+            for (index, word) in words.enumerated() {
+                if index > 0 {
+                    attributed.append(NSAttributedString(string: " ", attributes: [
+                        .font: baseFont,
+                        .foregroundColor: textColor,
+                    ]))
+                }
+
+                var attrs: [NSAttributedString.Key: Any] = [
+                    .font: baseFont,
+                    .foregroundColor: textColor,
+                    wordPositionAttribute: word.position,
+                ]
+
+                if let highlightedWordPosition, word.position <= highlightedWordPosition {
+                    attrs[.foregroundColor] = accentColor
+                }
+
+                attributed.append(NSAttributedString(string: word.textArabic, attributes: attrs))
+            }
+        }
+
+        attributedText = attributed
+        textAlignment = .right
+        semanticContentAttribute = .forceRightToLeft
+        typingAttributes = [
+            .font: baseFont,
+            .foregroundColor: textColor,
+        ]
+
+        DispatchQueue.main.async {
+            self.invalidateIntrinsicContentSize()
+            self.superview?.invalidateIntrinsicContentSize()
+            self.updateCursor(for: cursorWordPosition, color: accentColor)
+        }
+    }
+
+    func wordPosition(at point: CGPoint) -> Int? {
+        let adjustedPoint = CGPoint(
+            x: point.x - textContainerInset.left,
+            y: point.y - textContainerInset.top
+        )
+
+        let directIndex = layoutManager.characterIndex(
+            for: adjustedPoint,
+            in: textContainer,
+            fractionOfDistanceBetweenInsertionPoints: nil
+        )
+        if directIndex < textStorage.length,
+           let directHit = textStorage.attribute(wordPositionAttribute, at: directIndex, effectiveRange: nil) as? Int {
+            return directHit
+        }
+
+        var bestMatch: (position: Int, distance: CGFloat)?
+
+        textStorage.enumerateAttribute(wordPositionAttribute, in: NSRange(location: 0, length: textStorage.length)) { value, range, _ in
+            guard let position = value as? Int else { return }
+            let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            layoutManager.enumerateEnclosingRects(
+                forGlyphRange: glyphRange,
+                withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
+                in: textContainer
+            ) { rect, _ in
+                let expanded = rect.insetBy(dx: -8, dy: -6)
+                if expanded.contains(adjustedPoint) {
+                    bestMatch = (position, 0)
+                    return
+                }
+
+                let clampedX = min(max(adjustedPoint.x, expanded.minX), expanded.maxX)
+                let clampedY = min(max(adjustedPoint.y, expanded.minY), expanded.maxY)
+                let dx = adjustedPoint.x - clampedX
+                let dy = adjustedPoint.y - clampedY
+                let distance = sqrt((dx * dx) + (dy * dy))
+
+                guard bestMatch == nil || distance < bestMatch!.distance else { return }
+                bestMatch = (position, distance)
+            }
+        }
+
+        guard let bestMatch else { return nil }
+        return bestMatch.position
+    }
+
+    private func updateCursor(for activeWordPosition: Int?, color: UIColor) {
+        cursorLayer?.removeFromSuperlayer()
+        cursorLayer = nil
+
+        guard let activeWordPosition else { return }
+        guard let range = rangeForWordPosition(activeWordPosition) else { return }
+
+        let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+        var rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+        rect.origin.x += textContainerInset.left
+        rect.origin.y += textContainerInset.top
+
+        let cursor = CALayer()
+        cursor.backgroundColor = color.cgColor
+        cursor.cornerRadius = 1
+        cursor.frame = CGRect(
+            x: max(rect.minX, textContainerInset.left),
+            y: rect.minY + 1,
+            width: 2,
+            height: max(rect.height - 2, 18)
+        )
+
+        let animation = CABasicAnimation(keyPath: "opacity")
+        animation.fromValue = 1
+        animation.toValue = 0.2
+        animation.duration = 0.55
+        animation.autoreverses = true
+        animation.repeatCount = .infinity
+        cursor.add(animation, forKey: "blink")
+
+        layer.addSublayer(cursor)
+        cursorLayer = cursor
+    }
+
+    private func rangeForWordPosition(_ wordPosition: Int) -> NSRange? {
+        var found: NSRange?
+        textStorage.enumerateAttribute(wordPositionAttribute, in: NSRange(location: 0, length: textStorage.length)) { value, range, stop in
+            if let position = value as? Int, position == wordPosition {
+                found = range
+                stop.pointee = true
+            }
+        }
+        return found
+    }
+}
+#else
+private struct InteractiveArabicAyahTextView: View {
+    let words: [QuranSurahDetails.Word]
+    let fallbackText: String
+    let highlightedWordPosition: Int?
+    let cursorWordPosition: Int?
+    let fontName: String
+    let fontSize: CGFloat
+    let accentColor: Color
+    let fullyHighlighted: Bool
+    let onTapWord: (Int) -> Void
+
+    var body: some View {
+        Text(fallbackText)
+            .font(.custom(fontName, size: fontSize))
+            .foregroundStyle(fullyHighlighted ? accentColor : .primary)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .multilineTextAlignment(.trailing)
+    }
+}
+#endif
 
 private struct QuranRecitationControlBar: View {
     let surahTitle: String
@@ -1297,6 +1758,26 @@ private struct QuranSurahProxyAyah: Decodable {
     let wordTimings: [QuranSurahDetails.WordTiming]?
 }
 
+private enum QuranSurahVerseCounts {
+    private static let counts: [Int] = [
+        7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111,
+        43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64,
+        77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83,
+        182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29,
+        18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13,
+        14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28,
+        20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25,
+        22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19,
+        5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3,
+        6, 3, 5, 4, 5, 6
+    ]
+
+    static func count(for surahNumber: Int) -> Int? {
+        guard (1...counts.count).contains(surahNumber) else { return nil }
+        return counts[surahNumber - 1]
+    }
+}
+
 private func preferredQuranArabicFontName(settings: Settings, size: CGFloat) -> String {
     #if os(iOS)
     let candidates = [
@@ -1315,6 +1796,30 @@ private func preferredQuranArabicFontName(settings: Settings, size: CGFloat) -> 
     }
     #endif
     return settings.fontArabic
+}
+
+private enum DailyQuranArabicAPI {
+    static func fetchArabicText(reference: String) async throws -> String? {
+        guard var components = URLComponents(url: quranProxyBaseURL(), resolvingAgainstBaseURL: false) else {
+            throw QuranSurahAPIError.invalidURL
+        }
+        components.path += "/ayah/\(reference)"
+        components.queryItems = [
+            URLQueryItem(name: "lang", value: quranContentLanguageCode())
+        ]
+        guard let url = components.url else {
+            throw QuranSurahAPIError.invalidURL
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw QuranSurahAPIError.badResponse
+        }
+        let decoded = try JSONDecoder().decode(DailyQuranArabicPayload.self, from: data)
+        return decoded.arabicText?
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 #Preview {

@@ -95,12 +95,14 @@ struct AlAdhanApp: App {
                             }
                             .tag(AppTab.library)
 
+                        #if false
                         SettingsView()
                             .tabItem {
                                 Image(systemName: "gearshape")
                                 Text("Settings")
                             }
                             .tag(AppTab.settings)
+                        #endif
                     }
                     .onAppear {
                         if firstLaunchSheet {
