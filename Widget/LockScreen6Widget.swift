@@ -9,7 +9,7 @@ private struct PrayerCountdownBarWindow {
 private func storedLockScreenPrayerCountdownBarStyle() -> LockScreenPrayerCountdownBarStyle {
     let rawValue = UserDefaults(suiteName: sharedAppGroupID)?
         .string(forKey: LockScreenPrayerCountdownBarStyle.storageKey)
-    return LockScreenPrayerCountdownBarStyle(rawValue: rawValue ?? "") ?? .withLocation
+    return (LockScreenPrayerCountdownBarStyle(rawValue: rawValue ?? "") ?? .withLocation).resolvedForWidgetAccess
 }
 
 private func resolvedCountdownNextPrayer(for entry: PrayersProvider.Entry) -> Prayer? {

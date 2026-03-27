@@ -103,7 +103,7 @@ private struct ZikirEntryView: View {
         else {
             return .center
         }
-        return alignment
+        return alignment.resolvedForWidgetAccess
     }
 
     private var horizontalAlignment: HorizontalAlignment {

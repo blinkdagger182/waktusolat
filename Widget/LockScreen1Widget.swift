@@ -7,7 +7,7 @@ struct LockScreen1EntryView: View {
     private var styleRaw = NextPrayerCircleStyle.classic.rawValue
 
     private var style: NextPrayerCircleStyle {
-        NextPrayerCircleStyle(rawValue: styleRaw) ?? .classic
+        (NextPrayerCircleStyle(rawValue: styleRaw) ?? .classic).resolvedForWidgetAccess
     }
 
     private func currentPrayerForRing(nextPrayer: Prayer) -> Prayer? {

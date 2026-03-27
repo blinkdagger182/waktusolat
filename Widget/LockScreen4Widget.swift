@@ -424,7 +424,7 @@ struct LockScreenVerseEntryView: View {
     private let referenceFontSize: CGFloat = 16
 
     private var style: DailyVerseWidgetStyle {
-        DailyVerseWidgetStyle(rawValue: styleRaw) ?? .classic
+        (DailyVerseWidgetStyle(rawValue: styleRaw) ?? .classic).resolvedForWidgetAccess
     }
 
     var body: some View {

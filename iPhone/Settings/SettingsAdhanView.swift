@@ -956,6 +956,7 @@ private struct NotificationStylePreviewCard: View {
 
 struct WidgetPreviewGalleryView: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
     @AppStorage(LockScreenPrayerTimesStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var prayerTimesStyleRaw = LockScreenPrayerTimesStyle.prayerCountdownWithLocation.rawValue
     @AppStorage(LockScreenPrayerCountdownBarStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
@@ -970,32 +971,61 @@ struct WidgetPreviewGalleryView: View {
     private var dailyVerseStyleRaw = DailyVerseWidgetStyle.classic.rawValue
 
     private var prayerTimesStyle: LockScreenPrayerTimesStyle {
-        LockScreenPrayerTimesStyle(rawValue: prayerTimesStyleRaw) ?? .prayerCountdownWithLocation
+        (LockScreenPrayerTimesStyle(rawValue: prayerTimesStyleRaw) ?? .prayerCountdownWithLocation).resolvedForWidgetAccess
     }
 
     private var countdownBarStyle: LockScreenPrayerCountdownBarStyle {
-        LockScreenPrayerCountdownBarStyle(rawValue: countdownBarStyleRaw) ?? .withLocation
+        (LockScreenPrayerCountdownBarStyle(rawValue: countdownBarStyleRaw) ?? .withLocation).resolvedForWidgetAccess
     }
 
     private var zikirAlignment: WidgetZikirAlignment {
-        WidgetZikirAlignment(rawValue: zikirAlignmentRaw) ?? .center
+        (WidgetZikirAlignment(rawValue: zikirAlignmentRaw) ?? .center).resolvedForWidgetAccess
     }
 
     private var nextPrayerCircleStyle: NextPrayerCircleStyle {
-        NextPrayerCircleStyle(rawValue: nextPrayerCircleStyleRaw) ?? .classic
+        (NextPrayerCircleStyle(rawValue: nextPrayerCircleStyleRaw) ?? .classic).resolvedForWidgetAccess
     }
 
     private var prayerListStyle: PrayerListWidgetStyle {
-        PrayerListWidgetStyle(rawValue: prayerListStyleRaw) ?? .classic
+        (PrayerListWidgetStyle(rawValue: prayerListStyleRaw) ?? .classic).resolvedForWidgetAccess
     }
 
     private var dailyVerseStyle: DailyVerseWidgetStyle {
-        DailyVerseWidgetStyle(rawValue: dailyVerseStyleRaw) ?? .classic
+        (DailyVerseWidgetStyle(rawValue: dailyVerseStyleRaw) ?? .classic).resolvedForWidgetAccess
+    }
+
+    private var hasPremiumWidgetAccess: Bool {
+        revenueCat.hasPremiumWidgetsUnlocked
+    }
+
+    private var premiumWidgetsMessage: String {
+        isMalayAppLanguage()
+            ? "Derma RM9.90 atau lebih untuk membuka gaya widget premium."
+            : "Donate RM9.90 or more to unlock premium widget styles."
+    }
+
+    private func handleWidgetStyleSelection(requiresPremiumWidgets: Bool, action: () -> Void) {
+        settings.hapticFeedback()
+        guard hasPremiumWidgetAccess || !requiresPremiumWidgets else {
+            NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+            return
+        }
+
+        withAnimation(.easeInOut) {
+            action()
+        }
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                if !hasPremiumWidgetAccess {
+                    Text(premiumWidgetsMessage)
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+                }
+
                 previewSection(
                     title: isMalayAppLanguage() ? "Bulatan Solat Seterusnya" : "Next Prayer Circle",
                     subtitle: isMalayAppLanguage()
@@ -1006,15 +1036,14 @@ struct WidgetPreviewGalleryView: View {
                         HStack(alignment: .top, spacing: 16) {
                             ForEach(NextPrayerCircleStyle.allCases) { style in
                                 Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
+                                    handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         nextPrayerCircleStyleRaw = style.rawValue
                                     }
-                                    WidgetCenter.shared.reloadAllTimelines()
                                 } label: {
                                     NextPrayerCircleStyleCard(
                                         style: style,
-                                        isSelected: nextPrayerCircleStyle == style
+                                        isSelected: nextPrayerCircleStyle == style,
+                                        isLocked: style.requiresPremiumWidgets && !hasPremiumWidgetAccess
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -1034,15 +1063,14 @@ struct WidgetPreviewGalleryView: View {
                         HStack(alignment: .top, spacing: 16) {
                             ForEach(LockScreenPrayerTimesStyle.allCases) { style in
                                 Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
+                                    handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         prayerTimesStyleRaw = style.rawValue
                                     }
-                                    WidgetCenter.shared.reloadAllTimelines()
                                 } label: {
                                     PrayerTimesStyleCard(
                                         style: style,
-                                        isSelected: prayerTimesStyle == style
+                                        isSelected: prayerTimesStyle == style,
+                                        isLocked: style.requiresPremiumWidgets && !hasPremiumWidgetAccess
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -1062,15 +1090,14 @@ struct WidgetPreviewGalleryView: View {
                         HStack(alignment: .top, spacing: 16) {
                             ForEach(PrayerListWidgetStyle.allCases) { style in
                                 Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
+                                    handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         prayerListStyleRaw = style.rawValue
                                     }
-                                    WidgetCenter.shared.reloadAllTimelines()
                                 } label: {
                                     PrayerListStyleCard(
                                         style: style,
-                                        isSelected: prayerListStyle == style
+                                        isSelected: prayerListStyle == style,
+                                        isLocked: style.requiresPremiumWidgets && !hasPremiumWidgetAccess
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -1090,15 +1117,14 @@ struct WidgetPreviewGalleryView: View {
                         HStack(alignment: .top, spacing: 16) {
                             ForEach(LockScreenPrayerCountdownBarStyle.allCases) { style in
                                 Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
+                                    handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         countdownBarStyleRaw = style.rawValue
                                     }
-                                    WidgetCenter.shared.reloadAllTimelines()
                                 } label: {
                                     PrayerCountdownBarStyleCard(
                                         style: style,
-                                        isSelected: countdownBarStyle == style
+                                        isSelected: countdownBarStyle == style,
+                                        isLocked: style.requiresPremiumWidgets && !hasPremiumWidgetAccess
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -1118,15 +1144,14 @@ struct WidgetPreviewGalleryView: View {
                         HStack(alignment: .top, spacing: 16) {
                             ForEach(WidgetZikirAlignment.allCases) { alignment in
                                 Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
+                                    handleWidgetStyleSelection(requiresPremiumWidgets: alignment.requiresPremiumWidgets) {
                                         zikirAlignmentRaw = alignment.rawValue
                                     }
-                                    WidgetCenter.shared.reloadAllTimelines()
                                 } label: {
                                     ZikirStyleCard(
                                         alignment: alignment,
-                                        isSelected: zikirAlignment == alignment
+                                        isSelected: zikirAlignment == alignment,
+                                        isLocked: alignment.requiresPremiumWidgets && !hasPremiumWidgetAccess
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -1146,15 +1171,14 @@ struct WidgetPreviewGalleryView: View {
                         HStack(alignment: .top, spacing: 16) {
                             ForEach(DailyVerseWidgetStyle.allCases) { style in
                                 Button {
-                                    settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
+                                    handleWidgetStyleSelection(requiresPremiumWidgets: style.requiresPremiumWidgets) {
                                         dailyVerseStyleRaw = style.rawValue
                                     }
-                                    WidgetCenter.shared.reloadAllTimelines()
                                 } label: {
                                     DailyVerseStyleCard(
                                         style: style,
-                                        isSelected: dailyVerseStyle == style
+                                        isSelected: dailyVerseStyle == style,
+                                        isLocked: style.requiresPremiumWidgets && !hasPremiumWidgetAccess
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -1196,12 +1220,27 @@ struct WidgetPreviewGalleryView: View {
     }
 }
 
+private struct PremiumWidgetBadge: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 9, weight: .bold))
+            Text("Premium")
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(.ultraThinMaterial, in: Capsule())
+    }
+}
+
 private struct NextPrayerCircleStyleCard: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.colorScheme) private var colorScheme
 
     let style: NextPrayerCircleStyle
     let isSelected: Bool
+    let isLocked: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1255,6 +1294,12 @@ private struct NextPrayerCircleStyleCard: View {
                 RoundedRectangle(cornerRadius: 40, style: .continuous)
                     .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if isLocked {
+                    PremiumWidgetBadge()
+                        .padding(10)
+                }
+            }
             .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1262,7 +1307,7 @@ private struct NextPrayerCircleStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
+                Text(isLocked ? "Premium" : (isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary))
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1312,6 +1357,7 @@ private struct PrayerListStyleCard: View {
 
     let style: PrayerListWidgetStyle
     let isSelected: Bool
+    let isLocked: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1364,6 +1410,12 @@ private struct PrayerListStyleCard: View {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if isLocked {
+                    PremiumWidgetBadge()
+                        .padding(10)
+                }
+            }
             .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1371,7 +1423,7 @@ private struct PrayerListStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
+                Text(isLocked ? "Premium" : (isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary))
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1442,6 +1494,7 @@ private struct DailyVerseStyleCard: View {
 
     let style: DailyVerseWidgetStyle
     let isSelected: Bool
+    let isLocked: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1496,6 +1549,12 @@ private struct DailyVerseStyleCard: View {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if isLocked {
+                    PremiumWidgetBadge()
+                        .padding(10)
+                }
+            }
             .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1503,7 +1562,7 @@ private struct DailyVerseStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary)
+                Text(isLocked ? "Premium" : (isSelected ? (isMalayAppLanguage() ? "Dipilih" : "Selected") : style.summary))
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1631,6 +1690,7 @@ private struct PrayerTimesStyleCard: View {
 
     let style: LockScreenPrayerTimesStyle
     let isSelected: Bool
+    let isLocked: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1781,6 +1841,12 @@ private struct PrayerTimesStyleCard: View {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if isLocked {
+                    PremiumWidgetBadge()
+                        .padding(10)
+                }
+            }
             .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1788,9 +1854,11 @@ private struct PrayerTimesStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isSelected
-                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
-                     : style.summary)
+                Text(isLocked
+                     ? "Premium"
+                     : (isSelected
+                        ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                        : style.summary))
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1806,6 +1874,7 @@ private struct PrayerCountdownBarStyleCard: View {
 
     let style: LockScreenPrayerCountdownBarStyle
     let isSelected: Bool
+    let isLocked: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1864,6 +1933,12 @@ private struct PrayerCountdownBarStyleCard: View {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if isLocked {
+                    PremiumWidgetBadge()
+                        .padding(10)
+                }
+            }
             .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1871,9 +1946,11 @@ private struct PrayerCountdownBarStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isSelected
-                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
-                     : style.summary)
+                Text(isLocked
+                     ? "Premium"
+                     : (isSelected
+                        ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                        : style.summary))
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)
@@ -1889,6 +1966,7 @@ private struct ZikirStyleCard: View {
 
     let alignment: WidgetZikirAlignment
     let isSelected: Bool
+    let isLocked: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1934,6 +2012,12 @@ private struct ZikirStyleCard: View {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if isLocked {
+                    PremiumWidgetBadge()
+                        .padding(10)
+                }
+            }
             .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1941,9 +2025,11 @@ private struct ZikirStyleCard: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text(isSelected
-                     ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
-                     : alignment.summary)
+                Text(isLocked
+                     ? "Premium"
+                     : (isSelected
+                        ? (isMalayAppLanguage() ? "Dipilih" : "Selected")
+                        : alignment.summary))
                     .font(.subheadline)
                     .foregroundStyle(isSelected ? settings.accentColor.color : .secondary)
                     .lineLimit(2)

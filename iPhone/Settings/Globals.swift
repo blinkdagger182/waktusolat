@@ -1,6 +1,12 @@
 import SwiftUI
 
 let sharedAppGroupID = "group.app.riskcreatives.waktu"
+let premiumWidgetsUnlockedStorageKey = "premiumWidgetsUnlockedV1"
+let premiumWidgetEligibleProductIDsStorageKey = "premiumWidgetEligibleProductIDsV1"
+
+func premiumWidgetsUnlocked(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> Bool {
+    defaults?.bool(forKey: premiumWidgetsUnlockedStorageKey) ?? false
+}
 
 enum AppLanguage: String, CaseIterable, Identifiable {
     static let storageKey = "appLanguageCode"
@@ -170,6 +176,16 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
                 : "A centered style using the Amiri font for a more classical look."
         }
     }
+
+    static var freeDefault: WidgetZikirAlignment { .center }
+
+    var requiresPremiumWidgets: Bool {
+        self != .center
+    }
+
+    var resolvedForWidgetAccess: WidgetZikirAlignment {
+        premiumWidgetsUnlocked() || !requiresPremiumWidgets ? self : Self.freeDefault
+    }
 }
 
 enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
@@ -229,6 +245,16 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
                 : "A dual-ring style that shows the next prayer name and time in the center."
         }
     }
+
+    static var freeDefault: NextPrayerCircleStyle { .classic }
+
+    var requiresPremiumWidgets: Bool {
+        self != .classic
+    }
+
+    var resolvedForWidgetAccess: NextPrayerCircleStyle {
+        premiumWidgetsUnlocked() || !requiresPremiumWidgets ? self : Self.freeDefault
+    }
 }
 
 enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
@@ -280,6 +306,16 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
                 ? "Memaparkan keenam-enam waktu solat dalam satu susun atur ikon penuh."
                 : "Shows all six prayers in a complete icon-board layout."
         }
+    }
+
+    static var freeDefault: PrayerListWidgetStyle { .classic }
+
+    var requiresPremiumWidgets: Bool {
+        self != .classic
+    }
+
+    var resolvedForWidgetAccess: PrayerListWidgetStyle {
+        premiumWidgetsUnlocked() || !requiresPremiumWidgets ? self : Self.freeDefault
     }
 }
 
@@ -361,6 +397,16 @@ enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
                 ? "Gaya tengah dengan fon Baskerville."
                 : "The centered layout with Baskerville."
         }
+    }
+
+    static var freeDefault: DailyVerseWidgetStyle { .classic }
+
+    var requiresPremiumWidgets: Bool {
+        self != .classic
+    }
+
+    var resolvedForWidgetAccess: DailyVerseWidgetStyle {
+        premiumWidgetsUnlocked() || !requiresPremiumWidgets ? self : Self.freeDefault
     }
 }
 
@@ -449,6 +495,16 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
                 : "A softer, taller, curvier graph without the location."
         }
     }
+
+    static var freeDefault: LockScreenPrayerTimesStyle { .prayerCountdownClassicWithLocation }
+
+    var requiresPremiumWidgets: Bool {
+        self != .prayerCountdownClassicWithLocation
+    }
+
+    var resolvedForWidgetAccess: LockScreenPrayerTimesStyle {
+        premiumWidgetsUnlocked() || !requiresPremiumWidgets ? self : Self.freeDefault
+    }
 }
 
 enum LockScreenPrayerCountdownBarStyle: String, CaseIterable, Identifiable {
@@ -493,6 +549,16 @@ enum LockScreenPrayerCountdownBarStyle: String, CaseIterable, Identifiable {
                 ? "Gaya bar bateri yang lebih besar tanpa lokasi."
                 : "A larger battery-like countdown style without the location."
         }
+    }
+
+    static var freeDefault: LockScreenPrayerCountdownBarStyle { .withLocation }
+
+    var requiresPremiumWidgets: Bool {
+        self != .withLocation
+    }
+
+    var resolvedForWidgetAccess: LockScreenPrayerCountdownBarStyle {
+        premiumWidgetsUnlocked() || !requiresPremiumWidgets ? self : Self.freeDefault
     }
 }
 

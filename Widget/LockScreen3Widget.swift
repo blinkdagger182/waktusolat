@@ -7,7 +7,7 @@ struct LockScreen3EntryView: View {
     private var styleRaw = PrayerListWidgetStyle.classic.rawValue
 
     private var style: PrayerListWidgetStyle {
-        PrayerListWidgetStyle(rawValue: styleRaw) ?? .classic
+        (PrayerListWidgetStyle(rawValue: styleRaw) ?? .classic).resolvedForWidgetAccess
     }
 
     private func compactHourString(for prayer: Prayer) -> String {
