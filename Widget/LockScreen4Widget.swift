@@ -23,14 +23,14 @@ struct LockScreen4EntryView: View {
                             .font(.caption)
                             .frame(width: 10, alignment: .center)
                         
-                        Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                        Text(widgetPrayerDisplayName(prayer, in: entry))
                             .fontWeight(.bold)
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)
                         
                         Spacer()
                         
-                        Text(prayer.time, style: .time)
+                        Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                             .fontWeight(.bold)
                     }
                     .foregroundColor((entry.currentPrayer?.nameTransliteration ?? "").contains(prayer.nameTransliteration) ? .primary : .secondary)

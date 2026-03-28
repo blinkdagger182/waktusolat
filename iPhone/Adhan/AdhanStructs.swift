@@ -88,6 +88,16 @@ struct ShurooqDerivedHelperTimes: Equatable {
     let dhuha: Date
 }
 
+struct PrayerDisplayInfo: Equatable {
+    let nameTransliteration: String
+    let nameEnglish: String
+    let nameArabic: String
+    let time: Date
+    let image: String
+    let usesSecondarySunStyle: Bool
+    let isDerivedDhuha: Bool
+}
+
 enum PrayerDerivedTimes {
     static func shurooqHelpers(for prayers: [Prayer], countryCode: String?) -> [UUID: ShurooqDerivedHelperTimes] {
         guard countryCode?.uppercased() == "MY" else { return [:] }
@@ -111,6 +121,56 @@ enum PrayerDerivedTimes {
                 dhuha: dhuha
             )
         ]
+    }
+
+    static func displayInfo(
+        for prayer: Prayer,
+        in prayers: [Prayer],
+        countryCode: String?,
+        now: Date = Date()
+    ) -> PrayerDisplayInfo {
+        let normalizedName = normalizedPrayerKey(prayer.nameTransliteration)
+        let baseDisplay = PrayerDisplayInfo(
+            nameTransliteration: prayer.nameTransliteration,
+            nameEnglish: prayer.nameEnglish,
+            nameArabic: prayer.nameArabic,
+            time: prayer.time,
+            image: prayer.image,
+            usesSecondarySunStyle: normalizedName == "shurooq",
+            isDerivedDhuha: false
+        )
+
+        guard countryCode?.uppercased() == "MY", normalizedName == "shurooq" else {
+            return baseDisplay
+        }
+
+        guard now.isSameDay(as: prayer.time) else {
+            return baseDisplay
+        }
+
+        guard
+            let helperTimes = shurooqHelpers(for: prayers, countryCode: countryCode)[prayer.id],
+            let middayPrayer = prayers.first(where: {
+                let key = normalizedPrayerKey($0.nameTransliteration)
+                return key == "dhuhr" || key == "zuhur" || key == "jumuah"
+            })
+        else {
+            return baseDisplay
+        }
+
+        guard now >= helperTimes.dhuha, now < middayPrayer.time else {
+            return baseDisplay
+        }
+
+        return PrayerDisplayInfo(
+            nameTransliteration: "Dhuha",
+            nameEnglish: "Forenoon",
+            nameArabic: "الضُّحَى",
+            time: helperTimes.dhuha,
+            image: prayer.image,
+            usesSecondarySunStyle: true,
+            isDerivedDhuha: true
+        )
     }
 
     private static func normalizedPrayerKey(_ value: String) -> String {

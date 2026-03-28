@@ -379,12 +379,12 @@ struct LockScreen2EntryView: View {
 
         let travelNames = ["Fajr", "Dhuhr", "Maghrib"]
         return travelNames.compactMap { target in
-            sorted.first { widgetPrayerDisplayName($0.nameTransliteration) == target }
+            sorted.first { widgetPrayerDisplayName($0, in: entry) == target }
         }
     }
 
     private func shortPrayerLabel(for prayer: Prayer) -> String {
-        switch widgetPrayerDisplayName(prayer.nameTransliteration) {
+        switch widgetPrayerDisplayName(prayer, in: entry) {
         case "Fajr", "Subuh":
             return isMalayAppLanguage() ? "SB" : "FJ"
         case "Shurooq", "Syuruk":
@@ -398,7 +398,7 @@ struct LockScreen2EntryView: View {
         case "Isha", "Isyak":
             return isMalayAppLanguage() ? "IS" : "IS"
         default:
-            return String(widgetPrayerDisplayName(prayer.nameTransliteration).prefix(2)).uppercased()
+            return String(widgetPrayerDisplayName(prayer, in: entry).prefix(2)).uppercased()
         }
     }
 
@@ -442,21 +442,21 @@ struct LockScreen2EntryView: View {
                     }
 
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
+                        Text(widgetPrayerDisplayName(currentPrayer, in: entry))
                             .font(.headline.weight(.semibold))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
 
                         Spacer(minLength: 0)
 
-                        Text(nextPrayer.time, style: .time)
+                        Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
                             .font(.headline.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
 
                         Spacer(minLength: 0)
 
-                        Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                        Text(widgetPrayerDisplayName(nextPrayer, in: entry))
                             .font(.headline.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -471,9 +471,9 @@ struct LockScreen2EntryView: View {
                     let centeredDots = selectedStyle == .prayerCountdownCenteredWithLocation
                         || selectedStyle == .prayerCountdownCenteredWithoutLocation
                     PrayerDotCountdown(
-                        currentPrayer: widgetPrayerDisplayName(currentPrayer.nameTransliteration),
-                        nextPrayer: widgetPrayerDisplayName(nextPrayer.nameTransliteration),
-                        nextTime: nextPrayer.time,
+                        currentPrayer: widgetPrayerDisplayName(currentPrayer, in: entry),
+                        nextPrayer: widgetPrayerDisplayName(nextPrayer, in: entry),
+                        nextTime: widgetPrayerDisplayTime(nextPrayer, in: entry),
                         prayerLabels: prayersForDots.map(shortPrayerLabel(for:)),
                         activeIndex: activeIndex(in: prayersForDots),
                         footer: showsLocation ? entry.currentCity : nil,

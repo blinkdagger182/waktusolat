@@ -82,7 +82,7 @@ struct LockScreen1EntryView: View {
                                 .font(.system(size: 9, weight: .semibold))
                         }
 
-                        Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                        Text(widgetPrayerDisplayName(nextPrayer, in: entry))
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .lineLimit(1)
                             .minimumScaleFactor(0.2)
@@ -91,20 +91,20 @@ struct LockScreen1EntryView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
 
-                    Text(nextPrayer.time, style: .time)
+                    Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
                         .font(.system(.caption, design: .rounded).weight(.bold))
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
                 case .minimal:
-                    Text(nextPrayer.time, style: .time)
+                    Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
-                    Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                    Text(widgetPrayerDisplayName(nextPrayer, in: entry))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -136,7 +136,7 @@ struct LockScreen1EntryView: View {
 
                             Image(systemName: currentPrayer.image)
                                 .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(widgetIsShurooq(currentPrayer.nameTransliteration) ? .primary : .primary)
+                                .foregroundStyle(widgetIsShurooq(currentPrayer, in: entry) ? .primary : .primary)
                         }
                         .padding(.top, 2)
                     }
@@ -144,7 +144,7 @@ struct LockScreen1EntryView: View {
 
                 case .countdownRing:
                     let progress = remainingPrayerProgress(nextPrayer: nextPrayer)
-                    let label = localizedPrayerName((currentPrayerForRing(nextPrayer: nextPrayer)?.nameTransliteration ?? nextPrayer.nameTransliteration))
+                    let label = widgetPrayerDisplayName(currentPrayerForRing(nextPrayer: nextPrayer) ?? nextPrayer, in: entry)
 
                     ZStack {
                         Circle()
@@ -170,7 +170,7 @@ struct LockScreen1EntryView: View {
                 case .dualCountdownRing:
                     let innerProgress = remainingPrayerProgress(nextPrayer: nextPrayer)
                     let outerProgress = remainingDayProgress
-                    let label = localizedPrayerName((currentPrayerForRing(nextPrayer: nextPrayer)?.nameTransliteration ?? nextPrayer.nameTransliteration))
+                    let label = widgetPrayerDisplayName(currentPrayerForRing(nextPrayer: nextPrayer) ?? nextPrayer, in: entry)
 
                     ZStack {
                         Circle()
@@ -209,7 +209,7 @@ struct LockScreen1EntryView: View {
                 case .dualCountdownRingNextPrayer:
                     let innerProgress = remainingPrayerProgress(nextPrayer: nextPrayer)
                     let outerProgress = remainingDayProgress
-                    let nextPrayerLabel = localizedPrayerName(nextPrayer.nameTransliteration)
+                    let nextPrayerLabel = widgetPrayerDisplayName(nextPrayer, in: entry)
 
                     ZStack {
                         Circle()
@@ -243,7 +243,7 @@ struct LockScreen1EntryView: View {
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.55)
 
-                            Text(nextPrayer.time, style: .time)
+                            Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
                                 .font(.system(size: 8, weight: .bold, design: .rounded))
                                 .monospacedDigit()
                                 .lineLimit(1)

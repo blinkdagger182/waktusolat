@@ -89,7 +89,7 @@ private struct LockScreenSparkEntryView: View {
 
         let travelNames = ["Fajr", "Dhuhr", "Maghrib"]
         return travelNames.compactMap { target in
-            sorted.first { widgetPrayerDisplayName($0.nameTransliteration) == target }
+            sorted.first { widgetPrayerDisplayName($0, in: entry) == target }
         }
     }
 
@@ -113,7 +113,7 @@ private struct LockScreenSparkEntryView: View {
                         Text("Next Prayer")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                        Text(widgetPrayerDisplayName(nextPrayer, in: entry))
                             .font(.headline.weight(.semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -121,7 +121,7 @@ private struct LockScreenSparkEntryView: View {
 
                     Spacer(minLength: 6)
 
-                    Text(nextPrayer.time, style: .timer)
+                    Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
                         .font(.headline.monospacedDigit())
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)

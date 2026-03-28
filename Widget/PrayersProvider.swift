@@ -30,7 +30,8 @@ struct PrayersProvider: TimelineProvider {
         let baseContext = loadBaseContext()
         let currentEntry = makeEntry(at: now, baseContext: baseContext)
         let nextPrayerRefresh = currentEntry.nextPrayer.flatMap { $0.time > now ? $0.time : nil }
-        let refreshBoundary = [nextPrayerRefresh, nextMidnight].compactMap { $0 }.min() ?? nextMidnight
+        let displayTransitionRefresh = nextDisplayTransitionDate(after: now, baseContext: baseContext)
+        let refreshBoundary = [nextPrayerRefresh, displayTransitionRefresh, nextMidnight].compactMap { $0 }.min() ?? nextMidnight
         let entries = makeTimelineEntries(
             startingFrom: now,
             refreshBoundary: refreshBoundary,
@@ -85,7 +86,24 @@ struct PrayersProvider: TimelineProvider {
             nextDate = nextDate.addingTimeInterval(step)
         }
 
-        return entries
+        for transitionDate in exactDisplayTransitionDates(
+            after: now,
+            before: refreshBoundary,
+            baseContext: baseContext
+        ) {
+            entries.append(makeEntry(at: transitionDate, baseContext: baseContext))
+        }
+
+        entries.sort { $0.date < $1.date }
+        var dedupedEntries: [PrayersEntry] = []
+        for entry in entries {
+            if let last = dedupedEntries.last, abs(last.date.timeIntervalSince(entry.date)) < 1 {
+                continue
+            }
+            dedupedEntries.append(entry)
+        }
+
+        return dedupedEntries
     }
 
     private func makeEntry(
@@ -166,6 +184,36 @@ struct PrayersProvider: TimelineProvider {
         }
         return (prayers.last, prayers.first)
     }
+
+    private func nextDisplayTransitionDate(
+        after now: Date,
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+    ) -> Date? {
+        exactDisplayTransitionDates(
+            after: now,
+            before: Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: 1, to: now) ?? now),
+            baseContext: baseContext
+        ).first
+    }
+
+    private func exactDisplayTransitionDates(
+        after now: Date,
+        before boundary: Date,
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+    ) -> [Date] {
+        guard
+            baseContext.isMalaysia,
+            let prayers = baseContext.prayers?.prayers
+        else {
+            return []
+        }
+
+        let helpers = PrayerDerivedTimes.shurooqHelpers(for: prayers, countryCode: "MY")
+        return helpers.values
+            .map(\.dhuha)
+            .filter { $0 > now && $0 < boundary }
+            .sorted()
+    }
 }
 
 struct PrayersEntry: TimelineEntry {
@@ -213,4 +261,25 @@ func widgetPrayerDisplayName(_ raw: String) -> String {
 func widgetIsShurooq(_ raw: String) -> Bool {
     let normalized = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     return normalized == "syuruk" || normalized == "shurooq" || normalized == "sunrise"
+}
+
+func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry) -> PrayerDisplayInfo {
+    PrayerDerivedTimes.displayInfo(
+        for: prayer,
+        in: entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers,
+        countryCode: entry.isMalaysia ? "MY" : nil,
+        now: entry.date
+    )
+}
+
+func widgetPrayerDisplayName(_ prayer: Prayer, in entry: PrayersEntry) -> String {
+    localizedPrayerName(widgetPrayerDisplayInfo(prayer, in: entry).nameTransliteration)
+}
+
+func widgetPrayerDisplayTime(_ prayer: Prayer, in entry: PrayersEntry) -> Date {
+    widgetPrayerDisplayInfo(prayer, in: entry).time
+}
+
+func widgetIsShurooq(_ prayer: Prayer, in entry: PrayersEntry) -> Bool {
+    widgetPrayerDisplayInfo(prayer, in: entry).usesSecondarySunStyle
 }

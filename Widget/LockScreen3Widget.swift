@@ -14,7 +14,7 @@ struct LockScreen3EntryView: View {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "h:mm"
-        return formatter.string(from: prayer.time)
+        return formatter.string(from: widgetPrayerDisplayTime(prayer, in: entry))
     }
 
     var body: some View {
@@ -49,14 +49,14 @@ struct LockScreen3EntryView: View {
                                 .font(.caption)
                                 .frame(width: 10, alignment: .center)
 
-                            Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                            Text(widgetPrayerDisplayName(prayer, in: entry))
                                 .fontWeight(.bold)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
 
                             Spacer()
 
-                            Text(prayer.time, style: .time)
+                            Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                                 .fontWeight(.bold)
                         }
                         .foregroundColor(prayer.time <= entry.date ? .primary : .secondary)
@@ -67,12 +67,12 @@ struct LockScreen3EntryView: View {
 
                     if let lead = focused.first {
                         HStack {
-                            Text(widgetPrayerDisplayName(lead.nameTransliteration))
+                            Text(widgetPrayerDisplayName(lead, in: entry))
                                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                             Spacer()
-                            Text(lead.time, style: .time)
+                            Text(widgetPrayerDisplayTime(lead, in: entry), style: .time)
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .monospacedDigit()
                                 .lineLimit(1)
@@ -81,11 +81,11 @@ struct LockScreen3EntryView: View {
 
                     ForEach(Array(focused.dropFirst())) { prayer in
                         HStack {
-                            Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                            Text(widgetPrayerDisplayName(prayer, in: entry))
                                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                                 .lineLimit(1)
                             Spacer()
-                            Text(prayer.time, style: .time)
+                            Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                                 .monospacedDigit()
                                 .lineLimit(1)
@@ -99,14 +99,14 @@ struct LockScreen3EntryView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         ForEach(focused) { prayer in
                             HStack(spacing: 8) {
-                                Text(widgetPrayerDisplayName(prayer.nameTransliteration).uppercased())
+                                Text(widgetPrayerDisplayName(prayer, in: entry).uppercased())
                                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.75)
 
                                 Spacer(minLength: 4)
 
-                                Text(prayer.time, style: .time)
+                                    Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                                     .monospacedDigit()
                                     .lineLimit(1)
@@ -140,7 +140,7 @@ struct LockScreen3EntryView: View {
                                     .font(.system(size: 15, weight: .semibold))
                                     .frame(width: 18, height: 18)
 
-                                Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                                Text(widgetPrayerDisplayName(prayer, in: entry))
                                     .font(.system(size: 9, weight: .bold, design: .rounded))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
@@ -166,7 +166,7 @@ struct LockScreen3EntryView: View {
                                     .font(.system(size: 13, weight: .semibold))
                                     .frame(width: 16, height: 16)
 
-                                Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                                Text(widgetPrayerDisplayName(prayer, in: entry))
                                     .font(.system(size: 7, weight: .bold, design: .rounded))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.65)

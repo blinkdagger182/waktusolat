@@ -180,7 +180,12 @@ enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
     static var freeDefault: WidgetZikirAlignment { .center }
 
     var requiresPremiumWidgets: Bool {
-        self != .center
+        switch self {
+        case .center, .leading:
+            return false
+        case .trailing, .centerAmiri:
+            return true
+        }
     }
 
     var resolvedForWidgetAccess: WidgetZikirAlignment {
@@ -249,7 +254,12 @@ enum NextPrayerCircleStyle: String, CaseIterable, Identifiable {
     static var freeDefault: NextPrayerCircleStyle { .classic }
 
     var requiresPremiumWidgets: Bool {
-        self != .classic
+        switch self {
+        case .classic, .minimal:
+            return false
+        case .percentageRing, .countdownRing, .dualCountdownRing, .dualCountdownRingNextPrayer:
+            return true
+        }
     }
 
     var resolvedForWidgetAccess: NextPrayerCircleStyle {
@@ -311,7 +321,12 @@ enum PrayerListWidgetStyle: String, CaseIterable, Identifiable {
     static var freeDefault: PrayerListWidgetStyle { .classic }
 
     var requiresPremiumWidgets: Bool {
-        self != .classic
+        switch self {
+        case .classic, .focus:
+            return false
+        case .departuresBoard, .iconBoard, .iconBoardSix:
+            return true
+        }
     }
 
     var resolvedForWidgetAccess: PrayerListWidgetStyle {
@@ -402,7 +417,12 @@ enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
     static var freeDefault: DailyVerseWidgetStyle { .classic }
 
     var requiresPremiumWidgets: Bool {
-        self != .classic
+        switch self {
+        case .classic, .centered:
+            return false
+        case .classicBaskerville, .centeredBaskerville:
+            return true
+        }
     }
 
     var resolvedForWidgetAccess: DailyVerseWidgetStyle {
@@ -499,7 +519,19 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
     static var freeDefault: LockScreenPrayerTimesStyle { .prayerTimelineWithLocation }
 
     var requiresPremiumWidgets: Bool {
-        self != .prayerTimelineWithLocation
+        switch self {
+        case .prayerTimelineWithLocation, .prayerTimelineWithoutLocation:
+            return false
+        case .prayerCountdownWithLocation,
+             .prayerCountdownWithoutLocation,
+             .prayerCountdownClassicWithLocation,
+             .prayerCountdownClassicWithoutLocation,
+             .prayerCountdownCenteredWithLocation,
+             .prayerCountdownCenteredWithoutLocation,
+             .prayerTimelinePlusWithLocation,
+             .prayerTimelinePlusWithoutLocation:
+            return true
+        }
     }
 
     var resolvedForWidgetAccess: LockScreenPrayerTimesStyle {
@@ -554,7 +586,12 @@ enum LockScreenPrayerCountdownBarStyle: String, CaseIterable, Identifiable {
     static var freeDefault: LockScreenPrayerCountdownBarStyle { .withLocation }
 
     var requiresPremiumWidgets: Bool {
-        self != .withLocation
+        switch self {
+        case .withLocation, .withoutLocation:
+            return false
+        case .batteryWithLocation, .batteryWithoutLocation:
+            return true
+        }
     }
 
     var resolvedForWidgetAccess: LockScreenPrayerCountdownBarStyle {
@@ -646,6 +683,10 @@ func localizedPrayerName(_ raw: String) -> String {
         return appLocalized("Fajr")
     case "syuruk", "shurooq", "sunrise":
         return appLocalized("Shurooq")
+    case "ishraq":
+        return "Ishraq"
+    case "dhuha", "duha":
+        return "Dhuha"
     case "zuhur", "dhuhr", "jumuah":
         return isMalay ? "Jumaat" : appLocalized("Dhuhr")
     case "asar", "asr":
@@ -667,6 +708,8 @@ func localizedPrayerMeaning(_ raw: String) -> String {
         return isMalay ? "Fajar" : "Dawn"
     case "sunrise":
         return isMalay ? "Matahari terbit" : "Sunrise"
+    case "forenoon":
+        return isMalay ? "Duha" : "Forenoon"
     case "midday":
         return isMalay ? "Tengah hari" : "Midday"
     case "afternoon":
@@ -684,6 +727,12 @@ func localizedShurooqSummaryText() -> String {
     effectiveAppLanguageCode().hasPrefix("ms")
         ? "Syuruk bukan satu solat, tetapi menandakan berakhirnya waktu Subuh."
         : "Shurooq is not a prayer, but marks the end of Fajr."
+}
+
+func localizedDhuhaSummaryText() -> String {
+    effectiveAppLanguageCode().hasPrefix("ms")
+        ? "Duha ialah waktu solat sunat selepas matahari naik tinggi dari ufuk."
+        : "Dhuha is a sunnah prayer window after the sun has risen well above the horizon."
 }
 
 func localizedHijriMonthName(_ month: Int) -> String {
@@ -731,6 +780,10 @@ func localizedPrayerDetailNote(for prayerName: String) -> String? {
         return isMalay
             ? "Berdasarkan Sahih Muslim 612a, Syuruk menandakan berakhirnya waktu Subuh. Syuruk bukan solat fardu yang tersendiri."
             : "Based on Sahih Muslim 612a, Shurooq marks the end of Fajr time. It is not a prayer itself."
+    case "dhuha", "duha":
+        return isMalay
+            ? "Waktu Duha bermula selepas matahari naik tinggi sedikit dari ufuk dan berterusan sehingga hampir masuk Zuhur."
+            : "Dhuha begins after the sun has risen a little above the horizon and continues until shortly before Dhuhr."
     case "fajr", "subuh":
         return isMalay
             ? "Dalam Sahih Muslim 612a, Rasulullah SAW menjelaskan bahawa waktu Subuh berterusan sehingga mula terbit matahari."

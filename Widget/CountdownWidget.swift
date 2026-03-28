@@ -167,7 +167,7 @@ struct CountdownEntryView: View {
 
         let travelNames = ["Fajr", "Dhuhr", "Maghrib"]
         return travelNames.compactMap { target in
-            sorted.first { widgetPrayerDisplayName($0.nameTransliteration) == target }
+            sorted.first { widgetPrayerDisplayName($0, in: entry) == target }
         }
     }
 
@@ -199,20 +199,20 @@ struct CountdownEntryView: View {
                             )
 
                             HStack {
-                                Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
+                                Text(widgetPrayerDisplayName(currentPrayer, in: entry))
                                     .font(.title3.weight(.semibold))
                                     .foregroundColor(entry.accentColor.color)
                                     .lineLimit(1)
 
                                 Spacer(minLength: 4)
 
-                                Text(nextPrayer.time, style: .timer)
+                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
                                     .font(.title3.monospacedDigit())
                                     .lineLimit(1)
 
                                 Spacer(minLength: 4)
 
-                                Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                                Text(widgetPrayerDisplayName(nextPrayer, in: entry))
                                     .font(.title3.weight(.semibold))
                                     .lineLimit(1)
                             }
@@ -226,7 +226,7 @@ struct CountdownEntryView: View {
                                         .lineLimit(1)
                                 }
                                 Spacer(minLength: 8)
-                                Text("Next \(nextPrayer.time, style: .time)")
+                                Text("Next \(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)")
                                     .lineLimit(1)
                             }
                             .font(.caption2)
@@ -243,20 +243,20 @@ struct CountdownEntryView: View {
                             }
 
                             HStack {
-                                Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
+                                Text(widgetPrayerDisplayName(currentPrayer, in: entry))
                                     .font(.headline)
                                     .foregroundColor(entry.accentColor.color)
                                     .lineLimit(1)
                                 Spacer()
-                                Text(nextPrayer.time, style: .timer)
+                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
                                     .font(.caption.monospacedDigit())
                                     .lineLimit(1)
                             }
 
                             HStack {
-                                Text("Next \(widgetPrayerDisplayName(nextPrayer.nameTransliteration))")
+                                Text("Next \(widgetPrayerDisplayName(nextPrayer, in: entry))")
                                 Spacer()
-                                Text(nextPrayer.time, style: .time)
+                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
                             }
                             .font(.caption2)
                             .foregroundStyle(.secondary)

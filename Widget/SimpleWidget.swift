@@ -40,7 +40,7 @@ struct SimpleEntryView: View {
                             Text(appLocalized("Time left:"))
                                 .fixedSize(horizontal: true, vertical: false)
                                 .layoutPriority(1)
-                            Text(nextPrayer.time, style: .timer)
+                            Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
                         }
                         .font(.caption2)
                         
@@ -50,11 +50,11 @@ struct SimpleEntryView: View {
                             Image(systemName: currentPrayer.image)
                                 .font(.title2)
                             
-                            Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
+                            Text(widgetPrayerDisplayName(currentPrayer, in: entry))
                                 .font(.headline)
                                 .padding(.vertical, 1)
                         }
-                        .foregroundColor(widgetIsShurooq(currentPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
+                        .foregroundColor(widgetIsShurooq(currentPrayer, in: entry) ? .primary : entry.accentColor.color)
                         .padding(.bottom, -4)
                         
                         HStack {
@@ -63,17 +63,17 @@ struct SimpleEntryView: View {
                             Image(systemName: nextPrayer.image)
                                 .padding(.horizontal, -6)
                             
-                            Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                            Text(widgetPrayerDisplayName(nextPrayer, in: entry))
                         }
                         .font(.caption2)
-                        .foregroundColor(widgetIsShurooq(nextPrayer.nameTransliteration) ? .primary : entry.accentColor.color)
+                        .foregroundColor(widgetIsShurooq(nextPrayer, in: entry) ? .primary : entry.accentColor.color)
                         .padding(.vertical, 1)
                         
                         HStack(spacing: 3) {
                             Text(appLocalized("Starts at"))
                                 .fixedSize(horizontal: true, vertical: false)
                                 .layoutPriority(1)
-                            Text(nextPrayer.time, style: .time)
+                            Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
                         }
                         .font(.caption2)
                     }

@@ -1026,12 +1026,6 @@ struct WidgetPreviewGalleryView: View {
         revenueCat.hasPremiumWidgetsUnlocked
     }
 
-    private var premiumWidgetsMessage: String {
-        isMalayAppLanguage()
-            ? "Derma RM9.90 atau lebih untuk membuka gaya widget premium."
-            : "Donate RM9.90 or more to unlock premium widget styles."
-    }
-
     private func handleWidgetStyleSelection(requiresPremiumWidgets: Bool, action: () -> Void) {
         settings.hapticFeedback()
         guard hasPremiumWidgetAccess || !requiresPremiumWidgets else {
@@ -1049,9 +1043,15 @@ struct WidgetPreviewGalleryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 if !hasPremiumWidgetAccess {
-                    Text(premiumWidgetsMessage)
-                        .font(.caption)
-                        .foregroundColor(settings.accentColor.color)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Support Waktu 🤍")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        Text("Unlock premium widgets & keep the app ad-free")
+                            .font(.caption)
+                            .foregroundStyle(settings.accentColor.color)
+                    }
                 }
 
                 previewSection(

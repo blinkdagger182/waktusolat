@@ -1097,6 +1097,9 @@
     "Dhikr is the heartbeat of the believer. It brings light to the face, peace to the soul, and strength to endure trials. It is a shield in times of hardship and a ladder to the nearness of Allah ﷻ." : {
 
     },
+    "Dhuha: %@" : {
+
+    },
     "Dhuhr" : {
       "localizations" : {
         "ms" : {
@@ -1660,6 +1663,9 @@
           }
         }
       }
+    },
+    "Ishraq: %@" : {
+
     },
     "Islamic New Year" : {
       "comment" : "",
@@ -3482,6 +3488,9 @@
         }
       }
     },
+    "Support Waktu 🤍" : {
+
+    },
     "Surah %@ • %@" : {
       "localizations" : {
         "en" : {
@@ -3830,6 +3839,9 @@
       }
     },
     "Unfavorite Letter" : {
+
+    },
+    "Unlock premium widgets & keep the app ad-free" : {
 
     },
     "UPCOMING PRAYER" : {

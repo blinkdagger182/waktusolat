@@ -57,8 +57,8 @@ struct Prayers2EntryView: View {
                         Image(systemName: currentPrayer.image)
                             .foregroundColor(entry.accentColor.color)
                         
-                        Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
-                            .foregroundColor(entry.accentColor.color)
+                        Text(widgetPrayerDisplayName(currentPrayer, in: entry))
+                            .foregroundColor(widgetIsShurooq(currentPrayer, in: entry) ? .primary : entry.accentColor.color)
                             .fontWeight(.bold)
                         
                         Spacer()
@@ -70,7 +70,7 @@ struct Prayers2EntryView: View {
                                 Text(appLocalized("Time left:"))
                                     .fixedSize(horizontal: true, vertical: false)
                                     .layoutPriority(1)
-                                Text(nextPrayer.time, style: .timer)
+                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
                             }
                             .font(.subheadline)
                             .frame(alignment: .trailing)
@@ -97,14 +97,14 @@ struct Prayers2EntryView: View {
                             Image(systemName: prayer.image)
                                 .frame(width: 10, alignment: .center)
 
-                            Text(widgetPrayerDisplayName(prayer.nameTransliteration))
+                            Text(widgetPrayerDisplayName(prayer, in: entry))
                                 .fontWeight(.bold)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
 
                             Spacer()
 
-                            Text(prayer.time, style: .time)
+                            Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                                 .fontWeight(.bold)
                         }
                         .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))

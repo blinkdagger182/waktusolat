@@ -74,6 +74,14 @@ struct PrayerList: View {
         )
     }
 
+    private func displayInfo(for prayer: Prayer) -> PrayerDisplayInfo {
+        PrayerDerivedTimes.displayInfo(
+            for: prayer,
+            in: displayedPrayerTimes,
+            countryCode: settings.currentLocation?.countryCode
+        )
+    }
+
     @ViewBuilder
     private var sectionHeader: some View {
         HStack {
@@ -98,6 +106,8 @@ struct PrayerList: View {
     private var listContent: some View {
         Group {
             ForEach(displayedPrayerTimes) { prayerTime in
+                let displayInfo = displayInfo(for: prayerTime)
+
                 ZStack {
                     RoundedRectangle(cornerRadius: 24)
                         .fill(settings.currentPrayer?.nameTransliteration.contains(prayerTime.nameTransliteration) ?? false ? settings.accentColor.color.opacity(0.25) : .clear)
@@ -123,18 +133,18 @@ struct PrayerList: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 30, height: 30)
-                                    .foregroundColor(prayerTime.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+                                    .foregroundColor(displayInfo.usesSecondarySunStyle ? .primary : settings.accentColor.color)
                                     .padding(.all, 4)
                                     .padding(.trailing, 8)
 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(localizedPrayerName(prayerTime.nameTransliteration))
+                                    Text(localizedPrayerName(displayInfo.nameTransliteration))
                                         .font(.headline)
                                         .foregroundColor(.primary)
                                         .lineLimit(2)
                                         .fixedSize(horizontal: false, vertical: true)
 
-                                    Text(prayerTime.time, style: .time)
+                                    Text(displayInfo.time, style: .time)
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
 
@@ -144,9 +154,11 @@ struct PrayerList: View {
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
 
-                                            Text("Dhuha: \(DateFormatter.timeEN.string(from: helperTimes.dhuha))")
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
+                                            if !displayInfo.isDerivedDhuha {
+                                                Text("Dhuha: \(DateFormatter.timeEN.string(from: helperTimes.dhuha))")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.secondary)
+                                            }
                                         }
                                         .padding(.top, 1)
                                     }
@@ -157,13 +169,13 @@ struct PrayerList: View {
 
                                 #if !os(watchOS)
                                 VStack(alignment: .trailing, spacing: 2) {
-                                    Text(localizedPrayerMeaning(prayerTime.nameEnglish))
+                                    Text(localizedPrayerMeaning(displayInfo.nameEnglish))
                                         .font(.subheadline)
                                         .foregroundColor(.primary)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.75)
 
-                                    Text(prayerTime.nameArabic)
+                                    Text(displayInfo.nameArabic)
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                         .lineLimit(1)
@@ -355,7 +367,20 @@ struct PrayerList: View {
                 }
 
                 if let expandedPrayer = expandedPrayer, prayerTime == expandedPrayer {
-                    if prayerTime.nameTransliteration != "Shurooq" {
+                    if displayInfo.isDerivedDhuha {
+                        VStack(alignment: .leading) {
+                            Text(localizedDhuhaSummaryText())
+                                .foregroundColor(.primary)
+                                .font(.footnote)
+
+                            if let detailNote = localizedPrayerDetailNote(for: displayInfo.nameTransliteration) {
+                                Text(detailNote)
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                                    .padding(.top, 2)
+                            }
+                        }
+                    } else if prayerTime.nameTransliteration != "Shurooq" {
                         VStack(alignment: .leading) {
                             if(prayerTime.rakah != "0") {
                                 Text(localizedPrayerRakahInfo(prayerTime.rakah))

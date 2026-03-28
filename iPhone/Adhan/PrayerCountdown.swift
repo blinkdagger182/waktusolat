@@ -10,6 +10,10 @@ struct PrayerCountdown: View {
 
     private var current: Prayer? { settings.currentPrayer }
     private var next   : Prayer? { settings.nextPrayer }
+
+    private var prayerContext: [Prayer] {
+        settings.prayers?.prayers ?? []
+    }
     
     private func calcProgress() -> Double {
         guard var start = current?.time, var end = next?.time else { return 0 }
@@ -30,13 +34,24 @@ struct PrayerCountdown: View {
 
     var body: some View {
         if let current = current, let next = next {
+            let currentDisplay = PrayerDerivedTimes.displayInfo(
+                for: current,
+                in: prayerContext,
+                countryCode: settings.currentLocation?.countryCode
+            )
+            let nextDisplay = PrayerDerivedTimes.displayInfo(
+                for: next,
+                in: prayerContext,
+                countryCode: settings.currentLocation?.countryCode
+            )
+
             Group {
                 Section(header: Text("CURRENT PRAYER")) {
-                    CurrentPrayerCell(prayer: current)
+                    CurrentPrayerCell(prayer: current, displayInfo: currentDisplay)
                 }
 
                 Section(header: Text("UPCOMING PRAYER")) {
-                    UpcomingPrayerCell(prayer: next, progress: progress)
+                    UpcomingPrayerCell(prayer: next, displayInfo: nextDisplay, progress: progress)
                         .onReceive(timer) { _ in updateProgress() }
                 }
             }
@@ -51,6 +66,7 @@ private struct CurrentPrayerCell: View {
     @EnvironmentObject var settings: Settings
     
     let prayer: Prayer
+    let displayInfo: PrayerDisplayInfo
 
     private var startsAtFont: Font {
         (isMalayAppLanguage() ? Font.footnote : Font.subheadline).weight(.semibold)
@@ -68,7 +84,7 @@ private struct CurrentPrayerCell: View {
                     Text(appLocalized("Starts at"))
                         .fixedSize(horizontal: true, vertical: false)
                         .layoutPriority(1)
-                    Text(prayer.time, style: .time)
+                    Text(displayInfo.time, style: .time)
                 }
                 .font(startsAtFont)
                 
@@ -92,21 +108,21 @@ private struct CurrentPrayerCell: View {
 
     private var title: some View {
         HStack {
-            Image(systemName: prayer.image)
-            Text(localizedPrayerName(prayer.nameTransliteration))
+            Image(systemName: displayInfo.image)
+            Text(localizedPrayerName(displayInfo.nameTransliteration))
         }
         #if !os(watchOS)
         .font(.title)
         #else
         .font(.title3)
         #endif
-        .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+        .foregroundColor(displayInfo.usesSecondarySunStyle ? .primary : settings.accentColor.color)
     }
 
     private var subtitle: some View {
-        Text("\(localizedPrayerMeaning(prayer.nameEnglish)) / \(prayer.nameArabic)")
+        Text("\(localizedPrayerMeaning(displayInfo.nameEnglish)) / \(displayInfo.nameArabic)")
             .font(.title3)
-            .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
+            .foregroundColor(displayInfo.usesSecondarySunStyle ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
     }
 
     @ViewBuilder private var rakahInfo: some View {
@@ -119,7 +135,7 @@ private struct CurrentPrayerCell: View {
                 #endif
                 .foregroundColor(.primary)
         } else {
-            Text(localizedShurooqSummaryText())
+            Text(displayInfo.isDerivedDhuha ? localizedDhuhaSummaryText() : localizedShurooqSummaryText())
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -143,6 +159,7 @@ private struct UpcomingPrayerCell: View {
     @EnvironmentObject var settings: Settings
     
     let prayer: Prayer
+    let displayInfo: PrayerDisplayInfo
     let progress: Double
 
     var body: some View {
@@ -179,21 +196,21 @@ private struct UpcomingPrayerCell: View {
 
     private var title: some View {
         HStack {
-            Text(localizedPrayerName(prayer.nameTransliteration))
-            Image(systemName: prayer.image)
+            Text(localizedPrayerName(displayInfo.nameTransliteration))
+            Image(systemName: displayInfo.image)
         }
         #if !os(watchOS)
         .font(.title)
         #else
         .font(.title3)
         #endif
-        .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+        .foregroundColor(displayInfo.usesSecondarySunStyle ? .primary : settings.accentColor.color)
     }
 
     private var subtitle: some View {
-        Text("\(localizedPrayerMeaning(prayer.nameEnglish)) / \(prayer.nameArabic)")
+        Text("\(localizedPrayerMeaning(displayInfo.nameEnglish)) / \(displayInfo.nameArabic)")
             .font(.title3)
-            .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
+            .foregroundColor(displayInfo.usesSecondarySunStyle ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
     }
 
     @ViewBuilder private var rakahInfo: some View {
@@ -206,7 +223,7 @@ private struct UpcomingPrayerCell: View {
                 #endif
                 .foregroundColor(.primary)
         } else {
-            Text(localizedShurooqSummaryText())
+            Text(displayInfo.isDerivedDhuha ? localizedDhuhaSummaryText() : localizedShurooqSummaryText())
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -249,7 +266,7 @@ private struct UpcomingPrayerCell: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .allowsTightening(true)
-                Text(prayer.time, style: .time)
+                Text(displayInfo.time, style: .time)
                     .monospacedDigit()
                     .fixedSize(horizontal: true, vertical: false)
             }

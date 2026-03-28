@@ -396,7 +396,7 @@ struct LockScreen6EntryView: View {
 
         let travelNames = ["Fajr", "Dhuhr", "Maghrib"]
         return travelNames.compactMap { target in
-            sorted.first { widgetPrayerDisplayName($0.nameTransliteration) == target }
+            sorted.first { widgetPrayerDisplayName($0, in: entry) == target }
         }
     }
 
@@ -420,7 +420,7 @@ struct LockScreen6EntryView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     if let currentPrayer = entry.currentPrayer {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(widgetPrayerDisplayName(currentPrayer.nameTransliteration))
+                            Text(widgetPrayerDisplayName(currentPrayer, in: entry))
                                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
@@ -428,12 +428,12 @@ struct LockScreen6EntryView: View {
                             Spacer(minLength: 6)
 
                             if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
-                                Text(widgetPrayerDisplayName(nextPrayer.nameTransliteration))
+                                Text(widgetPrayerDisplayName(nextPrayer, in: entry))
                                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                             } else {
-                                Text(nextPrayer.time, style: .time)
+                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
                                     .foregroundStyle(.secondary)
                                     .monospacedDigit()
@@ -473,7 +473,7 @@ struct LockScreen6EntryView: View {
                         }
                     }
 
-                    Text("Ends at \(endTimeText(nextPrayer.time))")
+                    Text("Ends at \(endTimeText(widgetPrayerDisplayTime(nextPrayer, in: entry)))")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)

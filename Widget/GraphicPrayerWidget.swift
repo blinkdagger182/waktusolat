@@ -163,13 +163,14 @@ private struct GraphicPrayerEntryView: View {
             )
 
             if let prayer = displayPrayer {
-                let timeText = formattedTime(prayer.time)
+                let displayTime = widgetPrayerDisplayTime(prayer, in: entry)
+                let timeText = formattedTime(displayTime)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Image(systemName: "moon.stars.fill")
                             .font(.headline)
-                        Text(auraDisplayPrayerName(prayer.nameTransliteration))
+                        Text(widgetPrayerDisplayName(prayer, in: entry))
                             .font(.title2.weight(.bold))
                     }
                     .foregroundColor(.white)
@@ -184,7 +185,7 @@ private struct GraphicPrayerEntryView: View {
 
                     HStack(spacing: 5) {
                         Text("In")
-                        Text(prayer.time, style: .timer)
+                        Text(displayTime, style: .timer)
                     }
                     .font(.title3.weight(.semibold))
                     .foregroundColor(.white.opacity(0.95))
