@@ -411,6 +411,8 @@ struct AdhanView: View {
                 }
             .sheet(isPresented: $showingSettingsSheet) {
                 SettingsView()
+                    .id(settings.colorScheme == nil ? "system" : String(describing: settings.colorScheme!))
+                    .preferredColorScheme(settings.colorScheme)
             }
             .onReceive(NotificationCenter.default.publisher(for: .openSupportSettingsSheet)) { _ in
                 settings.hapticFeedback()

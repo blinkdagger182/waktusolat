@@ -502,11 +502,14 @@ struct SettingsView: View {
             // Celebration is intentionally limited to fresh purchases only.
             lastKnownDonationState = newValue
         }
-        .sheet(isPresented: $showingPaywall) {
+        .sheet(isPresented: $showingPaywall, onDismiss: {
+            NotificationCenter.default.post(name: .supportDonationPaywallDismissed, object: nil)
+        }) {
             paywallSheet
         }
         .sheet(isPresented: $showingAdhanSetup) {
             AdhanSetupSheet()
+                .id(settings.colorScheme == nil ? "system" : String(describing: settings.colorScheme!))
                 .environmentObject(settings)
                 .accentColor(settings.accentColor.color)
                 .tint(settings.accentColor.color)

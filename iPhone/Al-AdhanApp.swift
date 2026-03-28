@@ -12,6 +12,7 @@ extension Notification.Name {
     static let debugShowMalaysiaLocationToast = Notification.Name("debugShowMalaysiaLocationToast")
     static let openSupportSettingsSheet = Notification.Name("openSupportSettingsSheet")
     static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
+    static let supportDonationPaywallDismissed = Notification.Name("supportDonationPaywallDismissed")
     static let uiContentHeartbeat = Notification.Name("uiContentHeartbeat")
 }
 
