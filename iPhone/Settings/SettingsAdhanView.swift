@@ -979,6 +979,10 @@ struct WidgetPreviewGalleryView: View {
     private var prayerListStyleRaw = PrayerListWidgetStyle.classic.rawValue
     @AppStorage(DailyVerseWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var dailyVerseStyleRaw = DailyVerseWidgetStyle.classic.rawValue
+    #if DEBUG
+    @AppStorage(premiumWidgetsDebugOverrideStorageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var premiumWidgetsDebugOverrideRaw = 0
+    #endif
     @State private var pendingLockedSelectionSnapshot: SelectionSnapshot?
 
     private var selectedPrayerTimesStyle: LockScreenPrayerTimesStyle {
@@ -1058,7 +1062,12 @@ struct WidgetPreviewGalleryView: View {
     }
 
     private var hasPremiumWidgetAccess: Bool {
+        #if DEBUG
+        _ = premiumWidgetsDebugOverrideRaw
+        return premiumWidgetsUnlocked()
+        #else
         revenueCat.hasPremiumWidgetsUnlocked
+        #endif
     }
 
     private var unlockCTAForegroundColor: Color {
@@ -1148,7 +1157,7 @@ struct WidgetPreviewGalleryView: View {
                             settings.hapticFeedback()
                             NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
                         } label: {
-                            Text("Unlock All Styles • RM9.90")
+                            Text("Support Once • Unlock All Styles")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(unlockCTAForegroundColor)
                                 .frame(maxWidth: .infinity)

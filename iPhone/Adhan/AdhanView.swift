@@ -13,6 +13,10 @@ struct AdhanView: View {
     @Environment(\.openURL) private var openURL
     
     @Environment(\.scenePhase) private var scenePhase
+    #if DEBUG
+    @AppStorage(premiumWidgetsDebugOverrideStorageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var premiumWidgetsDebugOverrideRaw = 0
+    #endif
     
     @State private var showingSettingsSheet = false
     @State private var showBigQibla = false
@@ -391,6 +395,26 @@ struct AdhanView: View {
                             NotificationCenter.default.post(name: .debugShowMalaysiaLocationToast, object: nil)
                         } label: {
                             Label("Malaysia Location Toast", systemImage: "mappin.circle")
+                        }
+
+                        Divider()
+
+                        Button {
+                            premiumWidgetsDebugOverrideRaw = 0
+                        } label: {
+                            Label("Premium Widgets: Live", systemImage: premiumWidgetsDebugOverrideRaw == 0 ? "checkmark.circle.fill" : "circle")
+                        }
+
+                        Button {
+                            premiumWidgetsDebugOverrideRaw = 1
+                        } label: {
+                            Label("Premium Widgets: No Donate", systemImage: premiumWidgetsDebugOverrideRaw == 1 ? "checkmark.circle.fill" : "circle")
+                        }
+
+                        Button {
+                            premiumWidgetsDebugOverrideRaw = 2
+                        } label: {
+                            Label("Premium Widgets: Donated", systemImage: premiumWidgetsDebugOverrideRaw == 2 ? "checkmark.circle.fill" : "circle")
                         }
                     } label: {
                         Image(systemName: "ladybug")

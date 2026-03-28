@@ -3,9 +3,22 @@ import SwiftUI
 let sharedAppGroupID = "group.app.riskcreatives.waktu"
 let premiumWidgetsUnlockedStorageKey = "premiumWidgetsUnlockedV1"
 let premiumWidgetEligibleProductIDsStorageKey = "premiumWidgetEligibleProductIDsV1"
+let premiumWidgetsDebugOverrideStorageKey = "premiumWidgetsDebugOverrideV1"
 
 func premiumWidgetsUnlocked(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> Bool {
-    defaults?.bool(forKey: premiumWidgetsUnlockedStorageKey) ?? false
+    #if DEBUG
+    if let override = defaults?.object(forKey: premiumWidgetsDebugOverrideStorageKey) as? Int {
+        switch override {
+        case 1:
+            return false
+        case 2:
+            return true
+        default:
+            break
+        }
+    }
+    #endif
+    return defaults?.bool(forKey: premiumWidgetsUnlockedStorageKey) ?? false
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable {

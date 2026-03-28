@@ -45,7 +45,6 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
     private let apiKey = "appl_QOZtAKefwKDyLWNlFADoOQkLgcl"
     let entitlementID = "buy_me_kopi"
     private(set) var isConfigured = false
-    private let premiumWidgetThreshold = Decimal(string: "9.90") ?? 9.90
 
     private override init() {
         super.init()
@@ -122,21 +121,8 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
 
     private func syncSharedPremiumWidgetAccess() {
         guard let defaults = UserDefaults(suiteName: sharedAppGroupID) else { return }
-
-        let availablePackages = offerings?.all.values.flatMap(\.availablePackages) ?? []
-        let eligibleProductIDs = Set(
-            availablePackages
-                .filter { $0.storeProduct.price >= premiumWidgetThreshold }
-                .map { $0.storeProduct.productIdentifier }
-        )
-
-        if !eligibleProductIDs.isEmpty {
-            defaults.set(Array(eligibleProductIDs).sorted(), forKey: premiumWidgetEligibleProductIDsStorageKey)
-        }
-
-        let storedEligibleProductIDs = Set(defaults.stringArray(forKey: premiumWidgetEligibleProductIDsStorageKey) ?? [])
         let purchasedProductIDs = Set(customerInfo?.allPurchasedProductIdentifiers ?? [])
-        let unlocked = !storedEligibleProductIDs.isDisjoint(with: purchasedProductIDs)
+        let unlocked = hasBuyMeKopi || !purchasedProductIDs.isEmpty
 
         defaults.set(unlocked, forKey: premiumWidgetsUnlockedStorageKey)
         hasPremiumWidgetsUnlocked = unlocked
@@ -1201,8 +1187,27 @@ struct VersionNumber: View {
 }
 
 private struct WidgetPreviewDebugView: View {
+    private enum PremiumWidgetDebugMode: Int, CaseIterable, Identifiable {
+        case live = 0
+        case locked = 1
+        case unlocked = 2
+
+        var id: Int { rawValue }
+
+        var title: String {
+            switch self {
+            case .live: return "Live"
+            case .locked: return "No Donate"
+            case .unlocked: return "Donated"
+            }
+        }
+    }
+
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(premiumWidgetsDebugOverrideStorageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var premiumWidgetsDebugOverrideRaw = 0
     #if DEBUG && canImport(Inject)
     @ObserveInjection var inject
     #endif
@@ -1246,9 +1251,44 @@ private struct WidgetPreviewDebugView: View {
         }
     }
 
+    private var premiumWidgetDebugMode: PremiumWidgetDebugMode {
+        PremiumWidgetDebugMode(rawValue: premiumWidgetsDebugOverrideRaw) ?? .live
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Premium Widget Access")
+                        .font(.headline)
+
+                    Picker("Premium Widget Access", selection: $premiumWidgetsDebugOverrideRaw) {
+                        ForEach(PremiumWidgetDebugMode.allCases) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(
+                        premiumWidgetDebugMode == .live
+                        ? "Uses the real RevenueCat donation state."
+                        : (premiumWidgetDebugMode == .unlocked
+                           ? "Forces premium widgets to appear unlocked in debug."
+                           : "Forces premium widgets to appear locked in debug.")
+                    )
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                    Text("Effective premium access: \(premiumWidgetsUnlocked() ? "Unlocked" : "Locked")")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(.secondarySystemGroupedBackground))
+                )
+
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Prayer Region Debug")
                         .font(.headline)
