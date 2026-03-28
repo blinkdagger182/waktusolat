@@ -83,6 +83,41 @@ struct HijriDate: Identifiable, Codable {
     let date: Date
 }
 
+struct ShurooqDerivedHelperTimes: Equatable {
+    let ishraq: Date
+    let dhuha: Date
+}
+
+enum PrayerDerivedTimes {
+    static func shurooqHelpers(for prayers: [Prayer], countryCode: String?) -> [UUID: ShurooqDerivedHelperTimes] {
+        guard countryCode?.uppercased() == "MY" else { return [:] }
+
+        guard
+            let fajr = prayers.first(where: { normalizedPrayerKey($0.nameTransliteration) == "fajr" }),
+            let shurooq = prayers.first(where: { normalizedPrayerKey($0.nameTransliteration) == "shurooq" })
+        else {
+            return [:]
+        }
+
+        let sunriseGap = shurooq.time.timeIntervalSince(fajr.time)
+        guard sunriseGap > 0 else { return [:] }
+
+        let ishraq = shurooq.time.addingTimeInterval(TimeInterval(18 * 60))
+        let dhuha = shurooq.time.addingTimeInterval(sunriseGap / 3)
+
+        return [
+            shurooq.id: ShurooqDerivedHelperTimes(
+                ishraq: ishraq,
+                dhuha: dhuha
+            )
+        ]
+    }
+
+    private static func normalizedPrayerKey(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+}
+
 extension Date {
     func isSameDay(as date: Date) -> Bool {
         let calendar = Calendar.current

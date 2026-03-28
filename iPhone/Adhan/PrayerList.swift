@@ -67,6 +67,13 @@ struct PrayerList: View {
         return Array(repeating: GridItem(.flexible(), spacing: 12), count: count)
     }
 
+    private var shurooqDerivedHelpersByPrayerID: [UUID: ShurooqDerivedHelperTimes] {
+        PrayerDerivedTimes.shurooqHelpers(
+            for: displayedPrayerTimes,
+            countryCode: settings.currentLocation?.countryCode
+        )
+    }
+
     @ViewBuilder
     private var sectionHeader: some View {
         HStack {
@@ -130,6 +137,19 @@ struct PrayerList: View {
                                     Text(prayerTime.time, style: .time)
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
+
+                                    if let helperTimes = shurooqDerivedHelpersByPrayerID[prayerTime.id] {
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text("Ishraq: \(DateFormatter.timeEN.string(from: helperTimes.ishraq))")
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+
+                                            Text("Dhuha: \(DateFormatter.timeEN.string(from: helperTimes.dhuha))")
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .padding(.top, 1)
+                                    }
                                 }
                                 .layoutPriority(1)
 
