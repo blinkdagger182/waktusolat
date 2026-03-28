@@ -10,6 +10,7 @@ extension Notification.Name {
     static let debugShowSupportPromoToast = Notification.Name("debugShowSupportPromoToast")
     static let debugShowSupportPromoToastVariant = Notification.Name("debugShowSupportPromoToastVariant")
     static let debugShowMalaysiaLocationToast = Notification.Name("debugShowMalaysiaLocationToast")
+    static let openSupportSettingsSheet = Notification.Name("openSupportSettingsSheet")
     static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
     static let uiContentHeartbeat = Notification.Name("uiContentHeartbeat")
 }
@@ -210,8 +211,8 @@ struct AlAdhanApp: App {
                                     withAnimation(.easeInOut(duration: 0.2)) {
                                         showSupportPromoToast = false
                                     }
-                                    selectedTab = .settings
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                    NotificationCenter.default.post(name: .openSupportSettingsSheet, object: nil)
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                                         NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
                                     }
                                 },

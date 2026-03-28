@@ -412,6 +412,10 @@ struct AdhanView: View {
             .sheet(isPresented: $showingSettingsSheet) {
                 SettingsView()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .openSupportSettingsSheet)) { _ in
+                settings.hapticFeedback()
+                showingSettingsSheet = true
+            }
             #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)
         }

@@ -23,7 +23,10 @@ struct QuranSurahBrowserView: View {
     var body: some View {
         Group {
             if isLoading {
-                ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
+                VStack {
+                    ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else if let errorMessage {
                 VStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle")

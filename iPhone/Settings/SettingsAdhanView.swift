@@ -1320,7 +1320,7 @@ private struct NextPrayerCircleStyleCard: View {
             .frame(width: 160, height: 206)
             .overlay(
                 RoundedRectangle(cornerRadius: 40, style: .continuous)
-                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+                    .strokeBorder(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
                 if isLocked {
@@ -1443,7 +1443,7 @@ private struct PrayerListStyleCard: View {
             .frame(width: 188, height: 220)
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+                    .strokeBorder(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
                 if isLocked {
@@ -1582,7 +1582,7 @@ private struct DailyVerseStyleCard: View {
             .frame(width: 188, height: 188)
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+                    .strokeBorder(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
                 if isLocked {
@@ -1659,7 +1659,7 @@ private struct LockScreenSpotlightCard: View {
             .frame(width: widgetWidth, height: widgetHeight)
             .overlay(
                 RoundedRectangle(cornerRadius: style == .nextPrayerCircular ? 40 : 28, style: .continuous)
-                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+                    .strokeBorder(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
             .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
 
@@ -1874,7 +1874,7 @@ private struct PrayerTimesStyleCard: View {
             .frame(width: 188, height: 220)
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+                    .strokeBorder(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
                 if isLocked {
@@ -1964,7 +1964,7 @@ private struct PrayerCountdownBarStyleCard: View {
             .frame(width: 188, height: 220)
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+                    .strokeBorder(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
                 if isLocked {
@@ -2041,7 +2041,7 @@ private struct ZikirStyleCard: View {
             .frame(width: 188, height: 220)
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
+                    .strokeBorder(isSelected ? settings.accentColor.color : Color.black.opacity(0.08), lineWidth: isSelected ? 2.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
                 if isLocked {

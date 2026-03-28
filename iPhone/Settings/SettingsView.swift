@@ -892,11 +892,6 @@ private struct CannyWebView: View {
 
 struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings
-    @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
-
-    private var isMalay: Bool {
-        isMalayAppLanguage(appLanguageCode)
-    }
     
     var body: some View {
         #if !os(watchOS)
@@ -942,39 +937,6 @@ struct SettingsAppearanceView: View {
                 .padding(.vertical, 2)
             #endif
         }
-
-        #if !os(watchOS)
-        VStack(alignment: .leading) {
-            HStack {
-                Text(isMalay ? "Bahasa" : "Language")
-                    .font(.subheadline.weight(.semibold))
-
-                Spacer()
-
-                Picker(isMalay ? "Bahasa" : "Language", selection: $appLanguageCode) {
-                    ForEach(AppLanguage.allCases) { language in
-                        Text(language.displayName).tag(language.rawValue)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-            }
-
-            Text(isMalay ? "Pilih bahasa yang akan digunakan oleh Waktu di dalam aplikasi." : "Choose how Waktu appears inside the app.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.vertical, 2)
-
-            Text(isMalay ? "Sistem akan mengikut bahasa iPhone anda. English dan Bahasa Melayu akan digunakan dalam aplikasi sebaik sahaja dipilih." : "System follows your iPhone language. English and Bahasa Melayu apply inside the app immediately after selection.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.bottom, 2)
-
-            Text(isMalay ? "Widget dan Live Activity akan mengikut bahasa aplikasi yang dikongsi selepas garis masa mereka dimuat semula." : "Widgets and Live Activities will follow the shared app language after the app refreshes their timelines.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        #endif
 
         /*
         #if !os(watchOS)

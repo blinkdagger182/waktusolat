@@ -463,7 +463,11 @@ struct OtherView: View {
                                      ? (isMalayAppLanguage() ? "HASIL CARIAN SURAH" : "SURAH SEARCH RESULTS")
                                      : (isMalayAppLanguage() ? "SENARAI SURAH" : "SURAH LIST"))) {
                     if isLoadingSurahs {
-                        ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
+                        HStack {
+                            Spacer()
+                            ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
+                            Spacer()
+                        }
                     } else if let surahListErrorMessage {
                         Text(surahListErrorMessage)
                             .font(.footnote)
