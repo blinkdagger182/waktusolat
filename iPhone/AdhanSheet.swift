@@ -90,15 +90,7 @@ struct AdhanSetupSheet: View {
     }
 
     private var resolvedAutoMethodLabel: String {
-        switch settings.currentLocation?.countryCode?.uppercased() ?? "" {
-        case "MY": return "JAKIM"
-        case "SG": return "MUIS"
-        case "ID": return "KEMENAG (Indonesia)"
-        case "GB": return "Muslim World League"
-        case "US", "CA": return "ISNA"
-        case "FR", "JP", "KR", "CN", "PT", "RU": return "Muslim World League"
-        default: return "Muslim World League"
-        }
+        settings.effectivePrayerCountrySupportConfig.autoMethodLabel
     }
 
     private var currentCalculationLabel: String {
@@ -109,79 +101,11 @@ struct AdhanSetupSheet: View {
     }
 
     private var supportOverviewTitle: String {
-        let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
-        switch countryCode {
-        case "MY":
-            return isMalay ? "Waktu menyokong Malaysia secara rasmi menggunakan waktu solat JAKIM." : "Waktu officially supports Malaysia using JAKIM prayer times."
-        case "SG":
-            return isMalay ? "Waktu menyokong Singapura secara rasmi menggunakan waktu solat MUIS." : "Waktu officially supports Singapore using MUIS prayer times."
-        case "ID":
-            return isMalay ? "Waktu menyokong Indonesia secara rasmi menggunakan waktu solat KEMENAG." : "Waktu officially supports Indonesia using KEMENAG prayer times."
-        case "US", "CA":
-            return isMalay ? "Waktu menyokong \(countryCode == "US" ? "Amerika Syarikat" : "Kanada") secara rasmi menggunakan ISNA sebagai kiraan lalai." : "Waktu officially supports \(countryCode == "US" ? "the United States" : "Canada") using ISNA as the default calculation."
-        case "GB":
-            return isMalay ? "Waktu menyokong United Kingdom secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports the United Kingdom using Muslim World League as the default calculation."
-        case "FR":
-            return isMalay ? "Waktu menyokong Perancis secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports France using Muslim World League as the default calculation."
-        case "JP":
-            return isMalay ? "Waktu menyokong Jepun secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports Japan using Muslim World League as the default calculation."
-        case "KR":
-            return isMalay ? "Waktu menyokong Korea Selatan secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports South Korea using Muslim World League as the default calculation."
-        case "CN":
-            return isMalay ? "Waktu menyokong China secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports China using Muslim World League as the default calculation."
-        case "PT":
-            return isMalay ? "Waktu menyokong Portugal secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports Portugal using Muslim World League as the default calculation."
-        case "RU":
-            return isMalay ? "Waktu menyokong Rusia secara rasmi menggunakan Muslim World League sebagai kiraan lalai." : "Waktu officially supports Russia using Muslim World League as the default calculation."
-        default:
-            return isMalay ? "Waktu solat dikira daripada koordinat semasa anda menggunakan kaedah Adhan yang dipercayai." : "Prayer times are calculated from your current coordinates using trusted Adhan methods."
-        }
+        settings.effectivePrayerCountrySupportConfig.supportTitle
     }
 
     private var supportOverviewBullets: [String] {
-        let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
-        switch countryCode {
-        case "MY":
-            return [
-                isMalay ? "Waktu diambil daripada backend kami dan bersumberkan JAKIM." : "Times are fetched from our backend and sourced from JAKIM.",
-                isMalay ? "Malaysia disokong sepenuhnya di seluruh aplikasi dan widget." : "Malaysia is supported end to end across the app and widgets."
-            ]
-        case "SG":
-            return [
-                isMalay ? "Waktu diambil daripada backend kami dan bersumberkan MUIS." : "Times are fetched from our backend and sourced from MUIS.",
-                isMalay ? "Singapura disokong sepenuhnya di seluruh aplikasi dan widget." : "Singapore is supported end to end across the app and widgets."
-            ]
-        case "ID":
-            return [
-                isMalay ? "Waktu diambil daripada backend kami dan bersumberkan KEMENAG." : "Times are fetched from our backend and sourced from KEMENAG.",
-                isMalay ? "Kawasan solat anda dipadankan dengan kabupaten/kota yang dikesan." : "Your prayer area is matched to the detected kabupaten/kota."
-            ]
-        case "US", "CA":
-            return [
-                isMalay ? "Auto menggunakan ISNA, yang lazim digunakan di Amerika Utara." : "Auto uses ISNA, which is commonly used across North America.",
-                isMalay ? "Waktu solat dikira daripada koordinat yang dikesan." : "Prayer times are calculated from your detected coordinates."
-            ]
-        case "GB":
-            return [
-                isMalay ? "Auto menggunakan Muslim World League, yang banyak digunakan oleh masjid-masjid di UK." : "Auto uses Muslim World League, which is widely used by many masjids across the UK.",
-                isMalay ? "Anda masih boleh bertukar ke Moonsighting Committee secara manual jika mahu." : "You can still switch to Moonsighting Committee manually if you prefer."
-            ]
-        case "FR":
-            return [
-                isMalay ? "Auto menggunakan Muslim World League sebagai lalai yang konsisten untuk Perancis." : "Auto uses Muslim World League as a consistent default for France.",
-                isMalay ? "Waktu solat dikira daripada koordinat yang dikesan." : "Prayer times are calculated from your detected coordinates."
-            ]
-        case "JP", "KR", "CN", "PT", "RU":
-            return [
-                isMalay ? "Auto menggunakan Muslim World League sebagai lalai yang selamat dan konsisten." : "Auto uses Muslim World League as a safe and consistent default.",
-                isMalay ? "Waktu solat dikira daripada koordinat yang dikesan." : "Prayer times are calculated from your detected coordinates."
-            ]
-        default:
-            return [
-                isMalay ? "Anda boleh memilih kaedah kiraan tempatan yang paling sesuai." : "You can choose the most suitable local calculation method.",
-                isMalay ? "Mod musafir dan pelarasan waktu solat masih digunakan." : "Traveling mode and prayer offsets still apply."
-            ]
-        }
+        settings.effectivePrayerCountrySupportConfig.supportBullets
     }
 
     private var selectedCalculationDescription: String {

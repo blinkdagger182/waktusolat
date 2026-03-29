@@ -150,11 +150,15 @@ struct PrayerList: View {
 
                                     if let helperTimes = shurooqDerivedHelpersByPrayerID[prayerTime.id] {
                                         VStack(alignment: .leading, spacing: 1) {
-                                            Text("Ishraq: \(DateFormatter.timeEN.string(from: helperTimes.ishraq))")
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
+                                            if displayInfo.isDerivedDhuha {
+                                                Text("\(localizedPrayerName(prayerTime.nameTransliteration)): \(DateFormatter.timeEN.string(from: prayerTime.time))")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.secondary)
+                                            } else {
+                                                Text("Ishraq: \(DateFormatter.timeEN.string(from: helperTimes.ishraq))")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.secondary)
 
-                                            if !displayInfo.isDerivedDhuha {
                                                 Text("Dhuha: \(DateFormatter.timeEN.string(from: helperTimes.dhuha))")
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
@@ -435,6 +439,9 @@ struct PrayerList: View {
     private var gridContent: some View {
         LazyVGrid(columns: gridColumns, spacing: 12) {
             ForEach(displayedPrayerTimes) { prayer in
+                let displayInfo = displayInfo(for: prayer)
+                let helperTimes = shurooqDerivedHelpersByPrayerID[prayer.id]
+
                 VStack(alignment: .center) {
                     HStack {
                         Image(systemName: prayer.image)
@@ -442,15 +449,32 @@ struct PrayerList: View {
                             .foregroundColor(getPrayerColor(for: prayer))
                             .padding(.trailing, -5)
 
-                        Text(localizedPrayerName(prayer.nameTransliteration))
+                        Text(localizedPrayerName(displayInfo.nameTransliteration))
                             .font(.subheadline)
                             .fontWeight(.bold)
                             .foregroundColor(getPrayerColor(for: prayer))
                     }
 
-                    Text(prayer.time, style: .time)
+                    Text(displayInfo.time, style: .time)
                         .font(.subheadline)
                         .foregroundColor(getPrayerColor(for: prayer))
+
+                    if displayInfo.isDerivedDhuha {
+                        Text("\(localizedPrayerName(prayer.nameTransliteration)): \(DateFormatter.timeEN.string(from: prayer.time))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    } else if let helperTimes {
+                        VStack(spacing: 1) {
+                            Text("Ishraq: \(DateFormatter.timeEN.string(from: helperTimes.ishraq))")
+                            Text("Dhuha: \(DateFormatter.timeEN.string(from: helperTimes.dhuha))")
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    }
                 }
             }
         }

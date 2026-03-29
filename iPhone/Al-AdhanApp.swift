@@ -1024,55 +1024,67 @@ private struct SupportPromoToast: View {
     let onSupport: () -> Void
     let onDismiss: () -> Void
 
+    private var toastShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+    }
+
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            if poolProgress?.variant == .eidPool {
-                Image("Ketupat")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-            } else {
-                Image(systemName: "heart.fill")
-                    .foregroundStyle(.pink)
-                    .font(.subheadline.weight(.bold))
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(message)
-                    .font(.subheadline)
-                    .lineLimit(5)
-                    .multilineTextAlignment(.leading)
-
-                if let poolProgress {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(poolProgress.title)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-
-                        GeometryReader { proxy in
-                            let width = max(proxy.size.width, 0)
-                            Capsule()
-                                .fill(Color.orange.opacity(0.18))
-                                .overlay(alignment: .leading) {
-                                    Capsule()
-                                        .fill(.orange)
-                                        .frame(width: width * poolProgress.fraction)
-                                }
-                        }
-                        .frame(height: 6)
-
-                        Text("\(poolProgress.amountLabel) • \(poolProgress.subtitle)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
+        ZStack(alignment: .trailing) {
+            Button(action: onSupport) {
+                HStack(alignment: .center, spacing: 8) {
+                    if poolProgress?.variant == .eidPool {
+                        Image("Ketupat")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 18, height: 18)
+                    } else {
+                        Image(systemName: "heart.fill")
+                            .foregroundStyle(.pink)
+                            .font(.subheadline.weight(.bold))
                     }
-                }
-            }
-            .layoutPriority(1)
 
-            Spacer(minLength: 4)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(message)
+                            .font(.subheadline)
+                            .lineLimit(5)
+                            .multilineTextAlignment(.leading)
+
+                        if let poolProgress {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(poolProgress.title)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+
+                                GeometryReader { proxy in
+                                    let width = max(proxy.size.width, 0)
+                                    Capsule()
+                                        .fill(Color.orange.opacity(0.18))
+                                        .overlay(alignment: .leading) {
+                                            Capsule()
+                                                .fill(.orange)
+                                                .frame(width: width * poolProgress.fraction)
+                                        }
+                                }
+                                .frame(height: 6)
+
+                                Text("\(poolProgress.amountLabel) • \(poolProgress.subtitle)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    .layoutPriority(1)
+
+                    Spacer(minLength: 72)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .contentShape(toastShape)
+            }
+            .buttonStyle(.plain)
 
             HStack(spacing: 6) {
                 Button("Support") {
@@ -1091,19 +1103,18 @@ private struct SupportPromoToast: View {
                 .buttonStyle(.plain)
             }
             .fixedSize()
+            .padding(.trailing, 12)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(.ultraThinMaterial, in: toastShape)
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            toastShape
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         )
         .overlay(
             TimelineView(.periodic(from: countdownStartDate, by: 0.05)) { context in
                 let elapsed = max(0, context.date.timeIntervalSince(countdownStartDate))
                 let progress = max(0, min(1, 1 - (elapsed / autoDismissAfter)))
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                toastShape
                     .inset(by: 1.1)
                     .trim(from: 0, to: progress)
                     .stroke(.orange, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))

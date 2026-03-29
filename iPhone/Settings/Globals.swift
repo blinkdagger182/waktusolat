@@ -146,6 +146,105 @@ func quranProxyBaseURL(bundle: Bundle = .main) -> URL {
     return URL(string: "https://api-waktusolat.vercel.app/api/quran")!
 }
 
+struct PrayerCountrySupportRemoteConfig: Codable, Equatable {
+    let countryCode: String
+    let pipeline: String
+    let defaultCalculationMethod: String
+    let autoMethodLabel: String
+    let supportTitle: String
+    let supportBullets: [String]
+    let updatedAt: String?
+}
+
+enum PrayerCountrySupportRemoteConfigLoader {
+    private static let defaults = UserDefaults.standard
+    #if DEBUG
+    private static let cacheTTL: TimeInterval = 0
+    #else
+    private static let cacheTTL: TimeInterval = 60 * 30
+    #endif
+
+    static func cached(countryCode: String?, languageCode: String = effectiveAppLanguageCode()) -> PrayerCountrySupportRemoteConfig? {
+        guard let countryCode = normalize(countryCode) else { return nil }
+        let age = Date().timeIntervalSince1970 - defaults.double(forKey: cacheTimeKey(countryCode: countryCode, languageCode: languageCode))
+        guard age < cacheTTL else { return nil }
+        return decode(from: defaults.string(forKey: cacheKey(countryCode: countryCode, languageCode: languageCode)) ?? "")
+    }
+
+    static func load(countryCode: String?, languageCode: String = effectiveAppLanguageCode(), force: Bool) async -> PrayerCountrySupportRemoteConfig? {
+        guard let countryCode = normalize(countryCode) else { return nil }
+
+        if !force, let cached = cached(countryCode: countryCode, languageCode: languageCode) {
+            return cached
+        }
+
+        do {
+            let url = resolveNoCacheURL(countryCode: countryCode, languageCode: languageCode)
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.timeoutInterval = 12
+            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+
+            let session = URLSession(configuration: .ephemeral)
+            let (data, _) = try await session.data(for: request)
+            let decoded = try JSONDecoder().decode(PrayerCountrySupportRemoteConfig.self, from: data)
+
+            if let payload = String(data: data, encoding: .utf8) {
+                defaults.set(payload, forKey: cacheKey(countryCode: countryCode, languageCode: languageCode))
+                defaults.set(Date().timeIntervalSince1970, forKey: cacheTimeKey(countryCode: countryCode, languageCode: languageCode))
+            }
+
+            return decoded
+        } catch {
+            return cached(countryCode: countryCode, languageCode: languageCode)
+                ?? decode(from: defaults.string(forKey: cacheKey(countryCode: countryCode, languageCode: languageCode)) ?? "")
+        }
+    }
+
+    private static func normalize(_ countryCode: String?) -> String? {
+        let value = countryCode?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() ?? ""
+        return value.isEmpty ? nil : value
+    }
+
+    private static func cacheKey(countryCode: String, languageCode: String) -> String {
+        "prayerCountrySupportRemoteConfigCachedPayloadV1.\(countryCode).\(languageCode)"
+    }
+
+    private static func cacheTimeKey(countryCode: String, languageCode: String) -> String {
+        "prayerCountrySupportRemoteConfigLastFetchTimeV1.\(countryCode).\(languageCode)"
+    }
+
+    private static func decode(from payload: String) -> PrayerCountrySupportRemoteConfig? {
+        guard let data = payload.data(using: .utf8), !payload.isEmpty else { return nil }
+        return try? JSONDecoder().decode(PrayerCountrySupportRemoteConfig.self, from: data)
+    }
+
+    private static func resolveURL(bundle: Bundle = .main) -> URL {
+        if
+            let raw = bundle.object(forInfoDictionaryKey: "PrayerCountrySupportConfigURL") as? String,
+            let url = URL(string: raw.trimmingCharacters(in: .whitespacesAndNewlines)),
+            !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            return url
+        }
+
+        return URL(string: "https://api-waktusolat.vercel.app/api/settings/prayer-country-support")!
+    }
+
+    private static func resolveNoCacheURL(countryCode: String, languageCode: String) -> URL {
+        let url = resolveURL()
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        var items = components.queryItems ?? []
+        items.removeAll(where: { ["countryCode", "lang", "_nocache"].contains($0.name) })
+        items.append(URLQueryItem(name: "countryCode", value: countryCode))
+        items.append(URLQueryItem(name: "lang", value: languageCode))
+        items.append(URLQueryItem(name: "_nocache", value: String(Int(Date().timeIntervalSince1970 / 60))))
+        components.queryItems = items
+        return components.url ?? url
+    }
+}
+
 enum WidgetZikirAlignment: String, CaseIterable, Identifiable {
     static let storageKey = "widgetZikirAlignment"
 

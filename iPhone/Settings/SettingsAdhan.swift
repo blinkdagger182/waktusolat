@@ -946,6 +946,120 @@ extension Settings {
         return month.prayers.first(where: { $0.day == day })
     }
 
+    private static func fallbackPrayerCountrySupportConfig(
+        for countryCode: String?,
+        languageCode: String = effectiveAppLanguageCode()
+    ) -> PrayerCountrySupportRemoteConfig {
+        let isMalay = languageCode.hasPrefix("ms")
+        let code = countryCode?.uppercased() ?? ""
+
+        switch code {
+        case "MY":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: "MY",
+                pipeline: "malaysia",
+                defaultCalculationMethod: "Jabatan Kemajuan Islam Malaysia (JAKIM)",
+                autoMethodLabel: "JAKIM",
+                supportTitle: isMalay ? "Waktu menyokong Malaysia secara rasmi menggunakan waktu solat JAKIM." : "Waktu officially supports Malaysia using JAKIM prayer times.",
+                supportBullets: isMalay
+                    ? ["Waktu diambil daripada backend kami dan bersumberkan JAKIM.", "Malaysia disokong sepenuhnya di seluruh aplikasi dan widget."]
+                    : ["Times are fetched from our backend and sourced from JAKIM.", "Malaysia is supported end to end across the app and widgets."],
+                updatedAt: nil
+            )
+        case "SG":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: "SG",
+                pipeline: "singapore",
+                defaultCalculationMethod: "Majlis Ugama Islam Singapura, Singapore",
+                autoMethodLabel: "MUIS",
+                supportTitle: isMalay ? "Waktu menyokong Singapura secara rasmi menggunakan waktu solat MUIS." : "Waktu officially supports Singapore using MUIS prayer times.",
+                supportBullets: isMalay
+                    ? ["Waktu diambil daripada backend kami dan bersumberkan MUIS.", "Singapura disokong sepenuhnya di seluruh aplikasi dan widget."]
+                    : ["Times are fetched from our backend and sourced from MUIS.", "Singapore is supported end to end across the app and widgets."],
+                updatedAt: nil
+            )
+        case "ID":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: "ID",
+                pipeline: "indonesia",
+                defaultCalculationMethod: "KEMENAG - Kementerian Agama Republik Indonesia",
+                autoMethodLabel: "KEMENAG (Indonesia)",
+                supportTitle: isMalay ? "Waktu menyokong Indonesia secara rasmi menggunakan waktu solat KEMENAG." : "Waktu officially supports Indonesia using KEMENAG prayer times.",
+                supportBullets: isMalay
+                    ? ["Waktu diambil daripada backend kami dan bersumberkan KEMENAG.", "Kawasan solat anda dipadankan dengan kabupaten/kota yang dikesan."]
+                    : ["Times are fetched from our backend and sourced from KEMENAG.", "Your prayer area is matched to the detected kabupaten/kota."],
+                updatedAt: nil
+            )
+        case "US", "CA":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: code.isEmpty ? "US" : code,
+                pipeline: "global",
+                defaultCalculationMethod: "Islamic Society of North America (ISNA)",
+                autoMethodLabel: "ISNA",
+                supportTitle: isMalay
+                    ? "Waktu menyokong \(code == "CA" ? "Kanada" : "Amerika Syarikat") menggunakan ISNA sebagai kiraan lalai."
+                    : "Waktu supports \(code == "CA" ? "Canada" : "the United States") using ISNA as the default calculation.",
+                supportBullets: isMalay
+                    ? ["Auto menggunakan ISNA, yang lazim digunakan di Amerika Utara.", "Waktu solat dikira daripada koordinat yang dikesan."]
+                    : ["Auto uses ISNA, which is commonly used across North America.", "Prayer times are calculated from your detected coordinates."],
+                updatedAt: nil
+            )
+        case "GB":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: "GB",
+                pipeline: "global",
+                defaultCalculationMethod: "Muslim World League",
+                autoMethodLabel: "Muslim World League",
+                supportTitle: isMalay ? "Waktu menyokong United Kingdom menggunakan Muslim World League sebagai kiraan lalai." : "Waktu supports the United Kingdom using Muslim World League as the default calculation.",
+                supportBullets: isMalay
+                    ? ["Auto menggunakan Muslim World League, yang banyak digunakan oleh masjid-masjid di UK.", "Anda masih boleh bertukar ke Moonsighting Committee secara manual jika mahu."]
+                    : ["Auto uses Muslim World League, which is widely used by many masjids across the UK.", "You can still switch to Moonsighting Committee manually if you prefer."],
+                updatedAt: nil
+            )
+        default:
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: code.isEmpty ? "GLOBAL" : code,
+                pipeline: "global",
+                defaultCalculationMethod: "Muslim World League",
+                autoMethodLabel: "Muslim World League",
+                supportTitle: isMalay ? "Waktu solat dikira daripada koordinat semasa anda menggunakan kaedah Adhan yang dipercayai." : "Prayer times are calculated from your current coordinates using trusted Adhan methods.",
+                supportBullets: isMalay
+                    ? ["Anda boleh memilih kaedah kiraan tempatan yang paling sesuai.", "Mod musafir dan pelarasan waktu solat masih digunakan."]
+                    : ["You can choose the most suitable local calculation method.", "Traveling mode and prayer offsets still apply."],
+                updatedAt: nil
+            )
+        }
+    }
+
+    var effectivePrayerCountrySupportConfig: PrayerCountrySupportRemoteConfig {
+        if let remote = prayerCountrySupportConfig,
+           remote.countryCode.uppercased() == (currentLocation?.countryCode?.uppercased() ?? "") {
+            return remote
+        }
+
+        return Self.fallbackPrayerCountrySupportConfig(for: currentLocation?.countryCode)
+    }
+
+    @MainActor
+    func refreshPrayerCountrySupportConfig(force: Bool = false) async {
+        let languageCode = effectiveAppLanguageCode()
+        let fallback = Self.fallbackPrayerCountrySupportConfig(
+            for: currentLocation?.countryCode,
+            languageCode: languageCode
+        )
+
+        guard let remote = await PrayerCountrySupportRemoteConfigLoader.load(
+            countryCode: currentLocation?.countryCode,
+            languageCode: languageCode,
+            force: force
+        ) else {
+            prayerCountrySupportConfig = fallback
+            return
+        }
+
+        prayerCountrySupportConfig = remote
+    }
+
     static let globalCalculationMethods: [String] = [
         "Auto (By Location)",
         "Islamic Society of North America (ISNA)",
@@ -986,15 +1100,11 @@ extension Settings {
     }
 
     private func recommendedAlAdhanMethodId(countryCode: String?) -> Int {
-        guard let countryCode else { return 3 }
-        switch countryCode.uppercased() {
-        case "MY": return 17
-        case "SG": return 11
-        case "ID": return 20
-        case "FR", "GB", "JP", "KR", "CN", "PT", "RU": return 3
-        case "US", "CA": return 2
-        default: return 3
+        let config = effectivePrayerCountrySupportConfig
+        if let countryCode, config.countryCode.uppercased() == countryCode.uppercased() {
+            return alAdhanMethodId(for: config.defaultCalculationMethod)
         }
+        return alAdhanMethodId(for: Self.fallbackPrayerCountrySupportConfig(for: countryCode).defaultCalculationMethod)
     }
 
     private func effectiveAlAdhanMethodId(for location: Location?) -> Int {

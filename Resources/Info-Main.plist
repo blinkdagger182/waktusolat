@@ -25,6 +25,8 @@
 	<string>https://api-waktusolat.vercel.app/api/support/toasts/schedule</string>
 	<key>WidgetSettingsConfigURL</key>
 	<string>https://api-waktusolat.vercel.app/api/settings/widgets</string>
+	<key>PrayerCountrySupportConfigURL</key>
+	<string>https://api-waktusolat.vercel.app/api/settings/prayer-country-support</string>
 	<key>QuranProxyBaseURL</key>
 	<string>https://api-waktusolat.vercel.app/api/quran</string>
 	<key>UIAppFonts</key>

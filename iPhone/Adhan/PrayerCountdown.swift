@@ -135,9 +135,17 @@ private struct CurrentPrayerCell: View {
                 #endif
                 .foregroundColor(.primary)
         } else {
-            Text(displayInfo.isDerivedDhuha ? localizedDhuhaSummaryText() : localizedShurooqSummaryText())
-                .font(.caption2)
-                .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayInfo.isDerivedDhuha ? localizedDhuhaSummaryText() : localizedShurooqSummaryText())
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                if displayInfo.isDerivedDhuha {
+                    Text("\(localizedPrayerName(prayer.nameTransliteration)): \(DateFormatter.timeEN.string(from: prayer.time))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
         }
     }
 

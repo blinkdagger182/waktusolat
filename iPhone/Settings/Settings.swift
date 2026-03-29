@@ -262,6 +262,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
         
         super.init()
+        self.prayerCountrySupportConfig = PrayerCountrySupportRemoteConfigLoader.cached(
+            countryCode: currentLocation?.countryCode,
+            languageCode: effectiveAppLanguageCode()
+        )
         restoreMalaysiaWaktuZoneFromCacheIfNeeded()
         Self.locationManager.delegate = self
         #if os(iOS)
@@ -271,6 +275,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         configurePassiveLocationMonitoring()
         refreshCustomAuraBackgroundState()
         configureLiveActivitySyncLifecycle()
+        Task { [weak self] in
+            await self?.refreshPrayerCountrySupportConfig(force: false)
+        }
         #endif
     }
 
@@ -375,6 +382,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 appGroupUserDefaults?.removeObject(forKey: "lastLocationUpdatedAt")
                 invalidateMalaysiaZoneState()
                 resolvedPrayerArea = nil
+                prayerCountrySupportConfig = nil
                 return
             }
             let previous = oldValue
@@ -401,6 +409,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 appGroupUserDefaults?.set(Date(), forKey: "lastLocationUpdatedAt")
             } catch {
                 logger.debug("Failed to encode location: \(error)")
+            }
+
+            Task { [weak self] in
+                await self?.refreshPrayerCountrySupportConfig(force: true)
             }
         }
     }
@@ -706,6 +718,8 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculation")
         }
     }
+
+    @Published var prayerCountrySupportConfig: PrayerCountrySupportRemoteConfig?
     
     @Published var hijriOffset: Int {
         didSet {

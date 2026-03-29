@@ -268,7 +268,9 @@ func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry) -> Prayer
         for: prayer,
         in: entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers,
         countryCode: entry.isMalaysia ? "MY" : nil,
-        now: entry.date
+        // Use the live render time so Dhuha promotion does not stay stuck on an
+        // older timeline entry timestamp between WidgetKit refresh boundaries.
+        now: Date()
     )
 }
 

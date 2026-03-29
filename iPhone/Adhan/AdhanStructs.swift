@@ -104,7 +104,7 @@ enum PrayerDerivedTimes {
 
         guard
             let fajr = prayers.first(where: { normalizedPrayerKey($0.nameTransliteration) == "fajr" }),
-            let shurooq = prayers.first(where: { normalizedPrayerKey($0.nameTransliteration) == "shurooq" })
+            let shurooq = prayers.first(where: { isShurooqKey(normalizedPrayerKey($0.nameTransliteration)) })
         else {
             return [:]
         }
@@ -140,7 +140,7 @@ enum PrayerDerivedTimes {
             isDerivedDhuha: false
         )
 
-        guard countryCode?.uppercased() == "MY", normalizedName == "shurooq" else {
+        guard countryCode?.uppercased() == "MY", isShurooqKey(normalizedName) else {
             return baseDisplay
         }
 
@@ -175,6 +175,10 @@ enum PrayerDerivedTimes {
 
     private static func normalizedPrayerKey(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func isShurooqKey(_ key: String) -> Bool {
+        key == "shurooq" || key == "syuruk" || key == "sunrise"
     }
 }
 
