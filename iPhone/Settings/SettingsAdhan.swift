@@ -990,6 +990,34 @@ extension Settings {
                     : ["Times are fetched from our backend and sourced from KEMENAG.", "Your prayer area is matched to the detected kabupaten/kota."],
                 updatedAt: nil
             )
+        case "US", "CA":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: code.isEmpty ? "US" : code,
+                pipeline: "global",
+                defaultCalculationMethod: "Islamic Society of North America (ISNA)",
+                autoMethodLabel: "ISNA",
+                supportTitle: isMalay
+                    ? "Waktu boleh digunakan di semua negara. Untuk \(code == "CA" ? "Kanada" : "Amerika Syarikat"), Auto menggunakan ISNA sebagai lalai."
+                    : "Waktu works in all countries. For \(code == "CA" ? "Canada" : "the United States"), Auto defaults to ISNA.",
+                supportBullets: isMalay
+                    ? ["Auto menggunakan ISNA, yang lazim digunakan di Amerika Utara.", "Anda masih boleh menukar kaedah kiraan secara manual jika mahu."]
+                    : ["Auto uses ISNA, which is commonly used across North America.", "You can still switch to a different calculation method manually if you prefer."],
+                updatedAt: nil
+            )
+        case "GB":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: "GB",
+                pipeline: "global",
+                defaultCalculationMethod: "Muslim World League",
+                autoMethodLabel: "Muslim World League",
+                supportTitle: isMalay
+                    ? "Waktu boleh digunakan di semua negara. Untuk United Kingdom, Auto menggunakan Muslim World League sebagai lalai."
+                    : "Waktu works in all countries. For the United Kingdom, Auto defaults to Muslim World League.",
+                supportBullets: isMalay
+                    ? ["Auto menggunakan Muslim World League, yang banyak digunakan oleh masjid-masjid di UK.", "Anda masih boleh bertukar ke Moonsighting Committee secara manual jika mahu."]
+                    : ["Auto uses Muslim World League, which is widely used by many masjids across the UK.", "You can still switch to Moonsighting Committee manually if you prefer."],
+                updatedAt: nil
+            )
         default:
             return PrayerCountrySupportRemoteConfig(
                 countryCode: code.isEmpty ? "GLOBAL" : code,

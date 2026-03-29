@@ -116,7 +116,7 @@ struct AdhanSetupSheet: View {
             if countryCode.isEmpty {
                 return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan. Sekarang ia menggunakan \(resolvedAutoMethodLabel)." : "Automatically selects the most suitable prayer calculation based on your detected country. Right now it is using \(resolvedAutoMethodLabel)."
             }
-            if supportConfig.pipeline == "global" {
+            if supportConfig.pipeline == "global" && !["US", "CA", "GB"].contains(countryCode) {
                 return isMalay
                     ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (\(countryCode)). Di luar wilayah rasmi kami, Auto kini menggunakan \(resolvedAutoMethodLabel) sebagai lalai."
                     : "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Outside our officially integrated regions, Auto currently defaults to \(resolvedAutoMethodLabel)."
