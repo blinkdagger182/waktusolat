@@ -112,14 +112,14 @@ struct AdhanSetupSheet: View {
         switch settings.prayerCalculation {
         case "Auto (By Location)":
             let countryCode = settings.currentLocation?.countryCode?.uppercased() ?? ""
+            let supportConfig = settings.effectivePrayerCountrySupportConfig
             if countryCode.isEmpty {
                 return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan. Sekarang ia menggunakan \(resolvedAutoMethodLabel)." : "Automatically selects the most suitable prayer calculation based on your detected country. Right now it is using \(resolvedAutoMethodLabel)."
             }
-            if countryCode == "US" || countryCode == "CA" {
-                return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (\(countryCode)). Sekarang ia menggunakan ISNA, yang lazim digunakan di Amerika Utara." : "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using ISNA, which is commonly used across North America."
-            }
-            if countryCode == "GB" {
-                return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (GB). Sekarang ia menggunakan Muslim World League, yang banyak digunakan oleh masjid-masjid di UK." : "Automatically selects the most suitable prayer calculation based on your detected country (GB). Right now it is using Muslim World League, which is widely used by many masjids across the UK."
+            if supportConfig.pipeline == "global" {
+                return isMalay
+                    ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (\(countryCode)). Di luar wilayah rasmi kami, Auto kini menggunakan \(resolvedAutoMethodLabel) sebagai lalai."
+                    : "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Outside our officially integrated regions, Auto currently defaults to \(resolvedAutoMethodLabel)."
             }
             return isMalay ? "Memilih kiraan waktu solat yang paling sesuai secara automatik berdasarkan negara yang dikesan (\(countryCode)). Sekarang ia menggunakan \(resolvedAutoMethodLabel)." : "Automatically selects the most suitable prayer calculation based on your detected country (\(countryCode)). Right now it is using \(resolvedAutoMethodLabel)."
         case "Islamic Society of North America (ISNA)", "Islamic Society of North America":
