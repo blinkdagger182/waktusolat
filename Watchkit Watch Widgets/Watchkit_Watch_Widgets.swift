@@ -17,7 +17,7 @@ struct WaktuNextPrayerWidget: Widget {
             NextPrayerWidgetEntryView(entry: entry, provider: provider)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("Waktu Next")
+        .configurationDisplayName("Waktu Timeline")
         .description("Shows the next prayer on Apple Watch.")
         .supportedFamilies([.accessoryInline, .accessoryCircular, .accessoryRectangular])
     }
@@ -77,8 +77,8 @@ private struct NextPrayerWidgetEntryView: View {
         let currentInfo = entry.currentPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
         let nextInfo = entry.nextPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
         let accent = provider.accentColor(for: entry.accentRawValue)
-        let progress = provider.nextPrayerProgress(in: entry, now: entry.date)
-        let timeRemaining = provider.timeRemaining(to: entry.nextPrayer, from: entry.date)
+        let prayersForGraph = entry.prayers.isEmpty ? [entry.currentPrayer, entry.nextPrayer].compactMap { $0 } : entry.prayers
+        let activeIndex = max(prayersForGraph.lastIndex(where: { $0.time <= entry.date }) ?? -1, -1)
 
         return VStack(alignment: .leading, spacing: 5) {
             HStack {
@@ -92,48 +92,39 @@ private struct NextPrayerWidgetEntryView: View {
                     .foregroundStyle(accent)
             }
 
-            if let nextInfo {
-                HStack(spacing: 6) {
-                    Image(systemName: nextInfo.image)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(accent)
-                    Text(nextInfo.title)
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.55)
-                    Spacer(minLength: 6)
+            WatchCurvierPrayerMiniGraph(
+                prayers: prayersForGraph,
+                activeDotIndex: activeIndex
+            )
+
+            if let currentInfo, let nextInfo {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    HStack(spacing: 4) {
+                        Image(systemName: currentInfo.image)
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(accent)
+                        Text(currentInfo.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                    }
+
+                    Spacer(minLength: 0)
+
                     Text(nextInfo.time, style: .time)
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
-                }
+                        .lineLimit(1)
 
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(accent.opacity(0.16))
-                        Capsule()
-                            .fill(accent)
-                            .frame(width: max(proxy.size.width * progress, 10))
-                    }
-                }
-                .frame(height: 5)
+                    Spacer(minLength: 0)
 
-                if let timeRemaining {
-                    Text(timeRemaining)
-                        .font(.caption2)
+                    Text(nextInfo.title)
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .minimumScaleFactor(0.72)
                 }
-            }
-
-            if let currentInfo {
-                Divider()
-                Text("Now: \(currentInfo.title)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.65)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -171,21 +162,16 @@ private struct CurrentPrayerWidgetEntryView: View {
 
     private var circularView: some View {
         let accent = provider.accentColor(for: entry.accentRawValue)
-        let progress = provider.nextPrayerProgress(in: entry, now: entry.date)
-        let info = entry.nextPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
+        let info = entry.currentPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
 
         return ZStack {
             Circle()
-                .stroke(accent.opacity(0.2), lineWidth: 5)
-            Circle()
-                .trim(from: 0, to: max(progress, 0.04))
-                .stroke(accent, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                .rotationEffect(.degrees(-90))
+                .fill(accent.opacity(0.12))
             VStack(spacing: 2) {
-                Image(systemName: info?.image ?? "waveform.path.ecg")
-                    .font(.caption.bold())
+                Image(systemName: info?.image ?? "clock.fill")
+                    .font(.headline)
                     .foregroundStyle(accent)
-                Text(info?.title ?? "Next")
+                Text(info?.title ?? "Waktu")
                     .font(.system(size: 8, weight: .bold, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.35)
@@ -198,71 +184,33 @@ private struct CurrentPrayerWidgetEntryView: View {
         let accent = provider.accentColor(for: entry.accentRawValue)
         let currentInfo = entry.currentPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
         let nextInfo = entry.nextPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
-        let progress = provider.nextPrayerProgress(in: entry, now: entry.date)
-        let upcoming = provider.upcomingPrayers(in: entry, from: entry.date, limit: 3)
 
         return VStack(alignment: .leading, spacing: 5) {
-            HStack {
-                Text("Timeline+")
-                    .font(.caption2.bold())
-                    .foregroundStyle(accent)
-                Spacer()
-                Text(entry.city)
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
+            Text(entry.city)
+                .font(.caption2)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
 
             if let currentInfo, let nextInfo {
                 HStack(spacing: 6) {
-                    Label {
+                    Image(systemName: currentInfo.image)
+                        .foregroundStyle(accent)
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(currentInfo.title)
-                            .font(.caption2.weight(.semibold))
+                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
                             .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                    } icon: {
-                        Image(systemName: currentInfo.image)
-                            .foregroundStyle(accent)
-                    }
-                    Spacer(minLength: 6)
-                    Text(nextInfo.time, style: .time)
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(accent.opacity(0.16))
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [accent.opacity(0.9), accent],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: max(proxy.size.width * progress, 10))
+                            .minimumScaleFactor(0.55)
+                        Text(currentInfo.time, style: .time)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .frame(height: 5)
-            }
-
-            ForEach(upcoming.prefix(3)) { prayer in
-                let info = provider.displayInfo(for: prayer, in: entry, now: entry.date)
-                HStack(spacing: 6) {
-                    Image(systemName: info.image)
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(prayer.id == entry.nextPrayer?.id ? accent : .secondary)
-                    Text(info.title)
-                        .font(.caption2.weight(prayer.id == entry.nextPrayer?.id ? .bold : .regular))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.68)
-                    Spacer(minLength: 4)
-                    Text(info.time, style: .time)
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
+                Divider()
+                Text("Next: \(nextInfo.title)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -278,7 +226,7 @@ struct WaktuPrayerTimelineWidget: Widget {
             PrayerTimelineWidgetEntryView(entry: entry, provider: provider)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("Waktu Timeline")
+        .configurationDisplayName("Waktu List")
         .description("Shows the next three prayer times.")
         .supportedFamilies([.accessoryRectangular])
     }
@@ -323,6 +271,116 @@ private struct PrayerTimelineWidgetEntryView: View {
         }
         .padding(.vertical, 1)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+}
+
+private struct WatchCurvierPrayerMiniGraph: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let prayers: [WatchWidgetPrayer]
+    let activeDotIndex: Int
+
+    private func normalizedCurveY(_ t: CGFloat) -> CGFloat {
+        let clamped = min(max(t, 0), 1)
+        let p0: CGFloat = 0.76
+        let c1: CGFloat = 0.38
+        let c2: CGFloat = 0.02
+        let p3: CGFloat = 0.88
+        let oneMinusT = 1 - clamped
+        return
+            (oneMinusT * oneMinusT * oneMinusT * p0) +
+            (3 * oneMinusT * oneMinusT * clamped * c1) +
+            (3 * oneMinusT * clamped * clamped * c2) +
+            (clamped * clamped * clamped * p3)
+    }
+
+    private func markerPoints(in size: CGSize) -> [CGPoint] {
+        let source = prayers.sorted { $0.time < $1.time }
+        guard source.count > 1 else {
+            return [
+                CGPoint(x: size.width * 0.03, y: size.height * 0.82),
+                CGPoint(x: size.width * 0.97, y: size.height * 0.82)
+            ]
+        }
+
+        let total = max(source.last!.time.timeIntervalSince(source.first!.time), 1)
+        let leftInset = size.width * 0.03
+        let usableWidth = size.width * 0.94
+
+        return source.map { prayer in
+            let elapsed = prayer.time.timeIntervalSince(source.first!.time)
+            let t = CGFloat(elapsed / total)
+            return CGPoint(
+                x: leftInset + usableWidth * t,
+                y: size.height * normalizedCurveY(t)
+            )
+        }
+    }
+
+    private func sampledCurvePath(in size: CGSize) -> Path {
+        var path = Path()
+        let leftInset = size.width * 0.03
+        let usableWidth = size.width * 0.94
+        let steps = 48
+
+        for step in 0...steps {
+            let t = CGFloat(step) / CGFloat(steps)
+            let point = CGPoint(
+                x: leftInset + usableWidth * t,
+                y: size.height * normalizedCurveY(t)
+            )
+            if step == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+
+        return path
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let markers = markerPoints(in: geo.size)
+            let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
+            let clampedActiveIndex = min(max(activeDotIndex, -1), max(markers.count - 1, -1))
+            let baseLineColor = colorScheme == .light ? Color.black.opacity(0.42) : Color.white.opacity(0.68)
+            let activeLineColor = colorScheme == .light ? Color.black.opacity(0.90) : Color.white.opacity(0.95)
+            let futureDotStrokeColor = colorScheme == .light ? Color.black.opacity(0.55) : Color.white.opacity(0.72)
+
+            ZStack {
+                let curve = sampledCurvePath(in: geo.size)
+
+                ZStack {
+                    curve
+                        .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+
+                    ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: index == peakIndex ? 13 : 11, height: index == peakIndex ? 13 : 11)
+                            .position(point)
+                            .blendMode(.destinationOut)
+                    }
+                }
+                .compositingGroup()
+
+                ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                    let isReached = index <= clampedActiveIndex
+                    Circle()
+                        .fill(isReached ? activeLineColor : Color.clear)
+                        .overlay(
+                            Circle().stroke(
+                                isReached ? activeLineColor : futureDotStrokeColor,
+                                lineWidth: 1.8
+                            )
+                        )
+                        .frame(width: index == peakIndex ? 10 : 8, height: index == peakIndex ? 10 : 8)
+                        .shadow(radius: isReached ? 0.6 : 0)
+                        .position(point)
+                }
+            }
+        }
+        .frame(height: 30)
     }
 }
 
