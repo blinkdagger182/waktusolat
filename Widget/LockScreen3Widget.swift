@@ -37,7 +37,9 @@ struct LockScreen3EntryView: View {
                 : Array(entry.prayers.suffix(half))
         }()
 
-        return VStack(alignment: .leading, spacing: 4) {
+        let usesCompactDeparturesBoard = style == .departuresBoard
+
+        return VStack(alignment: .leading, spacing: usesCompactDeparturesBoard ? 2 : 4) {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
             } else {
@@ -93,32 +95,31 @@ struct LockScreen3EntryView: View {
                         .foregroundStyle(.secondary)
                     }
 
-                case .departuresBoard:
+                case .departuresBoard, .departuresBoardNoLocation:
                     let focused = Array(visiblePrayers.prefix(3))
-
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: usesCompactDeparturesBoard ? 2 : 3) {
                         ForEach(focused) { prayer in
-                            HStack(spacing: 8) {
+                            HStack(spacing: usesCompactDeparturesBoard ? 6 : 8) {
                                 Text(widgetPrayerDisplayName(prayer, in: entry).uppercased())
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .font(.system(size: usesCompactDeparturesBoard ? 8 : 9, weight: .bold, design: .monospaced))
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.75)
+                                    .minimumScaleFactor(usesCompactDeparturesBoard ? 0.7 : 0.75)
 
                                 Spacer(minLength: 4)
 
-                                    Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
+                                    .font(.system(size: usesCompactDeparturesBoard ? 8 : 9, weight: .bold, design: .monospaced))
                                     .monospacedDigit()
                                     .lineLimit(1)
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .padding(.horizontal, usesCompactDeparturesBoard ? 7 : 8)
+                            .padding(.vertical, usesCompactDeparturesBoard ? 2 : 4)
                             .background(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                RoundedRectangle(cornerRadius: usesCompactDeparturesBoard ? 7 : 8, style: .continuous)
                                     .fill(prayer.time <= entry.date ? Color.primary.opacity(0.16) : Color.primary.opacity(0.08))
                             )
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                RoundedRectangle(cornerRadius: usesCompactDeparturesBoard ? 7 : 8, style: .continuous)
                                     .stroke(prayer.time <= entry.date ? Color.primary.opacity(0.28) : Color.primary.opacity(0.14), lineWidth: 0.8)
                             )
                         }
@@ -177,7 +178,9 @@ struct LockScreen3EntryView: View {
                     }
                 }
 
-                WidgetLocationFooter(entry: entry, widgetKind: "LockScreen3Widget")
+                if style != .departuresBoardNoLocation {
+                    WidgetLocationFooter(entry: entry, widgetKind: "LockScreen3Widget")
+                }
             }
         }
         .font(.caption)
