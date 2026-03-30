@@ -246,6 +246,9 @@ struct SettingsAdhanView: View {
             settings.hanafiMadhab = false
         case "SG":
             settings.prayerCalculation = "Majlis Ugama Islam Singapura, Singapore"
+        case "BN":
+            settings.prayerCalculation = "Kementerian Hal Ehwal Ugama (MORA)"
+            settings.hanafiMadhab = false
         case "ID":
             settings.prayerCalculation = "KEMENAG - Kementerian Agama Republik Indonesia"
             settings.hanafiMadhab = false
@@ -1668,6 +1671,8 @@ private struct PrayerListStyleCard: View {
                             LockScreenPrayerListFocusPreviewCard(footer: "Taiping, Perak", accentColor: settings.accentColor.color)
                         } else if style == .departuresBoard {
                             LockScreenPrayerListDeparturesPreviewCard(footer: "Taiping, Perak")
+                        } else if style == .departuresBoardNoLocation {
+                            LockScreenPrayerListDeparturesPreviewCard(footer: nil)
                         } else if style == .iconBoard {
                             LockScreenPrayerListIconBoardPreviewCard(columns: 3)
                         } else {
@@ -2626,7 +2631,7 @@ private struct LockScreenPrayerListFocusPreviewCard: View {
 }
 
 private struct LockScreenPrayerListDeparturesPreviewCard: View {
-    let footer: String
+    let footer: String?
 
     private let rows: [(String, String)] = [
         (localizedPrayerName("Maghrib").uppercased(), "19:26"),
@@ -2635,41 +2640,45 @@ private struct LockScreenPrayerListDeparturesPreviewCard: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        let compact = footer != nil
+
+        VStack(alignment: .leading, spacing: compact ? 3 : 3) {
             ForEach(rows, id: \.0) { row in
-                HStack(spacing: 8) {
+                HStack(spacing: compact ? 6 : 8) {
                     Text(row.0)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.system(size: compact ? 8 : 9, weight: .bold, design: .monospaced))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .minimumScaleFactor(compact ? 0.7 : 0.75)
 
                     Spacer(minLength: 4)
 
                     Text(row.1)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.system(size: compact ? 8 : 9, weight: .bold, design: .monospaced))
                         .monospacedDigit()
                         .lineLimit(1)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, compact ? 7 : 8)
+                .padding(.vertical, compact ? 2 : 4)
                 .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: compact ? 7 : 8, style: .continuous)
                         .fill(Color.primary.opacity(0.08))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: compact ? 7 : 8, style: .continuous)
                         .stroke(Color.primary.opacity(0.14), lineWidth: 0.8)
                 )
             }
 
-            Text(footer)
-                .font(.system(size: 10, weight: .regular))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .padding(.top, 2)
+            if let footer {
+                Text(footer)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .padding(.top, 2)
+            }
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: compact ? 92 : 92, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(.secondarySystemBackground))

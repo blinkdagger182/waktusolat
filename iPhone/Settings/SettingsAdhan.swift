@@ -1108,6 +1108,7 @@ extension Settings {
         case "Moonsighting Committee Worldwide", "Moonsighting Committee": return 15
         case "Dubai (experimental)", "Dubai": return 16
         case "Jabatan Kemajuan Islam Malaysia (JAKIM)": return 17
+        case "Kementerian Hal Ehwal Ugama (MORA)": return 17
         case "Tunisia": return 18
         case "Algeria": return 19
         case "KEMENAG - Kementerian Agama Republik Indonesia": return 20
