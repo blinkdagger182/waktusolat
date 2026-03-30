@@ -440,6 +440,9 @@ struct QuranSurahDetailsView: View {
         }
         isRecitationLoading = false
         isReciting = true
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = true
+        #endif
     }
 
     @MainActor
@@ -461,6 +464,9 @@ struct QuranSurahDetailsView: View {
             NotificationCenter.default.removeObserver(recitationEndObserver)
             self.recitationEndObserver = nil
         }
+        #if os(iOS)
+        UIApplication.shared.isIdleTimerDisabled = false
+        #endif
     }
 
     @MainActor
