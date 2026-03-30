@@ -86,10 +86,6 @@ private struct NextPrayerWidgetEntryView: View {
                     .font(.caption2)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Spacer(minLength: 6)
-                Text(entry.sourceLabel)
-                    .font(.caption2.bold())
-                    .foregroundStyle(accent)
             }
 
             WatchCurvierPrayerMiniGraph(
@@ -242,14 +238,11 @@ private struct PrayerTimelineWidgetEntryView: View {
 
         VStack(alignment: .leading, spacing: 3) {
             HStack {
-                Text(entry.sourceLabel)
-                    .font(.caption2.bold())
-                    .foregroundStyle(accent)
-                Spacer()
                 Text(entry.city)
                     .font(.system(size: 10))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                Spacer()
             }
 
             ForEach(upcoming) { prayer in

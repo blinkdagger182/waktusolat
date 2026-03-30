@@ -240,7 +240,7 @@ extension WatchPrayerWidgetProvider {
         return WatchPrayerWidgetEntry(
             date: date,
             city: "Kuala Lumpur",
-            sourceLabel: "JAKIM",
+            sourceLabel: "",
             currentPrayer: prayers.first,
             nextPrayer: prayers.dropFirst().first,
             prayers: prayers,

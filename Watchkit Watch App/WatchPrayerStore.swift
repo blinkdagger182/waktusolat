@@ -18,6 +18,15 @@ final class WatchPrayerStore: ObservableObject {
         return decoder
     }()
 
+    private var monthCache: WatchPrayerMonthCache? {
+        let today = Date()
+        let keyedCache = defaults?.data(forKey: WatchPrayerPresentation.monthCacheKey(for: today))
+        let legacyCache = defaults?.data(forKey: WatchPrayerPresentation.legacyMonthCacheKey)
+        let data = keyedCache ?? legacyCache
+        guard let data else { return nil }
+        return try? decoder.decode(WatchPrayerMonthCache.self, from: data)
+    }
+
     func reload() {
         if let data = defaults?.data(forKey: WatchPrayerPresentation.prayersStorageKey),
            let decoded = try? decoder.decode(WatchPrayerDay.self, from: data) {
@@ -53,6 +62,25 @@ final class WatchPrayerStore: ObservableObject {
         WatchPrayerPresentation.shortSourceLabel(calculation: prayerCalculation, countryCode: countryCode)
     }
 
+    var footerLocationLabel: String {
+        let area = monthCache?.location?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let province = monthCache?.province?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let locationLabel: String
+        switch (area?.isEmpty == false ? area : nil, province?.isEmpty == false ? province : nil) {
+        case let (area?, province?) where area.caseInsensitiveCompare(province) != .orderedSame:
+            locationLabel = "\(area), \(province)"
+        case let (area?, _):
+            locationLabel = area
+        case let (_, province?):
+            locationLabel = province
+        default:
+            locationLabel = city
+        }
+
+        return "\(locationLabel) \(sourceLabel)"
+    }
+
     var prayers: [WatchPrayer] {
         let source = day?.fullPrayers.isEmpty == false ? day?.fullPrayers : day?.prayers
         return source ?? []
@@ -61,13 +89,8 @@ final class WatchPrayerStore: ObservableObject {
     var storedDhuha: Date? {
         guard countryCode == "BN" else { return nil }
         let today = Date()
-        let keyedCache = defaults?.data(forKey: WatchPrayerPresentation.monthCacheKey(for: today))
-        let legacyCache = defaults?.data(forKey: WatchPrayerPresentation.legacyMonthCacheKey)
-        let data = keyedCache ?? legacyCache
-
         guard
-            let data,
-            let monthCache = try? decoder.decode(WatchPrayerMonthCache.self, from: data),
+            let monthCache,
             let dayOfMonth = Calendar.gregorian.dateComponents([.day], from: today).day,
             let cachedDay = monthCache.prayers.first(where: { $0.day == dayOfMonth }),
             let doha = cachedDay.doha,

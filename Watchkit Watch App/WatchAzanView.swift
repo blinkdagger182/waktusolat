@@ -6,32 +6,35 @@ struct WatchAzanView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                headerCard
                 timelineCard
                 prayerList
+                footerLabel
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
         }
-        .navigationTitle("Waktu")
         .task {
             store.reload()
         }
     }
 
-    private var headerCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(store.city)
-                .font(.headline)
-                .lineLimit(2)
+    private var footerLabel: some View {
+        Text(store.footerLocationLabel)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 6)
+    }
 
-            Text(store.sourceLabel)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private var prayerList: some View {
+        VStack(spacing: 8) {
+            ForEach(store.prayers) { prayer in
+                WatchPrayerRow(prayer: prayer)
+                    .environmentObject(store)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     @ViewBuilder
@@ -65,7 +68,7 @@ struct WatchAzanView: View {
                                 .minimumScaleFactor(0.55)
                             Spacer(minLength: 8)
                             Text(nextInfo.time, style: .time)
-                                .font(.headline.monospacedDigit())
+                                .font(.system(.subheadline, design: .rounded).monospacedDigit())
                         }
 
                         Text(nextInfo.time, style: .timer)
@@ -85,20 +88,14 @@ struct WatchAzanView: View {
             }
         }
     }
-
-    private var prayerList: some View {
-        VStack(spacing: 8) {
-            ForEach(store.prayers) { prayer in
-                WatchPrayerRow(prayer: prayer)
-                    .environmentObject(store)
-            }
-        }
-    }
 }
 
 private struct WatchPrayerRow: View {
     @EnvironmentObject private var store: WatchPrayerStore
     let prayer: WatchPrayer
+
+    private let prayerFont = Font.system(size: 11, weight: .semibold, design: .rounded)
+    private let timeFont = Font.system(.caption2, design: .rounded).monospacedDigit()
 
     var body: some View {
         let info = store.displayInfo(for: prayer)
@@ -107,18 +104,21 @@ private struct WatchPrayerRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: prayer.image)
-                    .font(.headline)
+                    .font(.subheadline)
                     .foregroundStyle(info.isDerivedDhuha ? .primary : store.accentColor.color)
-                    .frame(width: 20)
+                    .frame(width: 16)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(WatchPrayerPresentation.displayedName(for: prayer, language: store.language))
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .font(prayerFont)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.55)
+                        .minimumScaleFactor(0.72)
+                        .allowsTightening(true)
 
                     Text(info.time, style: .time)
-                        .font(.caption.monospacedDigit())
+                        .font(timeFont)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .foregroundStyle(.secondary)
                 }
 
@@ -140,11 +140,10 @@ private struct WatchPrayerRow: View {
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .padding(.leading, 28)
+                .padding(.leading, 26)
             }
         }
         .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
