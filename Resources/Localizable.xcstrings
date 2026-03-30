@@ -417,9 +417,6 @@
         }
       }
     },
-    "Aura Backgrounds (6 Waktu)" : {
-
-    },
     "Auto" : {
 
     },
@@ -1047,6 +1044,7 @@
     },
     "Debug options" : {
       "comment" : "",
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1068,6 +1066,7 @@
       }
     },
     "Debug: WIDGETS" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1169,6 +1168,7 @@
     },
     "Donation Toast (Eid Pool)" : {
       "comment" : "",
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1180,6 +1180,7 @@
     },
     "Donation Toast (Generic)" : {
       "comment" : "",
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1191,6 +1192,7 @@
     },
     "Donation Toast (Launch 5)" : {
       "comment" : "",
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1202,6 +1204,7 @@
     },
     "Donation Toast (Launch 6)" : {
       "comment" : "",
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1213,6 +1216,7 @@
     },
     "Donation Toast (Monthly Pool)" : {
       "comment" : "",
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1224,6 +1228,7 @@
     },
     "Donation Toast (Streak 7)" : {
       "comment" : "",
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -2786,15 +2791,6 @@
     "Premium Widget Access" : {
 
     },
-    "Premium Widgets: Donated" : {
-
-    },
-    "Premium Widgets: Live" : {
-
-    },
-    "Premium Widgets: No Donate" : {
-
-    },
     "Prenotification" : {
       "localizations" : {
         "ms" : {
@@ -2999,9 +2995,6 @@
           }
         }
       }
-    },
-    "Region Override" : {
-
     },
     "REMEMBRANCES OF ALLAH ﷻ‎" : {
 
@@ -3257,6 +3250,7 @@
       }
     },
     "Show Daily Quran Intro" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {

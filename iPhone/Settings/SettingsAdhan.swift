@@ -978,6 +978,18 @@ extension Settings {
                     : ["Times are fetched from our backend and sourced from MUIS.", "Singapore is supported end to end across the app and widgets."],
                 updatedAt: nil
             )
+        case "BN":
+            return PrayerCountrySupportRemoteConfig(
+                countryCode: "BN",
+                pipeline: "brunei",
+                defaultCalculationMethod: "Kementerian Hal Ehwal Ugama (MORA)",
+                autoMethodLabel: "MORA",
+                supportTitle: isMalay ? "Waktu menyokong Brunei secara rasmi menggunakan waktu solat MORA." : "Waktu officially supports Brunei using MORA prayer times.",
+                supportBullets: isMalay
+                    ? ["Waktu diambil daripada backend kami dan bersumberkan MORA (Kementerian Hal Ehwal Ugama).", "Brunei disokong sepenuhnya di seluruh aplikasi dan widget."]
+                    : ["Times are fetched from our backend and sourced from MORA (Kementerian Hal Ehwal Ugama).", "Brunei is supported end to end across the app and widgets."],
+                updatedAt: nil
+            )
         case "ID":
             return PrayerCountrySupportRemoteConfig(
                 countryCode: "ID",
@@ -1305,7 +1317,7 @@ extension Settings {
         guard let location else { return true }
         // Prefer country code when available — coordinate bounding box overlaps Singapore
         if let countryCode = location.countryCode?.uppercased() {
-            return countryCode == "MY" || countryCode == "SG"
+            return countryCode == "MY" || countryCode == "SG" || countryCode == "BN"
         }
         return isLikelyMalaysiaCoordinate(latitude: location.latitude, longitude: location.longitude)
     }
@@ -2367,6 +2379,8 @@ extension Settings {
             }
         }
 
+        scheduleDerivedMalaysiaSunriseNotifications(for: prayerObj, city: city, using: center)
+
         if zikirNotificationsEnabled {
             scheduleZikirNotifications(for: prayerObj, city: city, using: center)
         }
@@ -2389,14 +2403,16 @@ extension Settings {
                     }
                 }
 
+                let futurePrayers = Prayers(
+                    day: date,
+                    city: city,
+                    prayers: list,
+                    fullPrayers: list,
+                    setNotification: false
+                )
+                scheduleDerivedMalaysiaSunriseNotifications(for: futurePrayers, city: city, using: center)
+
                 if zikirNotificationsEnabled {
-                    let futurePrayers = Prayers(
-                        day: date,
-                        city: city,
-                        prayers: list,
-                        fullPrayers: list,
-                        setNotification: false
-                    )
                     scheduleZikirNotifications(for: futurePrayers, city: city, using: center)
                 }
             }
@@ -2419,6 +2435,10 @@ extension Settings {
             switch prayer.nameTransliteration {
             case "Shurooq":
                 return isMalay ? " (akhir waktu Subuh)" : " (end of Fajr)"
+            case "Ishraq":
+                return isMalay ? " (selepas matahari terbit)" : " (after sunrise)"
+            case "Dhuha":
+                return isMalay ? " (waktu sunat dhuha)" : " (forenoon prayer time)"
             case "Jumuah":
                 return isMalay ? " (Jumaat)" : " (Friday)"
             default:
@@ -2599,7 +2619,7 @@ extension Settings {
     }
 
     private func prayerNotificationSound(for prayer: Prayer, minutesBefore: Int?) -> UNNotificationSound {
-        if prayer.nameTransliteration == "Shurooq" {
+        if ["Shurooq", "Ishraq", "Dhuha"].contains(prayer.nameTransliteration) {
             return .default
         }
 
@@ -2617,6 +2637,49 @@ extension Settings {
             }
             return .default
         }
+    }
+
+    private func scheduleDerivedMalaysiaSunriseNotifications(
+        for prayerObject: Prayers,
+        city: String,
+        using center: UNUserNotificationCenter = .current()
+    ) {
+        guard currentLocation?.countryCode?.uppercased() == "MY", notificationSunrise else { return }
+
+        let helpers = PrayerDerivedTimes.shurooqHelpers(
+            for: prayerObject.prayers,
+            countryCode: currentLocation?.countryCode
+        )
+
+        guard let sunrisePrayer = prayerObject.prayers.first(where: {
+            Self.canonicalPrayerName($0.nameTransliteration) == "Shurooq"
+        }), let helperTimes = helpers[sunrisePrayer.id] else {
+            return
+        }
+
+        let ishraqPrayer = Prayer(
+            nameArabic: "الإشراق",
+            nameTransliteration: "Ishraq",
+            nameEnglish: "Sunrise Prayer",
+            time: helperTimes.ishraq,
+            image: sunrisePrayer.image,
+            rakah: "0",
+            sunnahBefore: "0",
+            sunnahAfter: "0"
+        )
+        let dhuhaPrayer = Prayer(
+            nameArabic: "الضُّحَى",
+            nameTransliteration: "Dhuha",
+            nameEnglish: "Forenoon",
+            time: helperTimes.dhuha,
+            image: sunrisePrayer.image,
+            rakah: "0",
+            sunnahBefore: "0",
+            sunnahAfter: "0"
+        )
+
+        scheduleNotification(for: ishraqPrayer, preNotificationTime: nil, city: city, using: center)
+        scheduleNotification(for: dhuhaPrayer, preNotificationTime: nil, city: city, using: center)
     }
 
     func scheduleNotification(for prayer: Prayer, preNotificationTime minutes: Int?, city: String, using center: UNUserNotificationCenter = .current()) {

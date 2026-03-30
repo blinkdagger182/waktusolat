@@ -115,6 +115,12 @@ struct PrayersProvider: TimelineProvider {
         }
 
         let inferred = inferCurrentAndNext(from: obj.prayers, at: date)
+        let displayCurrent = inferred.current.map {
+            promotedWidgetPrayer($0, in: obj.fullPrayers.isEmpty ? obj.prayers : obj.fullPrayers, isMalaysia: baseContext.isMalaysia, at: date)
+        }
+        let displayNext = inferred.next.map {
+            promotedWidgetPrayer($0, in: obj.fullPrayers.isEmpty ? obj.prayers : obj.fullPrayers, isMalaysia: baseContext.isMalaysia, at: date)
+        }
 
         return PrayersEntry(
             date: date,
@@ -123,8 +129,8 @@ struct PrayersProvider: TimelineProvider {
                 ?? (obj.city.isEmpty ? (baseContext.location?.city ?? "") : obj.city),
             prayers: obj.prayers,
             fullPrayers: obj.fullPrayers,
-            currentPrayer: inferred.current,
-            nextPrayer: inferred.next,
+            currentPrayer: displayCurrent,
+            nextPrayer: displayNext,
             hijriOffset: settings.hijriOffset,
             isMalaysia: baseContext.isMalaysia,
             travelingMode: settings.travelingMode
@@ -213,6 +219,34 @@ struct PrayersProvider: TimelineProvider {
             .map(\.dhuha)
             .filter { $0 > now && $0 < boundary }
             .sorted()
+    }
+
+    private func promotedWidgetPrayer(
+        _ prayer: Prayer,
+        in prayers: [Prayer],
+        isMalaysia: Bool,
+        at date: Date
+    ) -> Prayer {
+        let display = PrayerDerivedTimes.displayInfo(
+            for: prayer,
+            in: prayers,
+            countryCode: isMalaysia ? "MY" : nil,
+            now: date
+        )
+
+        guard display.isDerivedDhuha else { return prayer }
+
+        return Prayer(
+            id: prayer.id,
+            nameArabic: display.nameArabic,
+            nameTransliteration: display.nameTransliteration,
+            nameEnglish: display.nameEnglish,
+            time: display.time,
+            image: display.image,
+            rakah: prayer.rakah,
+            sunnahBefore: prayer.sunnahBefore,
+            sunnahAfter: prayer.sunnahAfter
+        )
     }
 }
 

@@ -365,22 +365,8 @@ struct AlAdhanApp: App {
     }
 
     private func updateUnsupportedRegionModalVisibility() {
-        guard !settings.firstLaunch else {
-            showUnsupportedRegionModal = false
-            return
-        }
-        guard let location = settings.currentLocation else {
-            showUnsupportedRegionModal = false
-            return
-        }
-        let code = location.countryCode?.uppercased() ?? ""
-        let supportedCodes = [
-            "MY", "SG", "ID",
-            "US", "CA", "GB", "FR",
-            "JP", "KR", "CN", "PT", "RU"
-        ]
         withAnimation {
-            showUnsupportedRegionModal = !code.isEmpty && !supportedCodes.contains(code)
+            showUnsupportedRegionModal = false
         }
     }
 
@@ -2455,6 +2441,7 @@ Get Waktu on the App Store: \(appLink)
         }
 
         let newPlayer = AVPlayer(url: url)
+        newPlayer.volume = 1.0
         player = newPlayer
         currentAudioURL = audioURL
 

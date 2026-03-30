@@ -635,6 +635,7 @@ struct NotificationView: View {
             }
             do {
                 previewPlayer = try AVAudioPlayer(contentsOf: url)
+                previewPlayer?.volume = 1.0
                 previewPlayer?.prepareToPlay()
                 previewPlayer?.play()
             } catch {
@@ -3124,6 +3125,7 @@ struct NotificationSoundSelectionView: View {
         }
         do {
             previewPlayer = try AVAudioPlayer(contentsOf: url)
+            previewPlayer?.volume = 1.0
             previewPlayer?.prepareToPlay()
             previewPlayer?.play()
         } catch {

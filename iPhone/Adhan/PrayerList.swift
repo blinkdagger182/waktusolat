@@ -82,6 +82,10 @@ struct PrayerList: View {
         )
     }
 
+    private var activeDerivedDhuhaSunrisePrayer: Prayer? {
+        displayedPrayerTimes.first { displayInfo(for: $0).isDerivedDhuha }
+    }
+
     @ViewBuilder
     private var sectionHeader: some View {
         HStack {
@@ -151,7 +155,7 @@ struct PrayerList: View {
                                     if let helperTimes = shurooqDerivedHelpersByPrayerID[prayerTime.id] {
                                         VStack(alignment: .leading, spacing: 1) {
                                             if displayInfo.isDerivedDhuha {
-                                                Text("\(localizedPrayerName(prayerTime.nameTransliteration)): \(DateFormatter.timeEN.string(from: prayerTime.time))")
+                                                Text("Ishraq: \(DateFormatter.timeEN.string(from: helperTimes.ishraq))")
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
                                             } else {
@@ -392,6 +396,15 @@ struct PrayerList: View {
                                     .font(.body)
                             }
 
+                            if
+                                prayerTime.nameTransliteration == "Fajr" || prayerTime.nameTransliteration == "Subuh",
+                                let sunrisePrayer = activeDerivedDhuhaSunrisePrayer
+                            {
+                                Text("\(localizedPrayerName(sunrisePrayer.nameTransliteration)): \(DateFormatter.timeEN.string(from: sunrisePrayer.time))")
+                                    .foregroundColor(.secondary)
+                                    .font(.footnote)
+                            }
+
                             if(prayerTime.sunnahBefore != "0") {
                                 Text(localizedSunnahBeforeInfo(prayerTime.sunnahBefore))
                                     .foregroundColor(.secondary)
@@ -460,7 +473,7 @@ struct PrayerList: View {
                         .foregroundColor(getPrayerColor(for: prayer))
 
                     if displayInfo.isDerivedDhuha {
-                        Text("\(localizedPrayerName(prayer.nameTransliteration)): \(DateFormatter.timeEN.string(from: prayer.time))")
+                        Text("Ishraq: \(DateFormatter.timeEN.string(from: helperTimes?.ishraq ?? prayer.time))")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
