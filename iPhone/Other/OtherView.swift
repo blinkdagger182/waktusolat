@@ -221,6 +221,10 @@ struct OtherView: View {
     @State private var searchText = ""
     @State private var expandedSurahNumber: Int?
     @State private var dailyQuranArabicText: String?
+    @State private var pinnedSurahNumbers: [Int] = []
+
+    private static let pinnedSurahsKey = "pinnedSurahNumbersV1"
+    private static let maxPinnedSurahs = 3
 
     private var isSearchingSurahs: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -459,27 +463,24 @@ struct OtherView: View {
                     }
                 }
 
-                Section(header: Text(isSearchingSurahs
-                                     ? (isMalayAppLanguage() ? "HASIL CARIAN SURAH" : "SURAH SEARCH RESULTS")
-                                     : (isMalayAppLanguage() ? "SENARAI SURAH" : "SURAH LIST"))) {
-                    if isLoadingSurahs {
-                        HStack {
-                            Spacer()
-                            ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
-                            Spacer()
-                        }
-                    } else if let surahListErrorMessage {
-                        Text(surahListErrorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(filteredSurahs) { surah in
+                let pinnedSurahs = surahs.filter { pinnedSurahNumbers.contains($0.number) }
+                    .sorted { pinnedSurahNumbers.firstIndex(of: $0.number)! < pinnedSurahNumbers.firstIndex(of: $1.number)! }
+
+                if !isSearchingSurahs && !pinnedSurahs.isEmpty {
+                    Section(header: HStack(spacing: 6) {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .rotationEffect(.degrees(45))
+                        Text(isMalayAppLanguage() ? "SURAH DISEMATKAN" : "PINNED SURAHS")
+                    }) {
+                        ForEach(pinnedSurahs) { surah in
                             QuranSurahExpandableCard(
                                 surah: surah,
                                 isExpanded: expandedSurahNumber == surah.number,
                                 accentColor: settings.accentColor.color,
                                 progressAyah: loadLastReadAyah(for: surah.number),
                                 totalAyahCount: QuranSurahVerseCounts.count(for: surah.number),
+                                isPinned: true,
                                 onToggle: {
                                     withAnimation(.spring(response: 0.46, dampingFraction: 0.9)) {
                                         expandedSurahNumber = expandedSurahNumber == surah.number ? nil : surah.number
@@ -502,6 +503,85 @@ struct OtherView: View {
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
                             .listRowSeparator(.hidden)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    withAnimation { togglePin(surahNumber: surah.number) }
+                                } label: {
+                                    Label(isMalayAppLanguage() ? "Tanggalkan Pin" : "Unpin Surah", systemImage: "pin.slash")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Section(header: Text(isSearchingSurahs
+                                     ? (isMalayAppLanguage() ? "HASIL CARIAN SURAH" : "SURAH SEARCH RESULTS")
+                                     : (isMalayAppLanguage() ? "SENARAI SURAH" : "SURAH LIST"))) {
+                    if isLoadingSurahs {
+                        HStack {
+                            Spacer()
+                            ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
+                            Spacer()
+                        }
+                    } else if let surahListErrorMessage {
+                        Text(surahListErrorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(filteredSurahs) { surah in
+                            let isPinned = pinnedSurahNumbers.contains(surah.number)
+                            let canPin = !isPinned && pinnedSurahNumbers.count < Self.maxPinnedSurahs
+                            QuranSurahExpandableCard(
+                                surah: surah,
+                                isExpanded: expandedSurahNumber == surah.number,
+                                accentColor: settings.accentColor.color,
+                                progressAyah: loadLastReadAyah(for: surah.number),
+                                totalAyahCount: QuranSurahVerseCounts.count(for: surah.number),
+                                isPinned: isPinned,
+                                onToggle: {
+                                    withAnimation(.spring(response: 0.46, dampingFraction: 0.9)) {
+                                        expandedSurahNumber = expandedSurahNumber == surah.number ? nil : surah.number
+                                    }
+                                },
+                                onOpen: {
+                                    selectedFullSurah = FullSurahSelection(
+                                        surahNumber: surah.number,
+                                        initialAyahNumber: nil,
+                                        dailyAyahNumber: nil
+                                    )
+                                },
+                                onResume: {
+                                    selectedFullSurah = FullSurahSelection(
+                                        surahNumber: surah.number,
+                                        initialAyahNumber: loadLastReadAyah(for: surah.number),
+                                        dailyAyahNumber: nil
+                                    )
+                                }
+                            )
+                            .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                            .listRowSeparator(.hidden)
+                            .contextMenu {
+                                if isPinned {
+                                    Button(role: .destructive) {
+                                        withAnimation { togglePin(surahNumber: surah.number) }
+                                    } label: {
+                                        Label(isMalayAppLanguage() ? "Tanggalkan Pin" : "Unpin Surah", systemImage: "pin.slash")
+                                    }
+                                } else {
+                                    Button {
+                                        withAnimation { togglePin(surahNumber: surah.number) }
+                                    } label: {
+                                        Label(isMalayAppLanguage() ? "Semat Surah" : "Pin Surah", systemImage: "pin")
+                                    }
+                                    .disabled(!canPin)
+                                }
+                                if !canPin && !isPinned {
+                                    Text(isMalayAppLanguage()
+                                         ? "Maksimum 3 surah disematkan"
+                                         : "Maximum 3 surahs can be pinned")
+                                        .font(.caption)
+                                }
+                            }
                         }
                     }
                 }
@@ -608,6 +688,7 @@ struct OtherView: View {
             .navigationTitle(isMalayAppLanguage() ? "Pustaka" : "Library")
             .onAppear {
                 loadResumeSelection()
+                loadPinnedSurahs()
                 Task { await loadSurahsIfNeeded() }
                 Task { await loadDailyQuranQuote() }
             }
@@ -641,6 +722,24 @@ struct OtherView: View {
             }
             .searchable(text: $searchText, prompt: isMalayAppLanguage() ? "Cari surah" : "Search surah")
         }
+    }
+
+    private func loadPinnedSurahs() {
+        let stored = UserDefaults.standard.array(forKey: Self.pinnedSurahsKey) as? [Int] ?? []
+        pinnedSurahNumbers = stored
+    }
+
+    private func savePinnedSurahs() {
+        UserDefaults.standard.set(pinnedSurahNumbers, forKey: Self.pinnedSurahsKey)
+    }
+
+    private func togglePin(surahNumber: Int) {
+        if let index = pinnedSurahNumbers.firstIndex(of: surahNumber) {
+            pinnedSurahNumbers.remove(at: index)
+        } else if pinnedSurahNumbers.count < Self.maxPinnedSurahs {
+            pinnedSurahNumbers.append(surahNumber)
+        }
+        savePinnedSurahs()
     }
 
     private func loadLastReadAyah(for surahNumber: Int) -> Int? {

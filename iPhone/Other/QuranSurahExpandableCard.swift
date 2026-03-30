@@ -6,6 +6,7 @@ struct QuranSurahExpandableCard: View {
     let accentColor: Color
     let progressAyah: Int?
     let totalAyahCount: Int?
+    var isPinned: Bool = false
     let onToggle: () -> Void
     let onOpen: () -> Void
     let onResume: () -> Void
@@ -78,6 +79,13 @@ struct QuranSurahExpandableCard: View {
                     }
 
                     Spacer(minLength: 8)
+
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(accentColor.opacity(0.7))
+                            .rotationEffect(.degrees(45))
+                    }
 
                     Image(systemName: "chevron.down")
                         .font(.caption.weight(.bold))
