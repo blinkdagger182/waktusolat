@@ -910,8 +910,11 @@ extension Settings {
         appGroupStore()?.setValue(data, forKey: key)
         // Keep legacy key warm for compatibility with existing widget/app installs.
         appGroupStore()?.setValue(data, forKey: Self.legacyMonthCacheKey)
-        // Persist zone for push notification targeting (Malaysia/SG only)
-        if !shouldUseIndonesiaPrayerAPI(for: currentLocation) {
+        // Persist zone for push notification targeting (Malaysia/SG/BN only).
+        // Use a positive check (shouldUseMalaysiaPrayerAPI) rather than !shouldUseIndonesiaPrayerAPI
+        // so that a nil location — which makes shouldUseIndonesiaPrayerAPI return false — doesn't
+        // accidentally write an Indonesia region UUID into lastKnownMalaysiaZone.
+        if shouldUseMalaysiaPrayerAPI(for: currentLocation) {
             UserDefaults.standard.set(month.zone, forKey: Settings.malaysiaWaktuZoneCodeKey)
             malaysiaWaktuZoneCode = month.zone
             Self.syncLiveActivityEnrollmentHandler?()
