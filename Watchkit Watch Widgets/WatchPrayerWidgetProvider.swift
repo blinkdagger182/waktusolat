@@ -129,6 +129,44 @@ struct WatchPrayerWidgetProvider: TimelineProvider {
 }
 
 extension WatchPrayerWidgetProvider {
+    func nextPrayerProgress(in entry: WatchPrayerWidgetEntry, now: Date) -> Double {
+        guard
+            let next = entry.nextPrayer,
+            let current = entry.currentPrayer
+        else {
+            return 0
+        }
+
+        let start = current.time
+        let end = next.time
+        guard end > start else { return 0 }
+        let elapsed = now.timeIntervalSince(start)
+        let total = end.timeIntervalSince(start)
+        return min(max(elapsed / total, 0), 1)
+    }
+
+    func timeRemaining(to prayer: WatchWidgetPrayer?, from now: Date) -> String? {
+        guard let prayer else { return nil }
+        let remaining = max(0, Int(prayer.time.timeIntervalSince(now)))
+        let hours = remaining / 3600
+        let minutes = (remaining % 3600) / 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m left"
+        }
+        return "\(minutes)m left"
+    }
+
+    func upcomingPrayers(in entry: WatchPrayerWidgetEntry, from date: Date, limit: Int) -> [WatchWidgetPrayer] {
+        let future = entry.prayers.filter { $0.time >= date }
+        if future.count >= limit {
+            return Array(future.prefix(limit))
+        }
+
+        let needed = max(0, limit - future.count)
+        return future + entry.prayers.prefix(needed)
+    }
+
     func displayInfo(for prayer: WatchWidgetPrayer, in entry: WatchPrayerWidgetEntry, now: Date) -> WatchWidgetPrayerDisplayInfo {
         let base = WatchWidgetPrayerDisplayInfo(
             title: prayer.nameTransliteration,

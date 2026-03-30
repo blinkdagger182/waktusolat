@@ -59,11 +59,10 @@ struct WatchAzanView: View {
 
                         HStack(alignment: .firstTextBaseline) {
                             Text(WatchPrayerPresentation.displayedName(for: nextPrayer, language: store.language))
-                                .font(.title3.bold())
+                                .font(.system(.headline, design: .rounded).weight(.bold))
                                 .foregroundStyle(store.accentColor.color)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.7)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.55)
                             Spacer(minLength: 8)
                             Text(nextInfo.time, style: .time)
                                 .font(.headline.monospacedDigit())
@@ -114,10 +113,9 @@ private struct WatchPrayerRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(WatchPrayerPresentation.displayedName(for: prayer, language: store.language))
-                        .font(.headline)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.7)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
 
                     Text(info.time, style: .time)
                         .font(.caption.monospacedDigit())

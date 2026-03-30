@@ -11,6 +11,8 @@ import SwiftUI
 @main
 struct Watchkit_Watch_WidgetsBundle: WidgetBundle {
     var body: some Widget {
-        Watchkit_Watch_Widgets()
+        WaktuNextPrayerWidget()
+        WaktuCurrentPrayerWidget()
+        WaktuPrayerTimelineWidget()
     }
 }
