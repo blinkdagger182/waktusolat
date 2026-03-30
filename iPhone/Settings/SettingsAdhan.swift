@@ -531,6 +531,7 @@ extension Settings {
         let day: Int
         let fajr: TimeInterval
         let syuruk: TimeInterval
+        let doha: TimeInterval?
         let dhuhr: TimeInterval
         let asr: TimeInterval
         let maghrib: TimeInterval
@@ -1005,10 +1006,10 @@ extension Settings {
                 pipeline: "brunei",
                 defaultCalculationMethod: "Kementerian Hal Ehwal Ugama (MORA)",
                 autoMethodLabel: "MORA",
-                supportTitle: isMalay ? "Waktu menyokong Brunei secara rasmi menggunakan waktu solat MORA." : "Waktu officially supports Brunei using MORA prayer times.",
+                supportTitle: isMalay ? "Waktu menyokong Brunei secara rasmi menggunakan waktu solat MORA dengan pelarasan daerah." : "Waktu officially supports Brunei using MORA prayer times with district offsets applied.",
                 supportBullets: isMalay
-                    ? ["Waktu diambil daripada backend kami dan bersumberkan MORA (Kementerian Hal Ehwal Ugama).", "Brunei disokong sepenuhnya di seluruh aplikasi dan widget."]
-                    : ["Times are fetched from our backend and sourced from MORA (Kementerian Hal Ehwal Ugama).", "Brunei is supported end to end across the app and widgets."],
+                    ? ["Waktu diambil daripada backend kami dan bersumberkan MORA (Kementerian Hal Ehwal Ugama).", "Bagi Daerah Belait, waktu ditambah 3 minit. Bagi Daerah Tutong, waktu ditambah 1 minit.", "Brunei disokong sepenuhnya di seluruh aplikasi dan widget."]
+                    : ["Times are fetched from our backend and sourced from MORA (Kementerian Hal Ehwal Ugama).", "Belait times are offset by +3 minutes, and Tutong times are offset by +1 minute.", "Brunei is supported end to end across the app and widgets."],
                 updatedAt: nil
             )
         case "ID":
@@ -1805,8 +1806,10 @@ extension Settings {
         let staleCity  = unresolvedIndonesiaZone || stored?.city != targetPrayerCity
         let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
         let emptyList  = stored?.prayers.isEmpty ?? true
+        let cachedDayPayload = usesZonePipeline ? dayPayload(for: today) : nil
+        let missingStoredDohaForToday = loc.countryCode?.uppercased() == "BN" && cachedDayPayload?.doha == nil
         let missingCacheForToday = usesZonePipeline
-            ? (dayPayload(for: today) == nil)
+            ? (cachedDayPayload == nil || missingStoredDohaForToday)
             : !hasAlAdhanDayPayload(for: today, location: loc)
         let needsRefresh = force || stored == nil || staleCity || staleDate || emptyList
         let needsNetworkFetch = force || missingCacheForToday || unresolvedIndonesiaZone
@@ -2401,7 +2404,7 @@ extension Settings {
             }
         }
 
-        scheduleDerivedMalaysiaSunriseNotifications(for: prayerObj, city: city, using: center)
+        scheduleDerivedSunriseNotifications(for: prayerObj, city: city, using: center)
 
         if zikirNotificationsEnabled {
             scheduleZikirNotifications(for: prayerObj, city: city, using: center)
@@ -2432,7 +2435,7 @@ extension Settings {
                     fullPrayers: list,
                     setNotification: false
                 )
-                scheduleDerivedMalaysiaSunriseNotifications(for: futurePrayers, city: city, using: center)
+                scheduleDerivedSunriseNotifications(for: futurePrayers, city: city, using: center)
 
                 if zikirNotificationsEnabled {
                     scheduleZikirNotifications(for: futurePrayers, city: city, using: center)
@@ -2661,23 +2664,39 @@ extension Settings {
         }
     }
 
-    private func scheduleDerivedMalaysiaSunriseNotifications(
+    private func scheduleDerivedSunriseNotifications(
         for prayerObject: Prayers,
         city: String,
         using center: UNUserNotificationCenter = .current()
     ) {
-        guard currentLocation?.countryCode?.uppercased() == "MY", notificationSunrise else { return }
+        guard notificationSunrise else { return }
 
-        let helpers = PrayerDerivedTimes.shurooqHelpers(
-            for: prayerObject.prayers,
-            countryCode: currentLocation?.countryCode
-        )
+        let countryCode = currentLocation?.countryCode?.uppercased()
+        guard countryCode == "MY" || countryCode == "BN" else { return }
 
         guard let sunrisePrayer = prayerObject.prayers.first(where: {
             Self.canonicalPrayerName($0.nameTransliteration) == "Shurooq"
-        }), let helperTimes = helpers[sunrisePrayer.id] else {
+        }) else {
             return
         }
+
+        let helperTimes: ShurooqDerivedHelperTimes?
+        if countryCode == "MY" {
+            let helpers = PrayerDerivedTimes.shurooqHelpers(
+                for: prayerObject.prayers,
+                countryCode: currentLocation?.countryCode
+            )
+            helperTimes = helpers[sunrisePrayer.id]
+        } else {
+            let helpers = PrayerDerivedTimes.shurooqHelpers(
+                for: prayerObject.prayers,
+                countryCode: currentLocation?.countryCode,
+                storedDhuha: storedDohaDate(for: prayerObject.day)
+            )
+            helperTimes = helpers[sunrisePrayer.id]
+        }
+
+        guard let helperTimes else { return }
 
         let ishraqPrayer = Prayer(
             nameArabic: "الإشراق",
@@ -2702,6 +2721,16 @@ extension Settings {
 
         scheduleNotification(for: ishraqPrayer, preNotificationTime: nil, city: city, using: center)
         scheduleNotification(for: dhuhaPrayer, preNotificationTime: nil, city: city, using: center)
+    }
+
+    func storedDohaDate(for date: Date) -> Date? {
+        guard let dohaUnix = dayPayload(for: date)?.doha, dohaUnix > 0 else { return nil }
+        return dateFromUnix(dohaUnix)
+    }
+
+    func storedDohaDate(for prayers: [Prayer]) -> Date? {
+        guard let referenceDate = prayers.first?.time else { return nil }
+        return storedDohaDate(for: referenceDate)
     }
 
     func scheduleNotification(for prayer: Prayer, preNotificationTime minutes: Int?, city: String, using center: UNUserNotificationCenter = .current()) {

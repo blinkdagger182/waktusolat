@@ -4,6 +4,9 @@ import StoreKit
 import AVFoundation
 import UIKit
 import UserNotifications
+#if canImport(WatchConnectivity)
+import WatchConnectivity
+#endif
 
 extension Notification.Name {
     static let debugShowDailyQuranWidgetIntro = Notification.Name("debugShowDailyQuranWidgetIntro")
@@ -15,6 +18,134 @@ extension Notification.Name {
     static let supportDonationPaywallDismissed = Notification.Name("supportDonationPaywallDismissed")
     static let uiContentHeartbeat = Notification.Name("uiContentHeartbeat")
 }
+
+#if canImport(WatchConnectivity)
+@MainActor
+final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate {
+    static let shared = PhoneWatchSyncManager()
+
+    static let snapshotPrayersDataKey = "watchSnapshot.prayersData"
+    static let snapshotLocationDataKey = "watchSnapshot.locationData"
+    static let snapshotPrayerCalculationKey = "watchSnapshot.prayerCalculation"
+    static let snapshotAccentColorKey = "watchSnapshot.accentColor"
+    static let snapshotAppLanguageCodeKey = "watchSnapshot.appLanguageCode"
+    static let snapshotMonthCacheDataKey = "watchSnapshot.monthCacheData"
+    static let snapshotMonthCacheKeyKey = "watchSnapshot.monthCacheKey"
+    static let snapshotGeneratedAtKey = "watchSnapshot.generatedAt"
+    static let requestSyncMessageKey = "watchSnapshot.requestSync"
+
+    private let session: WCSession? = WCSession.isSupported() ? .default : nil
+    private let appGroupDefaults = UserDefaults(suiteName: sharedAppGroupID)
+
+    private override init() {
+        super.init()
+    }
+
+    func activate() {
+        guard let session else { return }
+        guard session.delegate == nil else { return }
+        session.delegate = self
+        session.activate()
+    }
+
+    func syncNow() {
+        guard let session else { return }
+        guard session.isPaired, session.isWatchAppInstalled else { return }
+
+        let context = buildSnapshotContext()
+
+        do {
+            try session.updateApplicationContext(context)
+        } catch {
+            print("Watch sync failed:", error.localizedDescription)
+        }
+
+        session.transferUserInfo(context)
+    }
+
+    private func buildSnapshotContext() -> [String: Any] {
+        var context: [String: Any] = [
+            Self.snapshotGeneratedAtKey: Date().timeIntervalSince1970
+        ]
+
+        if let prayersData = appGroupDefaults?.data(forKey: "prayersData") {
+            context[Self.snapshotPrayersDataKey] = prayersData
+        }
+
+        if let locationData = appGroupDefaults?.data(forKey: "currentLocation") {
+            context[Self.snapshotLocationDataKey] = locationData
+        }
+
+        if let prayerCalculation = appGroupDefaults?.string(forKey: "prayerCalculation") {
+            context[Self.snapshotPrayerCalculationKey] = prayerCalculation
+        }
+
+        if let accentColor = appGroupDefaults?.string(forKey: "accentColor") {
+            context[Self.snapshotAccentColorKey] = accentColor
+        }
+
+        if let appLanguageCode = appGroupDefaults?.string(forKey: AppLanguage.storageKey) {
+            context[Self.snapshotAppLanguageCodeKey] = appLanguageCode
+        }
+
+        let monthCacheKey = currentMonthCacheKey()
+        if let monthCacheData = appGroupDefaults?.data(forKey: monthCacheKey) {
+            context[Self.snapshotMonthCacheDataKey] = monthCacheData
+            context[Self.snapshotMonthCacheKeyKey] = monthCacheKey
+        } else if let legacyMonthCacheData = appGroupDefaults?.data(forKey: "waktusolat.gps.month.cache.v1") {
+            context[Self.snapshotMonthCacheDataKey] = legacyMonthCacheData
+            context[Self.snapshotMonthCacheKeyKey] = monthCacheKey
+        }
+
+        return context
+    }
+
+    private func currentMonthCacheKey(for date: Date = Date()) -> String {
+        let components = Calendar(identifier: .gregorian).dateComponents([.year, .month], from: date)
+        return "waktusolat.gps.month.cache.v2.\(components.year ?? 0)-\(String(format: "%02d", components.month ?? 0))"
+    }
+
+    nonisolated func session(
+        _ session: WCSession,
+        activationDidCompleteWith activationState: WCSessionActivationState,
+        error: Error?
+    ) {
+        guard activationState == .activated else { return }
+        Task { @MainActor in
+            self.syncNow()
+        }
+    }
+
+    nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
+
+    nonisolated func sessionDidDeactivate(_ session: WCSession) {
+        session.activate()
+    }
+
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+        Task { @MainActor in
+            self.syncNow()
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        guard (message[Self.requestSyncMessageKey] as? Bool) == true else { return }
+        Task { @MainActor in
+            self.syncNow()
+            if session.isReachable {
+                session.sendMessage(self.buildSnapshotContext(), replyHandler: nil, errorHandler: nil)
+            }
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
+        guard (userInfo[Self.requestSyncMessageKey] as? Bool) == true else { return }
+        Task { @MainActor in
+            self.syncNow()
+        }
+    }
+}
+#endif
 
 @main
 struct AlAdhanApp: App {
@@ -29,6 +160,9 @@ struct AlAdhanApp: App {
     @StateObject private var settings = Settings.shared
     @StateObject private var namesData = NamesViewModel.shared
     @StateObject private var revenueCat = RevenueCatManager.shared
+    #if canImport(WatchConnectivity)
+    @StateObject private var phoneWatchSync = PhoneWatchSyncManager.shared
+    #endif
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
@@ -68,6 +202,9 @@ struct AlAdhanApp: App {
 
     init() {
         RevenueCatManager.shared.configure()
+        #if canImport(WatchConnectivity)
+        PhoneWatchSyncManager.shared.activate()
+        #endif
         let defaults = UserDefaults.standard
         defaults.set(defaults.integer(forKey: "appLaunchCountV1") + 1, forKey: "appLaunchCountV1")
         syncSharedAppLanguagePreference(defaults.string(forKey: AppLanguage.storageKey))
@@ -155,6 +292,23 @@ struct AlAdhanApp: App {
                 guard let payload = QuranDeepLinkParser.parse(url: url) else { return }
                 quranDeepLink = payload
             }
+            #if canImport(WatchConnectivity)
+            .onChange(of: settings.prayersData) { _ in
+                phoneWatchSync.syncNow()
+            }
+            .onChange(of: settings.currentLocation) { _ in
+                phoneWatchSync.syncNow()
+            }
+            .onChange(of: settings.prayerCalculation) { _ in
+                phoneWatchSync.syncNow()
+            }
+            .onChange(of: settings.accentColor) { _ in
+                phoneWatchSync.syncNow()
+            }
+            .onChange(of: appLanguageCode) { _ in
+                phoneWatchSync.syncNow()
+            }
+            #endif
             .sheet(item: $quranDeepLink) { payload in
                 QuranVerseDetailsModal(reference: payload.reference)
                     .environmentObject(settings)
@@ -239,6 +393,11 @@ struct AlAdhanApp: App {
                     .padding(.top, 10)
                     .zIndex(19)
                 }
+            }
+            .onAppear {
+                #if canImport(WatchConnectivity)
+                phoneWatchSync.syncNow()
+                #endif
             }
             .onAppear {
                 withAnimation {

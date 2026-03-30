@@ -70,7 +70,8 @@ struct PrayerList: View {
     private var shurooqDerivedHelpersByPrayerID: [UUID: ShurooqDerivedHelperTimes] {
         PrayerDerivedTimes.shurooqHelpers(
             for: displayedPrayerTimes,
-            countryCode: settings.currentLocation?.countryCode
+            countryCode: settings.currentLocation?.countryCode,
+            storedDhuha: settings.storedDohaDate(for: displayedPrayerTimes)
         )
     }
 
@@ -78,7 +79,8 @@ struct PrayerList: View {
         PrayerDerivedTimes.displayInfo(
             for: prayer,
             in: displayedPrayerTimes,
-            countryCode: settings.currentLocation?.countryCode
+            countryCode: settings.currentLocation?.countryCode,
+            storedDhuha: settings.storedDohaDate(for: displayedPrayerTimes)
         )
     }
 

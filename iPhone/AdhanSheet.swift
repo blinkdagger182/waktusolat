@@ -479,7 +479,7 @@ struct AdhanSetupSheet: View {
                             HStack {
                                 Text(isMalay ? "Kiraan" : "Calculation")
                                 Spacer()
-                                Text(isMalay ? "Waktu Solat Malaysia / JAKIM" : "Malaysian Prayer Times/ JAKIM")
+                                Text(currentCalculationLabel)
                                     .foregroundColor(.secondary)
                             }
                             .font(.subheadline)

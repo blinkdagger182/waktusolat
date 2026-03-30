@@ -37,12 +37,14 @@ struct PrayerCountdown: View {
             let currentDisplay = PrayerDerivedTimes.displayInfo(
                 for: current,
                 in: prayerContext,
-                countryCode: settings.currentLocation?.countryCode
+                countryCode: settings.currentLocation?.countryCode,
+                storedDhuha: settings.storedDohaDate(for: prayerContext)
             )
             let nextDisplay = PrayerDerivedTimes.displayInfo(
                 for: next,
                 in: prayerContext,
-                countryCode: settings.currentLocation?.countryCode
+                countryCode: settings.currentLocation?.countryCode,
+                storedDhuha: settings.storedDohaDate(for: prayerContext)
             )
 
             Group {

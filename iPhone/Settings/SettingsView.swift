@@ -334,7 +334,6 @@ struct SettingsView: View {
     @AppStorage("appLaunchCountV1") private var appLaunchCount: Int = 0
     @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
     @AppStorage("remoteWidgetSettingsMenuEnabled") private var remoteWidgetSettingsMenuEnabled = false
-    
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
@@ -379,6 +378,7 @@ struct SettingsView: View {
                                     .foregroundColor(settings.accentColor.color)
                             }
                         }
+
                     }
 
                     /*
@@ -445,23 +445,6 @@ struct SettingsView: View {
                         }
                     }
 
-                    #if DEBUG
-                    Section(header: Text("Debug: WIDGETS")) {
-                        NavigationLink {
-                            WidgetPreviewDebugView()
-                        } label: {
-                            Label("Aura Backgrounds (6 Waktu)", systemImage: "rectangle.grid.1x2")
-                                .foregroundColor(settings.accentColor.color)
-                        }
-
-                        Button {
-                            showingSupportToastDebugPicker = true
-                        } label: {
-                            Label("Trigger Support Toast", systemImage: "heart.fill")
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                    }
-                    #endif
                 }
                 .navigationTitle("Settings")
                 .applyConditionalListStyle(defaultView: true)
@@ -593,7 +576,9 @@ struct SettingsView: View {
 
     private func refreshRemoteWidgetSettingsMenu(force: Bool) async {
         let config = await WidgetSettingsRemoteConfigLoader.load(force: force)
-        remoteWidgetSettingsMenuEnabled = config.showWidgetSettingsMenu
+        await MainActor.run {
+            remoteWidgetSettingsMenuEnabled = config.showWidgetSettingsMenu
+        }
     }
     
     private var donationImpactMessage: String {

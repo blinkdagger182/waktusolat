@@ -99,21 +99,31 @@ struct PrayerDisplayInfo: Equatable {
 }
 
 enum PrayerDerivedTimes {
-    static func shurooqHelpers(for prayers: [Prayer], countryCode: String?) -> [UUID: ShurooqDerivedHelperTimes] {
-        guard countryCode?.uppercased() == "MY" else { return [:] }
+    static func shurooqHelpers(
+        for prayers: [Prayer],
+        countryCode: String?,
+        storedDhuha: Date? = nil
+    ) -> [UUID: ShurooqDerivedHelperTimes] {
+        guard let countryCode = countryCode?.uppercased(), countryCode == "MY" || countryCode == "BN" else { return [:] }
 
-        guard
-            let fajr = prayers.first(where: { normalizedPrayerKey($0.nameTransliteration) == "fajr" }),
-            let shurooq = prayers.first(where: { isShurooqKey(normalizedPrayerKey($0.nameTransliteration)) })
-        else {
+        guard let shurooq = prayers.first(where: { isShurooqKey(normalizedPrayerKey($0.nameTransliteration)) }) else {
             return [:]
         }
 
-        let sunriseGap = shurooq.time.timeIntervalSince(fajr.time)
-        guard sunriseGap > 0 else { return [:] }
-
         let ishraq = shurooq.time.addingTimeInterval(TimeInterval(18 * 60))
-        let dhuha = shurooq.time.addingTimeInterval(sunriseGap / 3)
+        let dhuha: Date
+
+        if countryCode == "BN" {
+            guard let storedDhuha, storedDhuha > shurooq.time else { return [:] }
+            dhuha = storedDhuha
+        } else {
+            guard let fajr = prayers.first(where: { normalizedPrayerKey($0.nameTransliteration) == "fajr" }) else {
+                return [:]
+            }
+            let sunriseGap = shurooq.time.timeIntervalSince(fajr.time)
+            guard sunriseGap > 0 else { return [:] }
+            dhuha = shurooq.time.addingTimeInterval(sunriseGap / 3)
+        }
 
         return [
             shurooq.id: ShurooqDerivedHelperTimes(
@@ -127,6 +137,7 @@ enum PrayerDerivedTimes {
         for prayer: Prayer,
         in prayers: [Prayer],
         countryCode: String?,
+        storedDhuha: Date? = nil,
         now: Date = Date()
     ) -> PrayerDisplayInfo {
         let normalizedName = normalizedPrayerKey(prayer.nameTransliteration)
@@ -140,7 +151,11 @@ enum PrayerDerivedTimes {
             isDerivedDhuha: false
         )
 
-        guard countryCode?.uppercased() == "MY", isShurooqKey(normalizedName) else {
+        guard
+            let countryCode = countryCode?.uppercased(),
+            (countryCode == "MY" || countryCode == "BN"),
+            isShurooqKey(normalizedName)
+        else {
             return baseDisplay
         }
 
@@ -149,7 +164,7 @@ enum PrayerDerivedTimes {
         }
 
         guard
-            let helperTimes = shurooqHelpers(for: prayers, countryCode: countryCode)[prayer.id],
+            let helperTimes = shurooqHelpers(for: prayers, countryCode: countryCode, storedDhuha: storedDhuha)[prayer.id],
             let middayPrayer = prayers.first(where: {
                 let key = normalizedPrayerKey($0.nameTransliteration)
                 return key == "dhuhr" || key == "zuhur" || key == "jumuah"

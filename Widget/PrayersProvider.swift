@@ -41,7 +41,7 @@ struct PrayersProvider: TimelineProvider {
         completion(Timeline(entries: entries, policy: .after(refreshBoundary)))
     }
 
-    private func loadBaseContext() -> (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool) {
+    private func loadBaseContext() -> (prayers: Prayers?, location: Location?, accent: AccentColor, countryCode: String?) {
         if let data = store?.data(forKey: "prayersData"),
            let prayers = try? Settings.decoder.decode(Prayers.self, from: data) {
             settings.prayers = prayers
@@ -63,14 +63,14 @@ struct PrayersProvider: TimelineProvider {
         let prayers = settings.prayers
         let location = settings.currentLocation
         let accent = settings.accentColor
-        let isMalaysia = settings.shouldUseMalaysiaPrayerAPI(for: location)
-        return (prayers, location, accent, isMalaysia)
+        let countryCode = location?.countryCode?.uppercased()
+        return (prayers, location, accent, countryCode)
     }
 
     private func makeTimelineEntries(
         startingFrom now: Date,
         refreshBoundary: Date,
-        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, countryCode: String?)
     ) -> [PrayersEntry] {
         var entries = [makeEntry(at: now, baseContext: baseContext)]
         guard refreshBoundary > now else { return entries }
@@ -108,18 +108,20 @@ struct PrayersProvider: TimelineProvider {
 
     private func makeEntry(
         at date: Date,
-        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, countryCode: String?)
     ) -> PrayersEntry {
         guard let obj = baseContext.prayers else {
             return emptyEntry(at: date, accent: baseContext.accent)
         }
 
+        let contextPrayers = obj.fullPrayers.isEmpty ? obj.prayers : obj.fullPrayers
+        let storedDhuha = settings.storedDohaDate(for: contextPrayers)
         let inferred = inferCurrentAndNext(from: obj.prayers, at: date)
         let displayCurrent = inferred.current.map {
-            promotedWidgetPrayer($0, in: obj.fullPrayers.isEmpty ? obj.prayers : obj.fullPrayers, isMalaysia: baseContext.isMalaysia, at: date)
+            promotedWidgetPrayer($0, in: contextPrayers, countryCode: baseContext.countryCode, storedDhuha: storedDhuha, at: date)
         }
         let displayNext = inferred.next.map {
-            promotedWidgetPrayer($0, in: obj.fullPrayers.isEmpty ? obj.prayers : obj.fullPrayers, isMalaysia: baseContext.isMalaysia, at: date)
+            promotedWidgetPrayer($0, in: contextPrayers, countryCode: baseContext.countryCode, storedDhuha: storedDhuha, at: date)
         }
 
         return PrayersEntry(
@@ -132,7 +134,8 @@ struct PrayersProvider: TimelineProvider {
             currentPrayer: displayCurrent,
             nextPrayer: displayNext,
             hijriOffset: settings.hijriOffset,
-            isMalaysia: baseContext.isMalaysia,
+            countryCode: baseContext.countryCode,
+            storedDhuha: storedDhuha,
             travelingMode: settings.travelingMode
         )
     }
@@ -147,7 +150,8 @@ struct PrayersProvider: TimelineProvider {
             currentPrayer: nil,
             nextPrayer: nil,
             hijriOffset: 0,
-            isMalaysia: true,
+            countryCode: "MY",
+            storedDhuha: nil,
             travelingMode: false
         )
     }
@@ -178,7 +182,8 @@ struct PrayersProvider: TimelineProvider {
             currentPrayer: current,
             nextPrayer: next,
             hijriOffset: 0,
-            isMalaysia: true,
+            countryCode: "MY",
+            storedDhuha: nil,
             travelingMode: false
         )
     }
@@ -193,7 +198,7 @@ struct PrayersProvider: TimelineProvider {
 
     private func nextDisplayTransitionDate(
         after now: Date,
-        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, countryCode: String?)
     ) -> Date? {
         exactDisplayTransitionDates(
             after: now,
@@ -205,16 +210,19 @@ struct PrayersProvider: TimelineProvider {
     private func exactDisplayTransitionDates(
         after now: Date,
         before boundary: Date,
-        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, isMalaysia: Bool)
+        baseContext: (prayers: Prayers?, location: Location?, accent: AccentColor, countryCode: String?)
     ) -> [Date] {
         guard
-            baseContext.isMalaysia,
             let prayers = baseContext.prayers?.prayers
         else {
             return []
         }
 
-        let helpers = PrayerDerivedTimes.shurooqHelpers(for: prayers, countryCode: "MY")
+        let helpers = PrayerDerivedTimes.shurooqHelpers(
+            for: prayers,
+            countryCode: baseContext.countryCode,
+            storedDhuha: settings.storedDohaDate(for: prayers)
+        )
         return helpers.values
             .map(\.dhuha)
             .filter { $0 > now && $0 < boundary }
@@ -224,13 +232,15 @@ struct PrayersProvider: TimelineProvider {
     private func promotedWidgetPrayer(
         _ prayer: Prayer,
         in prayers: [Prayer],
-        isMalaysia: Bool,
+        countryCode: String?,
+        storedDhuha: Date?,
         at date: Date
     ) -> Prayer {
         let display = PrayerDerivedTimes.displayInfo(
             for: prayer,
             in: prayers,
-            countryCode: isMalaysia ? "MY" : nil,
+            countryCode: countryCode,
+            storedDhuha: storedDhuha,
             now: date
         )
 
@@ -259,7 +269,8 @@ struct PrayersEntry: TimelineEntry {
     let currentPrayer: Prayer?
     let nextPrayer: Prayer?
     let hijriOffset: Int
-    let isMalaysia: Bool
+    let countryCode: String?
+    let storedDhuha: Date?
     let travelingMode: Bool
 }
 
@@ -301,7 +312,8 @@ func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry) -> Prayer
     PrayerDerivedTimes.displayInfo(
         for: prayer,
         in: entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers,
-        countryCode: entry.isMalaysia ? "MY" : nil,
+        countryCode: entry.countryCode,
+        storedDhuha: entry.storedDhuha,
         // Use the live render time so Dhuha promotion does not stay stuck on an
         // older timeline entry timestamp between WidgetKit refresh boundaries.
         now: Date()

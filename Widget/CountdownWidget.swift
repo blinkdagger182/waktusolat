@@ -150,7 +150,10 @@ struct CountdownEntryView: View {
 
         let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
         let referenceDate = Settings.islamicReferenceDate(prayers: sourcePrayers)
-        let effectiveOffset = Settings.effectiveHijriOffset(baseOffset: entry.hijriOffset, isMalaysia: entry.isMalaysia)
+        let effectiveOffset = Settings.effectiveHijriOffset(
+            baseOffset: entry.hijriOffset,
+            isMalaysia: entry.countryCode?.uppercased() == "MY"
+        )
         guard let offsetDate = hijriCalendar.date(byAdding: .day, value: effectiveOffset, to: referenceDate) else {
             return dateFormatter.string(from: referenceDate)
         }

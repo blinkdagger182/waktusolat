@@ -57,15 +57,6 @@
 		728E2EEB2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
 		728E2EEC2E6E048300F2C24C /* SettingsAdhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2EEA2E6E048300F2C24C /* SettingsAdhan.swift */; };
 		72BC6B242E2B9D9300ACD832 /* OtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CEA2B3D209E00FAA3B3 /* OtherView.swift */; };
-		A51000112F91000100ABCDEF /* LibraryIntroHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */; };
-		A51000122F91000100ABCDEF /* DailyQuranHeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000022F91000100ABCDEF /* DailyQuranHeroCard.swift */; };
-		A51000132F91000100ABCDEF /* QuranResumeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000032F91000100ABCDEF /* QuranResumeCard.swift */; };
-		A51000142F91000100ABCDEF /* QuranSurahExpandableCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000042F91000100ABCDEF /* QuranSurahExpandableCard.swift */; };
-		A51000152F91000100ABCDEF /* SurahReferenceBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000052F91000100ABCDEF /* SurahReferenceBadge.swift */; };
-		A51000162F91000100ABCDEF /* QuranSurahData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000062F91000100ABCDEF /* QuranSurahData.swift */; };
-		A51000172F91000100ABCDEF /* QuranSurahDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */; };
-		A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */; };
-		A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */; };
 		72C30E8D2BCC648400F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E8C2BCC648400F54570 /* Adhan */; };
 		72C30E8F2BCC649400F54570 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 72C30E8E2BCC649400F54570 /* Adhan */; };
 		72C7DD782D79AA0C00FC6058 /* SimpleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C7DD772D79AA0C00FC6058 /* SimpleWidget.swift */; };
@@ -81,15 +72,28 @@
 		A10000022F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
 		A20000012F80000100ABCDEF /* IMG_9643.jpg in Resources */ = {isa = PBXBuildFile; fileRef = A20000002F80000100ABCDEF /* IMG_9643.jpg */; };
 		A30000012F90000100ABCDEF /* azan_waktu.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A30000002F90000100ABCDEF /* azan_waktu.mp3 */; };
+		A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */; };
+		A4F510032F900AB100ABCDEF /* LockScreen6Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */; };
+		A51000112F91000100ABCDEF /* LibraryIntroHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */; };
+		A51000122F91000100ABCDEF /* DailyQuranHeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000022F91000100ABCDEF /* DailyQuranHeroCard.swift */; };
+		A51000132F91000100ABCDEF /* QuranResumeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000032F91000100ABCDEF /* QuranResumeCard.swift */; };
+		A51000142F91000100ABCDEF /* QuranSurahExpandableCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000042F91000100ABCDEF /* QuranSurahExpandableCard.swift */; };
+		A51000152F91000100ABCDEF /* SurahReferenceBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000052F91000100ABCDEF /* SurahReferenceBadge.swift */; };
+		A51000162F91000100ABCDEF /* QuranSurahData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000062F91000100ABCDEF /* QuranSurahData.swift */; };
+		A51000172F91000100ABCDEF /* QuranSurahDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */; };
+		A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */; };
+		A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */; };
 		B10000012F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		B10000022F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		C10000012F90000100ABCDEF /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C10000002F90000100ABCDEF /* InfoPlist.xcstrings */; };
-		A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */; };
-		A4F510032F900AB100ABCDEF /* LockScreen6Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */; };
 		FC88B03D2F6A556E00297BC9 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */; };
 		FCB183172F4D506300249966 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183162F4D506300249966 /* RevenueCat */; };
 		FCB183192F4D506300249966 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183182F4D506300249966 /* RevenueCatUI */; };
 		FCB1831C2F5DE11500249966 /* Inject in Frameworks */ = {isa = PBXBuildFile; productRef = FCB1831B2F5DE11500249966 /* Inject */; };
+		FCFBB2C52F7B06A500544668 /* Watchkit Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = FCFBB2BB2F7B06A300544668 /* Watchkit Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FCFBB2D02F7B073600544668 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FCFBB2CF2F7B073600544668 /* WidgetKit.framework */; };
+		FCFBB2D22F7B073600544668 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FCFBB2D12F7B073600544668 /* SwiftUI.framework */; };
+		FCFBB2E12F7B073700544668 /* Watchkit Watch WidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FCFBB2CD2F7B073600544668 /* Watchkit Watch WidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -99,6 +103,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = 72728CEF2B3D51B200FAA3B3;
 			remoteInfo = WidgetExtension;
+		};
+		FCFBB2C32F7B06A500544668 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 72728C8A2B3D18E500FAA3B3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FCFBB2BA2F7B06A200544668;
+			remoteInfo = "Watchkit Watch App";
+		};
+		FCFBB2DF2F7B073700544668 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 72728C8A2B3D18E500FAA3B3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FCFBB2CC2F7B073600544668;
+			remoteInfo = "Watchkit Watch WidgetsExtension";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -120,8 +138,20 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
+				FCFBB2C52F7B06A500544668 /* Watchkit Watch App.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCFBB2E62F7B073700544668 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FCFBB2E12F7B073700544668 /* Watchkit Watch WidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -189,8 +219,6 @@
 		A10000002F70000100ABCDEF /* quotes.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = quotes.json; sourceTree = "<group>"; };
 		A20000002F80000100ABCDEF /* IMG_9643.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = IMG_9643.jpg; sourceTree = "<group>"; };
 		A30000002F90000100ABCDEF /* azan_waktu.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_waktu.mp3; sourceTree = "<group>"; };
-		B10000002F90000100ABCDEF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		C10000002F90000100ABCDEF /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen5Widget.swift; sourceTree = "<group>"; };
 		A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen6Widget.swift; sourceTree = "<group>"; };
 		A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIntroHeader.swift; sourceTree = "<group>"; };
@@ -202,8 +230,24 @@
 		A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahDetailsView.swift; sourceTree = "<group>"; };
 		A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahBrowserView.swift; sourceTree = "<group>"; };
 		A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDisabledSections.swift; sourceTree = "<group>"; };
+		B10000002F90000100ABCDEF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		C10000002F90000100ABCDEF /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
+		FCFBB2BB2F7B06A300544668 /* Watchkit Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Watchkit Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FCFBB2CD2F7B073600544668 /* Watchkit Watch WidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Watchkit Watch WidgetsExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FCFBB2CF2F7B073600544668 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		FCFBB2D12F7B073600544668 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FCFBB2E22F7B073700544668 /* Exceptions for "Watchkit Watch Widgets" folder in "Watchkit Watch WidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FCFBB2CC2F7B073600544668 /* Watchkit Watch WidgetsExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FC88B03E2F6A557A00297BC9 /* New Folder */ = {
@@ -211,9 +255,17 @@
 			path = "New Folder";
 			sourceTree = "<group>";
 		};
-		FCA354932F729FAC005405CE /* Watch Watch App */ = {
+		FCFBB2BC2F7B06A300544668 /* Watchkit Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Watch Watch App";
+			path = "Watchkit Watch App";
+			sourceTree = "<group>";
+		};
+		FCFBB2D32F7B073600544668 /* Watchkit Watch Widgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FCFBB2E22F7B073700544668 /* Exceptions for "Watchkit Watch Widgets" folder in "Watchkit Watch WidgetsExtension" target */,
+			);
+			path = "Watchkit Watch Widgets";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -238,6 +290,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FCFBB2B82F7B06A200544668 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCFBB2CA2F7B073600544668 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FCFBB2D22F7B073600544668 /* SwiftUI.framework in Frameworks */,
+				FCFBB2D02F7B073600544668 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -258,7 +326,9 @@
 				72728CF52B3D51B200FAA3B3 /* Widget */,
 				72728CC82B3D1FF900FAA3B3 /* Apple Watch */,
 				72728D482B3D535600FAA3B3 /* Complication */,
-				FCA354932F729FAC005405CE /* Watch Watch App */,
+				FCFBB2BC2F7B06A300544668 /* Watchkit Watch App */,
+				FCFBB2D32F7B073600544668 /* Watchkit Watch Widgets */,
+				FCFBB2CE2F7B073600544668 /* Frameworks */,
 				72728C932B3D18E500FAA3B3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -270,6 +340,8 @@
 				72728CC72B3D1FF900FAA3B3 /* Al-Adhan.app */,
 				72728CF02B3D51B200FAA3B3 /* Widget.appex */,
 				72728D452B3D535600FAA3B3 /* Complication.appex */,
+				FCFBB2BB2F7B06A300544668 /* Watchkit Watch App.app */,
+				FCFBB2CD2F7B073600544668 /* Watchkit Watch WidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -437,6 +509,15 @@
 			path = Fonts;
 			sourceTree = "<group>";
 		};
+		FCFBB2CE2F7B073600544668 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FCFBB2CF2F7B073600544668 /* WidgetKit.framework */,
+				FCFBB2D12F7B073600544668 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -454,6 +535,7 @@
 			);
 			dependencies = (
 				72728CFE2B3D51B300FAA3B3 /* PBXTargetDependency */,
+				FCFBB2C42F7B06A500544668 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FC88B03E2F6A557A00297BC9 /* New Folder */,
@@ -489,6 +571,52 @@
 			productReference = 72728CF02B3D51B200FAA3B3 /* Widget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		FCFBB2BA2F7B06A200544668 /* Watchkit Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FCFBB2C82F7B06A500544668 /* Build configuration list for PBXNativeTarget "Watchkit Watch App" */;
+			buildPhases = (
+				FCFBB2B72F7B06A200544668 /* Sources */,
+				FCFBB2B82F7B06A200544668 /* Frameworks */,
+				FCFBB2B92F7B06A200544668 /* Resources */,
+				FCFBB2E62F7B073700544668 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FCFBB2E02F7B073700544668 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				FCFBB2BC2F7B06A300544668 /* Watchkit Watch App */,
+			);
+			name = "Watchkit Watch App";
+			packageProductDependencies = (
+			);
+			productName = "Watchkit Watch App";
+			productReference = FCFBB2BB2F7B06A300544668 /* Watchkit Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FCFBB2CC2F7B073600544668 /* Watchkit Watch WidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FCFBB2E32F7B073700544668 /* Build configuration list for PBXNativeTarget "Watchkit Watch WidgetsExtension" */;
+			buildPhases = (
+				FCFBB2C92F7B073600544668 /* Sources */,
+				FCFBB2CA2F7B073600544668 /* Frameworks */,
+				FCFBB2CB2F7B073600544668 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FCFBB2D32F7B073600544668 /* Watchkit Watch Widgets */,
+			);
+			name = "Watchkit Watch WidgetsExtension";
+			packageProductDependencies = (
+			);
+			productName = "Watchkit Watch WidgetsExtension";
+			productReference = FCFBB2CD2F7B073600544668 /* Watchkit Watch WidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -504,6 +632,12 @@
 					};
 					72728CEF2B3D51B200FAA3B3 = {
 						CreatedOnToolsVersion = 15.1;
+					};
+					FCFBB2BA2F7B06A200544668 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					FCFBB2CC2F7B073600544668 = {
+						CreatedOnToolsVersion = 26.2;
 					};
 				};
 			};
@@ -528,6 +662,8 @@
 			targets = (
 				72728C912B3D18E500FAA3B3 /* iPhone */,
 				72728CEF2B3D51B200FAA3B3 /* Widget */,
+				FCFBB2BA2F7B06A200544668 /* Watchkit Watch App */,
+				FCFBB2CC2F7B073600544668 /* Watchkit Watch WidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -556,6 +692,20 @@
 				A10000022F70000100ABCDEF /* quotes.json in Resources */,
 				72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */,
 				72728D262B3D52BE00FAA3B3 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCFBB2B92F7B06A200544668 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCFBB2CB2F7B073600544668 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -641,6 +791,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FCFBB2B72F7B06A200544668 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCFBB2C92F7B073600544668 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -648,6 +812,16 @@
 			isa = PBXTargetDependency;
 			target = 72728CEF2B3D51B200FAA3B3 /* Widget */;
 			targetProxy = 72728CFD2B3D51B300FAA3B3 /* PBXContainerItemProxy */;
+		};
+		FCFBB2C42F7B06A500544668 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FCFBB2BA2F7B06A200544668 /* Watchkit Watch App */;
+			targetProxy = FCFBB2C32F7B06A500544668 /* PBXContainerItemProxy */;
+		};
+		FCFBB2E02F7B073700544668 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FCFBB2CC2F7B073600544668 /* Watchkit Watch WidgetsExtension */;
+			targetProxy = FCFBB2DF2F7B073700544668 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -919,6 +1093,138 @@
 			};
 			name = Release;
 		};
+		FCFBB2C62F7B06A500544668 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Watchkit;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = app.riskcreatives.waktu;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.6;
+			};
+			name = Debug;
+		};
+		FCFBB2C72F7B06A500544668 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Watchkit;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = app.riskcreatives.waktu;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.6;
+			};
+			name = Release;
+		};
+		FCFBB2E42F7B073700544668 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Watchkit Watch Widgets/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Watchkit Watch Widgets";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.riskcreatives.waktu.watchkitapp.Watchkit-Watch-Widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		FCFBB2E52F7B073700544668 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H5C9P92ZB;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Watchkit Watch Widgets/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Watchkit Watch Widgets";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.riskcreatives.waktu.watchkitapp.Watchkit-Watch-Widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -945,6 +1251,24 @@
 			buildConfigurations = (
 				72728D012B3D51B300FAA3B3 /* Debug */,
 				72728D022B3D51B300FAA3B3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FCFBB2C82F7B06A500544668 /* Build configuration list for PBXNativeTarget "Watchkit Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCFBB2C62F7B06A500544668 /* Debug */,
+				FCFBB2C72F7B06A500544668 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FCFBB2E32F7B073700544668 /* Build configuration list for PBXNativeTarget "Watchkit Watch WidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCFBB2E42F7B073700544668 /* Debug */,
+				FCFBB2E52F7B073700544668 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
