@@ -233,7 +233,19 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.activePrayerMode = PrayerLocationMode(
             rawValue: appGroupUserDefaults?.string(forKey: Self.activePrayerModeKey) ?? ""
         ) ?? .auto
-        self.malaysiaWaktuZoneCode = UserDefaults.standard.string(forKey: Self.malaysiaWaktuZoneCodeKey)
+        // Load and validate — a 32-char hex string is an Indonesia region UUID that leaked
+        // in via a previous bug (saveMonthCache used !shouldUseIndonesiaPrayerAPI instead of
+        // shouldUseMalaysiaPrayerAPI, causing nil-location edge cases to write the wrong value).
+        let storedZone = UserDefaults.standard.string(forKey: Self.malaysiaWaktuZoneCodeKey)
+        let isIndonesiaUUID = storedZone.map { s in
+            s.count == 32 && s.allSatisfy({ $0.isHexDigit })
+        } ?? false
+        if isIndonesiaUUID {
+            UserDefaults.standard.removeObject(forKey: Self.malaysiaWaktuZoneCodeKey)
+            self.malaysiaWaktuZoneCode = nil
+        } else {
+            self.malaysiaWaktuZoneCode = storedZone
+        }
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
             do {
