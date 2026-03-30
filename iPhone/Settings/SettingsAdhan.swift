@@ -849,14 +849,26 @@ extension Settings {
         appGroupStore()?.removeObject(forKey: Self.legacyMonthCacheKey)
     }
 
+    /// Returns true if the zone looks like an Indonesia region UUID (32 hex chars).
+    /// These must never be written into lastKnownMalaysiaZone.
+    private func isIndonesiaRegionUUID(_ zone: String) -> Bool {
+        zone.count == 32 && zone.allSatisfy({ $0.isHexDigit })
+    }
+
     private func loadMonthCache(for date: Date) -> GPSMonthResponse? {
         let comps = Self.gregorian.dateComponents([.year, .month], from: date)
         guard let year = comps.year, let month = comps.month else { return nil }
 
         let key = monthCacheKey(for: year, month: month)
         if let inMemory = Self.monthCacheInMemory[key] {
+            let normalizedZone = inMemory.zone.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if isIndonesiaRegionUUID(normalizedZone) && shouldUseMalaysiaPrayerAPI(for: currentLocation) {
+                // Stale Indonesia data cached under a Malaysia-pipeline session — evict it
+                Self.monthCacheInMemory.removeValue(forKey: key)
+                appGroupStore()?.removeObject(forKey: key)
+                return nil
+            }
             if shouldUseMalaysiaPrayerAPI(for: currentLocation) {
-                let normalizedZone = inMemory.zone.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
                 if !normalizedZone.isEmpty, malaysiaWaktuZoneCode != normalizedZone {
                     UserDefaults.standard.set(normalizedZone, forKey: Settings.malaysiaWaktuZoneCodeKey)
                     malaysiaWaktuZoneCode = normalizedZone
@@ -867,9 +879,14 @@ extension Settings {
 
         if let data = appGroupStore()?.data(forKey: key),
            let cached = decodeMonthCache(from: data) {
+            let normalizedZone = cached.zone.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if isIndonesiaRegionUUID(normalizedZone) && shouldUseMalaysiaPrayerAPI(for: currentLocation) {
+                // Stale Indonesia data on disk — evict so a fresh fetch returns correct zone
+                appGroupStore()?.removeObject(forKey: key)
+                return nil
+            }
             Self.monthCacheInMemory[key] = cached
             if shouldUseMalaysiaPrayerAPI(for: currentLocation) {
-                let normalizedZone = cached.zone.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
                 if !normalizedZone.isEmpty, malaysiaWaktuZoneCode != normalizedZone {
                     UserDefaults.standard.set(normalizedZone, forKey: Settings.malaysiaWaktuZoneCodeKey)
                     malaysiaWaktuZoneCode = normalizedZone
@@ -914,7 +931,8 @@ extension Settings {
         // Use a positive check (shouldUseMalaysiaPrayerAPI) rather than !shouldUseIndonesiaPrayerAPI
         // so that a nil location — which makes shouldUseIndonesiaPrayerAPI return false — doesn't
         // accidentally write an Indonesia region UUID into lastKnownMalaysiaZone.
-        if shouldUseMalaysiaPrayerAPI(for: currentLocation) {
+        if shouldUseMalaysiaPrayerAPI(for: currentLocation),
+           !isIndonesiaRegionUUID(month.zone) {
             UserDefaults.standard.set(month.zone, forKey: Settings.malaysiaWaktuZoneCodeKey)
             malaysiaWaktuZoneCode = month.zone
             Self.syncLiveActivityEnrollmentHandler?()

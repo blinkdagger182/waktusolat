@@ -363,6 +363,9 @@ struct AdhanSetupSheet: View {
             settings.hanafiMadhab = false
         case "SG":
             settings.prayerCalculation = "Majlis Ugama Islam Singapura, Singapore"
+        case "BN":
+            settings.prayerCalculation = "Kementerian Hal Ehwal Ugama (MORA)"
+            settings.hanafiMadhab = false
         case "ID":
             settings.prayerCalculation = "KEMENAG - Kementerian Agama Republik Indonesia"
             settings.hanafiMadhab = false
