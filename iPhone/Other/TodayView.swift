@@ -1,6 +1,6 @@
 import SwiftUI
 
-private enum TodayPrayerTimeSlot: String, CaseIterable, Hashable {
+enum TodayPrayerTimeSlot: String, CaseIterable, Hashable {
     case morning
     case midday
     case afternoon
@@ -63,7 +63,7 @@ private enum TodayPrayerTimeSlot: String, CaseIterable, Hashable {
     }
 }
 
-private struct TodayPractice: Identifiable, Hashable {
+struct TodayPractice: Identifiable, Hashable {
     enum Badge: Hashable {
         case authenticSunnah
         case reflection
@@ -104,7 +104,7 @@ private struct TodayPractice: Identifiable, Hashable {
     let slots: Set<TodayPrayerTimeSlot>
 }
 
-private enum TodayPracticeLibrary {
+enum TodayPracticeLibrary {
     static let all: [TodayPractice] = [
         .init(
             id: "morning-three-quls",
@@ -397,7 +397,7 @@ private enum TodayPracticeLibrary {
     }
 }
 
-private struct TodaySlotBanner: View {
+struct TodaySlotBanner: View {
     let slot: TodayPrayerTimeSlot
 
     var body: some View {
@@ -436,7 +436,7 @@ private struct TodaySlotBanner: View {
     }
 }
 
-private struct TodayPracticeCard: View {
+struct TodayPracticeCard: View {
     let practice: TodayPractice
     let accentColor: Color
     let onOpenSurah: (Int, Int?) -> Void
