@@ -633,7 +633,7 @@ struct TodayPracticeCard: View {
 
             if let sourceText, let sourceReference = practice.sourceReference {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(“\”\(sourceText)\””)
+                    Text(sourceText)
                         .font(.caption.italic())
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
