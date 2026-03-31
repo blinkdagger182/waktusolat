@@ -558,6 +558,10 @@ struct TodayView: View {
     @EnvironmentObject private var settings: Settings
     @State private var selectedFullSurah: FullSurahSelection?
 
+    init(selectedSegment: Binding<LibrarySegment> = .constant(.today)) {
+        self._selectedSegment = selectedSegment
+    }
+
     private func surahTitle(for surahNumber: Int) -> String {
         let fallbackEnglish = "Surah \(surahNumber)"
         return localizedSurahName(number: surahNumber, englishName: fallbackEnglish)
