@@ -114,7 +114,7 @@ private struct ForYouCard: View {
 
             if let src = item.sourceEn, let ref = item.sourceRef {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(""\(src)"")
+                    Text("\u{201C}\(src)\u{201D}")
                         .font(.caption.italic())
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -633,7 +633,7 @@ struct TodayPracticeCard: View {
 
             if let sourceText, let sourceReference = practice.sourceReference {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("“\(sourceText)”")
+                    Text(“\u{201C}\(sourceText)\u{201D}”)
                         .font(.caption.italic())
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
