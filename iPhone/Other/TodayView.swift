@@ -1,5 +1,16 @@
 import SwiftUI
 
+enum LibrarySegment: String, CaseIterable {
+    case today, quran
+
+    func label() -> String {
+        switch self {
+        case .today: return isMalayAppLanguage() ? "Hari Ini" : "Today"
+        case .quran: return isMalayAppLanguage() ? "Al-Quran" : "Quran"
+        }
+    }
+}
+
 enum TodayPrayerTimeSlot: String, CaseIterable, Hashable {
     case morning
     case midday
@@ -543,6 +554,7 @@ struct TodayPracticeCard: View {
 }
 
 struct TodayView: View {
+    @Binding var selectedSegment: LibrarySegment
     @EnvironmentObject private var settings: Settings
     @State private var selectedFullSurah: FullSurahSelection?
 
@@ -595,7 +607,19 @@ struct TodayView: View {
                 }
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
-            .navigationTitle(isMalayAppLanguage() ? "Hari Ini" : "Today")
+            .navigationTitle(isMalayAppLanguage() ? "Pustaka" : "Library")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Picker("", selection: $selectedSegment) {
+                        ForEach(LibrarySegment.allCases, id: \.self) { segment in
+                            Text(segment.label()).tag(segment)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 220)
+                }
+            }
             .sheet(item: $selectedFullSurah) { selection in
                 NavigationView {
                     QuranSurahDetailsView(
@@ -621,6 +645,6 @@ struct TodayView: View {
 }
 
 #Preview {
-    TodayView()
+    TodayView(selectedSegment: .constant(.today))
         .environmentObject(Settings.shared)
 }
