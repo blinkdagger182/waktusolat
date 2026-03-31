@@ -83,6 +83,7 @@
 		A51000172F91000100ABCDEF /* QuranSurahDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */; };
 		A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */; };
 		A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */; };
+		A510001A2F91000100ABCDEF /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A510000A2F91000100ABCDEF /* TodayView.swift */; };
 		B10000012F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		B10000022F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		C10000012F90000100ABCDEF /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C10000002F90000100ABCDEF /* InfoPlist.xcstrings */; };
@@ -230,6 +231,7 @@
 		A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahDetailsView.swift; sourceTree = "<group>"; };
 		A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahBrowserView.swift; sourceTree = "<group>"; };
 		A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDisabledSections.swift; sourceTree = "<group>"; };
+		A510000A2F91000100ABCDEF /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		B10000002F90000100ABCDEF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C10000002F90000100ABCDEF /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
@@ -378,6 +380,7 @@
 				A51000062F91000100ABCDEF /* QuranSurahData.swift */,
 				A51000072F91000100ABCDEF /* QuranSurahDetailsView.swift */,
 				A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */,
+				A510000A2F91000100ABCDEF /* TodayView.swift */,
 				A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */,
 				72728CAA2B3D198300FAA3B3 /* ToolsView.swift */,
 				72CCAE722D42CFE700871A6A /* Arabic */,
@@ -746,6 +749,7 @@
 				A51000162F91000100ABCDEF /* QuranSurahData.swift in Sources */,
 				A51000172F91000100ABCDEF /* QuranSurahDetailsView.swift in Sources */,
 				A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */,
+				A510001A2F91000100ABCDEF /* TodayView.swift in Sources */,
 				A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */,
 				72574CD52E49F35600BFF138 /* AppIntents.swift in Sources */,
 				72BC6B242E2B9D9300ACD832 /* OtherView.swift in Sources */,

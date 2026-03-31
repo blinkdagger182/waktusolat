@@ -153,6 +153,7 @@ struct AlAdhanApp: App {
 
     private enum AppTab: Hashable {
         case adhan
+        case today
         case library
         case settings
     }
@@ -226,6 +227,13 @@ struct AlAdhanApp: App {
                                 Text("Azan")
                             }
                             .tag(AppTab.adhan)
+
+                        TodayView()
+                            .tabItem {
+                                Image(systemName: "sun.max")
+                                Text(isMalayAppLanguage() ? "Hari Ini" : "Today")
+                            }
+                            .tag(AppTab.today)
 
                         OtherView()
                             .tabItem {

@@ -1525,6 +1525,9 @@
         }
       }
     },
+    "Hari Ini" : {
+
+    },
     "HASIL CARIAN SURAH" : {
 
     },
@@ -3805,7 +3808,6 @@
       }
     },
     "Today" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {

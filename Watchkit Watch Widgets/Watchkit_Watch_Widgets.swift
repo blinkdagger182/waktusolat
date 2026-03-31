@@ -60,16 +60,26 @@ private struct NextPrayerWidgetEntryView: View {
         return ZStack {
             Circle()
                 .stroke(accent.opacity(0.25), lineWidth: 6)
-            VStack(spacing: 2) {
+            VStack(spacing: 1) {
                 Image(systemName: info?.image ?? "bell.fill")
-                    .font(.headline)
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(accent)
                 Text(info?.title ?? "Waktu")
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .font(.system(size: 6.6, weight: .bold, design: .rounded))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.35)
+                    .minimumScaleFactor(0.55)
+                    .allowsTightening(true)
+                if let time = info?.time {
+                    Text(time, style: .time)
+                        .font(.system(size: 6.1, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .foregroundStyle(.secondary)
+                }
             }
-            .padding(6)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 7)
         }
     }
 
@@ -159,20 +169,36 @@ private struct CurrentPrayerWidgetEntryView: View {
     private var circularView: some View {
         let accent = provider.accentColor(for: entry.accentRawValue)
         let info = entry.currentPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
+        let progress = provider.nextPrayerProgress(in: entry, now: entry.date)
 
         return ZStack {
             Circle()
-                .fill(accent.opacity(0.12))
-            VStack(spacing: 2) {
+                .stroke(accent.opacity(0.18), lineWidth: 5.5)
+            Circle()
+                .trim(from: 0, to: max(progress, 0.02))
+                .stroke(accent, style: StrokeStyle(lineWidth: 5.5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+
+            VStack(spacing: 1) {
                 Image(systemName: info?.image ?? "clock.fill")
-                    .font(.headline)
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(accent)
                 Text(info?.title ?? "Waktu")
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .font(.system(size: 6.6, weight: .bold, design: .rounded))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.35)
+                    .minimumScaleFactor(0.55)
+                    .allowsTightening(true)
+                if let time = info?.time {
+                    Text(time, style: .time)
+                        .font(.system(size: 6.1, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .foregroundStyle(.secondary)
+                }
             }
-            .padding(6)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 7)
         }
     }
 

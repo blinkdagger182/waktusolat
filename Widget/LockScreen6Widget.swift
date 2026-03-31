@@ -417,33 +417,33 @@ struct LockScreen6EntryView: View {
                     .font(.caption)
             } else if let nextPrayer = resolvedCountdownNextPrayer(for: entry),
                       let window = countdownBarPrayerWindow(for: entry) {
-                VStack(alignment: .leading, spacing: 4) {
-                    if let currentPrayer = entry.currentPrayer {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(widgetPrayerDisplayName(currentPrayer, in: entry))
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-
-                            Spacer(minLength: 6)
-
-                            if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
-                                Text(widgetPrayerDisplayName(nextPrayer, in: entry))
+                TimelineView(.periodic(from: entry.date, by: 1)) { context in
+                    let liveNow = context.date
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let currentPrayer = entry.currentPrayer {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Text(widgetPrayerDisplayName(currentPrayer, in: entry))
                                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(.primary)
                                     .lineLimit(1)
-                            } else {
-                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .time)
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.secondary)
-                                    .monospacedDigit()
-                                    .lineLimit(1)
+
+                                Spacer(minLength: 6)
+
+                                if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
+                                    Text(widgetPrayerDisplayName(nextPrayer, in: entry))
+                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                } else {
+                                    Text(remainingIntervalText(at: liveNow, until: window.end))
+                                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                                        .foregroundStyle(.secondary)
+                                        .monospacedDigit()
+                                        .lineLimit(1)
+                                }
                             }
                         }
-                    }
 
-                    TimelineView(.periodic(from: entry.date, by: 1)) { context in
-                        let liveNow = Date()
                         if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
                             let progress = remainingProgressValue(at: liveNow, for: window)
                             ZStack(alignment: .leading) {
@@ -471,15 +471,15 @@ struct LockScreen6EntryView: View {
                                 .progressViewStyle(.linear)
                                 .tint(entry.accentColor.color)
                         }
-                    }
 
-                    Text("Ends at \(endTimeText(widgetPrayerDisplayTime(nextPrayer, in: entry)))")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        Text("Ends at \(endTimeText(widgetPrayerDisplayTime(nextPrayer, in: entry)))")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
 
-                    if selectedStyle == .withLocation || selectedStyle == .batteryWithLocation {
-                        WidgetLocationFooter(entry: entry, widgetKind: "LockScreen6Widget")
+                        if selectedStyle == .withLocation || selectedStyle == .batteryWithLocation {
+                            WidgetLocationFooter(entry: entry, widgetKind: "LockScreen6Widget")
+                        }
                     }
                 }
             }

@@ -751,18 +751,13 @@ private struct TodayPracticeCard: View {
     }
 }
 
-private enum LibrarySegment: String, CaseIterable, Identifiable {
-    case today
-    case quran
+private enum LibrarySegment: String, CaseIterable {
+    case today, quran
 
-    var id: String { rawValue }
-
-    var title: String {
+    func label() -> String {
         switch self {
-        case .today:
-            return isMalayAppLanguage() ? "Hari Ini" : "Today"
-        case .quran:
-            return isMalayAppLanguage() ? "Quran" : "Quran"
+        case .today: return isMalayAppLanguage() ? "Hari Ini" : "Today"
+        case .quran: return isMalayAppLanguage() ? "Al-Quran" : "Quran"
         }
     }
 }
@@ -770,6 +765,7 @@ private enum LibrarySegment: String, CaseIterable, Identifiable {
 struct OtherView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
+    @State private var selectedSegment: LibrarySegment = .today
     @State private var dailyQuranQuote: LibraryDailyQuranQuote?
     @State private var selectedFullSurah: FullSurahSelection?
     @State private var resumeSelection: FullSurahSelection?
@@ -780,24 +776,9 @@ struct OtherView: View {
     @State private var expandedSurahNumber: Int?
     @State private var dailyQuranArabicText: String?
     @State private var pinnedSurahNumbers: [Int] = []
-    // Parked for now while the Today library experiment is disabled.
-    // @State private var selectedSegment: LibrarySegment = .today
 
     private static let pinnedSurahsKey = "pinnedSurahNumbersV1"
     private static let maxPinnedSurahs = 3
-
-    /*
-    private var activeTodaySlot: PrayerTimeSlot {
-        TodayPracticeLibrary.slot(
-            currentPrayer: settings.currentPrayer,
-            nextPrayer: settings.nextPrayer
-        )
-    }
-
-    private var activeTodayPractices: [TodayPractice] {
-        TodayPracticeLibrary.practices(for: activeTodaySlot)
-    }
-    */
 
     private var isSearchingSurahs: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -989,60 +970,6 @@ struct OtherView: View {
         }
     }
 
-    /*
-    private func openTodayPracticeSurah(_ surahNumber: Int, _ ayahNumber: Int?) {
-        selectedSegment = .quran
-        selectedFullSurah = FullSurahSelection(
-            surahNumber: surahNumber,
-            initialAyahNumber: ayahNumber,
-            dailyAyahNumber: ayahNumber
-        )
-    }
-    */
-
-    /*
-    @ViewBuilder
-    private var segmentPickerSection: some View {
-        Section {
-            Picker("", selection: $selectedSegment.animation(.easeInOut)) {
-                ForEach(LibrarySegment.allCases) { segment in
-                    Text(segment.title).tag(segment)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(.top, 4)
-        }
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 8, trailing: 16))
-        .listRowSeparator(.hidden)
-    }
-    */
-
-    /*
-    @ViewBuilder
-    private var todaySection: some View {
-        Section {
-            LibraryIntroHeader()
-                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                .listRowSeparator(.hidden)
-
-            TodaySlotBanner(slot: activeTodaySlot)
-                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
-                .listRowSeparator(.hidden)
-
-            ForEach(activeTodayPractices) { practice in
-                TodayPracticeCard(
-                    practice: practice,
-                    accentColor: settings.accentColor.color,
-                    onOpenSurah: openTodayPracticeSurah
-                )
-                .environmentObject(settings)
-                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
-                .listRowSeparator(.hidden)
-            }
-        }
-    }
-    */
-
     @ViewBuilder
     private var quranIntroSection: some View {
         if !isSearchingSurahs {
@@ -1219,12 +1146,49 @@ struct OtherView: View {
         }
     }
 
+    private var activeTodaySlot: TodayPrayerTimeSlot {
+        TodayPracticeLibrary.slot(
+            currentPrayer: settings.currentPrayer,
+            nextPrayer: settings.nextPrayer
+        )
+    }
+
+    private var activeTodayPractices: [TodayPractice] {
+        TodayPracticeLibrary.practices(for: activeTodaySlot)
+    }
+
+    private var todaySection: some View {
+        Section {
+            LibraryIntroHeader()
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
+
+            TodaySlotBanner(slot: activeTodaySlot)
+                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
+                .listRowSeparator(.hidden)
+
+            ForEach(activeTodayPractices) { practice in
+                TodayPracticeCard(
+                    practice: practice,
+                    accentColor: settings.accentColor.color,
+                    onOpenSurah: { surahNumber, ayahNumber in
+                        selectedFullSurah = FullSurahSelection(
+                            surahNumber: surahNumber,
+                            initialAyahNumber: ayahNumber,
+                            dailyAyahNumber: ayahNumber
+                        )
+                    }
+                )
+                .environmentObject(settings)
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
+                .listRowSeparator(.hidden)
+            }
+        }
+    }
+
     var body: some View {
         NavigationView {
             List {
-                /*
-                segmentPickerSection
-
                 if selectedSegment == .today {
                     todaySection
                 } else {
@@ -1232,10 +1196,6 @@ struct OtherView: View {
                     pinnedSurahsSection
                     surahListSection
                 }
-                */
-                quranIntroSection
-                pinnedSurahsSection
-                surahListSection
 
                 #if false
                 Section(header: Text("ISLAMIC RESOURCES")) {
@@ -1337,6 +1297,18 @@ struct OtherView: View {
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle(isMalayAppLanguage() ? "Pustaka" : "Library")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Picker("", selection: $selectedSegment) {
+                        ForEach(LibrarySegment.allCases, id: \.self) { segment in
+                            Text(segment.label()).tag(segment)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 220)
+                }
+            }
             .onAppear {
                 loadResumeSelection()
                 loadPinnedSurahs()
@@ -1371,7 +1343,11 @@ struct OtherView: View {
                         }
                 }
             }
-            .searchable(text: $searchText, prompt: isMalayAppLanguage() ? "Cari surah" : "Search surah")
+            .searchable(
+                text: $searchText,
+                placement: .navigationBarDrawer(displayMode: selectedSegment == .quran ? .always : .never),
+                prompt: isMalayAppLanguage() ? "Cari surah" : "Search surah"
+            )
         }
     }
 
