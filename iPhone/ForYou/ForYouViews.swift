@@ -1,12 +1,38 @@
 import SwiftUI
 
 private enum ForYouPalette {
-    static let base = Color(red: 0.05, green: 0.06, blue: 0.08)
-    static let card = Color(red: 0.10, green: 0.11, blue: 0.14)
-    static let line = Color.white.opacity(0.08)
+    static let canvas = Color(red: 0.93, green: 0.93, blue: 0.94)
+    static let card = Color.white.opacity(0.82)
+    static let softCard = Color(red: 0.97, green: 0.97, blue: 0.98)
+    static let stroke = Color.black.opacity(0.08)
+    static let ink = Color.black.opacity(0.92)
+    static let secondaryInk = Color.black.opacity(0.58)
+    static let accentSky = Color(red: 0.61, green: 0.83, blue: 0.93)
+    static let darkTile = Color(red: 0.23, green: 0.26, blue: 0.30)
 }
 
 private enum ForYouFormatters {
+    static let monthDay: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = appLocale()
+        formatter.dateFormat = "MMM d"
+        return formatter
+    }()
+
+    static let year: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = appLocale()
+        formatter.dateFormat = "yyyy"
+        return formatter
+    }()
+
+    static let weekday: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = appLocale()
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
+
     static let shortTime: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = appLocale()
@@ -28,23 +54,23 @@ private extension ForYouMomentType {
 
     var icon: String {
         switch self {
-        case .morning: return "sunrise.fill"
-        case .dhuha: return "sun.max.fill"
-        case .evening: return "sunset.fill"
+        case .morning: return "sunrise"
+        case .dhuha: return "sun.max"
+        case .evening: return "sunset"
         case .night: return "moon.stars.fill"
         }
     }
 
-    var gradient: LinearGradient {
+    var tint: Color {
         switch self {
         case .morning:
-            return LinearGradient(colors: [Color(red: 0.35, green: 0.47, blue: 0.78), Color(red: 0.45, green: 0.31, blue: 0.62)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return Color(red: 0.92, green: 0.82, blue: 0.61)
         case .dhuha:
-            return LinearGradient(colors: [Color(red: 0.83, green: 0.49, blue: 0.18), Color(red: 0.94, green: 0.67, blue: 0.24)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return Color(red: 0.99, green: 0.80, blue: 0.52)
         case .evening:
-            return LinearGradient(colors: [Color(red: 0.67, green: 0.42, blue: 0.17), Color(red: 0.48, green: 0.28, blue: 0.14)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return Color(red: 0.88, green: 0.74, blue: 0.62)
         case .night:
-            return LinearGradient(colors: [Color(red: 0.15, green: 0.20, blue: 0.33), Color(red: 0.08, green: 0.09, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return Color(red: 0.70, green: 0.73, blue: 0.84)
         }
     }
 }
@@ -71,17 +97,17 @@ private struct ForYouOnboardingView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                ForYouPalette.base.ignoresSafeArea()
+                ForYouPalette.canvas.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 22) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(isMalayAppLanguage() ? "Bina rentak harian kamu" : "Shape your daily rhythm")
-                                .font(.title2.weight(.bold))
-                                .foregroundStyle(.white)
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .foregroundStyle(ForYouPalette.ink)
                             Text(isMalayAppLanguage() ? "Tiga pilihan ringkas supaya For You terasa lembut, bukan berat." : "Three quick choices so For You feels guided, not crowded.")
                                 .font(.subheadline)
-                                .foregroundStyle(.white.opacity(0.72))
+                                .foregroundStyle(ForYouPalette.secondaryInk)
                         }
 
                         onboardingSection(
@@ -138,7 +164,7 @@ private struct ForYouOnboardingView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
         .environmentObject(settings)
     }
 
@@ -151,7 +177,7 @@ private struct ForYouOnboardingView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.headline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(ForYouPalette.ink)
 
             ForEach(options, id: \.id) { option in
                 Button {
@@ -159,7 +185,7 @@ private struct ForYouOnboardingView: View {
                 } label: {
                     HStack(spacing: 12) {
                         Circle()
-                            .strokeBorder(.white.opacity(selection.wrappedValue.id == option.id ? 0 : 0.14), lineWidth: 1)
+                            .strokeBorder(ForYouPalette.stroke.opacity(selection.wrappedValue.id == option.id ? 0 : 1), lineWidth: 1)
                             .background(
                                 Circle()
                                     .fill(selection.wrappedValue.id == option.id ? settings.accentColor.color : .clear)
@@ -168,7 +194,7 @@ private struct ForYouOnboardingView: View {
 
                         Text(description(option))
                             .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.88))
+                            .foregroundStyle(ForYouPalette.ink)
 
                         Spacer(minLength: 0)
                     }
@@ -178,7 +204,7 @@ private struct ForYouOnboardingView: View {
                             .fill(ForYouPalette.card)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .stroke(selection.wrappedValue.id == option.id ? settings.accentColor.color.opacity(0.5) : .white.opacity(0.08), lineWidth: 1)
+                                    .stroke(selection.wrappedValue.id == option.id ? settings.accentColor.color.opacity(0.55) : ForYouPalette.stroke, lineWidth: 1)
                             )
                     )
                 }
@@ -196,94 +222,93 @@ private struct ForYouDaySegmentView: View {
     @EnvironmentObject private var settings: Settings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Label(segment.type.displayTitle, systemImage: segment.type.icon)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.78))
+        HStack(alignment: .top, spacing: 12) {
+            VStack(spacing: 0) {
+                Text(startTimeText)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(ForYouPalette.stroke, lineWidth: 1)
+                            )
+                    )
 
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(ForYouPalette.stroke)
+                    .frame(width: 2)
+                    .frame(maxHeight: .infinity)
+                    .padding(.top, 8)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 8) {
                     Text(segment.title)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
+
+                    Spacer(minLength: 8)
+
+                    Text(segment.type.displayTitle)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
                 }
 
-                Spacer(minLength: 0)
+                Text(segment.shortDescription)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+                    .lineLimit(2)
 
-                Text(durationText)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Capsule().fill(.white.opacity(0.10)))
-            }
-
-            Text(windowText)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.66))
-
-            if let arabicText = segment.arabicText {
-                Text(arabicText)
-                    .font(.custom(preferredQuranArabicFontName(settings: settings, size: 24), size: 24))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .lineSpacing(5)
-                    .minimumScaleFactor(0.85)
-            }
-
-            Text(segment.shortDescription)
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.78))
-                .lineLimit(2)
-
-            HStack {
-                if let contentReference = segment.contentReference {
-                    Text(contentReference)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.72))
+                if let arabicText = segment.arabicText {
+                    Text(arabicText)
+                        .font(.custom(preferredQuranArabicFontName(settings: settings, size: 20), size: 20))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .lineSpacing(4)
+                        .minimumScaleFactor(0.8)
                 }
 
-                Spacer(minLength: 8)
-
-                if segment.ctaType == .markDone {
-                    Button {
-                        onToggleCompletion()
-                    } label: {
-                        Label(
-                            isCompleted ? (isMalayAppLanguage() ? "Selesai" : "Done") : (isMalayAppLanguage() ? "Tanda selesai" : "Mark as done"),
-                            systemImage: isCompleted ? "checkmark.circle.fill" : "circle"
-                        )
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Capsule().fill(.white.opacity(isCompleted ? 0.20 : 0.12)))
+                HStack(alignment: .center, spacing: 8) {
+                    if let contentReference = segment.contentReference {
+                        Text(contentReference)
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.secondaryInk)
+                            .lineLimit(1)
                     }
-                    .buttonStyle(.plain)
+
+                    Spacer(minLength: 8)
+
+                    if segment.ctaType == .markDone {
+                        Button {
+                            onToggleCompletion()
+                        } label: {
+                            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(isCompleted ? settings.accentColor.color : ForYouPalette.secondaryInk)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(ForYouPalette.softCard)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(ForYouPalette.stroke, lineWidth: 1)
+                    )
+            )
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(segment.type.gradient)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
-                )
-        )
-        .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var durationText: String {
-        let unit = isMalayAppLanguage() ? "min" : "min"
-        return "\(segment.durationMinutes) \(unit)"
-    }
-
-    private var windowText: String {
-        let start = ForYouFormatters.shortTime.string(from: segment.startWindow)
-        let end = ForYouFormatters.shortTime.string(from: segment.endWindow)
-        return "\(start) – \(end)"
+    private var startTimeText: String {
+        ForYouFormatters.shortTime.string(from: segment.startWindow)
     }
 }
 
@@ -341,26 +366,119 @@ private struct ForYouLockedLayer: View {
         VStack(spacing: 14) {
             Image(systemName: "sparkles.rectangle.stack")
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(ForYouPalette.ink)
 
             Text(isMalayAppLanguage() ? "Hari ini sudah kamu rasa. Hari-hari seterusnya menunggu." : "You have today. The days ahead are waiting.")
                 .font(.headline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(ForYouPalette.ink)
                 .multilineTextAlignment(.center)
 
             Text(reason ?? (isMalayAppLanguage() ? "Buka pelan yang diperibadikan, disediakan lebih awal untuk rentak ibadah kamu." : "Unlock the prepared days ahead with a more personal daily rhythm."))
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.78))
+                .foregroundStyle(ForYouPalette.secondaryInk)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 18)
 
             Text(isMalayAppLanguage() ? "Pengalaman hari ini kekal penuh. Esok hanya dipratonton dengan lembut." : "Today stays fully open. Tomorrow is only softly previewed.")
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(ForYouPalette.secondaryInk)
         }
         .padding(26)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+}
+
+private struct ForYouSummaryHeader: View {
+    let plan: ForYouDailyPlan
+    let nextSegment: ForYouDaySegment?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    Image(systemName: nextSegment?.type.icon ?? "sunrise")
+                        .font(.system(size: 34, weight: .regular))
+                        .foregroundStyle(ForYouPalette.ink)
+
+                    Text(nextSegment?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
+                        .font(.system(size: 24, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
+                }
+
+                Text(shortWeekday)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+
+                Text(plan.locationLine ?? "Kuala Lumpur")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
+            .padding(18)
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(ForYouPalette.canvas)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .stroke(Color.black, lineWidth: 2.5)
+                    )
+            )
+
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    Image(systemName: nextSegment?.type == .night ? "moon.stars" : "sun.max")
+                        .font(.system(size: 24, weight: .medium))
+                    Text(nextTime)
+                        .font(.system(size: 28, weight: .medium, design: .rounded))
+                }
+                .foregroundStyle(ForYouPalette.ink)
+                .frame(maxWidth: .infinity, minHeight: 53)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(ForYouPalette.accentSky)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .stroke(Color.black, lineWidth: 2.5)
+                        )
+                )
+
+                HStack(spacing: 10) {
+                    Image(systemName: "hourglass")
+                        .font(.system(size: 24, weight: .medium))
+                    Text(relativeText)
+                        .font(.system(size: 22, weight: .medium, design: .rounded))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 53)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(ForYouPalette.darkTile)
+                )
+            }
+            .frame(width: 132)
+        }
+    }
+
+    private var shortWeekday: String {
+        ForYouFormatters.weekday.string(from: plan.date).prefix(3).capitalized
+    }
+
+    private var nextTime: String {
+        guard let nextSegment else { return "--:--" }
+        return ForYouFormatters.shortTime.string(from: nextSegment.startWindow)
+    }
+
+    private var relativeText: String {
+        guard let nextSegment else { return "--" }
+        let minutes = max(1, Int(nextSegment.startWindow.timeIntervalSince(Date()) / 60))
+        if minutes >= 60 {
+            let hours = minutes / 60
+            let remaining = minutes % 60
+            return remaining == 0 ? "\(hours)h" : "\(hours)h \(remaining)m"
+        }
+        return "\(minutes)m"
     }
 }
 
@@ -375,20 +493,35 @@ private struct ForYouDayView: View {
         ZStack {
             background
 
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(viewModel.plan.title)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(dateLine)
+                        .font(.system(size: 22, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
 
-                    if let subtitle = viewModel.plan.subtitle {
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.72))
+                    Text(yearLine)
+                        .font(.system(size: 20, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.55))
+                }
+
+                ForYouSummaryHeader(
+                    plan: viewModel.plan,
+                    nextSegment: leadingSegment
+                )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(weekdayLine)
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
+                    if let location = viewModel.plan.locationLine {
+                        Label(location, systemImage: "mappin.and.ellipse")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.secondaryInk)
+                            .lineLimit(1)
                     }
                 }
 
-                VStack(spacing: 14) {
+                VStack(spacing: 10) {
                     ForEach(viewModel.plan.segments) { segment in
                         ForYouDaySegmentView(
                             segment: segment,
@@ -406,9 +539,9 @@ private struct ForYouDayView: View {
 
                 footer
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 28)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 18)
 
             if viewModel.isLocked {
                 Rectangle()
@@ -437,48 +570,38 @@ private struct ForYouDayView: View {
 
     private var background: some View {
         RoundedRectangle(cornerRadius: 36, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [ForYouPalette.base, Color(red: 0.08, green: 0.10, blue: 0.13)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay(alignment: .topTrailing) {
-                Circle()
-                    .fill(Color.white.opacity(0.05))
-                    .frame(width: 220, height: 220)
-                    .blur(radius: 10)
-                    .offset(x: 80, y: -30)
-            }
-            .overlay(alignment: .bottomLeading) {
-                Circle()
-                    .fill(Color.white.opacity(0.03))
-                    .frame(width: 180, height: 180)
-                    .blur(radius: 10)
-                    .offset(x: -40, y: 30)
-            }
+            .fill(ForYouPalette.canvas)
             .overlay(
                 RoundedRectangle(cornerRadius: 36, style: .continuous)
-                    .stroke(ForYouPalette.line, lineWidth: 1)
+                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
             )
             .ignoresSafeArea()
     }
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let location = viewModel.plan.locationLine {
-                Text(location)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.78))
-            }
-
             if let source = viewModel.plan.sourceLine {
                 Text(source)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.58))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
             }
         }
+    }
+
+    private var leadingSegment: ForYouDaySegment? {
+        viewModel.plan.segments.first
+    }
+
+    private var dateLine: String {
+        ForYouFormatters.monthDay.string(from: viewModel.plan.date)
+    }
+
+    private var yearLine: String {
+        ForYouFormatters.year.string(from: viewModel.plan.date)
+    }
+
+    private var weekdayLine: String {
+        ForYouFormatters.weekday.string(from: viewModel.plan.date)
     }
 }
 
@@ -489,15 +612,15 @@ struct ForYouRootView: View {
 
     var body: some View {
         ZStack {
-            ForYouPalette.base.ignoresSafeArea()
+            ForYouPalette.canvas.ignoresSafeArea()
 
             if viewModel.dayViewModels.isEmpty {
                 VStack(spacing: 12) {
                     ProgressView()
-                        .tint(.white)
+                        .tint(ForYouPalette.ink)
                     Text(isMalayAppLanguage() ? "Menyusun hari kamu..." : "Preparing your day...")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.68))
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -517,9 +640,9 @@ struct ForYouRootView: View {
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .frame(width: geometry.size.height, height: geometry.size.width)
+                    .frame(width: geometry.size.height - 18, height: geometry.size.width)
                     .rotationEffect(.degrees(90), anchor: .topLeading)
-                    .offset(x: geometry.size.width)
+                    .offset(x: geometry.size.width, y: 18)
                 }
             }
         }
@@ -536,7 +659,7 @@ struct ForYouRootView: View {
             }
             .environmentObject(settings)
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 
     private var hasPremiumAccess: Bool {

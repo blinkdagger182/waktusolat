@@ -617,7 +617,7 @@ struct TodayView: View {
                     ForYouRootView()
                 }
             }
-            .navigationTitle(isMalayAppLanguage() ? "Hari Ini" : "Today")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Picker("", selection: $selectedSegment) {
