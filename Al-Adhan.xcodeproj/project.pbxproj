@@ -84,6 +84,10 @@
 		A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */; };
 		A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */; };
 		A510001A2F91000100ABCDEF /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A510000A2F91000100ABCDEF /* TodayView.swift */; };
+		B21000012FA1000100ABCDEF /* ForYouModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000002FA1000100ABCDEF /* ForYouModels.swift */; };
+		B21000022FA1000100ABCDEF /* ForYouServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000012FA1000100ABCDE0 /* ForYouServices.swift */; };
+		B21000032FA1000100ABCDEF /* ForYouViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */; };
+		B21000042FA1000100ABCDEF /* ForYouViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000032FA1000100ABCDE0 /* ForYouViews.swift */; };
 		B10000012F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		B10000022F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		C10000012F90000100ABCDEF /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C10000002F90000100ABCDEF /* InfoPlist.xcstrings */; };
@@ -232,6 +236,10 @@
 		A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahBrowserView.swift; sourceTree = "<group>"; };
 		A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDisabledSections.swift; sourceTree = "<group>"; };
 		A510000A2F91000100ABCDEF /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		B21000002FA1000100ABCDEF /* ForYouModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouModels.swift; sourceTree = "<group>"; };
+		B21000012FA1000100ABCDE0 /* ForYouServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouServices.swift; sourceTree = "<group>"; };
+		B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViewModels.swift; sourceTree = "<group>"; };
+		B21000032FA1000100ABCDE0 /* ForYouViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViews.swift; sourceTree = "<group>"; };
 		B10000002F90000100ABCDEF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C10000002F90000100ABCDEF /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
@@ -361,11 +369,23 @@
 				722BBD372F0997DB004F3659 /* AdhanSheet.swift */,
 				72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */,
 				72CCAE692D42CE4800871A6A /* Helpers */,
+				B21000042FA1000100ABCDE0 /* ForYou */,
 				72728CB72B3D1A5F00FAA3B3 /* Adhan */,
 				72728CA82B3D198300FAA3B3 /* Other */,
 				72728CBE2B3D1A9600FAA3B3 /* Settings */,
 			);
 			path = iPhone;
+			sourceTree = "<group>";
+		};
+		B21000042FA1000100ABCDE0 /* ForYou */ = {
+			isa = PBXGroup;
+			children = (
+				B21000002FA1000100ABCDEF /* ForYouModels.swift */,
+				B21000012FA1000100ABCDE0 /* ForYouServices.swift */,
+				B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */,
+				B21000032FA1000100ABCDE0 /* ForYouViews.swift */,
+			);
+			path = ForYou;
 			sourceTree = "<group>";
 		};
 		72728CA82B3D198300FAA3B3 /* Other */ = {
@@ -750,6 +770,10 @@
 				A51000172F91000100ABCDEF /* QuranSurahDetailsView.swift in Sources */,
 				A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */,
 				A510001A2F91000100ABCDEF /* TodayView.swift in Sources */,
+				B21000012FA1000100ABCDEF /* ForYouModels.swift in Sources */,
+				B21000022FA1000100ABCDEF /* ForYouServices.swift in Sources */,
+				B21000032FA1000100ABCDEF /* ForYouViewModels.swift in Sources */,
+				B21000042FA1000100ABCDEF /* ForYouViews.swift in Sources */,
 				A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */,
 				72574CD52E49F35600BFF138 /* AppIntents.swift in Sources */,
 				72BC6B242E2B9D9300ACD832 /* OtherView.swift in Sources */,

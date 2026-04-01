@@ -13,135 +13,6 @@ private enum TodaySegment: String, CaseIterable {
     }
 }
 
-// MARK: - For You content
-
-private struct ForYouItem: Identifiable {
-    let id: String
-    let arabicText: String
-    let titleEn: String
-    let titleMy: String
-    let bodyEn: String
-    let bodyMy: String
-    let sourceEn: String?
-    let sourceRef: String?
-}
-
-private let forYouItems: [ForYouItem] = [
-    .init(
-        id: "foryou-istighfar",
-        arabicText: "أَسْتَغْفِرُ ٱللَّٰهَ",
-        titleEn: "Seek Forgiveness Often",
-        titleMy: "Sering Mohon Keampunan",
-        bodyEn: "The Prophet ﷺ would seek forgiveness more than 70 times a day. Istighfar opens closed doors and lifts burdens you didn't know you were carrying.",
-        bodyMy: "Nabi ﷺ memohon keampunan lebih dari 70 kali sehari. Istighfar membuka pintu yang tertutup dan meringankan beban yang tidak kamu sedar sedang dipikul.",
-        sourceEn: "\"By Allah, I seek forgiveness from Allah and repent to Him more than seventy times a day.\"",
-        sourceRef: "Sahih al-Bukhari 6307"
-    ),
-    .init(
-        id: "foryou-gratitude",
-        arabicText: "وَإِذْ تَأَذَّنَ رَبُّكُمْ لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ",
-        titleEn: "Gratitude Multiplies Blessings",
-        titleMy: "Syukur Melipatgandakan Nikmat",
-        bodyEn: "When you feel stuck, name three things you're grateful for. Gratitude is not just a feeling — it's a practice that invites more.",
-        bodyMy: "Apabila kamu rasa tersekat, sebutkan tiga perkara yang kamu syukuri. Syukur bukan sekadar perasaan — ia amalan yang mendatangkan lebih banyak nikmat.",
-        sourceEn: "\"If you are grateful, I will certainly give you more.\"",
-        sourceRef: "Surah Ibrahim 14:7"
-    ),
-    .init(
-        id: "foryou-salawat",
-        arabicText: "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ",
-        titleEn: "Send Salawat on the Prophet ﷺ",
-        titleMy: "Hantar Selawat ke atas Nabi ﷺ",
-        bodyEn: "One salawat brings ten blessings from Allah, erases ten sins, and raises you ten degrees. It costs nothing and returns everything.",
-        bodyMy: "Satu selawat membawa sepuluh rahmat dari Allah, menghapus sepuluh dosa, dan meninggikan darjat sepuluh tingkat. Tidak memerlukan apa pun, tetapi memberi segalanya.",
-        sourceEn: "\"Whoever sends one blessing upon me, Allah will send ten upon him.\"",
-        sourceRef: "Sahih Muslim 408"
-    ),
-    .init(
-        id: "foryou-duha",
-        arabicText: "مَا وَدَّعَكَ رَبُّكَ وَمَا قَلَىٰ",
-        titleEn: "You Are Not Forgotten",
-        titleMy: "Kamu Tidak Dilupakan",
-        bodyEn: "\"Your Lord has not forsaken you, nor does He hate you.\" Revealed in the darkest moment of the Prophet's life — and it speaks to yours too.",
-        bodyMy: "\"Tuhanmu tidak meninggalkanmu, dan Dia tidak membencimu.\" Diturunkan pada saat paling gelap dalam kehidupan Nabi — dan ia juga berbicara kepada hidupmu.",
-        sourceEn: nil,
-        sourceRef: "Surah Ad-Duha 93:3"
-    ),
-    .init(
-        id: "foryou-consistency",
-        arabicText: "أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا",
-        titleEn: "Small & Consistent Wins",
-        titleMy: "Kecil tapi Konsisten",
-        bodyEn: "The most beloved deeds to Allah are the most consistent, even if they are small. You don't have to do everything — just don't stop.",
-        bodyMy: "Amalan yang paling disukai Allah adalah yang paling konsisten, walaupun kecil. Kamu tidak perlu lakukan semuanya — cuma jangan berhenti.",
-        sourceEn: "\"The most beloved deeds to Allah are the most consistent, even if little.\"",
-        sourceRef: "Sahih al-Bukhari 6464"
-    ),
-    .init(
-        id: "foryou-quran-heart",
-        arabicText: "وَنُنَزِّلُ مِنَ ٱلْقُرْءَانِ مَا هُوَ شِفَآءٌ وَرَحْمَةٌ",
-        titleEn: "The Quran Heals",
-        titleMy: "Al-Quran Menyembuhkan",
-        bodyEn: "\"We send down the Quran as a healing and mercy.\" Even one ayah a day reconnects you to a source that heals what medicine cannot.",
-        bodyMy: "\"Kami menurunkan Al-Quran sebagai penawar dan rahmat.\" Walaupun satu ayat sehari, ia menghubungkan kamu semula kepada sumber yang menyembuhkan apa yang ubat tidak mampu.",
-        sourceEn: nil,
-        sourceRef: "Surah Al-Isra 17:82"
-    ),
-]
-
-private struct ForYouCard: View {
-    let item: ForYouItem
-    let accentColor: Color
-
-    @EnvironmentObject private var settings: Settings
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(item.arabicText)
-                .font(.custom(preferredQuranArabicFontName(settings: settings, size: 24), size: 24))
-                .multilineTextAlignment(.trailing)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(isMalayAppLanguage() ? item.titleMy : item.titleEn)
-                    .font(.subheadline.weight(.semibold))
-
-                Text(isMalayAppLanguage() ? item.bodyMy : item.bodyEn)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let src = item.sourceEn, let ref = item.sourceRef {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("\"\(src)\"")
-                        .font(.caption.italic())
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("— \(ref)")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(accentColor)
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.primary.opacity(0.05))
-                )
-            } else if let ref = item.sourceRef {
-                Text("— \(ref)")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(accentColor)
-            }
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.primary.opacity(0.04))
-        )
-    }
-}
-
 // MARK: - Prayer Time Slot
 
 enum TodayPrayerTimeSlot: String, CaseIterable, Hashable {
@@ -717,40 +588,35 @@ struct TodayView: View {
 
     var body: some View {
         NavigationView {
-            List {
+            Group {
                 if selectedSegment == .today {
-                    Section {
-                        LibraryIntroHeader()
-                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                            .listRowSeparator(.hidden)
+                    List {
+                        Section {
+                            LibraryIntroHeader()
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowSeparator(.hidden)
 
-                        TodaySlotBanner(slot: activeTodaySlot)
-                            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
-                            .listRowSeparator(.hidden)
+                            TodaySlotBanner(slot: activeTodaySlot)
+                                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
+                                .listRowSeparator(.hidden)
 
-                        ForEach(activeTodayPractices) { practice in
-                            TodayPracticeCard(
-                                practice: practice,
-                                accentColor: settings.accentColor.color,
-                                onOpenSurah: openTodayPracticeSurah
-                            )
-                            .environmentObject(settings)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
-                            .listRowSeparator(.hidden)
-                        }
-                    }
-                } else {
-                    Section {
-                        ForEach(forYouItems) { item in
-                            ForYouCard(item: item, accentColor: settings.accentColor.color)
+                            ForEach(activeTodayPractices) { practice in
+                                TodayPracticeCard(
+                                    practice: practice,
+                                    accentColor: settings.accentColor.color,
+                                    onOpenSurah: openTodayPracticeSurah
+                                )
                                 .environmentObject(settings)
                                 .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
                                 .listRowSeparator(.hidden)
+                            }
                         }
                     }
+                    .applyConditionalListStyle(defaultView: settings.defaultView)
+                } else {
+                    ForYouRootView()
                 }
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle(isMalayAppLanguage() ? "Hari Ini" : "Today")
             .toolbar {
                 ToolbarItem(placement: .principal) {
