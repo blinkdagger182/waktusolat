@@ -756,8 +756,6 @@ private struct ForYouDayView: View {
 
     var body: some View {
         ZStack {
-            background
-
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(dateLine)
@@ -769,47 +767,22 @@ private struct ForYouDayView: View {
                         .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.55))
                 }
 
-                GeometryReader { geometry in
-                    if #available(iOS 17.0, *) {
-                        ScrollView(.vertical) {
-                            LazyVStack(spacing: 0) {
-                                ForEach(Array(timelinePages.enumerated()), id: \.offset) { index, page in
-                                    pageContent(index: index, page: page)
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                        .containerRelativeFrame(.vertical, alignment: .top)
-                                        .id(index)
-                                }
-                            }
-                        }
-                        .scrollIndicators(.hidden)
-                        .scrollTargetLayout()
-                        .scrollTargetBehavior(.paging)
-                        .scrollPosition(id: $selectedPageIndex)
-                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
-                    } else {
-                        ForYouVerticalPager(
-                            count: timelinePages.count,
-                            selectedIndex: Binding(
-                                get: { selectedPageIndex ?? 0 },
-                                set: { selectedPageIndex = $0 }
-                            )
-                        ) { index in
-                            pageContent(index: index, page: timelinePages[index])
-                        }
-                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(timelinePages.enumerated()), id: \.offset) { index, page in
+                        pageContent(index: index, page: page)
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .id(index)
                     }
                 }
-
-                footer
             }
             .padding(.horizontal, 16)
             .padding(.top, 4)
             .padding(.bottom, 16)
+            .background(background)
 
             if viewModel.isLocked {
                 Rectangle()
                     .fill(.black.opacity(0.14))
-                    .ignoresSafeArea()
                     .blur(radius: 16)
 
                 VStack {
@@ -837,7 +810,6 @@ private struct ForYouDayView: View {
                 RoundedRectangle(cornerRadius: 36, style: .continuous)
                     .stroke(Color.white.opacity(0.35), lineWidth: 1)
             )
-            .ignoresSafeArea()
     }
 
     @ViewBuilder
@@ -1047,19 +1019,14 @@ struct ForYouRootView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                GeometryReader { geometry in
-                    let topInset = max(geometry.safeAreaInsets.top - 40, 0)
-                    let bottomInset = max(geometry.safeAreaInsets.bottom + 24, 32)
-                    let viewportHeight = max(geometry.size.height - topInset - bottomInset, 680)
+                ScrollView(.vertical, showsIndicators: false) {
                     if let todayItem = currentDayViewModel {
                         ForYouDayView(
                             viewModel: todayItem,
                             completedIDs: viewModel.completedIDs,
                             onToggleCompletion: viewModel.toggleCompletion(for:)
                         )
-                        .frame(width: geometry.size.width, height: viewportHeight, alignment: .top)
-                        .padding(.top, topInset)
-                        .padding(.bottom, bottomInset)
+                        .frame(maxWidth: .infinity)
                     }
                 }
             }
