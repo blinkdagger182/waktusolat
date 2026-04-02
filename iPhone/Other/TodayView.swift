@@ -559,96 +559,11 @@ struct TodayPracticeCard: View {
 
 struct TodayView: View {
     @EnvironmentObject private var settings: Settings
-    @State private var selectedSegment: TodaySegment = .today
-    @State private var selectedFullSurah: FullSurahSelection?
-
-    private func surahTitle(for surahNumber: Int) -> String {
-        let fallbackEnglish = "Surah \(surahNumber)"
-        return localizedSurahName(number: surahNumber, englishName: fallbackEnglish)
-    }
-
-    private var activeTodaySlot: TodayPrayerTimeSlot {
-        TodayPracticeLibrary.slot(
-            currentPrayer: settings.currentPrayer,
-            nextPrayer: settings.nextPrayer
-        )
-    }
-
-    private var activeTodayPractices: [TodayPractice] {
-        TodayPracticeLibrary.practices(for: activeTodaySlot)
-    }
-
-    private func openTodayPracticeSurah(_ surahNumber: Int, _ ayahNumber: Int?) {
-        selectedFullSurah = FullSurahSelection(
-            surahNumber: surahNumber,
-            initialAyahNumber: ayahNumber,
-            dailyAyahNumber: ayahNumber
-        )
-    }
 
     var body: some View {
         NavigationView {
-            Group {
-                if selectedSegment == .today {
-                    List {
-                        Section {
-                            LibraryIntroHeader()
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowSeparator(.hidden)
-
-                            TodaySlotBanner(slot: activeTodaySlot)
-                                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
-                                .listRowSeparator(.hidden)
-
-                            ForEach(activeTodayPractices) { practice in
-                                TodayPracticeCard(
-                                    practice: practice,
-                                    accentColor: settings.accentColor.color,
-                                    onOpenSurah: openTodayPracticeSurah
-                                )
-                                .environmentObject(settings)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
-                                .listRowSeparator(.hidden)
-                            }
-                        }
-                    }
-                    .applyConditionalListStyle(defaultView: settings.defaultView)
-                } else {
-                    ForYouRootView()
-                }
-            }
+            ForYouRootView()
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Picker("", selection: $selectedSegment) {
-                        ForEach(TodaySegment.allCases, id: \.self) { seg in
-                            Text(seg.label()).tag(seg)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 200)
-                }
-            }
-            .sheet(item: $selectedFullSurah) { selection in
-                NavigationView {
-                    QuranSurahDetailsView(
-                        surahNumber: selection.surahNumber,
-                        initialAyahNumber: selection.initialAyahNumber,
-                        dailyAyahNumber: selection.dailyAyahNumber
-                    )
-                    .environmentObject(settings)
-                    .navigationTitle(surahTitle(for: selection.surahNumber))
-                    .navigationBarTitleDisplayMode(.inline)
-                    .interactiveDismissDisabled()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(isMalayAppLanguage() ? "Selesai" : "Done") {
-                                selectedFullSurah = nil
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

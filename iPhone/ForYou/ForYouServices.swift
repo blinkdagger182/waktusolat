@@ -172,6 +172,7 @@ enum ForYouPrayerTimeService {
                 asr: fallbackDate(hour: 16, minute: 30, on: date),
                 maghrib: fallbackDate(hour: 19, minute: 20, on: date),
                 isha: fallbackDate(hour: 20, minute: 35, on: date),
+                prayers: [],
                 locationLine: locationLine,
                 sourceLine: sourceLine
             )
@@ -192,6 +193,7 @@ enum ForYouPrayerTimeService {
             asr: asr,
             maghrib: maghrib,
             isha: isha,
+            prayers: shifted,
             locationLine: locationLine,
             sourceLine: sourceLine
         )
@@ -317,6 +319,7 @@ final class ForYouPlanGeneratorService {
     ) -> ForYouDailyPlan {
         let timeline = ForYouPrayerTimeService.timeline(for: date, settings: settings)
         let segments = buildSegments(for: date, profile: profile, timeline: timeline, includeNight: hasPremiumAccess || profile.consistencyLevel != .beginner)
+        let timelineEntries = buildTimelineEntries(for: date, settings: settings, profile: profile, timeline: timeline)
         let weekday = Calendar.current.component(.weekday, from: date)
         let title = title(for: date)
         let subtitle = subtitle(for: date, weekday: weekday, profile: profile)
@@ -330,6 +333,7 @@ final class ForYouPlanGeneratorService {
             locationLine: timeline.locationLine,
             sourceLine: timeline.sourceLine,
             segments: segments,
+            timelineEntries: timelineEntries,
             isPremiumPreview: isPremiumPreview,
             personalizationReason: reason
         )
@@ -366,6 +370,111 @@ final class ForYouPlanGeneratorService {
                 shortDescription: isMalayAppLanguage() ? template.shortDescriptionMy : template.shortDescriptionEn,
                 ctaType: template.ctaType,
                 personalizationReason: personalizationReason(for: profile)
+            )
+        }
+    }
+
+    private func buildTimelineEntries(
+        for date: Date,
+        settings: Settings,
+        profile: ForYouUserProfile,
+        timeline: ForYouPrayerTimeline
+    ) -> [ForYouTimelineEntry] {
+        let prayerEntries = buildPrayerNotificationEntries(for: date, settings: settings, profile: profile, prayers: timeline.prayers)
+        let zikirEntries = buildZikirEntries(for: date, settings: settings, profile: profile, prayers: timeline.prayers)
+        return (prayerEntries + zikirEntries)
+            .sorted { lhs, rhs in
+                if lhs.time == rhs.time {
+                    return lhs.kind.rawValue < rhs.kind.rawValue
+                }
+                return lhs.time < rhs.time
+            }
+    }
+
+    private func buildPrayerNotificationEntries(
+        for date: Date,
+        settings: Settings,
+        profile: ForYouUserProfile,
+        prayers: [Prayer]
+    ) -> [ForYouTimelineEntry] {
+        prayers.flatMap { prayer -> [ForYouTimelineEntry] in
+            let canonicalName = canonicalPrayerName(prayer.nameTransliteration)
+            guard let rule = notificationRule(for: canonicalName, settings: settings), rule.enabled else {
+                return []
+            }
+
+            var entries: [ForYouTimelineEntry] = []
+
+            if rule.preMinutes > 0,
+               let preTime = Calendar.current.date(byAdding: .minute, value: -rule.preMinutes, to: prayer.time) {
+                entries.append(
+                    makeTimelineEntry(
+                        id: "\(ISO8601DateFormatter().string(from: date))-\(canonicalName)-pre",
+                        kind: .prayer,
+                        momentType: momentType(for: canonicalName),
+                        time: preTime,
+                        title: localizedPrayerName(prayer.nameTransliteration),
+                        subtitle: preNotificationSubtitle(minutes: rule.preMinutes, prayerName: localizedPrayerName(prayer.nameTransliteration), location: settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city),
+                        icon: "bell.badge",
+                        arabicText: prayer.nameArabic,
+                        reference: nil,
+                        recommendation: recommendation(for: momentType(for: canonicalName), profile: profile, date: date)
+                    )
+                )
+            }
+
+            entries.append(
+                makeTimelineEntry(
+                    id: "\(ISO8601DateFormatter().string(from: date))-\(canonicalName)-live",
+                    kind: .prayer,
+                    momentType: momentType(for: canonicalName),
+                    time: prayer.time,
+                    title: localizedPrayerName(prayer.nameTransliteration),
+                    subtitle: livePrayerSubtitle(prayerName: localizedPrayerName(prayer.nameTransliteration), location: settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city),
+                    icon: icon(for: canonicalName),
+                    arabicText: prayer.nameArabic,
+                    reference: nil,
+                    recommendation: recommendation(for: momentType(for: canonicalName), profile: profile, date: date)
+                )
+            )
+
+            return entries
+        }
+    }
+
+    private func buildZikirEntries(
+        for date: Date,
+        settings: Settings,
+        profile: ForYouUserProfile,
+        prayers: [Prayer]
+    ) -> [ForYouTimelineEntry] {
+        guard settings.zikirNotificationsEnabled, !prayers.isEmpty else { return [] }
+
+        return zikirNotificationAnchorDates(for: prayers).map { anchor in
+            let selection = ZikirSelector.select(
+                for: .init(
+                    date: anchor.date,
+                    prayers: prayers,
+                    surface: .app
+                )
+            )
+
+            let location = settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city
+            let title = selection.helperTitle.isEmpty ? appLocalized(selection.bucket.titleKey) : selection.helperTitle
+            let subtitle = location.map { "\(selection.phrase.localizedTranslation()) • \($0)" } ?? selection.phrase.localizedTranslation()
+            let moment = momentType(for: anchor.bucket)
+
+            return makeTimelineEntry(
+                id: "\(ISO8601DateFormatter().string(from: date))-zikir-\(anchor.bucket.rawValue)",
+                kind: .zikir,
+                momentType: moment,
+                time: anchor.date,
+                title: title,
+                subtitle: subtitle,
+                icon: icon(for: moment),
+                arabicText: selection.phrase.textArabic,
+                reference: appLocalized(selection.bucket.titleKey),
+                recommendation: recommendation(for: moment, profile: profile, date: date)
             )
         }
     }
@@ -449,6 +558,181 @@ final class ForYouPlanGeneratorService {
             return isMalayAppLanguage() ? "Dibentuk untuk mengekalkan zikir yang ringan tetapi konsisten." : "Built around light but consistent dhikr."
         case .none:
             return isMalayAppLanguage() ? "Disusun mengikut rentak harian semasa." : "Prepared around your current daily rhythm."
+        }
+    }
+
+    private func makeTimelineEntry(
+        id: String,
+        kind: ForYouTimelineEntryKind,
+        momentType: ForYouMomentType,
+        time: Date,
+        title: String,
+        subtitle: String,
+        icon: String,
+        arabicText: String?,
+        reference: String?,
+        recommendation: ForYouTimelineRecommendation?
+    ) -> ForYouTimelineEntry {
+        ForYouTimelineEntry(
+            id: id,
+            kind: kind,
+            momentType: momentType,
+            time: time,
+            hourBucket: Calendar.current.component(.hour, from: time),
+            title: title,
+            subtitle: subtitle,
+            icon: icon,
+            arabicText: arabicText,
+            reference: reference,
+            recommendation: recommendation
+        )
+    }
+
+    private func recommendation(
+        for type: ForYouMomentType,
+        profile: ForYouUserProfile,
+        date: Date
+    ) -> ForYouTimelineRecommendation? {
+        let template = ForYouContentRepository.templates(for: type)
+            .max { lhs, rhs in
+                ForYouPlanScoringEngine.score(template: lhs, profile: profile, date: date)
+                < ForYouPlanScoringEngine.score(template: rhs, profile: profile, date: date)
+            }
+
+        guard let template else { return nil }
+        return ForYouTimelineRecommendation(
+            title: isMalayAppLanguage() ? template.titleMy : template.titleEn,
+            arabicText: template.arabicText,
+            reference: template.contentReference,
+            shortDescription: isMalayAppLanguage() ? template.shortDescriptionMy : template.shortDescriptionEn
+        )
+    }
+
+    private func preNotificationSubtitle(minutes: Int, prayerName: String, location: String?) -> String {
+        let placeLine = location.map { " • \($0)" } ?? ""
+        if isMalayAppLanguage() {
+            return "\(minutes) min sebelum \(prayerName)\(placeLine)"
+        }
+        return "\(minutes)m before \(prayerName)\(placeLine)"
+    }
+
+    private func livePrayerSubtitle(prayerName: String, location: String?) -> String {
+        let placeLine = location.map { " • \($0)" } ?? ""
+        if isMalayAppLanguage() {
+            return "Masuk waktu \(prayerName)\(placeLine)"
+        }
+        return "Time for \(prayerName)\(placeLine)"
+    }
+
+    private func icon(for canonicalPrayerName: String) -> String {
+        switch canonicalPrayerName {
+        case "fajr": return "sunrise"
+        case "sunrise", "ishraq", "dhuha": return "sun.max"
+        case "dhuhr": return "sun.max.fill"
+        case "asr": return "sunset"
+        case "maghrib": return "sunset.fill"
+        case "isha": return "moon.stars"
+        default: return "bell"
+        }
+    }
+
+    private func icon(for momentType: ForYouMomentType) -> String {
+        switch momentType {
+        case .morning:
+            return "sunrise"
+        case .dhuha:
+            return "sun.max"
+        case .evening:
+            return "sunset"
+        case .night:
+            return "moon.stars.fill"
+        }
+    }
+
+    private func canonicalPrayerName(_ value: String) -> String {
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "subuh":
+            return "fajr"
+        case "syuruk":
+            return "sunrise"
+        case "zuhur", "jumuah":
+            return "dhuhr"
+        case "asar":
+            return "asr"
+        case "magrib":
+            return "maghrib"
+        case "isya", "isyak":
+            return "isha"
+        default:
+            return normalized
+        }
+    }
+
+    private func momentType(for canonicalPrayerName: String) -> ForYouMomentType {
+        switch canonicalPrayerName {
+        case "fajr", "sunrise", "ishraq":
+            return .morning
+        case "dhuhr", "dhuha":
+            return .dhuha
+        case "asr", "maghrib":
+            return .evening
+        case "isha":
+            return .night
+        default:
+            return .morning
+        }
+    }
+
+    private func momentType(for bucket: ZikirTimeBucket) -> ForYouMomentType {
+        switch bucket {
+        case .morning:
+            return .morning
+        case .midday:
+            return .dhuha
+        case .evening:
+            return .evening
+        case .night:
+            return .night
+        }
+    }
+
+    private func zikirNotificationAnchorDates(for prayerList: [Prayer]) -> [(bucket: ZikirTimeBucket, date: Date)] {
+        func prayerTime(_ names: Set<String>) -> Date? {
+            prayerList.first {
+                names.contains(canonicalPrayerName($0.nameTransliteration))
+            }?.time
+        }
+
+        let fajr = prayerTime(["fajr"])
+        let dhuhr = prayerTime(["dhuhr"])
+        let asr = prayerTime(["asr"])
+        let isha = prayerTime(["isha"])
+
+        return [
+            fajr.map { (.morning, $0.addingTimeInterval(20 * 60)) },
+            dhuhr.map { (.midday, $0.addingTimeInterval(20 * 60)) },
+            asr.map { (.evening, $0.addingTimeInterval(20 * 60)) },
+            isha.map { (.night, $0.addingTimeInterval(20 * 60)) }
+        ].compactMap { $0 }
+    }
+
+    private func notificationRule(for canonicalPrayerName: String, settings: Settings) -> (enabled: Bool, preMinutes: Int)? {
+        switch canonicalPrayerName {
+        case "fajr":
+            return (settings.notificationFajr, settings.preNotificationFajr)
+        case "sunrise":
+            return (settings.notificationSunrise, settings.preNotificationSunrise)
+        case "dhuhr":
+            return (settings.notificationDhuhr, settings.preNotificationDhuhr)
+        case "asr":
+            return (settings.notificationAsr, settings.preNotificationAsr)
+        case "maghrib":
+            return (settings.notificationMaghrib, settings.preNotificationMaghrib)
+        case "isha":
+            return (settings.notificationIsha, settings.preNotificationIsha)
+        default:
+            return nil
         }
     }
 }

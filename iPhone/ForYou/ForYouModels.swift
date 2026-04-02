@@ -71,6 +71,7 @@ struct ForYouDailyPlan: Identifiable, Codable {
     let locationLine: String?
     let sourceLine: String?
     let segments: [ForYouDaySegment]
+    let timelineEntries: [ForYouTimelineEntry]
     let isPremiumPreview: Bool
     let personalizationReason: String?
 }
@@ -97,8 +98,35 @@ struct ForYouPrayerTimeline {
     let asr: Date?
     let maghrib: Date?
     let isha: Date?
+    let prayers: [Prayer]
     let locationLine: String?
     let sourceLine: String?
+}
+
+enum ForYouTimelineEntryKind: String, Codable {
+    case prayer
+    case zikir
+}
+
+struct ForYouTimelineRecommendation: Codable {
+    let title: String
+    let arabicText: String?
+    let reference: String?
+    let shortDescription: String
+}
+
+struct ForYouTimelineEntry: Identifiable, Codable {
+    let id: String
+    let kind: ForYouTimelineEntryKind
+    let momentType: ForYouMomentType
+    let time: Date
+    let hourBucket: Int
+    let title: String
+    let subtitle: String
+    let icon: String
+    let arabicText: String?
+    let reference: String?
+    let recommendation: ForYouTimelineRecommendation?
 }
 
 struct ForYouContentTemplate: Identifiable {
