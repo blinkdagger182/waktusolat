@@ -619,75 +619,107 @@ private struct ForYouSummaryHeader: View {
     let highlightedEntry: ForYouTimelineEntry?
 
     var body: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: highlightedEntry?.icon ?? "sunrise")
-                        .font(.system(size: 28, weight: .regular))
-                        .foregroundStyle(ForYouPalette.ink)
+        GeometryReader { geometry in
+            let shellInset: CGFloat = 5
+            let panelSpacing: CGFloat = 5
+            let panelHeight = geometry.size.height - (shellInset * 2)
+            let availableWidth = geometry.size.width - (shellInset * 2)
+            let rightWidth = floor((availableWidth - panelSpacing) * 0.43)
+            let leftWidth = availableWidth - panelSpacing - rightWidth
+            let smallPanelHeight = floor((panelHeight - panelSpacing) / 2)
 
-                    Text(highlightedEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
-                        .font(.system(size: 20, weight: .medium, design: .rounded))
-                        .foregroundStyle(ForYouPalette.ink)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
+            HStack(spacing: panelSpacing) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .top, spacing: 7) {
+                        Image(systemName: highlightedEntry?.icon ?? "sunrise")
+                            .font(.system(size: 22, weight: .regular))
+                            .foregroundStyle(ForYouPalette.ink)
+                            .frame(width: 34, height: 34, alignment: .topLeading)
+
+                        Text(highlightedEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .padding(.top, 1)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(shortWeekday)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+
+                        Text(plan.locationLine ?? "Kuala Lumpur")
+                            .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                    }
                 }
-
-                Text(shortWeekday)
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.ink)
-
-                Text(plan.locationLine ?? "Kuala Lumpur")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.secondaryInk)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(ForYouPalette.canvas)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.black, lineWidth: 2.5)
-                    )
-            )
-
-            VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: highlightedEntry?.momentType == .night ? "moon.stars" : "sun.max")
-                        .font(.system(size: 18, weight: .medium))
-                    Text(nextTime)
-                        .font(.system(size: 22, weight: .medium, design: .rounded))
-                        .minimumScaleFactor(0.8)
-                }
-                .foregroundStyle(ForYouPalette.ink)
-                .frame(maxWidth: .infinity, minHeight: 42)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
+                .frame(width: leftWidth, height: panelHeight, alignment: .topLeading)
                 .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(ForYouPalette.accentSky)
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(Color(red: 0.83, green: 0.83, blue: 0.83))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(Color.black, lineWidth: 2.5)
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .stroke(Color.black, lineWidth: 2)
                         )
                 )
 
-                HStack(spacing: 8) {
-                    Image(systemName: "cloud.fill")
-                        .font(.system(size: 18, weight: .medium))
-                    Text(weatherText)
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .minimumScaleFactor(0.85)
+                VStack(spacing: panelSpacing) {
+                    HStack(spacing: 7) {
+                        Image(systemName: highlightedEntry?.momentType == .night ? "moon.stars" : "sun.max")
+                            .font(.system(size: 15, weight: .medium))
+
+                        Text(nextTime)
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.62)
+                    }
+                    .foregroundStyle(ForYouPalette.ink)
+                    .frame(width: rightWidth, height: smallPanelHeight)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(ForYouPalette.accentSky)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                    .stroke(Color.black, lineWidth: 2)
+                            )
+                    )
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "cloud.fill")
+                            .font(.system(size: 15, weight: .medium))
+
+                        Text(weatherText)
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: rightWidth, height: smallPanelHeight, alignment: .center)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(ForYouPalette.darkTile)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                    .stroke(Color.black, lineWidth: 2)
+                            )
+                    )
                 }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 42)
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(ForYouPalette.darkTile)
-                )
             }
-            .frame(width: 118)
+            .padding(shellInset)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.white.opacity(0.97))
+        )
+        .frame(maxWidth: .infinity, minHeight: 110, maxHeight: 110, alignment: .topLeading)
     }
 
     private var shortWeekday: String {
@@ -700,7 +732,7 @@ private struct ForYouSummaryHeader: View {
     }
 
     private var weatherText: String {
-        "--"
+        "30°"
     }
 }
 
