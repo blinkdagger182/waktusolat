@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 private enum ForYouPalette {
     static let canvas = Color(red: 0.93, green: 0.93, blue: 0.94)
@@ -9,6 +10,10 @@ private enum ForYouPalette {
     static let secondaryInk = Color.black.opacity(0.58)
     static let accentSky = Color(red: 0.61, green: 0.83, blue: 0.93)
     static let darkTile = Color(red: 0.23, green: 0.26, blue: 0.30)
+    // Prayer tab strip colors
+    static let tabWirid = Color(red: 0x91/255, green: 0xcd/255, blue: 0xe1/255)
+    static let tabDoa   = Color(red: 0x00/255, green: 0x35/255, blue: 0x66/255)
+    static let tabExtra = Color(red: 0xf7/255, green: 0x45/255, blue: 0x4d/255)
 }
 
 private enum ForYouFormatters {
@@ -379,27 +384,11 @@ private struct ForYouTimelineEntryView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: isCompact ? 8 : 10) {
-            VStack(spacing: 0) {
-                Text(timeText)
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.ink)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, isCompact ? 6 : 7)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke, lineWidth: 1)
-                            )
-                    )
-
-                RoundedRectangle(cornerRadius: 1, style: .continuous)
-                    .fill(isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke)
-                    .frame(width: 2)
-                    .frame(maxHeight: .infinity)
-                    .padding(.top, isCompact ? 4 : 6)
-            }
+            ForYouTimelineRailView(
+                entry: entry,
+                isFocused: isFocused,
+                isCompact: isCompact
+            )
 
             VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
                 HStack(alignment: .top, spacing: 10) {
@@ -498,6 +487,453 @@ private struct ForYouTimelineEntryView: View {
 
     private var timeText: String {
         ForYouFormatters.shortTime.string(from: entry.time)
+    }
+}
+
+private struct ForYouTimelineRailView: View {
+    let entry: ForYouTimelineEntry
+    let isFocused: Bool
+    let isCompact: Bool
+
+    @EnvironmentObject private var settings: Settings
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(ForYouFormatters.shortTime.string(from: entry.time))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(ForYouPalette.ink)
+                .padding(.horizontal, 12)
+                .padding(.vertical, isCompact ? 6 : 7)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke, lineWidth: 1)
+                        )
+                )
+
+            RoundedRectangle(cornerRadius: 1, style: .continuous)
+                .fill(isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke)
+                .frame(width: 2)
+                .frame(maxHeight: .infinity)
+                .padding(.top, isCompact ? 4 : 6)
+        }
+    }
+}
+
+private struct ForYouPrayerTimelineEntryView: View {
+    let entry: ForYouTimelineEntry
+    let isFocused: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            ForYouTimelineRailView(
+                entry: entry,
+                isFocused: isFocused,
+                isCompact: false
+            )
+
+            ForYouPrayerStackedCards(entry: entry)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Prayer expandable tabs
+
+private enum ForYouPrayerTab: String, CaseIterable {
+    case wirid = "Wirid"
+    case doa   = "Doa"
+
+    var color: Color {
+        switch self {
+        case .wirid: return ForYouPalette.tabWirid
+        case .doa:   return ForYouPalette.tabDoa
+        }
+    }
+
+    var textColor: Color {
+        switch self {
+        case .wirid: return Color.black.opacity(0.85)
+        case .doa:   return Color.white
+        }
+    }
+}
+
+// Each tab card slides up behind the card above it by this amount,
+// so only the label strip peeks out at the bottom.
+private let tabCardOverlap: CGFloat = 22
+private let tabPeekHeight: CGFloat = 28
+
+private struct ForYouPrayerStackedCards: View {
+    let entry: ForYouTimelineEntry
+    @State private var expandedTab: ForYouPrayerTab? = nil
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForYouTimelineEntryContentCard(entry: entry)
+                .zIndex(10)
+
+            ForEach(Array(ForYouPrayerTab.allCases.enumerated()), id: \.element) { index, tab in
+                tabCard(tab: tab, index: index)
+                    .padding(.top, -tabCardOverlap)
+                    .zIndex(Double(ForYouPrayerTab.allCases.count - index))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tabCard(tab: ForYouPrayerTab, index: Int) -> some View {
+        let isExpanded = expandedTab == tab
+
+        VStack(spacing: 0) {
+            Color.clear.frame(height: tabCardOverlap)
+
+            Button {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
+                    expandedTab = isExpanded ? nil : tab
+                }
+            } label: {
+                HStack(spacing: 0) {
+                    Text(tab.rawValue)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(tab.textColor)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .frame(height: tabPeekHeight)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background(tab.color)
+
+            if isExpanded {
+                ForYouPrayerTabPanel(entry: entry, tab: tab)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .background(tab.color)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+// The card-only portion of ForYouTimelineEntryView (right column content)
+// used by ForYouPrayerStackedCards so the time pill / connector stays separate
+private struct ForYouTimelineEntryContentCard: View {
+    let entry: ForYouTimelineEntry
+    @EnvironmentObject private var settings: Settings
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Label {
+                    Text(entry.title)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .lineLimit(1)
+                } icon: {
+                    Image(systemName: entry.icon)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(entry.momentType.tint)
+                }
+                Spacer(minLength: 8)
+                Text(entry.kind.displayTitle)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+            }
+
+            Text(entry.subtitle)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(ForYouPalette.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let arabicText = entry.arabicText {
+                Text(arabicText)
+                    .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
+                    .foregroundStyle(ForYouPalette.ink)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .lineSpacing(3)
+                    .minimumScaleFactor(0.8)
+            }
+
+            if let recommendation = entry.recommendation {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(isMalayAppLanguage() ? "Sesuai untuk waktu ini" : "Fits this time")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                    Text(recommendation.title)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .lineLimit(1)
+                    if let arabicText = recommendation.arabicText {
+                        Text(arabicText)
+                            .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
+                            .foregroundStyle(ForYouPalette.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+                    }
+                    Text(recommendation.shortDescription)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let reference = recommendation.reference {
+                        Text(reference)
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.secondaryInk)
+                    }
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(.white.opacity(0.75))
+                )
+            }
+
+            if let reference = entry.reference {
+                Text(reference)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+                    .lineLimit(1)
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(ForYouPalette.softCard)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(ForYouPalette.stroke, lineWidth: 1)
+                )
+        )
+    }
+}
+
+private struct ForYouPrayerTabPanel: View {
+    let entry: ForYouTimelineEntry
+    let tab: ForYouPrayerTab
+
+    @StateObject private var player = ForYouAudioPlayer()
+    @EnvironmentObject private var settings: Settings
+
+    private var content: (arabic: String, transliteration: String, meaning: String) {
+        switch tab {
+        case .wirid:
+            return wiridContent(for: entry.title)
+        case .doa:
+            return doaContent(for: entry.title)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(isMalayAppLanguage() ? "Sesuai untuk waktu ini" : "Fits this time")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+
+                Text(contentTitle)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+                    .lineLimit(1)
+
+                Text(content.arabic)
+                    .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
+                    .foregroundStyle(ForYouPalette.ink)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .lineSpacing(4)
+
+                Text(content.meaning)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider().opacity(0.35)
+
+                Text(content.transliteration)
+                    .font(.system(size: 11, weight: .regular, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 10) {
+                    Button {
+                        player.togglePlayback(for: audioFileName(tab: tab, prayer: entry.title))
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(tab.color)
+
+                            Text(player.isPlaying ? (isMalayAppLanguage() ? "Berhenti" : "Pause") : (isMalayAppLanguage() ? "Dengar" : "Play"))
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundStyle(ForYouPalette.secondaryInk)
+                        }
+                    }
+
+                    Spacer()
+
+                    if player.duration > 0 {
+                        Text(player.progressText)
+                            .font(.system(size: 10, weight: .medium, design: .rounded).monospacedDigit())
+                            .foregroundStyle(ForYouPalette.secondaryInk)
+                    }
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.white.opacity(0.95))
+            )
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
+        }
+        .onDisappear { player.stop() }
+    }
+
+    private var contentTitle: String {
+        switch tab {
+        case .wirid:
+            return isMalayAppLanguage() ? "Wirid selepas solat" : "Post-prayer wirid"
+        case .doa:
+            return isMalayAppLanguage() ? "Doa selepas solat" : "Post-prayer dua"
+        }
+    }
+
+    private func audioFileName(tab: ForYouPrayerTab, prayer: String) -> String {
+        let base = prayer.lowercased().replacingOccurrences(of: " ", with: "_")
+        return "\(base)_\(tab.rawValue.lowercased())"
+    }
+
+    private func wiridContent(for prayer: String) -> (arabic: String, transliteration: String, meaning: String) {
+        let p = prayer.lowercased()
+        if p.contains("fajr") || p.contains("subuh") {
+            return (
+                "أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ",
+                "Astaghfirullaah wa atuubu ilayh",
+                "I seek forgiveness from Allah and repent to Him. (×100)"
+            )
+        } else if p.contains("dhuhr") || p.contains("zuhur") {
+            return (
+                "سُبْحَانَ اللهِ وَبِحَمْدِهِ",
+                "Subhaanallaahi wa bihamdih",
+                "Glory be to Allah and His is the praise. (×100)"
+            )
+        } else if p.contains("asr") {
+            return (
+                "لَا إِلٰهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ",
+                "Laa ilaaha illallaahu wahdahu laa shareeka lah",
+                "None has the right to be worshipped except Allah alone. (×100)"
+            )
+        } else if p.contains("maghrib") {
+            return (
+                "اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ",
+                "Allaahumma antas-salaamu wa minkas-salaam",
+                "O Allah, You are Peace and from You is peace. (×3)"
+            )
+        } else {
+            return (
+                "سُبْحَانَ اللهِ وَالْحَمْدُ لِلَّهِ وَاللهُ أَكْبَرُ",
+                "Subhaanallaah, alhamdu lillaah, Allaahu akbar",
+                "Glory be to Allah, Praise be to Allah, Allah is the Greatest. (×33 each)"
+            )
+        }
+    }
+
+    private func doaContent(for prayer: String) -> (arabic: String, transliteration: String, meaning: String) {
+        let p = prayer.lowercased()
+        if p.contains("fajr") || p.contains("subuh") {
+            return (
+                "اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا",
+                "Allaahumma bika asbahnaa wa bika amsaynaa",
+                "O Allah, by Your grace we enter the morning and by Your grace we enter the evening."
+            )
+        } else if p.contains("dhuhr") || p.contains("zuhur") {
+            return (
+                "رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي",
+                "Rabbish-rah lee sadree wa yassir lee amree",
+                "My Lord, expand my chest and ease my affairs."
+            )
+        } else if p.contains("asr") {
+            return (
+                "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ",
+                "Allaahumma innee a'oodhu bika minal-hammi wal-hazan",
+                "O Allah, I seek refuge in You from worry and grief."
+            )
+        } else if p.contains("maghrib") {
+            return (
+                "اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ أَصْبَحْنَا",
+                "Allaahumma bika amsaynaa wa bika asbahnaa",
+                "O Allah, by Your grace we enter the evening and by Your grace we enter the morning."
+            )
+        } else {
+            return (
+                "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي",
+                "Allaahumma innaka 'afuwwun tuhibbul-'afwa fa'fu 'annee",
+                "O Allah, You are Pardoning and love pardon, so pardon me."
+            )
+        }
+    }
+}
+
+@MainActor
+private final class ForYouAudioPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    @Published var isPlaying = false
+    @Published var progress: Double = 0
+    @Published var duration: Double = 0
+
+    private var player: AVAudioPlayer?
+    private var timer: Timer?
+
+    var progressText: String {
+        let elapsed = Int(progress * duration)
+        let total   = Int(duration)
+        return "\(format(elapsed)) / \(format(total))"
+    }
+
+    func togglePlayback(for fileName: String) {
+        if isPlaying { stop(); return }
+
+        guard let url = Bundle.main.url(forResource: fileName, withExtension: "mp3") else {
+            // No audio file bundled yet — placeholder
+            return
+        }
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            player = try AVAudioPlayer(contentsOf: url)
+            player?.delegate = self
+            player?.play()
+            duration = player?.duration ?? 0
+            isPlaying = true
+            startTimer()
+        } catch {}
+    }
+
+    func stop() {
+        player?.stop()
+        player = nil
+        isPlaying = false
+        progress = 0
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func startTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            guard let self, let p = self.player else { return }
+            self.progress = p.duration > 0 ? p.currentTime / p.duration : 0
+        }
+    }
+
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        Task { @MainActor in stop() }
+    }
+
+    private func format(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 }
 
@@ -912,10 +1348,20 @@ private struct ForYouDayView: View {
             }
 
             ForEach(page) { entry in
-                ForYouTimelineEntryView(
-                    entry: entry,
-                    isFocused: entry.id == focusedEntryID
-                )
+                VStack(alignment: .leading, spacing: 0) {
+                    if entry.kind == .prayer {
+                        ForYouPrayerTimelineEntryView(
+                            entry: entry,
+                            isFocused: entry.id == focusedEntryID
+                        )
+                    } else {
+                        ForYouTimelineEntryView(
+                            entry: entry,
+                            isFocused: entry.id == focusedEntryID
+                        )
+                    }
+                }
+                .id(entry.id)
             }
         }
         .padding(.bottom, 16)
@@ -1019,14 +1465,25 @@ struct ForYouRootView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    if let todayItem = currentDayViewModel {
-                        ForYouDayView(
-                            viewModel: todayItem,
-                            completedIDs: viewModel.completedIDs,
-                            onToggleCompletion: viewModel.toggleCompletion(for:)
-                        )
-                        .frame(maxWidth: .infinity)
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        if let todayItem = currentDayViewModel {
+                            ForYouDayView(
+                                viewModel: todayItem,
+                                completedIDs: viewModel.completedIDs,
+                                onToggleCompletion: viewModel.toggleCompletion(for:)
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .onAppear {
+                        if let id = currentDayViewModel?.focusedEntryID {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                withAnimation(.easeInOut(duration: 0.5)) {
+                                    proxy.scrollTo(id, anchor: .top)
+                                }
+                            }
+                        }
                     }
                 }
             }
