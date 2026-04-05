@@ -379,6 +379,7 @@ private struct ForYouTimelineEntryView: View {
     let entry: ForYouTimelineEntry
     let isFocused: Bool
     var isCompact: Bool = false
+    var extendsToNext: Bool = true
 
     @EnvironmentObject private var settings: Settings
 
@@ -387,7 +388,8 @@ private struct ForYouTimelineEntryView: View {
             ForYouTimelineRailView(
                 entry: entry,
                 isFocused: isFocused,
-                isCompact: isCompact
+                isCompact: isCompact,
+                extendsToNext: extendsToNext
             )
 
             VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
@@ -494,8 +496,11 @@ private struct ForYouTimelineRailView: View {
     let entry: ForYouTimelineEntry
     let isFocused: Bool
     let isCompact: Bool
+    let extendsToNext: Bool
 
     @EnvironmentObject private var settings: Settings
+
+    private var connectorGapBridge: CGFloat { extendsToNext ? 12 : 0 }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -518,6 +523,7 @@ private struct ForYouTimelineRailView: View {
                 .frame(width: 2)
                 .frame(maxHeight: .infinity)
                 .padding(.top, isCompact ? 4 : 6)
+                .padding(.bottom, connectorGapBridge)
         }
     }
 }
@@ -525,13 +531,15 @@ private struct ForYouTimelineRailView: View {
 private struct ForYouPrayerTimelineEntryView: View {
     let entry: ForYouTimelineEntry
     let isFocused: Bool
+    let extendsToNext: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             ForYouTimelineRailView(
                 entry: entry,
                 isFocused: isFocused,
-                isCompact: false
+                isCompact: false,
+                extendsToNext: extendsToNext
             )
 
             ForYouPrayerStackedCards(entry: entry)
@@ -572,13 +580,16 @@ private struct ForYouPrayerStackedCards: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ForYouTimelineEntryContentCard(entry: entry)
-                .zIndex(10)
+            if expandedTab == nil {
+                ForYouTimelineEntryContentCard(entry: entry)
+                    .zIndex(10)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+            }
 
-            ForEach(Array(ForYouPrayerTab.allCases.enumerated()), id: \.element) { index, tab in
+            ForEach(Array(orderedTabs.enumerated()), id: \.element) { index, tab in
                 tabCard(tab: tab, index: index)
-                    .padding(.top, -tabCardOverlap)
-                    .zIndex(Double(ForYouPrayerTab.allCases.count - index))
+                    .padding(.top, topPadding(for: index))
+                    .zIndex(zIndex(for: tab, index: index))
             }
         }
     }
@@ -586,9 +597,10 @@ private struct ForYouPrayerStackedCards: View {
     @ViewBuilder
     private func tabCard(tab: ForYouPrayerTab, index: Int) -> some View {
         let isExpanded = expandedTab == tab
+        let hiddenHeight = isExpanded ? 0 : tabCardOverlap
 
         VStack(spacing: 0) {
-            Color.clear.frame(height: tabCardOverlap)
+            Color.clear.frame(height: hiddenHeight)
 
             Button {
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
@@ -615,6 +627,27 @@ private struct ForYouPrayerStackedCards: View {
         }
         .background(tab.color)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var orderedTabs: [ForYouPrayerTab] {
+        guard let expandedTab else { return ForYouPrayerTab.allCases }
+        return [expandedTab] + ForYouPrayerTab.allCases.filter { $0 != expandedTab }
+    }
+
+    private func topPadding(for index: Int) -> CGFloat {
+        if expandedTab == nil {
+            return -tabCardOverlap
+        }
+
+        return index == 0 ? 0 : -tabCardOverlap
+    }
+
+    private func zIndex(for tab: ForYouPrayerTab, index: Int) -> Double {
+        if let expandedTab, expandedTab == tab {
+            return 20
+        }
+
+        return Double(ForYouPrayerTab.allCases.count - index)
     }
 }
 
@@ -1352,12 +1385,14 @@ private struct ForYouDayView: View {
                     if entry.kind == .prayer {
                         ForYouPrayerTimelineEntryView(
                             entry: entry,
-                            isFocused: entry.id == focusedEntryID
+                            isFocused: entry.id == focusedEntryID,
+                            extendsToNext: entry.id != page.last?.id
                         )
                     } else {
                         ForYouTimelineEntryView(
                             entry: entry,
-                            isFocused: entry.id == focusedEntryID
+                            isFocused: entry.id == focusedEntryID,
+                            extendsToNext: entry.id != page.last?.id
                         )
                     }
                 }
