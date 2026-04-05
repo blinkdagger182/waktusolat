@@ -5,6 +5,17 @@ struct ForYouDayViewModel: Identifiable {
     let isLocked: Bool
 
     var id: String { plan.id }
+
+    /// The entry ID to auto-scroll to — the last entry whose time has passed, or the first.
+    var focusedEntryID: String? {
+        let entries = plan.timelineEntries
+        guard !entries.isEmpty else { return nil }
+        if Calendar.current.isDateInToday(plan.date) {
+            let now = Date()
+            return (entries.last(where: { $0.time <= now }) ?? entries.first)?.id
+        }
+        return entries.first?.id
+    }
 }
 
 @MainActor
