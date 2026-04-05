@@ -1,134 +1,64 @@
 import SwiftUI
 
 struct LaunchScreen: View {
-    @EnvironmentObject var settings: Settings
-
     @Binding var isLaunching: Bool
+    @Environment(\.colorScheme) var colorScheme
 
-    @State private var size = 0.8
-    @State private var opacity = 0.5
-    @State private var gradientSize: CGFloat = 0.0
+    @State private var phase: SplashPhase = .hidden
 
-    @Environment(\.colorScheme) var systemColorScheme
-    @Environment(\.customColorScheme) var customColorScheme
-
-    var currentColorScheme: ColorScheme {
-        if let colorScheme = settings.colorScheme {
-            return colorScheme
-        } else {
-            return systemColorScheme
-        }
-    }
-
-    var backgroundColor: Color {
-        switch currentColorScheme {
-        case .light:
-            return Color.white
-        case .dark:
-            return Color.black
-        @unknown default:
-            return Color.white
-        }
-    }
-
-    var gradient: LinearGradient {
-        LinearGradient(
-            colors: [settings.accentColor.color.opacity(0.3), settings.accentColor.color.opacity(0.5)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    private var bgColor: Color {
+        colorScheme == .dark
+            ? Color(red: 0.08, green: 0.08, blue: 0.08)
+            : Color(red: 0.92, green: 0.92, blue: 0.92)
     }
 
     var body: some View {
         ZStack {
-            backgroundColor
-                .ignoresSafeArea()
+            bgColor.ignoresSafeArea()
 
-            gradient
-                .clipShape(Circle())
-                .scaleEffect(gradientSize)
+            WaktuFloatingWordsBackground()
+                .opacity(phase == .visible ? 1 : 0)
+                .animation(.easeIn(duration: 1.2), value: phase)
 
-            VStack {
-                VStack {
-                    #if !os(watchOS)
-                    Text("الأذان")
-                        .font(.custom(settings.fontArabic, size: 30))
-                        .foregroundColor(settings.accentColor.color)
-                        .padding(.bottom, -1)
-                    #endif
+            VStack(spacing: 0) {
+                Spacer()
 
-                    Image("CurrentAppIcon")
-                        .resizable()
-                        .scaledToFit()
-                        .cornerRadius(24)
-                        .frame(width: 150, height: 150)
-                        .padding()
+                WaktuHeroIconView()
+                    .scaleEffect(phase == .hidden ? 0.72 : 1.0)
+                    .opacity(phase == .hidden ? 0 : 1)
+                    .animation(
+                        .spring(response: 0.72, dampingFraction: 0.68).delay(0.15),
+                        value: phase
+                    )
+                    .padding(.bottom, 28)
 
-                    #if !os(watchOS)
-                    Text("Waktu Solat")
-                        .font(.custom("Avenir", size: 30))
-                        .foregroundColor(settings.accentColor.color)
-                        .padding(.top, -1)
-                    #endif
-                }
-                .foregroundColor(settings.accentColor.color)
-                .scaleEffect(size)
-                .opacity(opacity)
+                Text("Waktu")
+                    .font(.system(size: 42, weight: .semibold, design: .serif))
+                    .foregroundStyle(.primary)
+                    .offset(y: phase == .hidden ? 18 : 0)
+                    .opacity(phase == .hidden ? 0 : 1)
+                    .animation(
+                        .spring(response: 0.6, dampingFraction: 0.75).delay(0.38),
+                        value: phase
+                    )
+
+                Spacer()
             }
         }
         .onAppear {
-            Task { @MainActor in
-                triggerHapticFeedback(.soft)
-
-                withAnimation(.easeInOut(duration: 0.5)) {
-                    size = 0.9
-                    opacity = 1.0
-                    gradientSize = 3.0
-                }
-
-                try? await Task.sleep(nanoseconds: 800_000_000)
-
-                triggerHapticFeedback(.soft)
-                withAnimation(.easeOut(duration: 0.5)) {
-                    size = 0.8
-                    gradientSize = 0.0
-                }
-
-                try? await Task.sleep(nanoseconds: 700_000_000)
-
-                triggerHapticFeedback(.soft)
-                withAnimation {
+            phase = .visible
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+                withAnimation(.easeInOut(duration: 0.45)) { phase = .hidden }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     isLaunching = false
                 }
             }
         }
     }
-    
-    private func triggerHapticFeedback(_ feedbackType: HapticFeedbackType) {
-        if settings.hapticOn {
-            #if !os(watchOS)
-            switch feedbackType {
-            case .soft:
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-            case .light:
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            case .medium:
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            case .heavy:
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            }
-            #else
-            if settings.hapticOn { WKInterfaceDevice.current().play(.click) }
-            #endif
-        }
-    }
-
-    enum HapticFeedbackType {
-        case soft, light, medium, heavy
-    }
 }
+
+private enum SplashPhase { case hidden, visible }
 
 #Preview {
     LaunchScreen(isLaunching: .constant(true))
-        .environmentObject(Settings.shared)
 }

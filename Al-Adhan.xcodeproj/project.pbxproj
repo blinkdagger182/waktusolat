@@ -36,6 +36,8 @@
 		72728CAE2B3D198300FAA3B3 /* 99_Names_Of_Allah.json in Resources */ = {isa = PBXBuildFile; fileRef = 72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */; };
 		72728CB12B3D19CF00FAA3B3 /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */; };
 		72728CB22B3D19CF00FAA3B3 /* LaunchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */; };
+		AA000001BRAND00000000001A /* WaktuBrandComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001BRAND00000000001B /* WaktuBrandComponents.swift */; };
+		AA000002PERM000000000001A /* WaktuPermissionOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */; };
 		72728CB42B3D19EE00FAA3B3 /* AdhanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB32B3D19EE00FAA3B3 /* AdhanView.swift */; };
 		72728CB92B3D1A6E00FAA3B3 /* QiblaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB82B3D1A6E00FAA3B3 /* QiblaView.swift */; };
 		72728CBB2B3D1A7A00FAA3B3 /* PrayerCountdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CBA2B3D1A7A00FAA3B3 /* PrayerCountdown.swift */; };
@@ -187,6 +189,8 @@
 		72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = 99_Names_Of_Allah.json; sourceTree = "<group>"; };
 		72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
 		72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LaunchScreen.swift; sourceTree = "<group>"; };
+		AA000001BRAND00000000001B /* WaktuBrandComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuBrandComponents.swift; sourceTree = "<group>"; };
+		AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuPermissionOnboarding.swift; sourceTree = "<group>"; };
 		72728CB32B3D19EE00FAA3B3 /* AdhanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanView.swift; sourceTree = "<group>"; };
 		72728CB52B3D1A0E00FAA3B3 /* Entitlements.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Entitlements.entitlements; sourceTree = "<group>"; };
 		72728CB82B3D1A6E00FAA3B3 /* QiblaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QiblaView.swift; sourceTree = "<group>"; };
@@ -368,6 +372,8 @@
 				72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */,
 				722BBD372F0997DB004F3659 /* AdhanSheet.swift */,
 				72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */,
+				AA000001BRAND00000000001B /* WaktuBrandComponents.swift */,
+				AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */,
 				72CCAE692D42CE4800871A6A /* Helpers */,
 				B21000042FA1000100ABCDE0 /* ForYou */,
 				72728CB72B3D1A5F00FAA3B3 /* Adhan */,
@@ -743,6 +749,8 @@
 				722BBD382F0997DB004F3659 /* AdhanSheet.swift in Sources */,
 				72CCAE642D42CDEB00871A6A /* ConditionalStyle.swift in Sources */,
 				72728CB12B3D19CF00FAA3B3 /* SplashScreen.swift in Sources */,
+				AA000001BRAND00000000001A /* WaktuBrandComponents.swift in Sources */,
+				AA000002PERM000000000001A /* WaktuPermissionOnboarding.swift in Sources */,
 				728E2EEB2E6E048300F2C24C /* SettingsAdhan.swift in Sources */,
 				72574CCC2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */,
 				72728CB92B3D1A6E00FAA3B3 /* QiblaView.swift in Sources */,
