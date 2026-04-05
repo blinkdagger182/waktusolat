@@ -193,7 +193,14 @@ struct PrayersProvider: TimelineProvider {
         if let nextIdx = prayers.firstIndex(where: { $0.time > now }) {
             return (nextIdx == 0 ? prayers.last : prayers[nextIdx - 1], prayers[nextIdx])
         }
-        return (prayers.last, prayers.first)
+        // Past last prayer — compute tomorrow's Fajr so the timer counts down correctly
+        let tomorrowFajr: Prayer?
+        if let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: now) {
+            tomorrowFajr = settings.getPrayerTimes(for: tomorrow)?.first
+        } else {
+            tomorrowFajr = nil
+        }
+        return (prayers.last, tomorrowFajr ?? prayers.first)
     }
 
     private func nextDisplayTransitionDate(

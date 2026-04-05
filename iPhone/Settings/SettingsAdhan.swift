@@ -249,10 +249,17 @@ extension Settings {
         #endif
 
         switch status {
-        case .authorizedAlways, .authorizedWhenInUse:
+        case .authorizedAlways:
             showLocationAlert = false
             beginLocationRefresh(using: mgr)
-            
+
+        case .authorizedWhenInUse:
+            showLocationAlert = false
+            beginLocationRefresh(using: mgr)
+            // Immediately request the Always upgrade — iOS will show a second prompt:
+            // "Change to Always Allow" or "Keep Only While Using"
+            mgr.requestAlwaysAuthorization()
+
         case .denied where !locationNeverAskAgain:
             showLocationAlert = true
 
@@ -318,8 +325,13 @@ extension Settings {
 
         switch Self.locationManager.authorizationStatus {
         case .notDetermined:
+            // Step 1: request whenInUse first — iOS requires this before Always can be requested.
+            // Step 2 (upgrade to Always) is triggered in didChangeAuthorization when .authorizedWhenInUse is received.
             Self.locationManager.requestWhenInUseAuthorization()
-        case .authorizedAlways, .authorizedWhenInUse:
+        case .authorizedWhenInUse:
+            // Already have whenInUse — request the Always upgrade now
+            Self.locationManager.requestAlwaysAuthorization()
+        case .authorizedAlways:
             #if os(iOS)
             configurePassiveLocationMonitoring()
             #endif

@@ -74,12 +74,12 @@ struct WaktuPermissionOnboarding: View {
             }
 
             VStack(spacing: 12) {
-                Text("Know your\nprayer times")
+                Text("Prayer times,\nwherever you are")
                     .font(.system(size: 32, weight: .semibold, design: .serif))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.primary)
 
-                Text("Waktu uses your location only to calculate\naccurate prayer times for where you are.")
+                Text("Waktu uses your location to calculate precise prayer times. Your location never leaves your device.")
                     .font(.system(size: 15, weight: .regular))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Color.primary.opacity(0.58))
@@ -87,11 +87,17 @@ struct WaktuPermissionOnboarding: View {
             }
 
             if locationStatus == .denied || locationStatus == .restricted {
-                Label("Location access denied. Enable it in Settings.", systemImage: "exclamationmark.triangle")
+                Label("Location access denied — enable it in Settings to get prayer times.", systemImage: "exclamationmark.triangle")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.orange.opacity(0.85))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 28)
+            } else if locationStatus == .notDetermined {
+                Text("When prompted, choose **Always Allow** so Waktu can quietly refresh your prayer times as you move — without needing to open the app first.")
+                    .font(.system(size: 12, weight: .regular))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Color.primary.opacity(0.42))
+                    .padding(.horizontal, 32)
             }
         }
     }
@@ -144,8 +150,9 @@ struct WaktuPermissionOnboarding: View {
         switch currentSlide {
         case 0:
             switch locationStatus {
-            case .notDetermined: return "Allow Location"
-            case .authorizedWhenInUse, .authorizedAlways: return "Continue"
+            case .notDetermined: return "Allow Location Access"
+            case .authorizedAlways: return "Continue"
+            case .authorizedWhenInUse: return "Continue"
             default: return "Continue Anyway"
             }
         default:

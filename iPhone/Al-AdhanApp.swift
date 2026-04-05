@@ -581,9 +581,18 @@ struct AlAdhanApp: App {
         guard !settings.firstLaunch else { return }
         guard !showAdhanSheet else { return }
         guard !showDailyQuranWidgetIntro else { return }
+        // Don't schedule while a marketing modal check is in flight — the check's defer block
+        // will call this function again once it knows whether a marketing modal will appear.
+        guard !isCheckingMarketingModal else { return }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             guard !didShowDailyQuranWidgetIntro else { return }
+            guard !isCheckingMarketingModal else { return }  // check started while we were waiting
+            guard !showMarketingModal else {
+                didShowDailyQuranWidgetIntro = true
+                return
+            }
+            guard !showAdhanSheet else { return }
             showDailyQuranWidgetIntro = true
         }
     }
@@ -598,13 +607,20 @@ struct AlAdhanApp: App {
     }
 
     private func checkForMarketingModalUpdate(force: Bool) async {
-        await MainActor.run {
+        // Deduplicate: if a check is already in flight, bail out immediately
+        let alreadyChecking = await MainActor.run { () -> Bool in
+            if isCheckingMarketingModal && !force { return true }
             isCheckingMarketingModal = true
+            return false
         }
+        guard !alreadyChecking else { return }
+
         defer {
             Task { @MainActor in
                 isCheckingMarketingModal = false
                 if !showMarketingModal {
+                    // Check is done and no marketing modal — now safe to show widget intro if needed
+                    presentDailyQuranWidgetIntroIfNeeded()
                     presentSupportPromoToastIfNeeded()
                 }
             }
@@ -620,7 +636,10 @@ struct AlAdhanApp: App {
         guard !revision.isEmpty else { return }
         guard revision != lastDismissedMarketingModalRevision else { return }
 
+        // Re-check after async work — state may have changed while the network request was in flight
         await MainActor.run {
+            guard !showMarketingModal else { return }
+            guard !showDailyQuranWidgetIntro else { return }
             marketingModalConfig = config
             marketingModalRevision = revision
             withAnimation(.easeInOut(duration: 0.2)) {
