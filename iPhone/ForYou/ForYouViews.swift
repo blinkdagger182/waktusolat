@@ -580,13 +580,14 @@ private struct ForYouPrayerStackedCards: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if expandedTab == nil {
-                ForYouTimelineEntryContentCard(entry: entry)
-                    .zIndex(10)
-                    .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
-            }
+            ForYouTimelineEntryContentCard(
+                entry: entry,
+                collapsed: expandedTab != nil
+            )
+            .zIndex(10)
+            .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
 
-            ForEach(Array(orderedTabs.enumerated()), id: \.element) { index, tab in
+            ForEach(Array(ForYouPrayerTab.allCases.enumerated()), id: \.element) { index, tab in
                 tabCard(tab: tab, index: index)
                     .padding(.top, topPadding(for: index))
                     .zIndex(zIndex(for: tab, index: index))
@@ -597,7 +598,7 @@ private struct ForYouPrayerStackedCards: View {
     @ViewBuilder
     private func tabCard(tab: ForYouPrayerTab, index: Int) -> some View {
         let isExpanded = expandedTab == tab
-        let hiddenHeight = isExpanded ? 0 : tabCardOverlap
+        let hiddenHeight = tabCardOverlap
 
         VStack(spacing: 0) {
             Color.clear.frame(height: hiddenHeight)
@@ -629,24 +630,11 @@ private struct ForYouPrayerStackedCards: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private var orderedTabs: [ForYouPrayerTab] {
-        guard let expandedTab else { return ForYouPrayerTab.allCases }
-        return [expandedTab] + ForYouPrayerTab.allCases.filter { $0 != expandedTab }
-    }
-
     private func topPadding(for index: Int) -> CGFloat {
-        if expandedTab == nil {
-            return -tabCardOverlap
-        }
-
-        return index == 0 ? 0 : -tabCardOverlap
+        return -tabCardOverlap
     }
 
     private func zIndex(for tab: ForYouPrayerTab, index: Int) -> Double {
-        if let expandedTab, expandedTab == tab {
-            return 20
-        }
-
         return Double(ForYouPrayerTab.allCases.count - index)
     }
 }
@@ -655,10 +643,11 @@ private struct ForYouPrayerStackedCards: View {
 // used by ForYouPrayerStackedCards so the time pill / connector stays separate
 private struct ForYouTimelineEntryContentCard: View {
     let entry: ForYouTimelineEntry
+    var collapsed: Bool = false
     @EnvironmentObject private var settings: Settings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: collapsed ? 6 : 8) {
             HStack(alignment: .top, spacing: 10) {
                 Label {
                     Text(entry.title)
@@ -679,9 +668,10 @@ private struct ForYouTimelineEntryContentCard: View {
             Text(entry.subtitle)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(ForYouPalette.secondaryInk)
+                .lineLimit(collapsed ? 1 : nil)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let arabicText = entry.arabicText {
+            if !collapsed, let arabicText = entry.arabicText {
                 Text(arabicText)
                     .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
                     .foregroundStyle(ForYouPalette.ink)
@@ -690,7 +680,7 @@ private struct ForYouTimelineEntryContentCard: View {
                     .minimumScaleFactor(0.8)
             }
 
-            if let recommendation = entry.recommendation {
+            if !collapsed, let recommendation = entry.recommendation {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(isMalayAppLanguage() ? "Sesuai untuk waktu ini" : "Fits this time")
                         .font(.system(size: 10, weight: .semibold, design: .rounded))
@@ -725,14 +715,14 @@ private struct ForYouTimelineEntryContentCard: View {
                 )
             }
 
-            if let reference = entry.reference {
+            if !collapsed, let reference = entry.reference {
                 Text(reference)
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(ForYouPalette.secondaryInk)
                     .lineLimit(1)
             }
         }
-        .padding(10)
+        .padding(collapsed ? 9 : 10)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(ForYouPalette.softCard)
