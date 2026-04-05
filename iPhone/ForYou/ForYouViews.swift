@@ -532,6 +532,8 @@ private struct ForYouPrayerTimelineEntryView: View {
     let entry: ForYouTimelineEntry
     let isFocused: Bool
     let extendsToNext: Bool
+    let selection: ForYouPrayerCardSelection
+    let onSelectionChange: (ForYouPrayerCardSelection) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -542,7 +544,11 @@ private struct ForYouPrayerTimelineEntryView: View {
                 extendsToNext: extendsToNext
             )
 
-            ForYouPrayerStackedCards(entry: entry)
+            ForYouPrayerStackedCards(
+                entry: entry,
+                selection: selection,
+                onSelectionChange: onSelectionChange
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -569,6 +575,27 @@ private enum ForYouPrayerTab: String, CaseIterable {
     }
 }
 
+private enum ForYouPrayerCardSelection: Equatable {
+    case main(String)
+    case tab(String, ForYouPrayerTab)
+
+    var entryID: String {
+        switch self {
+        case .main(let entryID), .tab(let entryID, _):
+            return entryID
+        }
+    }
+
+    var expandedTab: ForYouPrayerTab? {
+        switch self {
+        case .main:
+            return nil
+        case .tab(_, let tab):
+            return tab
+        }
+    }
+}
+
 // Each tab card slides up behind the card above it by this amount,
 // so only the label strip peeks out at the bottom.
 private let tabCardOverlap: CGFloat = 22
@@ -576,7 +603,16 @@ private let tabPeekHeight: CGFloat = 28
 
 private struct ForYouPrayerStackedCards: View {
     let entry: ForYouTimelineEntry
-    @State private var expandedTab: ForYouPrayerTab? = nil
+    let selection: ForYouPrayerCardSelection
+    let onSelectionChange: (ForYouPrayerCardSelection) -> Void
+
+    private var isActiveEntry: Bool {
+        selection.entryID == entry.id
+    }
+
+    private var expandedTab: ForYouPrayerTab? {
+        isActiveEntry ? selection.expandedTab : nil
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -605,7 +641,7 @@ private struct ForYouPrayerStackedCards: View {
 
             Button {
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
-                    expandedTab = isExpanded ? nil : tab
+                    onSelectionChange(isExpanded ? .main(entry.id) : .tab(entry.id, tab))
                 }
             } label: {
                 HStack(spacing: 0) {
@@ -1199,17 +1235,23 @@ private struct ForYouDayView: View {
     let viewModel: ForYouDayViewModel
     let completedIDs: Set<String>
     let onToggleCompletion: (String) -> Void
+    let selection: ForYouPrayerCardSelection?
+    let onSelectionChange: (ForYouPrayerCardSelection) -> Void
 
     @State private var selectedPageIndex: Int?
 
     init(
         viewModel: ForYouDayViewModel,
         completedIDs: Set<String>,
-        onToggleCompletion: @escaping (String) -> Void
+        onToggleCompletion: @escaping (String) -> Void,
+        selection: ForYouPrayerCardSelection?,
+        onSelectionChange: @escaping (ForYouPrayerCardSelection) -> Void
     ) {
         self.viewModel = viewModel
         self.completedIDs = completedIDs
         self.onToggleCompletion = onToggleCompletion
+        self.selection = selection
+        self.onSelectionChange = onSelectionChange
         _selectedPageIndex = State(initialValue: Self.resolveInitialPageIndex(for: viewModel.plan))
     }
 
@@ -1233,6 +1275,7 @@ private struct ForYouDayView: View {
                             .id(index)
                     }
                 }
+
             }
             .padding(.horizontal, 16)
             .padding(.top, 4)
@@ -1251,6 +1294,7 @@ private struct ForYouDayView: View {
                 }
                 .padding(.horizontal, 24)
             }
+
         }
         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
         .padding(.horizontal, 14)
@@ -1344,6 +1388,39 @@ private struct ForYouDayView: View {
         ForYouFormatters.weekday.string(from: viewModel.plan.date)
     }
 
+    private var prayerEntries: [ForYouTimelineEntry] {
+        viewModel.plan.timelineEntries.filter { $0.kind == .prayer }
+    }
+
+    private var defaultPrayerSelection: ForYouPrayerCardSelection? {
+        guard !prayerEntries.isEmpty else { return nil }
+
+        if let focusedEntryID, prayerEntries.contains(where: { $0.id == focusedEntryID }) {
+            return .main(focusedEntryID)
+        }
+
+        return prayerEntries.first.map { .main($0.id) }
+    }
+
+    private var prayerSelection: ForYouPrayerCardSelection? {
+        if let selection,
+           prayerCardSequence.contains(selection) {
+            return selection
+        }
+
+        return defaultPrayerSelection
+    }
+
+    private var prayerCardSequence: [ForYouPrayerCardSelection] {
+        prayerEntries.flatMap { entry in
+            [ForYouPrayerCardSelection.main(entry.id)] + ForYouPrayerTab.allCases.map { .tab(entry.id, $0) }
+        }
+    }
+
+    private func setPrayerSelection(_ selection: ForYouPrayerCardSelection) {
+        onSelectionChange(selection)
+    }
+
     @ViewBuilder
     private func pageContent(index: Int, page: [ForYouTimelineEntry]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -1376,7 +1453,11 @@ private struct ForYouDayView: View {
                         ForYouPrayerTimelineEntryView(
                             entry: entry,
                             isFocused: entry.id == focusedEntryID,
-                            extendsToNext: entry.id != page.last?.id
+                            extendsToNext: entry.id != page.last?.id,
+                            selection: prayerSelection ?? .main(entry.id),
+                            onSelectionChange: { selection in
+                                setPrayerSelection(selection)
+                            }
                         )
                     } else {
                         ForYouTimelineEntryView(
@@ -1475,6 +1556,9 @@ struct ForYouRootView: View {
     @EnvironmentObject private var settings: Settings
     @EnvironmentObject private var revenueCat: RevenueCatManager
     @StateObject private var viewModel = ForYouFeedViewModel()
+    @State private var selectedPrayerCard: ForYouPrayerCardSelection?
+
+    private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
 
     var body: some View {
         ZStack {
@@ -1496,7 +1580,9 @@ struct ForYouRootView: View {
                             ForYouDayView(
                                 viewModel: todayItem,
                                 completedIDs: viewModel.completedIDs,
-                                onToggleCompletion: viewModel.toggleCompletion(for:)
+                                onToggleCompletion: viewModel.toggleCompletion(for:),
+                                selection: prayerSelection,
+                                onSelectionChange: { selectedPrayerCard = $0 }
                             )
                             .frame(maxWidth: .infinity)
                         }
@@ -1505,12 +1591,45 @@ struct ForYouRootView: View {
                         if let id = currentDayViewModel?.focusedEntryID {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                                 withAnimation(.easeInOut(duration: 0.5)) {
-                                    proxy.scrollTo(id, anchor: .top)
+                                    proxy.scrollTo(id, anchor: focusScrollAnchor)
                                 }
                             }
                         }
                     }
+                    .onChange(of: prayerSelection?.entryID) { entryID in
+                        guard let entryID else { return }
+                        DispatchQueue.main.async {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
+                                proxy.scrollTo(entryID, anchor: focusScrollAnchor)
+                            }
+                        }
+                    }
                 }
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if prayerSelection != nil {
+                HStack(spacing: 10) {
+                    pageCycleControlButton(systemName: "chevron.left") {
+                        cyclePrayerSelection(direction: -1)
+                    }
+
+                    pageCycleControlButton(systemName: "chevron.right") {
+                        cyclePrayerSelection(direction: 1)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.92))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(ForYouPalette.stroke, lineWidth: 1)
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 4)
+                .padding(.bottom, 14)
             }
         }
         .task {
@@ -1536,6 +1655,67 @@ struct ForYouRootView: View {
     private var currentDayViewModel: ForYouDayViewModel? {
         viewModel.dayViewModels.first(where: { Calendar.current.isDateInToday($0.plan.date) })
             ?? viewModel.dayViewModels.first
+    }
+
+    private var prayerEntries: [ForYouTimelineEntry] {
+        currentDayViewModel?.plan.timelineEntries.filter { $0.kind == .prayer } ?? []
+    }
+
+    private var defaultPrayerSelection: ForYouPrayerCardSelection? {
+        guard !prayerEntries.isEmpty else { return nil }
+
+        if let focusedEntryID = currentDayViewModel?.focusedEntryID,
+           prayerEntries.contains(where: { $0.id == focusedEntryID }) {
+            return .main(focusedEntryID)
+        }
+
+        return prayerEntries.first.map { .main($0.id) }
+    }
+
+    private var prayerSelection: ForYouPrayerCardSelection? {
+        if let selectedPrayerCard,
+           prayerCardSequence.contains(selectedPrayerCard) {
+            return selectedPrayerCard
+        }
+
+        return defaultPrayerSelection
+    }
+
+    private var prayerCardSequence: [ForYouPrayerCardSelection] {
+        prayerEntries.flatMap { entry in
+            [ForYouPrayerCardSelection.main(entry.id)] + ForYouPrayerTab.allCases.map { .tab(entry.id, $0) }
+        }
+    }
+
+    private func cyclePrayerSelection(direction: Int) {
+        guard !prayerCardSequence.isEmpty else { return }
+
+        let current = prayerSelection ?? prayerCardSequence[0]
+        let currentIndex = prayerCardSequence.firstIndex(of: current) ?? 0
+        let nextIndex = (currentIndex + direction + prayerCardSequence.count) % prayerCardSequence.count
+
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
+            selectedPrayerCard = prayerCardSequence[nextIndex]
+        }
+    }
+
+    private func pageCycleControlButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(ForYouPalette.ink)
+                .frame(width: 32, height: 32)
+                .background(
+                    Circle()
+                        .fill(.white.opacity(0.96))
+                        .overlay(
+                            Circle()
+                                .stroke(ForYouPalette.stroke, lineWidth: 1)
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(.plain)
     }
 
     private func refresh() {
