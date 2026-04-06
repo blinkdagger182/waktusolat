@@ -68,6 +68,42 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 }
 
+enum QuranContentLanguage: String, CaseIterable, Identifiable {
+    static let storageKey = "quranContentLanguageCode"
+
+    case english = "en"
+    case bahasaMelayu = "ms"
+
+    var id: String { rawValue }
+
+    var shortLabel: String {
+        switch self {
+        case .english:
+            return "EN"
+        case .bahasaMelayu:
+            return "BM"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .english:
+            return "English"
+        case .bahasaMelayu:
+            return "Bahasa Melayu"
+        }
+    }
+
+    var translationEdition: String {
+        switch self {
+        case .english:
+            return "en.asad"
+        case .bahasaMelayu:
+            return "ms.basmeih"
+        }
+    }
+}
+
 private var sharedLanguageDefaults: UserDefaults? {
     UserDefaults(suiteName: sharedAppGroupID)
 }
@@ -123,15 +159,37 @@ func syncSharedAppLanguagePreference(_ storedCode: String?) {
 }
 
 func currentQuranTranslationEdition(for storedCode: String? = storedAppLanguageCode()) -> String {
-    effectiveAppLanguage(from: storedCode).quranTranslationEdition
+    effectiveQuranContentLanguage(storedCode: storedCode).translationEdition
 }
 
 func currentQuranTranslationEditionLabel(for storedCode: String? = storedAppLanguageCode()) -> String {
-    effectiveAppLanguage(from: storedCode).quranTranslationEditionLabel
+    effectiveQuranContentLanguage(storedCode: storedCode).translationEdition
 }
 
 func quranContentLanguageCode(for storedCode: String? = storedAppLanguageCode()) -> String {
-    isMalayAppLanguage(storedCode) ? "ms" : "en"
+    effectiveQuranContentLanguage(storedCode: storedCode).rawValue
+}
+
+func storedQuranContentLanguageCode() -> String? {
+    UserDefaults.standard.string(forKey: QuranContentLanguage.storageKey)
+        ?? sharedLanguageDefaults?.string(forKey: QuranContentLanguage.storageKey)
+}
+
+func effectiveQuranContentLanguage(storedCode: String? = storedQuranContentLanguageCode(), appLanguageCode: String? = storedAppLanguageCode()) -> QuranContentLanguage {
+    if let storedCode, let language = QuranContentLanguage(rawValue: storedCode) {
+        return language
+    }
+
+    return isMalayAppLanguage(appLanguageCode) ? .bahasaMelayu : .english
+}
+
+func syncSharedQuranContentLanguagePreference(_ storedCode: String?) {
+    guard let defaults = sharedLanguageDefaults else { return }
+    if let storedCode {
+        defaults.set(storedCode, forKey: QuranContentLanguage.storageKey)
+    } else {
+        defaults.removeObject(forKey: QuranContentLanguage.storageKey)
+    }
 }
 
 func quranProxyBaseURL(bundle: Bundle = .main) -> URL {

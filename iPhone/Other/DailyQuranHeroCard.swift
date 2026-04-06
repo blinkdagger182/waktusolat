@@ -8,6 +8,8 @@ struct DailyQuranHeroCard: View {
     let onOpenVerse: () -> Void
     let onOpenSurah: () -> Void
 
+    @State private var revealedArabicWordCount = 0
+
     private var reflectionSourceLabel: String {
         if isMalayAppLanguage() {
             return "Sumber: Abdullah Basmeih"
@@ -19,6 +21,25 @@ struct DailyQuranHeroCard: View {
         let surahNumber = Int(quote.reference.split(separator: ":").first ?? "")
         guard let surahNumber else { return quote.surahName }
         return localizedSurahName(number: surahNumber, englishName: quote.surahName)
+    }
+
+    private var arabicWords: [String] {
+        arabicText?.split(separator: " ").map(String.init) ?? []
+    }
+
+    private var revealedArabicView: Text {
+        guard !arabicWords.isEmpty else {
+            return Text(arabicText ?? "")
+        }
+
+        return arabicWords.enumerated().reduce(Text("")) { partial, item in
+            let (index, word) = item
+            let isRevealed = index < revealedArabicWordCount
+            let segment = Text(word + (index < arabicWords.count - 1 ? " " : ""))
+                .foregroundColor(isRevealed ? .primary : .primary.opacity(0))
+
+            return partial + segment
+        }
     }
 
     var body: some View {
@@ -45,13 +66,24 @@ struct DailyQuranHeroCard: View {
 
             VStack(alignment: .center, spacing: 10) {
                 if let arabicText, !arabicText.isEmpty {
-                    Text(arabicText)
-                        .font(.custom(arabicFontName, size: 24))
-                        .lineSpacing(6)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity)
-                        .fixedSize(horizontal: false, vertical: true)
+                    ZStack {
+                        Text(arabicText)
+                            .font(.custom(arabicFontName, size: 24))
+                            .lineSpacing(6)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.clear)
+                            .frame(maxWidth: .infinity)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityHidden(true)
+
+                        revealedArabicView
+                            .font(.custom(arabicFontName, size: 24))
+                            .lineSpacing(6)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .animation(.easeOut(duration: 0.18), value: revealedArabicWordCount)
+                    }
                 }
 
                 Text(quote.text)
@@ -122,5 +154,18 @@ struct DailyQuranHeroCard: View {
                 .stroke(.white.opacity(0.32), lineWidth: 1)
         }
         .shadow(color: accentColor.opacity(0.12), radius: 22, x: 0, y: 12)
+        .task(id: arabicText ?? quote.reference) {
+            guard !arabicWords.isEmpty else {
+                revealedArabicWordCount = 0
+                return
+            }
+
+            revealedArabicWordCount = 0
+            for index in 1...arabicWords.count {
+                if Task.isCancelled { break }
+                revealedArabicWordCount = index
+                try? await Task.sleep(nanoseconds: 55_000_000)
+            }
+        }
     }
 }

@@ -209,15 +209,105 @@ private struct DailyQuranReferenceParts {
     let ayahNumber: Int?
 }
 
+private struct LibrarySkeletonBlock: View {
+    @EnvironmentObject private var settings: Settings
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ")
+                .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+
+            HStack {
+                Text(isMalayAppLanguage() ? "Refleksi Harian" : "Daily Reflection")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+
+            VStack(spacing: 10) {
+                Color.clear
+                    .frame(height: 72)
+
+                Color.clear
+                    .frame(height: 86)
+
+                Text(" ")
+                    .font(.caption.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Color.clear.frame(height: 18)
+
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(settings.accentColor.color.opacity(0.16))
+                    .frame(height: 44)
+            }
+            .padding(.horizontal, 2)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(.systemBackground),
+                            settings.accentColor.color.opacity(0.04),
+                            Color(.systemGray6)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(.white.opacity(0.32), lineWidth: 1)
+        }
+        .shadow(color: settings.accentColor.color.opacity(0.08), radius: 22, x: 0, y: 12)
+    }
+}
+
+private struct LibrarySurahSkeletonRow: View {
+    var body: some View {
+        HStack(spacing: 14) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.12))
+                .frame(width: 44, height: 44)
+
+            VStack(alignment: .leading, spacing: 8) {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.primary.opacity(0.12))
+                    .frame(width: 140, height: 14)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.primary.opacity(0.12))
+                    .frame(width: 90, height: 12)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 10)
+        .redacted(reason: .placeholder)
+    }
+}
+
 
 struct OtherView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
+    @AppStorage(QuranContentLanguage.storageKey) private var quranLanguageCode = effectiveQuranContentLanguage().rawValue
     @State private var dailyQuranQuote: LibraryDailyQuranQuote?
     @State private var selectedFullSurah: FullSurahSelection?
     @State private var resumeSelection: FullSurahSelection?
     @State private var surahs: [QuranSurahIndexItem] = []
     @State private var isLoadingSurahs = true
+    @State private var isLoadingDailyQuranQuote = true
     @State private var surahListErrorMessage: String?
     @State private var searchText = ""
     @State private var expandedSurahNumber: Int?
@@ -226,6 +316,10 @@ struct OtherView: View {
 
     private static let pinnedSurahsKey = "pinnedSurahNumbersV1"
     private static let maxPinnedSurahs = 3
+
+    private var currentQuranLanguage: QuranContentLanguage {
+        QuranContentLanguage(rawValue: quranLanguageCode) ?? effectiveQuranContentLanguage()
+    }
 
     private var isSearchingSurahs: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -270,6 +364,9 @@ struct OtherView: View {
 
     @MainActor
     private func loadDailyQuranQuote() async {
+        isLoadingDailyQuranQuote = true
+        defer { isLoadingDailyQuranQuote = false }
+
         let loadedFromCache = loadDailyQuranQuoteFromCache()
         if loadedFromCache {
             await loadDailyQuranArabicIfNeeded()
@@ -425,7 +522,16 @@ struct OtherView: View {
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .listRowSeparator(.hidden)
 
-                if let quote = dailyQuranQuote {
+                if isLoadingDailyQuranQuote {
+                    LibrarySkeletonBlock()
+                        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
+                        .listRowSeparator(.hidden)
+
+                    LibrarySkeletonBlock()
+                        .frame(height: 110)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 14, trailing: 16))
+                        .listRowSeparator(.hidden)
+                } else if let quote = dailyQuranQuote {
                     DailyQuranHeroCard(
                         quote: quote,
                         arabicText: dailyQuranArabicText,
@@ -524,10 +630,8 @@ struct OtherView: View {
                              ? (isMalayAppLanguage() ? "HASIL CARIAN SURAH" : "SURAH SEARCH RESULTS")
                              : (isMalayAppLanguage() ? "SENARAI SURAH" : "SURAH LIST"))) {
             if isLoadingSurahs {
-                HStack {
-                    Spacer()
-                    ProgressView(isMalayAppLanguage() ? "Memuatkan senarai surah..." : "Loading surah list...")
-                    Spacer()
+                ForEach(0..<6, id: \.self) { _ in
+                    LibrarySurahSkeletonRow()
                 }
             } else if let surahListErrorMessage {
                 Text(surahListErrorMessage)
@@ -703,15 +807,47 @@ struct OtherView: View {
             .onAppear {
                 loadResumeSelection()
                 loadPinnedSurahs()
+                syncSharedQuranContentLanguagePreference(quranLanguageCode)
                 Task { await loadSurahsIfNeeded() }
                 Task { await loadDailyQuranQuote() }
             }
-            .task(id: effectiveAppLanguageCode()) {
+            .task(id: quranLanguageCode) {
+                syncSharedQuranContentLanguagePreference(quranLanguageCode)
+                dailyQuranQuote = nil
+                dailyQuranArabicText = nil
                 await loadDailyQuranQuote()
             }
             .onChange(of: selectedFullSurah) { selection in
                 if selection == nil {
                     loadResumeSelection()
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        ForEach(QuranContentLanguage.allCases) { language in
+                            Button {
+                                quranLanguageCode = language.rawValue
+                            } label: {
+                                if quranLanguageCode == language.rawValue {
+                                    Label(language.displayName, systemImage: "checkmark")
+                                } else {
+                                    Text(language.displayName)
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(currentQuranLanguage.shortLabel)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(Color(.secondarySystemBackground))
+                            )
+                    }
+                    .accessibilityLabel(isMalayAppLanguage() ? "Pilih bahasa Al-Quran" : "Choose Quran language")
                 }
             }
             .sheet(item: $selectedFullSurah) { selection in
