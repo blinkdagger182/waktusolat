@@ -129,6 +129,29 @@ struct ForYouTimelineEntry: Identifiable, Codable {
     let recommendation: ForYouTimelineRecommendation?
 }
 
+struct DoaItem: Identifiable {
+    let id: String
+    let titleEn: String
+    let titleMy: String
+    let arabicText: String
+    let transliteration: String
+    let translationMy: String
+    let note: String?   // source or context note, e.g. "Doa Abu Darda"
+}
+
+struct WiridItem: Identifiable {
+    let id: String
+    let titleEn: String
+    let titleMy: String
+    let arabicText: String
+    let transliteration: String
+    let translationMy: String
+    let reference: String?
+    let count: String?      // e.g. "3×", "33×", nil for once
+    let isShort: Bool       // true = all prayers (🔰); false = Fajr & Maghrib only
+    let orderIndex: Int     // PDF sequence order
+}
+
 struct ForYouContentTemplate: Identifiable {
     let id: String
     let type: ForYouMomentType

@@ -556,9 +556,11 @@ private struct ForYouPrayerTimelineEntryView: View {
 
 // MARK: - Prayer expandable tabs
 
-private enum ForYouPrayerTab: String, CaseIterable {
+private enum ForYouPrayerTab: String, CaseIterable, Identifiable {
     case wirid = "Wirid"
     case doa   = "Doa"
+
+    var id: String { rawValue }
 
     var color: Color {
         switch self {
@@ -605,6 +607,7 @@ private struct ForYouPrayerStackedCards: View {
     let entry: ForYouTimelineEntry
     let selection: ForYouPrayerCardSelection
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
+    @State private var presentedTab: ForYouPrayerTab?
 
     private var isActiveEntry: Bool {
         selection.entryID == entry.id
@@ -628,6 +631,14 @@ private struct ForYouPrayerStackedCards: View {
                     .padding(.top, topPadding(for: index))
                     .zIndex(zIndex(for: tab, index: index))
             }
+        }
+        .sheet(item: $presentedTab) { tab in
+            NavigationView {
+                ForYouPrayerTabModalView(entry: entry, tab: tab)
+                    .navigationTitle(tab == .wirid ? (isMalayAppLanguage() ? "Wirid" : "Wirid") : (isMalayAppLanguage() ? "Doa" : "Dua"))
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .navigationViewStyle(.stack)
         }
     }
 
@@ -658,8 +669,13 @@ private struct ForYouPrayerStackedCards: View {
             .background(tab.color)
 
             if isExpanded {
-                ForYouPrayerTabPanel(entry: entry, tab: tab)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                ForYouPrayerTabPanel(
+                    entry: entry,
+                    tab: tab,
+                    mode: .preview,
+                    onOpenFullContent: { presentedTab = tab }
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .background(tab.color)
@@ -770,19 +786,47 @@ private struct ForYouTimelineEntryContentCard: View {
     }
 }
 
-private struct ForYouPrayerTabPanel: View {
+private struct ForYouPrayerTabModalView: View {
     let entry: ForYouTimelineEntry
     let tab: ForYouPrayerTab
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            ForYouPrayerTabPanel(entry: entry, tab: tab, mode: .full)
+                .padding(.top, 8)
+                .padding(.bottom, 20)
+        }
+        .background(ForYouPalette.canvas.ignoresSafeArea())
+    }
+}
+
+private struct ForYouPrayerTabPanel: View {
+    enum DisplayMode {
+        case preview
+        case full
+    }
+
+    let entry: ForYouTimelineEntry
+    let tab: ForYouPrayerTab
+    var mode: DisplayMode = .full
+    var onOpenFullContent: (() -> Void)? = nil
 
     @StateObject private var player = ForYouAudioPlayer()
     @EnvironmentObject private var settings: Settings
 
-    private var content: (arabic: String, transliteration: String, meaning: String) {
+    private struct PanelContent {
+        let title: String
+        let arabic: String
+        let transliteration: String
+        let meaning: String
+    }
+
+    private var content: PanelContent {
         switch tab {
         case .wirid:
-            return wiridContent(for: entry.title)
+            return wiridContent(for: canonicalPrayerName(from: entry.id))
         case .doa:
-            return doaContent(for: entry.title)
+            return doaContent(for: canonicalPrayerName(from: entry.id))
         }
     }
 
@@ -793,28 +837,49 @@ private struct ForYouPrayerTabPanel: View {
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(ForYouPalette.secondaryInk)
 
-                Text(contentTitle)
+                Text(content.title)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(ForYouPalette.ink)
-                    .lineLimit(1)
-
-                Text(content.arabic)
-                    .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
-                    .foregroundStyle(ForYouPalette.ink)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .lineSpacing(4)
-
-                Text(content.meaning)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Divider().opacity(0.35)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(content.arabic)
+                        .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .lineSpacing(4)
+                        .lineLimit(mode == .preview ? 5 : nil)
 
-                Text(content.transliteration)
-                    .font(.system(size: 11, weight: .regular, design: .rounded))
-                    .foregroundStyle(ForYouPalette.secondaryInk)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text(content.meaning)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(mode == .preview ? 4 : nil)
+
+                    Divider().opacity(0.35)
+
+                    Text(content.transliteration)
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(mode == .preview ? 4 : nil)
+
+                    if mode == .preview {
+                        HStack(spacing: 6) {
+                            Text(isMalayAppLanguage() ? "Ketik teks untuk buka penuh" : "Tap the text to open full view")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(tab.color)
+                        .padding(.top, 2)
+                    }
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .onTapGesture {
+                    guard mode == .preview else { return }
+                    onOpenFullContent?()
+                }
 
                 HStack(spacing: 10) {
                     Button {
@@ -851,87 +916,107 @@ private struct ForYouPrayerTabPanel: View {
         .onDisappear { player.stop() }
     }
 
-    private var contentTitle: String {
-        switch tab {
-        case .wirid:
-            return isMalayAppLanguage() ? "Wirid selepas solat" : "Post-prayer wirid"
-        case .doa:
-            return isMalayAppLanguage() ? "Doa selepas solat" : "Post-prayer dua"
-        }
-    }
-
     private func audioFileName(tab: ForYouPrayerTab, prayer: String) -> String {
         let base = prayer.lowercased().replacingOccurrences(of: " ", with: "_")
         return "\(base)_\(tab.rawValue.lowercased())"
     }
 
-    private func wiridContent(for prayer: String) -> (arabic: String, transliteration: String, meaning: String) {
-        let p = prayer.lowercased()
-        if p.contains("fajr") || p.contains("subuh") {
-            return (
-                "أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ",
-                "Astaghfirullaah wa atuubu ilayh",
-                "I seek forgiveness from Allah and repent to Him. (×100)"
-            )
-        } else if p.contains("dhuhr") || p.contains("zuhur") {
-            return (
-                "سُبْحَانَ اللهِ وَبِحَمْدِهِ",
-                "Subhaanallaahi wa bihamdih",
-                "Glory be to Allah and His is the praise. (×100)"
-            )
-        } else if p.contains("asr") {
-            return (
-                "لَا إِلٰهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ",
-                "Laa ilaaha illallaahu wahdahu laa shareeka lah",
-                "None has the right to be worshipped except Allah alone. (×100)"
-            )
-        } else if p.contains("maghrib") {
-            return (
-                "اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ",
-                "Allaahumma antas-salaamu wa minkas-salaam",
-                "O Allah, You are Peace and from You is peace. (×3)"
-            )
-        } else {
-            return (
-                "سُبْحَانَ اللهِ وَالْحَمْدُ لِلَّهِ وَاللهُ أَكْبَرُ",
-                "Subhaanallaah, alhamdu lillaah, Allaahu akbar",
-                "Glory be to Allah, Praise be to Allah, Allah is the Greatest. (×33 each)"
-            )
-        }
+    private func wiridContent(for canonicalPrayer: String) -> PanelContent {
+        let items = WiridContentRepository.items(forPrayer: canonicalPrayer)
+        let isFull = WiridContentRepository.fullWiridPrayers.contains(canonicalPrayer)
+        let title = isMalayAppLanguage()
+            ? (isFull ? "Wirid penuh selepas solat" : "Wirid ringkas selepas solat")
+            : (isFull ? "Full post-prayer wirid" : "Short post-prayer wirid")
+
+        return PanelContent(
+            title: title,
+            arabic: items
+                .map { item in item.arabicText }
+                .joined(separator: "\n\n"),
+            transliteration: items
+                .map { item in
+                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
+                    let countLine = item.count.map { " \($0)" } ?? ""
+                    return "\(itemTitle)\(countLine)\n\(item.transliteration)"
+                }
+                .joined(separator: "\n\n"),
+            meaning: items
+                .map { item in
+                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
+                    var lines = ["\(itemTitle): \(item.translationMy)"]
+                    if let count = item.count {
+                        lines.append(isMalayAppLanguage() ? "Ulangan: \(count)" : "Repeat: \(count)")
+                    }
+                    if let reference = item.reference {
+                        lines.append(reference)
+                    }
+                    return lines.joined(separator: "\n")
+                }
+                .joined(separator: "\n\n")
+        )
     }
 
-    private func doaContent(for prayer: String) -> (arabic: String, transliteration: String, meaning: String) {
-        let p = prayer.lowercased()
-        if p.contains("fajr") || p.contains("subuh") {
-            return (
-                "اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا",
-                "Allaahumma bika asbahnaa wa bika amsaynaa",
-                "O Allah, by Your grace we enter the morning and by Your grace we enter the evening."
-            )
-        } else if p.contains("dhuhr") || p.contains("zuhur") {
-            return (
-                "رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي",
-                "Rabbish-rah lee sadree wa yassir lee amree",
-                "My Lord, expand my chest and ease my affairs."
-            )
-        } else if p.contains("asr") {
-            return (
-                "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ",
-                "Allaahumma innee a'oodhu bika minal-hammi wal-hazan",
-                "O Allah, I seek refuge in You from worry and grief."
-            )
-        } else if p.contains("maghrib") {
-            return (
-                "اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ أَصْبَحْنَا",
-                "Allaahumma bika amsaynaa wa bika asbahnaa",
-                "O Allah, by Your grace we enter the evening and by Your grace we enter the morning."
-            )
-        } else {
-            return (
-                "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي",
-                "Allaahumma innaka 'afuwwun tuhibbul-'afwa fa'fu 'annee",
-                "O Allah, You are Pardoning and love pardon, so pardon me."
-            )
+    private func doaContent(for canonicalPrayer: String) -> PanelContent {
+        let items = [DoaContentRepository.recommended(forPrayer: canonicalPrayer)]
+            + (DoaContentRepository.secondary(forPrayer: canonicalPrayer).map { [$0] } ?? [])
+
+        return PanelContent(
+            title: isMalayAppLanguage() ? "Doa selepas solat" : "Post-prayer dua",
+            arabic: items
+                .map { $0.arabicText }
+                .joined(separator: "\n\n"),
+            transliteration: items
+                .map { item in
+                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
+                    return "\(itemTitle)\n\(item.transliteration)"
+                }
+                .joined(separator: "\n\n"),
+            meaning: items
+                .map { item in
+                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
+                    var lines = ["\(itemTitle): \(item.translationMy)"]
+                    if let note = item.note {
+                        lines.append(note)
+                    }
+                    return lines.joined(separator: "\n")
+                }
+                .joined(separator: "\n\n")
+        )
+    }
+
+    private func canonicalPrayerName(from entryID: String) -> String {
+        let normalized = entryID.lowercased()
+
+        if normalized.contains("-fajr-") {
+            return "fajr"
+        }
+        if normalized.contains("-dhuhr-") {
+            return "dhuhr"
+        }
+        if normalized.contains("-asr-") {
+            return "asr"
+        }
+        if normalized.contains("-maghrib-") {
+            return "maghrib"
+        }
+        if normalized.contains("-isha-") {
+            return "isha"
+        }
+
+        let title = entry.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch title {
+        case "subuh":
+            return "fajr"
+        case "zuhur", "jumuah":
+            return "dhuhr"
+        case "asar":
+            return "asr"
+        case "magrib":
+            return "maghrib"
+        case "isya", "isyak":
+            return "isha"
+        default:
+            return title
         }
     }
 }

@@ -10,6 +10,9 @@ struct DailyQuranHeroCard: View {
 
     @State private var revealedArabicWordCount = 0
 
+    private let arabicRevealStepDuration: UInt64 = 140_000_000
+    private let arabicRevealAnimationDuration: Double = 0.42
+
     private var reflectionSourceLabel: String {
         if isMalayAppLanguage() {
             return "Sumber: Abdullah Basmeih"
@@ -82,7 +85,7 @@ struct DailyQuranHeroCard: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
                             .fixedSize(horizontal: false, vertical: true)
-                            .animation(.easeOut(duration: 0.18), value: revealedArabicWordCount)
+                            .animation(.easeOut(duration: arabicRevealAnimationDuration), value: revealedArabicWordCount)
                     }
                 }
 
@@ -164,7 +167,7 @@ struct DailyQuranHeroCard: View {
             for index in 1...arabicWords.count {
                 if Task.isCancelled { break }
                 revealedArabicWordCount = index
-                try? await Task.sleep(nanoseconds: 55_000_000)
+                try? await Task.sleep(nanoseconds: arabicRevealStepDuration)
             }
         }
     }
