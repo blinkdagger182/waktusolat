@@ -9,9 +9,11 @@ struct DailyQuranHeroCard: View {
     let onOpenSurah: () -> Void
 
     @State private var revealedArabicWordCount = 0
+    @State private var highlightedArabicWordIndex: Int?
 
-    private let arabicRevealStepDuration: UInt64 = 140_000_000
-    private let arabicRevealAnimationDuration: Double = 0.42
+    private let arabicRevealStepDuration: UInt64 = 230_000_000
+    private let arabicHighlightHoldDuration: UInt64 = 160_000_000
+    private let arabicRevealAnimationDuration: Double = 0.72
 
     private var reflectionSourceLabel: String {
         if isMalayAppLanguage() {
@@ -38,11 +40,35 @@ struct DailyQuranHeroCard: View {
         return arabicWords.enumerated().reduce(Text("")) { partial, item in
             let (index, word) = item
             let isRevealed = index < revealedArabicWordCount
-            let segment = Text(word + (index < arabicWords.count - 1 ? " " : ""))
-                .foregroundColor(isRevealed ? .primary : .primary.opacity(0))
+            let isHighlighted = highlightedArabicWordIndex == index
+            let segment = styledArabicSegment(
+                word: word + (index < arabicWords.count - 1 ? " " : ""),
+                isRevealed: isRevealed,
+                isHighlighted: isHighlighted
+            )
 
             return partial + segment
         }
+    }
+
+    private func styledArabicSegment(word: String, isRevealed: Bool, isHighlighted: Bool) -> Text {
+        let color: Color
+        if !isRevealed {
+            color = .primary.opacity(0)
+        } else if isHighlighted {
+            color = .primary.opacity(0.98)
+        } else {
+            color = .primary.opacity(0.92)
+        }
+
+        if isHighlighted {
+            return Text(word)
+                .bold()
+                .foregroundColor(color)
+        }
+
+        return Text(word)
+            .foregroundColor(color)
     }
 
     var body: some View {
@@ -83,9 +109,14 @@ struct DailyQuranHeroCard: View {
                             .font(.custom(arabicFontName, size: 24))
                             .lineSpacing(6)
                             .multilineTextAlignment(.center)
+                            .shadow(
+                                color: highlightedArabicWordIndex == nil ? .clear : .white.opacity(0.55),
+                                radius: highlightedArabicWordIndex == nil ? 0 : 14
+                            )
                             .frame(maxWidth: .infinity)
                             .fixedSize(horizontal: false, vertical: true)
                             .animation(.easeOut(duration: arabicRevealAnimationDuration), value: revealedArabicWordCount)
+                            .animation(.easeOut(duration: arabicRevealAnimationDuration * 0.75), value: highlightedArabicWordIndex)
                     }
                 }
 
@@ -160,15 +191,20 @@ struct DailyQuranHeroCard: View {
         .task(id: arabicText ?? quote.reference) {
             guard !arabicWords.isEmpty else {
                 revealedArabicWordCount = 0
+                highlightedArabicWordIndex = nil
                 return
             }
 
             revealedArabicWordCount = 0
+            highlightedArabicWordIndex = nil
             for index in 1...arabicWords.count {
                 if Task.isCancelled { break }
+                highlightedArabicWordIndex = index - 1
                 revealedArabicWordCount = index
                 try? await Task.sleep(nanoseconds: arabicRevealStepDuration)
             }
+            try? await Task.sleep(nanoseconds: arabicHighlightHoldDuration)
+            highlightedArabicWordIndex = nil
         }
     }
 }

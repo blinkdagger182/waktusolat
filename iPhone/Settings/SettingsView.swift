@@ -246,86 +246,6 @@ private enum SupportToastDebugLoader {
     }
 }
 
-private struct WidgetSettingsRemoteConfig: Decodable {
-    let showWidgetSettingsMenu: Bool
-    let updatedAt: String?
-
-    enum CodingKeys: String, CodingKey {
-        case showWidgetSettingsMenu = "showWidgetSettingsMenu"
-        case updatedAt = "updatedAt"
-    }
-}
-
-private enum WidgetSettingsRemoteConfigLoader {
-    private static let cacheKey = "widgetSettingsRemoteConfigCachedPayloadV1"
-    private static let cacheTimeKey = "widgetSettingsRemoteConfigLastFetchTimeV1"
-    private static let defaults = UserDefaults.standard
-    #if DEBUG
-    private static let cacheTTL: TimeInterval = 0
-    #else
-    private static let cacheTTL: TimeInterval = 60 * 30
-    #endif
-
-    static func load(force: Bool) async -> WidgetSettingsRemoteConfig {
-        if !force, let cached = cachedIfFresh() {
-            return cached
-        }
-
-        do {
-            let url = resolveNoCacheURL()
-            var request = URLRequest(url: url)
-            request.cachePolicy = .reloadIgnoringLocalCacheData
-            request.timeoutInterval = 12
-            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
-            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
-
-            let session = URLSession(configuration: .ephemeral)
-            let (data, _) = try await session.data(for: request)
-            let decoded = try JSONDecoder().decode(WidgetSettingsRemoteConfig.self, from: data)
-
-            if let payload = String(data: data, encoding: .utf8) {
-                defaults.set(payload, forKey: cacheKey)
-                defaults.set(Date().timeIntervalSince1970, forKey: cacheTimeKey)
-            }
-
-            return decoded
-        } catch {
-            return cachedIfFresh() ?? decode(from: defaults.string(forKey: cacheKey) ?? "") ?? WidgetSettingsRemoteConfig(showWidgetSettingsMenu: false, updatedAt: nil)
-        }
-    }
-
-    private static func cachedIfFresh() -> WidgetSettingsRemoteConfig? {
-        let age = Date().timeIntervalSince1970 - defaults.double(forKey: cacheTimeKey)
-        guard age < cacheTTL else { return nil }
-        return decode(from: defaults.string(forKey: cacheKey) ?? "")
-    }
-
-    private static func decode(from payload: String) -> WidgetSettingsRemoteConfig? {
-        guard let data = payload.data(using: .utf8), !payload.isEmpty else { return nil }
-        return try? JSONDecoder().decode(WidgetSettingsRemoteConfig.self, from: data)
-    }
-
-    private static func resolveURL() -> URL {
-        if let fromInfo = Bundle.main.object(forInfoDictionaryKey: "WidgetSettingsConfigURL") as? String,
-           let url = URL(string: fromInfo),
-           !fromInfo.isEmpty {
-            return url
-        }
-
-        return URL(string: "https://api-waktusolat.vercel.app/api/settings/widgets")!
-    }
-
-    private static func resolveNoCacheURL() -> URL {
-        let url = resolveURL()
-        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
-        var items = components.queryItems ?? []
-        items.removeAll(where: { $0.name == "_nocache" })
-        items.append(URLQueryItem(name: "_nocache", value: String(Int(Date().timeIntervalSince1970 / 60))))
-        components.queryItems = items
-        return components.url ?? url
-    }
-}
-
 struct SettingsView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
@@ -333,7 +253,6 @@ struct SettingsView: View {
     @AppStorage("donationSuccessCount") private var donationSuccessCount: Int = 0
     @AppStorage("appLaunchCountV1") private var appLaunchCount: Int = 0
     @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
-    @AppStorage("remoteWidgetSettingsMenuEnabled") private var remoteWidgetSettingsMenuEnabled = false
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
@@ -369,14 +288,12 @@ struct SettingsView: View {
                                 .foregroundColor(settings.accentColor.color)
                         }
 
-                        if remoteWidgetSettingsMenuEnabled {
-                            NavigationLink {
-                                WidgetPreviewGalleryView()
-                                    .environmentObject(settings)
-                            } label: {
-                                Label("Widgets", systemImage: "square.grid.2x2")
-                                    .foregroundColor(settings.accentColor.color)
-                            }
+                        NavigationLink {
+                            WidgetPreviewGalleryView()
+                                .environmentObject(settings)
+                        } label: {
+                            Label("Widgets", systemImage: "square.grid.2x2")
+                                .foregroundColor(settings.accentColor.color)
                         }
 
                     }
@@ -462,7 +379,6 @@ struct SettingsView: View {
             await revenueCat.refreshCustomerInfo()
             await revenueCat.refreshOfferings()
             await loadSupportToastDebugOptions()
-            await refreshRemoteWidgetSettingsMenu(force: false)
             lastKnownDonationState = revenueCat.hasBuyMeKopi
             hasInitializedEntitlementState = true
         }
@@ -505,7 +421,6 @@ struct SettingsView: View {
                 postUIHeartbeat()
                 Task {
                     await loadSupportToastDebugOptions()
-                    await refreshRemoteWidgetSettingsMenu(force: false)
                 }
             }
         }
@@ -574,13 +489,6 @@ struct SettingsView: View {
         supportToastDebugOptions = await SupportToastDebugLoader.load()
     }
 
-    private func refreshRemoteWidgetSettingsMenu(force: Bool) async {
-        let config = await WidgetSettingsRemoteConfigLoader.load(force: force)
-        await MainActor.run {
-            remoteWidgetSettingsMenuEnabled = config.showWidgetSettingsMenu
-        }
-    }
-    
     private var donationImpactMessage: String {
         let count = max(donationSuccessCount, 0)
         let style = max(appLaunchCount, 0) % 6

@@ -62,3 +62,15 @@ struct ConditionalListStyle: ViewModifier {
 extension View {
     func apply<V: View>(@ViewBuilder _ block: (Self) -> V) -> V { block(self) }
 }
+
+#if os(iOS)
+extension View {
+    func enablesScrollChromeHiding() -> some View { self }
+    func minimizesTabBarOnScroll() -> some View { self }
+}
+#else
+extension View {
+    func enablesScrollChromeHiding() -> some View { self }
+    func minimizesTabBarOnScroll() -> some View { self }
+}
+#endif

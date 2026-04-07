@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 import UserNotifications
 import WidgetKit
 #if os(iOS)
@@ -520,7 +521,7 @@ struct NotificationView: View {
                 }
             }
 
-            Section(header: Text(appLocalized("NOTIFICATION SOUND"))) {
+            Section(header: Text(appLocalized("NOTIFICATION SOUND")), footer: locationPermissionFooter) {
                 Picker(
                     selection: Binding(
                         get: { settings.notificationSoundOption },
@@ -608,6 +609,26 @@ struct NotificationView: View {
         case .concise:
             return "سُبْحَانَ اللَّهِ"
         }
+    }
+
+    @ViewBuilder
+    private var locationPermissionFooter: some View {
+        Button {
+            handleLocationPermissionFooterTapped()
+        } label: {
+            Text(locationPermissionFooterText)
+                .font(.caption)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(settings.accentColor.color)
+    }
+
+    private var locationPermissionFooterText: String {
+        isMalayAppLanguage()
+            ? "Waktu berfungsi lebih baik apabila lokasi ditetapkan kepada Sentiasa Dibenarkan, terutama untuk widget, mod perjalanan automatik, dan peringatan solat yang lebih tepat."
+            : "Waktu works better when location is set to Always Allow, especially for widgets, automatic travel mode, and more reliable prayer reminders."
     }
 
     private var zikirPreviewBody: String {
@@ -798,6 +819,17 @@ struct NotificationView: View {
         #if !os(watchOS)
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+        #endif
+    }
+
+    private func handleLocationPermissionFooterTapped() {
+        #if !os(watchOS)
+        switch Settings.locationManager.authorizationStatus {
+        case .authorizedWhenInUse, .notDetermined:
+            settings.requestLocationAuthorization()
+        default:
+            openSystemSettings()
         }
         #endif
     }

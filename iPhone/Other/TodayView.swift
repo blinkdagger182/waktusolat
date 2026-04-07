@@ -563,7 +563,7 @@ struct TodayView: View {
     var body: some View {
         NavigationView {
             ForYouRootView()
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
