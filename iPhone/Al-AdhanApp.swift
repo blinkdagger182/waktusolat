@@ -244,6 +244,7 @@ struct AlAdhanApp: App {
             .environmentObject(settings)
             .environmentObject(namesData)
             .environmentObject(revenueCat)
+            .environmentObject(bottomBarVisibility)
             .environment(\.locale, appLocale(for: appLanguageCode))
             .accentColor(settings.accentColor.color)
             .tint(settings.accentColor.color)
@@ -486,7 +487,10 @@ struct AlAdhanApp: App {
             customBottomTabBar
         }
         .onAppear {
-            bottomBarVisibility.activate(source: selectedTab.scrollSourceID)
+            bottomBarVisibility.activate(
+                source: selectedTab.scrollSourceID,
+                hidesOnScroll: tabHidesOnScroll(selectedTab)
+            )
             if firstLaunchSheet {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     withAnimation {
@@ -501,7 +505,10 @@ struct AlAdhanApp: App {
             }
         }
         .onChange(of: selectedTab) { newTab in
-            bottomBarVisibility.activate(source: newTab.scrollSourceID)
+            bottomBarVisibility.activate(
+                source: newTab.scrollSourceID,
+                hidesOnScroll: tabHidesOnScroll(newTab)
+            )
         }
         .sheet(
             isPresented: $showAdhanSheet,
@@ -559,7 +566,7 @@ struct AlAdhanApp: App {
         )
         .shadow(color: Color.black.opacity(isDarkMode ? 0.22 : 0.08), radius: 24, x: 0, y: 12)
         .padding(.bottom, 12)
-        .offset(y: bottomBarVisibility.isHidden ? 120 : 0)
+        .offset(y: bottomBarVisibility.isHidden ? 190 : 0)
         .opacity(bottomBarVisibility.isHidden ? 0.001 : 1)
         .allowsHitTesting(!bottomBarVisibility.isHidden)
         .animation(.spring(response: 0.28, dampingFraction: 0.88), value: bottomBarVisibility.isHidden)
@@ -642,6 +649,15 @@ struct AlAdhanApp: App {
             return Color(red: 0.98, green: 0.39, blue: 0.37)
         case .adhan, .library, .settings:
             return Color.white
+        }
+    }
+
+    private func tabHidesOnScroll(_ tab: AppTab) -> Bool {
+        switch tab {
+        case .today, .library:
+            return true
+        case .adhan, .settings:
+            return false
         }
     }
 

@@ -125,6 +125,7 @@ final class ScrollOffsetObservationView: UIView {
 
     private weak var observedScrollView: UIScrollView?
     private var observation: NSKeyValueObservation?
+    private var pendingAttachWorkItem: DispatchWorkItem?
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
@@ -137,9 +138,13 @@ final class ScrollOffsetObservationView: UIView {
     }
 
     func attachIfNeeded() {
-        guard let scrollView = enclosingScrollView() else { return }
+        guard let scrollView = resolveScrollView() else {
+            scheduleAttachRetry()
+            return
+        }
         guard observedScrollView !== scrollView else { return }
 
+        pendingAttachWorkItem?.cancel()
         observation?.invalidate()
         observedScrollView = scrollView
         observation = scrollView.observe(\.contentOffset, options: [.initial, .new]) { [weak self] scrollView, _ in
@@ -147,6 +152,22 @@ final class ScrollOffsetObservationView: UIView {
                 self?.onChange?(scrollView.contentOffset.y)
             }
         }
+    }
+
+    private func resolveScrollView() -> UIScrollView? {
+        if let directAncestor = enclosingScrollView() {
+            return directAncestor
+        }
+
+        if let nearbyAncestor = nearestAncestorWithScrollViewDescendant() {
+            return findScrollView(in: nearbyAncestor)
+        }
+
+        if let window {
+            return findScrollView(in: window)
+        }
+
+        return nil
     }
 
     private func enclosingScrollView() -> UIScrollView? {
@@ -160,7 +181,44 @@ final class ScrollOffsetObservationView: UIView {
         return nil
     }
 
+    private func nearestAncestorWithScrollViewDescendant() -> UIView? {
+        var candidate = superview
+        while let current = candidate {
+            if findScrollView(in: current) != nil {
+                return current
+            }
+            candidate = current.superview
+        }
+        return nil
+    }
+
+    private func findScrollView(in view: UIView) -> UIScrollView? {
+        if let scrollView = view as? UIScrollView {
+            return scrollView
+        }
+
+        for subview in view.subviews {
+            if let scrollView = findScrollView(in: subview) {
+                return scrollView
+            }
+        }
+
+        return nil
+    }
+
+    private func scheduleAttachRetry() {
+        pendingAttachWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.attachIfNeeded()
+        }
+
+        pendingAttachWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: workItem)
+    }
+
     deinit {
+        pendingAttachWorkItem?.cancel()
         observation?.invalidate()
     }
 }
@@ -170,22 +228,40 @@ final class BottomBarVisibilityController: ObservableObject {
     @Published private(set) var isHidden = false
 
     private var activeSource = ""
+    private var hidesOnScroll = false
     private var lastOffsets: [String: CGFloat] = [:]
-    private let hideThreshold: CGFloat = 18
+    private var initialOffsets: [String: CGFloat] = [:]
+    private let hideThreshold: CGFloat = 4
 
-    func activate(source: String) {
+    func activate(source: String, hidesOnScroll: Bool) {
         activeSource = source
-        lastOffsets[source] = 0
+        self.hidesOnScroll = hidesOnScroll
+        lastOffsets[source] = nil
+        initialOffsets[source] = nil
         setHidden(false)
     }
 
     func handleScroll(offset: CGFloat, source: String) {
         guard source == activeSource else { return }
+        guard hidesOnScroll else {
+            lastOffsets[source] = offset
+            setHidden(false)
+            return
+        }
 
-        let previousOffset = lastOffsets[source] ?? offset
+        // First call: capture the actual initial offset as the "top" reference,
+        // regardless of whether it is 0 or negative (NavigationView insets).
+        guard let previousOffset = lastOffsets[source] else {
+            lastOffsets[source] = offset
+            initialOffsets[source] = offset
+            return
+        }
+
+        let initial = initialOffsets[source] ?? offset
         let delta = offset - previousOffset
 
-        if offset > -24 {
+        // Within 40pt of the initial top position: always snap-show.
+        if offset <= initial + 40 {
             lastOffsets[source] = offset
             setHidden(false)
             return
@@ -194,12 +270,13 @@ final class BottomBarVisibilityController: ObservableObject {
         guard abs(delta) > hideThreshold else { return }
 
         lastOffsets[source] = offset
-        setHidden(delta < 0)
+        // contentOffset.y increases when scrolling DOWN, so delta > 0 → hide.
+        setHidden(delta > 0)
     }
 
     private func setHidden(_ hidden: Bool) {
         guard isHidden != hidden else { return }
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+        withAnimation(.easeOut(duration: 0.18)) {
             isHidden = hidden
         }
     }

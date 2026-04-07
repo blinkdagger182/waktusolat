@@ -1811,6 +1811,7 @@ private struct ForYouVerticalPager<Content: View>: View {
 struct ForYouRootView: View {
     @EnvironmentObject private var settings: Settings
     @EnvironmentObject private var revenueCat: RevenueCatManager
+    @EnvironmentObject private var bottomBarVisibility: BottomBarVisibilityController
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
@@ -1908,8 +1909,9 @@ struct ForYouRootView: View {
                         )
                 )
                 .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 4)
-                .padding(.bottom, 104)
+                .padding(.bottom, bottomBarVisibility.isHidden ? 18 : 104)
                 .zIndex(10)
+                .animation(.easeOut(duration: 0.18), value: bottomBarVisibility.isHidden)
             }
         }
         .task {
