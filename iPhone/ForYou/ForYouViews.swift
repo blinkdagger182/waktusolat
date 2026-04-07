@@ -728,6 +728,7 @@ private struct ForYouTimelineEntryContentCard: View {
                     .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
                     .foregroundStyle(ForYouPalette.ink)
                     .frame(maxWidth: .infinity, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
                     .lineSpacing(3)
                     .minimumScaleFactor(0.8)
             }
@@ -745,6 +746,8 @@ private struct ForYouTimelineEntryContentCard: View {
                         Text(arabicText)
                             .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
                             .foregroundStyle(ForYouPalette.ink)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .multilineTextAlignment(.trailing)
                             .lineLimit(1)
                             .minimumScaleFactor(0.82)
                     }
@@ -812,13 +815,21 @@ private struct ForYouPrayerTabPanel: View {
     var onOpenFullContent: (() -> Void)? = nil
 
     @StateObject private var player = ForYouAudioPlayer()
+    @State private var expandedSectionIDs: Set<String> = []
     @EnvironmentObject private var settings: Settings
 
-    private struct PanelContent {
+    private struct PanelSection: Identifiable {
+        let id: String
         let title: String
         let arabic: String
         let transliteration: String
         let meaning: String
+        let metadata: String?
+    }
+
+    private struct PanelContent {
+        let title: String
+        let sections: [PanelSection]
     }
 
     private var content: PanelContent {
@@ -842,37 +853,11 @@ private struct ForYouPrayerTabPanel: View {
                     .foregroundStyle(ForYouPalette.ink)
                     .fixedSize(horizontal: false, vertical: true)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(content.arabic)
-                        .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
-                        .foregroundStyle(ForYouPalette.ink)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .lineSpacing(4)
-                        .lineLimit(mode == .preview ? 5 : nil)
-
-                    Text(content.meaning)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(ForYouPalette.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(mode == .preview ? 4 : nil)
-
-                    Divider().opacity(0.35)
-
-                    Text(content.transliteration)
-                        .font(.system(size: 11, weight: .regular, design: .rounded))
-                        .foregroundStyle(ForYouPalette.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(mode == .preview ? 4 : nil)
-
+                Group {
                     if mode == .preview {
-                        HStack(spacing: 6) {
-                            Text(isMalayAppLanguage() ? "Ketik teks untuk buka penuh" : "Tap the text to open full view")
-                                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            Image(systemName: "arrow.up.right.square")
-                                .font(.system(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(tab.color)
-                        .padding(.top, 2)
+                        previewContent
+                    } else {
+                        fullContent
                     }
                 }
                 .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -921,6 +906,157 @@ private struct ForYouPrayerTabPanel: View {
         return "\(base)_\(tab.rawValue.lowercased())"
     }
 
+    @ViewBuilder
+    private var previewContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Array(previewSections.enumerated()), id: \.element.id) { index, section in
+                    Text(section.arabic)
+                        .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .multilineTextAlignment(.trailing)
+                        .lineSpacing(6)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if index < previewSections.count - 1 {
+                        Divider()
+                            .opacity(0.35)
+                    }
+                }
+
+                if remainingPreviewCount > 0 {
+                    Text(previewSummaryLine)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(tab.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack(spacing: 6) {
+                Text(isMalayAppLanguage() ? "Ketik teks untuk buka penuh" : "Tap the text to open full view")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                Image(systemName: "arrow.up.right.square")
+                    .font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundStyle(tab.color)
+            .padding(.top, 2)
+        }
+    }
+
+    private var previewSections: [PanelSection] {
+        Array(content.sections.prefix(tab == .wirid ? 2 : 1))
+    }
+
+    private var remainingPreviewCount: Int {
+        max(content.sections.count - previewSections.count, 0)
+    }
+
+    private var previewSummaryLine: String {
+        if isMalayAppLanguage() {
+            return "Dan \(remainingPreviewCount) lagi dalam paparan penuh"
+        }
+
+        return "And \(remainingPreviewCount) more in full view"
+    }
+
+    @ViewBuilder
+    private var fullContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ForEach(Array(content.sections.enumerated()), id: \.element.id) { index, section in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("\(index + 1). \(section.title)")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(tab.color)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text(section.arabic)
+                        .font(.custom(preferredQuranArabicFontName(settings: settings, size: 20), size: 20))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .multilineTextAlignment(.trailing)
+                        .lineSpacing(5)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if usesTranslationAccordion {
+                        Button {
+                            withAnimation(.spring(response: 0.30, dampingFraction: 0.84)) {
+                                toggleSection(section.id)
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Text(isSectionExpanded(section.id)
+                                     ? (isMalayAppLanguage() ? "Sembunyikan terjemahan" : "Hide translation")
+                                     : (isMalayAppLanguage() ? "Lihat terjemahan" : "Show translation"))
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                Spacer()
+                                Image(systemName: isSectionExpanded(section.id) ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundStyle(tab.color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(tab.color.opacity(0.10))
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        if isSectionExpanded(section.id) {
+                            translationContent(for: section)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    } else {
+                        translationContent(for: section)
+                    }
+                }
+
+                if index < content.sections.count - 1 {
+                    Divider().opacity(0.35)
+                }
+            }
+        }
+    }
+
+    private var usesTranslationAccordion: Bool {
+        mode == .full
+    }
+
+    private func isSectionExpanded(_ id: String) -> Bool {
+        expandedSectionIDs.contains(id)
+    }
+
+    private func toggleSection(_ id: String) {
+        if expandedSectionIDs.contains(id) {
+            expandedSectionIDs.remove(id)
+        } else {
+            expandedSectionIDs.insert(id)
+        }
+    }
+
+    @ViewBuilder
+    private func translationContent(for section: PanelSection) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(section.transliteration)
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .foregroundStyle(ForYouPalette.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(section.meaning)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(ForYouPalette.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let metadata = section.metadata {
+                Text(metadata)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private func wiridContent(for canonicalPrayer: String) -> PanelContent {
         let items = WiridContentRepository.items(forPrayer: canonicalPrayer)
         let isFull = WiridContentRepository.fullWiridPrayers.contains(canonicalPrayer)
@@ -930,29 +1066,25 @@ private struct ForYouPrayerTabPanel: View {
 
         return PanelContent(
             title: title,
-            arabic: items
-                .map { item in item.arabicText }
-                .joined(separator: "\n\n"),
-            transliteration: items
-                .map { item in
-                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
-                    let countLine = item.count.map { " \($0)" } ?? ""
-                    return "\(itemTitle)\(countLine)\n\(item.transliteration)"
+            sections: items.map { item in
+                let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
+                var metadata: [String] = []
+                if let count = item.count {
+                    metadata.append(isMalayAppLanguage() ? "Ulangan: \(count)" : "Repeat: \(count)")
                 }
-                .joined(separator: "\n\n"),
-            meaning: items
-                .map { item in
-                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
-                    var lines = ["\(itemTitle): \(item.translationMy)"]
-                    if let count = item.count {
-                        lines.append(isMalayAppLanguage() ? "Ulangan: \(count)" : "Repeat: \(count)")
-                    }
-                    if let reference = item.reference {
-                        lines.append(reference)
-                    }
-                    return lines.joined(separator: "\n")
+                if let reference = item.reference {
+                    metadata.append(reference)
                 }
-                .joined(separator: "\n\n")
+
+                return PanelSection(
+                    id: item.id,
+                    title: itemTitle,
+                    arabic: item.arabicText,
+                    transliteration: item.transliteration,
+                    meaning: item.translationMy,
+                    metadata: metadata.isEmpty ? nil : metadata.joined(separator: "\n")
+                )
+            }
         )
     }
 
@@ -962,25 +1094,17 @@ private struct ForYouPrayerTabPanel: View {
 
         return PanelContent(
             title: isMalayAppLanguage() ? "Doa selepas solat" : "Post-prayer dua",
-            arabic: items
-                .map { $0.arabicText }
-                .joined(separator: "\n\n"),
-            transliteration: items
-                .map { item in
-                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
-                    return "\(itemTitle)\n\(item.transliteration)"
-                }
-                .joined(separator: "\n\n"),
-            meaning: items
-                .map { item in
-                    let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
-                    var lines = ["\(itemTitle): \(item.translationMy)"]
-                    if let note = item.note {
-                        lines.append(note)
-                    }
-                    return lines.joined(separator: "\n")
-                }
-                .joined(separator: "\n\n")
+            sections: items.map { item in
+                let itemTitle = isMalayAppLanguage() ? item.titleMy : item.titleEn
+                return PanelSection(
+                    id: item.id,
+                    title: itemTitle,
+                    arabic: item.arabicText,
+                    transliteration: item.transliteration,
+                    meaning: item.translationMy,
+                    metadata: item.note
+                )
+            }
         )
     }
 
