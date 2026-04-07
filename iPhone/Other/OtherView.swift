@@ -313,6 +313,11 @@ struct OtherView: View {
     @State private var expandedSurahNumber: Int?
     @State private var dailyQuranArabicText: String?
     @State private var pinnedSurahNumbers: [Int] = []
+    private let onScrollOffsetChange: ((CGFloat) -> Void)?
+
+    init(onScrollOffsetChange: ((CGFloat) -> Void)? = nil) {
+        self.onScrollOffsetChange = onScrollOffsetChange
+    }
 
     private static let pinnedSurahsKey = "pinnedSurahNumbersV1"
     private static let maxPinnedSurahs = 3
@@ -802,9 +807,15 @@ struct OtherView: View {
                 AlIslamAppsSection()
                 #endif
             }
+            .background(
+                ScrollOffsetObserver { offset in
+                    onScrollOffsetChange?(offset)
+                }
+            )
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle(isMalayAppLanguage() ? "Pustaka" : "Library")
             .onAppear {
+                onScrollOffsetChange?(0)
                 loadResumeSelection()
                 loadPinnedSurahs()
                 syncSharedQuranContentLanguagePreference(quranLanguageCode)

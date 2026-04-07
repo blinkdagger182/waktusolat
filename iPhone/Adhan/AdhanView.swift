@@ -22,6 +22,7 @@ struct AdhanView: View {
     @State private var showBigQibla = false
     @State private var showDailyQuranAccordion = false
     @State private var dailyQuranQuote: DailyQuranCachedQuote?
+    private let onScrollOffsetChange: ((CGFloat) -> Void)?
     
     @State private var showAlert: AlertType?
     enum AlertType: Identifiable {
@@ -35,6 +36,10 @@ struct AdhanView: View {
             case .notificationAlert: return 4
             }
         }
+    }
+
+    init(onScrollOffsetChange: ((CGFloat) -> Void)? = nil) {
+        self.onScrollOffsetChange = onScrollOffsetChange
     }
     
     func prayerTimeRefresh(force: Bool) {
@@ -326,13 +331,20 @@ struct AdhanView: View {
             .refreshable {
                 prayerTimeRefresh(force: true)
             }
+            .background(
+                ScrollOffsetObserver { offset in
+                    onScrollOffsetChange?(offset)
+                }
+            )
             .onAppear {
+                onScrollOffsetChange?(0)
                 postUIHeartbeat()
                 prayerTimeRefresh(force: false)
                 loadDailyQuranQuote()
             }
             .onChange(of: scenePhase) { newScenePhase in
                 if newScenePhase == .active {
+                    onScrollOffsetChange?(0)
                     postUIHeartbeat()
                     prayerTimeRefresh(force: false)
                     loadDailyQuranQuote()

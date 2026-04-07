@@ -483,9 +483,6 @@
     "Ayat Harian" : {
 
     },
-    "Azan" : {
-
-    },
     "Bahasa Melayu" : {
       "comment" : "",
       "extractionState" : "stale",
@@ -1576,9 +1573,6 @@
           }
         }
       }
-    },
-    "Hari Ini" : {
-
     },
     "Hari ini sudah kamu rasa. Hari-hari seterusnya menunggu." : {
       "comment" : "A description of the locked view, explaining that the user has already taken their prayers for the day and that the next day is still being prepared.",
@@ -3962,6 +3956,7 @@
       }
     },
     "Today" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {

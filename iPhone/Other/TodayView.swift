@@ -559,10 +559,15 @@ struct TodayPracticeCard: View {
 
 struct TodayView: View {
     @EnvironmentObject private var settings: Settings
+    private let onScrollOffsetChange: ((CGFloat) -> Void)?
+
+    init(onScrollOffsetChange: ((CGFloat) -> Void)? = nil) {
+        self.onScrollOffsetChange = onScrollOffsetChange
+    }
 
     var body: some View {
         NavigationView {
-            ForYouRootView()
+            ForYouRootView(onScrollOffsetChange: onScrollOffsetChange)
                 .navigationBarTitleDisplayMode(.inline)
         }
         .enablesScrollChromeHiding()

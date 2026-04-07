@@ -149,6 +149,7 @@ final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate
 
 @main
 struct AlAdhanApp: App {
+    @Environment(\.colorScheme) private var systemColorScheme
     @Environment(\.scenePhase) private var scenePhase
 
     private enum AppTab: Hashable {
@@ -156,11 +157,25 @@ struct AlAdhanApp: App {
         case today
         case library
         case settings
+
+        var scrollSourceID: String {
+            switch self {
+            case .adhan:
+                return "adhan-tab-scroll"
+            case .today:
+                return "today-tab-scroll"
+            case .library:
+                return "library-tab-scroll"
+            case .settings:
+                return "settings-tab-scroll"
+            }
+        }
     }
 
     @StateObject private var settings = Settings.shared
     @StateObject private var namesData = NamesViewModel.shared
     @StateObject private var revenueCat = RevenueCatManager.shared
+    @StateObject private var bottomBarVisibility = BottomBarVisibilityController()
     #if canImport(WatchConnectivity)
     @StateObject private var phoneWatchSync = PhoneWatchSyncManager.shared
     #endif
@@ -206,6 +221,7 @@ struct AlAdhanApp: App {
         #if canImport(WatchConnectivity)
         PhoneWatchSyncManager.shared.activate()
         #endif
+        Self.configureTabBarAppearance()
         let defaults = UserDefaults.standard
         defaults.set(defaults.integer(forKey: "appLaunchCountV1") + 1, forKey: "appLaunchCountV1")
         syncSharedAppLanguagePreference(defaults.string(forKey: AppLanguage.storageKey))
@@ -220,67 +236,7 @@ struct AlAdhanApp: App {
                 } else if settings.firstLaunch {
                     SplashScreen()
                 } else {
-                    TabView(selection: $selectedTab) {
-                        AdhanView()
-                            .tabItem {
-                                Image(systemName: "safari")
-                                Text("Azan")
-                            }
-                            .tag(AppTab.adhan)
-
-                        TodayView()
-                            .tabItem {
-                                Image(systemName: "sun.max")
-                                Text(isMalayAppLanguage() ? "Hari Ini" : "Today")
-                            }
-                            .tag(AppTab.today)
-
-                        OtherView()
-                            .tabItem {
-                                Image(systemName: "books.vertical")
-                                Text(isMalayAppLanguage() ? "Pustaka" : "Library")
-                            }
-                            .tag(AppTab.library)
-
-                        #if false
-                        SettingsView()
-                            .tabItem {
-                                Image(systemName: "gearshape")
-                                Text("Settings")
-                            }
-                            .tag(AppTab.settings)
-                        #endif
-                    }
-                    .minimizesTabBarOnScroll()
-                    .onAppear {
-                        if firstLaunchSheet {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                                withAnimation {
-                                    showAdhanSheet = true
-                                }
-                            }
-                        } else {
-                            presentDailyQuranWidgetIntroIfNeeded()
-                            Task {
-                                await checkForMarketingModalUpdate(force: false)
-                            }
-                        }
-                    }
-                    .sheet(
-                        isPresented: $showAdhanSheet,
-                        onDismiss: {
-                            firstLaunchSheet = false
-                            presentDailyQuranWidgetIntroIfNeeded()
-                            pendingFirstRunNotificationPrompt = true
-                            scheduleFirstRunNotificationPromptIfNeeded()
-                        }) {
-                        AdhanSetupSheet()
-                            .environmentObject(settings)
-                            .accentColor(settings.accentColor.color)
-                            .tint(settings.accentColor.color)
-                            .preferredColorScheme(settings.colorScheme)
-                            .transition(.opacity)
-                    }
+                    mainTabView
                 }
             }
             .id(rootRefreshToken)
@@ -518,6 +474,184 @@ struct AlAdhanApp: App {
                 }
             }
         }
+    }
+
+    private var mainTabView: some View {
+        ZStack(alignment: .bottom) {
+            Color(uiColor: .systemGroupedBackground)
+                .ignoresSafeArea()
+
+            currentTabContent
+
+            customBottomTabBar
+        }
+        .onAppear {
+            bottomBarVisibility.activate(source: selectedTab.scrollSourceID)
+            if firstLaunchSheet {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    withAnimation {
+                        showAdhanSheet = true
+                    }
+                }
+            } else {
+                presentDailyQuranWidgetIntroIfNeeded()
+                Task {
+                    await checkForMarketingModalUpdate(force: false)
+                }
+            }
+        }
+        .onChange(of: selectedTab) { newTab in
+            bottomBarVisibility.activate(source: newTab.scrollSourceID)
+        }
+        .sheet(
+            isPresented: $showAdhanSheet,
+            onDismiss: {
+                firstLaunchSheet = false
+                presentDailyQuranWidgetIntroIfNeeded()
+                pendingFirstRunNotificationPrompt = true
+                scheduleFirstRunNotificationPromptIfNeeded()
+            }) {
+            AdhanSetupSheet()
+                .environmentObject(settings)
+                .accentColor(settings.accentColor.color)
+                .tint(settings.accentColor.color)
+                .preferredColorScheme(settings.colorScheme)
+                .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var currentTabContent: some View {
+        switch selectedTab {
+        case .adhan:
+            AdhanView { offset in
+                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.adhan.scrollSourceID)
+            }
+        case .today:
+            TodayView { offset in
+                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.today.scrollSourceID)
+            }
+        case .library:
+            OtherView { offset in
+                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.library.scrollSourceID)
+            }
+        case .settings:
+            SettingsView()
+        }
+    }
+
+    private var customBottomTabBar: some View {
+        HStack(spacing: 10) {
+            bottomTabBarButton(for: .adhan, systemImage: "safari", title: "Azan")
+            bottomTabBarButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
+            bottomTabBarButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .frame(maxWidth: 292)
+        .background(
+            Capsule(style: .continuous)
+                .fill(tabBarShellColor)
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(tabBarBorderColor, lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(isDarkMode ? 0.22 : 0.08), radius: 24, x: 0, y: 12)
+        .padding(.bottom, 12)
+        .offset(y: bottomBarVisibility.isHidden ? 120 : 0)
+        .opacity(bottomBarVisibility.isHidden ? 0.001 : 1)
+        .allowsHitTesting(!bottomBarVisibility.isHidden)
+        .animation(.spring(response: 0.28, dampingFraction: 0.88), value: bottomBarVisibility.isHidden)
+    }
+
+    private func bottomTabBarButton(for tab: AppTab, systemImage: String, title: String) -> some View {
+        let isSelected = selectedTab == tab
+
+        return Button {
+            settings.hapticFeedback()
+            selectedTab = tab
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 20, weight: .semibold))
+
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isSelected ? selectedTabColor(for: tab) : unselectedTabColor)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(isSelected ? selectedTabBackgroundColor : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
+            )
+            .shadow(
+                color: isSelected ? Color.black.opacity(isDarkMode ? 0.18 : 0.06) : Color.clear,
+                radius: 10,
+                x: 0,
+                y: 6
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+    }
+
+    private var isDarkMode: Bool {
+        let effectiveColorScheme = settings.colorScheme ?? systemColorScheme
+        return effectiveColorScheme == .dark
+    }
+
+    private var tabBarShellColor: Color {
+        isDarkMode
+            ? Color.black.opacity(0.88)
+            : Color(red: 0.95, green: 0.95, blue: 0.96).opacity(0.96)
+    }
+
+    private var tabBarBorderColor: Color {
+        isDarkMode
+            ? Color.white.opacity(0.08)
+            : Color.black.opacity(0.05)
+    }
+
+    private var selectedTabBackgroundColor: Color {
+        isDarkMode
+            ? Color.white.opacity(0.14)
+            : Color.black.opacity(0.08)
+    }
+
+    private var selectedTabBorderColor: Color {
+        isDarkMode
+            ? Color.white.opacity(0.06)
+            : Color.white.opacity(0.85)
+    }
+
+    private var unselectedTabColor: Color {
+        isDarkMode ? Color.white.opacity(0.88) : Color.black.opacity(0.70)
+    }
+
+    private func selectedTabColor(for tab: AppTab) -> Color {
+        switch tab {
+        case .today:
+            return Color(red: 0.98, green: 0.39, blue: 0.37)
+        case .adhan, .library, .settings:
+            return Color.white
+        }
+    }
+
+    private static func configureTabBarAppearance() {
+        let defaultAppearance = UITabBarAppearance()
+        defaultAppearance.configureWithDefaultBackground()
+
+        UITabBar.appearance().standardAppearance = defaultAppearance
+        UITabBar.appearance().scrollEdgeAppearance = defaultAppearance
+        UITabBar.appearance().isTranslucent = false
     }
 
     private var storefrontRegionName: String {

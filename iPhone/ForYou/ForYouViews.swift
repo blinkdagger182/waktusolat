@@ -1766,8 +1766,13 @@ struct ForYouRootView: View {
     @EnvironmentObject private var revenueCat: RevenueCatManager
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
+    private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
+
+    init(onScrollOffsetChange: ((CGFloat) -> Void)? = nil) {
+        self.onScrollOffsetChange = onScrollOffsetChange
+    }
 
     var body: some View {
         ZStack {
@@ -1796,7 +1801,13 @@ struct ForYouRootView: View {
                             .frame(maxWidth: .infinity)
                         }
                     }
+                    .background(
+                        ScrollOffsetObserver { offset in
+                            onScrollOffsetChange?(offset)
+                        }
+                    )
                     .onAppear {
+                        onScrollOffsetChange?(0)
                         if let id = currentDayViewModel?.focusedEntryID {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                                 withAnimation(.easeInOut(duration: 0.5)) {
