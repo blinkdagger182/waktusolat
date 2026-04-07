@@ -445,6 +445,7 @@ struct AdhanView: View {
             #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)
         }
+        .enablesScrollChromeHiding()
         .confirmationDialog("", isPresented: Binding(
             get: { showAlert != nil },
             set: { if !$0 { showAlert = nil } }

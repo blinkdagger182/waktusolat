@@ -440,6 +440,7 @@ struct NotificationView: View {
     @State private var showAlert: Bool = false
     @State private var notifSettings: UNNotificationSettings?
     @State private var requestAccessAlertMessage: String?
+    @State private var locationAccessAlertMessage: String?
     #if os(iOS)
     @State private var previewPlayer: AVAudioPlayer?
     #endif
@@ -451,6 +452,12 @@ struct NotificationView: View {
                 permissionCard
             }
             #endif
+
+            Section(footer: locationPermissionFooter) {
+                EmptyView()
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
             
             Section(header: Text(appLocalized("PRAYER REMINDERS"))) {
                 NavigationLink(destination: MoreNotificationView()) {
@@ -521,7 +528,7 @@ struct NotificationView: View {
                 }
             }
 
-            Section(header: Text(appLocalized("NOTIFICATION SOUND")), footer: locationPermissionFooter) {
+            Section(header: Text(appLocalized("NOTIFICATION SOUND"))) {
                 Picker(
                     selection: Binding(
                         get: { settings.notificationSoundOption },
@@ -565,6 +572,20 @@ struct NotificationView: View {
             }
         } message: {
             if let msg = requestAccessAlertMessage {
+                Text(msg)
+            }
+        }
+        .confirmationDialog("Location Access", isPresented: Binding(
+            get: { locationAccessAlertMessage != nil },
+            set: { if !$0 { locationAccessAlertMessage = nil } }
+        ), titleVisibility: .visible) {
+            Button("OK", role: .cancel) { locationAccessAlertMessage = nil }
+            Button("Open Settings") {
+                locationAccessAlertMessage = nil
+                openSystemSettings()
+            }
+        } message: {
+            if let msg = locationAccessAlertMessage {
                 Text(msg)
             }
         }
@@ -622,7 +643,7 @@ struct NotificationView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-        .foregroundColor(settings.accentColor.color)
+        .foregroundColor(.blue)
     }
 
     private var locationPermissionFooterText: String {
@@ -828,6 +849,14 @@ struct NotificationView: View {
         switch Settings.locationManager.authorizationStatus {
         case .authorizedWhenInUse, .notDetermined:
             settings.requestLocationAuthorization()
+        case .authorizedAlways:
+            locationAccessAlertMessage = isMalayAppLanguage()
+                ? "Akses lokasi anda sudah ditetapkan kepada Sentiasa Dibenarkan."
+                : "Location access is already set to Always Allow."
+        case .denied, .restricted:
+            locationAccessAlertMessage = isMalayAppLanguage()
+                ? "Untuk menukar kepada Sentiasa Dibenarkan, buka aplikasi Settings iPhone dan benarkan akses lokasi di sana."
+                : "To change this to Always Allow, open the iPhone Settings app and update location access there."
         default:
             openSystemSettings()
         }

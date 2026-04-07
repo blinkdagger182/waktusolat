@@ -872,6 +872,7 @@ struct OtherView: View {
             }
             .searchable(text: $searchText, prompt: isMalayAppLanguage() ? "Cari surah" : "Search surah")
         }
+        .enablesScrollChromeHiding()
     }
 
     private func loadPinnedSurahs() {

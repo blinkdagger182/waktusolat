@@ -565,6 +565,7 @@ struct TodayView: View {
             ForYouRootView()
                 .navigationBarTitleDisplayMode(.inline)
         }
+        .enablesScrollChromeHiding()
     }
 }
 

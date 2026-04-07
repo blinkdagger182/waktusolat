@@ -251,6 +251,7 @@ struct AlAdhanApp: App {
                             .tag(AppTab.settings)
                         #endif
                     }
+                    .minimizesTabBarOnScroll()
                     .onAppear {
                         if firstLaunchSheet {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {

@@ -64,9 +64,45 @@ extension View {
 }
 
 #if os(iOS)
+private struct NavigationBarSwipeHider: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> Controller {
+        Controller()
+    }
+
+    func updateUIViewController(_ uiViewController: Controller, context: Context) {
+        uiViewController.applyNavigationBehavior()
+    }
+
+    final class Controller: UIViewController {
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            applyNavigationBehavior()
+        }
+
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            navigationController?.hidesBarsOnSwipe = false
+        }
+
+        func applyNavigationBehavior() {
+            navigationController?.hidesBarsOnSwipe = true
+        }
+    }
+}
+
 extension View {
-    func enablesScrollChromeHiding() -> some View { self }
-    func minimizesTabBarOnScroll() -> some View { self }
+    func enablesScrollChromeHiding() -> some View {
+        background(NavigationBarSwipeHider().frame(width: 0, height: 0))
+    }
+
+    @ViewBuilder
+    func minimizesTabBarOnScroll() -> some View {
+        if #available(iOS 26.0, *) {
+            tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
+        }
+    }
 }
 #else
 extension View {
