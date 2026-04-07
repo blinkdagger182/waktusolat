@@ -232,6 +232,7 @@ final class BottomBarVisibilityController: ObservableObject {
     private var lastOffsets: [String: CGFloat] = [:]
     private var initialOffsets: [String: CGFloat] = [:]
     private let hideThreshold: CGFloat = 4
+    private var showSuppressed = false
 
     func activate(source: String, hidesOnScroll: Bool) {
         activeSource = source
@@ -274,7 +275,17 @@ final class BottomBarVisibilityController: ObservableObject {
         setHidden(delta > 0)
     }
 
+    /// Call before a programmatic scroll-up (e.g. pager left button) to prevent
+    /// the bar from snapping back into view while the scroll animation plays out.
+    func suppressNextShow(for duration: TimeInterval = 0.55) {
+        showSuppressed = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.showSuppressed = false
+        }
+    }
+
     private func setHidden(_ hidden: Bool) {
+        if !hidden && showSuppressed { return }
         guard isHidden != hidden else { return }
         withAnimation(.easeOut(duration: 0.18)) {
             isHidden = hidden

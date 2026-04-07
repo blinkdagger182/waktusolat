@@ -1491,7 +1491,7 @@ private struct ForYouDayView: View {
                         .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.55))
                 }
 
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(Array(timelinePages.enumerated()), id: \.offset) { index, page in
                         pageContent(index: index, page: page)
                             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -1814,6 +1814,7 @@ struct ForYouRootView: View {
     @EnvironmentObject private var bottomBarVisibility: BottomBarVisibilityController
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
+    @State private var scrollTarget: (entryID: String, token: UUID)?
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -1876,12 +1877,10 @@ struct ForYouRootView: View {
                             }
                         }
                     }
-                    .onChange(of: prayerSelection?.entryID) { entryID in
-                        guard let entryID else { return }
-                        DispatchQueue.main.async {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
-                                proxy.scrollTo(entryID, anchor: focusScrollAnchor)
-                            }
+                    .onChange(of: scrollTarget?.token) { _ in
+                        guard let entryID = scrollTarget?.entryID else { return }
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
+                            proxy.scrollTo(entryID, anchor: focusScrollAnchor)
                         }
                     }
                 }
@@ -1891,6 +1890,7 @@ struct ForYouRootView: View {
             if !prayerCardSequence.isEmpty {
                 HStack(spacing: 10) {
                     pageCycleControlButton(systemName: "chevron.left") {
+                        bottomBarVisibility.suppressNextShow()
                         cyclePrayerSelection(direction: -1)
                     }
 
@@ -1985,10 +1985,14 @@ struct ForYouRootView: View {
         let current = prayerSelection ?? prayerCardSequence[0]
         let currentIndex = prayerCardSequence.firstIndex(of: current) ?? 0
         let nextIndex = (currentIndex + direction + prayerCardSequence.count) % prayerCardSequence.count
+        let next = prayerCardSequence[nextIndex]
 
         withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
-            selectedPrayerCard = prayerCardSequence[nextIndex]
+            selectedPrayerCard = next
         }
+        // UUID token ensures the observer always fires, even when the entryID
+        // or selection value wraps back to one it has seen before.
+        scrollTarget = (entryID: next.entryID, token: UUID())
     }
 
     private func pageCycleControlButton(systemName: String, action: @escaping () -> Void) -> some View {
