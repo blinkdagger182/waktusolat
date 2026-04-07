@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import UIKit
 
 private enum ForYouPalette {
     static let canvas = Color(red: 0.93, green: 0.93, blue: 0.94)
@@ -45,6 +46,18 @@ private enum ForYouFormatters {
         formatter.dateStyle = .none
         return formatter
     }()
+}
+
+private enum ForYouTypography {
+    static func playfairHeadline(size: CGFloat) -> Font {
+        if UIFont(name: "PlayfairDisplay-Regular", size: size) != nil {
+            return .custom("PlayfairDisplay-Regular", size: size)
+        }
+        if UIFont(name: "Playfair Display", size: size) != nil {
+            return .custom("Playfair Display", size: size)
+        }
+        return .system(size: size, weight: .medium, design: .serif)
+    }
 }
 
 private extension ForYouMomentType {
@@ -1320,7 +1333,7 @@ private struct ForYouLockedLayer: View {
 
 private struct ForYouSummaryHeader: View {
     let plan: ForYouDailyPlan
-    let highlightedEntry: ForYouTimelineEntry?
+    let currentPrayerEntry: ForYouTimelineEntry?
 
     var body: some View {
         GeometryReader { geometry in
@@ -1335,13 +1348,13 @@ private struct ForYouSummaryHeader: View {
             HStack(spacing: panelSpacing) {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: 7) {
-                        Image(systemName: highlightedEntry?.icon ?? "sunrise")
-                            .font(.system(size: 22, weight: .regular))
+                        Image(systemName: currentPrayerEntry?.icon ?? "sunrise")
+                            .font(.system(size: 24, weight: .regular))
                             .foregroundStyle(ForYouPalette.ink)
-                            .frame(width: 34, height: 34, alignment: .topLeading)
+                            .frame(width: 36, height: 36, alignment: .topLeading)
 
-                        Text(highlightedEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
                             .foregroundStyle(ForYouPalette.ink)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -1352,11 +1365,11 @@ private struct ForYouSummaryHeader: View {
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(shortWeekday)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundStyle(ForYouPalette.ink)
 
                         Text(plan.locationLine ?? "Kuala Lumpur")
-                            .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                            .font(.system(size: 10.5, weight: .medium, design: .rounded))
                             .foregroundStyle(ForYouPalette.ink)
                             .lineLimit(1)
                             .minimumScaleFactor(0.72)
@@ -1376,11 +1389,11 @@ private struct ForYouSummaryHeader: View {
 
                 VStack(spacing: panelSpacing) {
                     HStack(spacing: 7) {
-                        Image(systemName: highlightedEntry?.momentType == .night ? "moon.stars" : "sun.max")
-                            .font(.system(size: 15, weight: .medium))
+                        Image(systemName: currentPrayerEntry?.momentType == .night ? "moon.stars" : "sun.max")
+                            .font(.system(size: 16, weight: .medium))
 
-                        Text(nextTime)
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
                             .lineLimit(1)
                             .minimumScaleFactor(0.62)
                     }
@@ -1396,11 +1409,11 @@ private struct ForYouSummaryHeader: View {
                     )
 
                     HStack(spacing: 8) {
-                        Image(systemName: "cloud.fill")
-                            .font(.system(size: 15, weight: .medium))
+                        Image(systemName: "clock")
+                            .font(.system(size: 17, weight: .medium))
 
-                        Text(weatherText)
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        Text(currentPrayerTime)
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                     }
@@ -1430,22 +1443,21 @@ private struct ForYouSummaryHeader: View {
         ForYouFormatters.weekday.string(from: plan.date).prefix(3).capitalized
     }
 
-    private var nextTime: String {
-        guard let highlightedEntry else { return "--:--" }
-        return ForYouFormatters.shortTime.string(from: highlightedEntry.time)
-    }
-
-    private var weatherText: String {
-        "30°"
+    private var currentPrayerTime: String {
+        guard let currentPrayerEntry else { return "--:--" }
+        return ForYouFormatters.shortTime.string(from: currentPrayerEntry.time)
     }
 }
 
 private struct ForYouDayView: View {
+    static let prayerTimelineSectionID = "for-you-prayer-timeline-section"
+
     let viewModel: ForYouDayViewModel
     let completedIDs: Set<String>
     let onToggleCompletion: (String) -> Void
     let selection: ForYouPrayerCardSelection?
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
+    let onScrollToPrayerTimeline: () -> Void
 
     @State private var selectedPageIndex: Int?
 
@@ -1454,13 +1466,15 @@ private struct ForYouDayView: View {
         completedIDs: Set<String>,
         onToggleCompletion: @escaping (String) -> Void,
         selection: ForYouPrayerCardSelection?,
-        onSelectionChange: @escaping (ForYouPrayerCardSelection) -> Void
+        onSelectionChange: @escaping (ForYouPrayerCardSelection) -> Void,
+        onScrollToPrayerTimeline: @escaping () -> Void
     ) {
         self.viewModel = viewModel
         self.completedIDs = completedIDs
         self.onToggleCompletion = onToggleCompletion
         self.selection = selection
         self.onSelectionChange = onSelectionChange
+        self.onScrollToPrayerTimeline = onScrollToPrayerTimeline
         _selectedPageIndex = State(initialValue: Self.resolveInitialPageIndex(for: viewModel.plan))
     }
 
@@ -1597,6 +1611,18 @@ private struct ForYouDayView: View {
         ForYouFormatters.weekday.string(from: viewModel.plan.date)
     }
 
+    private var currentPrayerEntry: ForYouTimelineEntry? {
+        let prayerEntries = viewModel.plan.timelineEntries.filter { $0.kind == .prayer }
+        guard !prayerEntries.isEmpty else { return nil }
+
+        if Calendar.current.isDateInToday(viewModel.plan.date) {
+            let now = Date()
+            return prayerEntries.last(where: { $0.time <= now }) ?? prayerEntries.first
+        }
+
+        return prayerEntries.first
+    }
+
     private var prayerEntries: [ForYouTimelineEntry] {
         viewModel.plan.timelineEntries.filter { $0.kind == .prayer }
     }
@@ -1634,10 +1660,21 @@ private struct ForYouDayView: View {
     private func pageContent(index: Int, page: [ForYouTimelineEntry]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if index == 0 {
-                ForYouSummaryHeader(
-                    plan: viewModel.plan,
-                    highlightedEntry: highlightedEntry(for: index)
-                )
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Hello Rizhan")
+                        .font(ForYouTypography.playfairHeadline(size: 31))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .accessibilityAddTraits(.isHeader)
+
+                    Button(action: onScrollToPrayerTimeline) {
+                        ForYouSummaryHeader(
+                            plan: viewModel.plan,
+                            currentPrayerEntry: currentPrayerEntry
+                        )
+                    }
+                    .buttonStyle(ForYouHeroJumpButtonStyle())
+                    .accessibilityLabel(isMalayAppLanguage() ? "Lompat ke bahagian waktu solat" : "Jump to prayer times section")
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(weekdayLine)
@@ -1654,6 +1691,7 @@ private struct ForYouDayView: View {
                 Text(isMalayAppLanguage() ? "Hari penuh" : "Full day")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(ForYouPalette.secondaryInk)
+                    .id(Self.prayerTimelineSectionID)
             }
 
             ForEach(page) { entry in
@@ -1703,6 +1741,15 @@ private struct ForYouDayView: View {
 
         let remainingIndex = initialSegmentIndex - firstPageEntryCount
         return 1 + (remainingIndex / subsequentPageEntryCount)
+    }
+}
+
+private struct ForYouHeroJumpButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .opacity(configuration.isPressed ? 0.92 : 1)
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
     }
 }
 
@@ -1796,7 +1843,19 @@ struct ForYouRootView: View {
                                 completedIDs: viewModel.completedIDs,
                                 onToggleCompletion: viewModel.toggleCompletion(for:),
                                 selection: prayerSelection,
-                                onSelectionChange: { selectedPrayerCard = $0 }
+                                onSelectionChange: { selectedPrayerCard = $0 },
+                                onScrollToPrayerTimeline: {
+                                    settings.hapticFeedback()
+                                    if let currentPrayerSelection {
+                                        selectedPrayerCard = currentPrayerSelection
+                                    }
+                                    withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+                                        proxy.scrollTo(
+                                            currentPrayerSelection?.entryID ?? ForYouDayView.prayerTimelineSectionID,
+                                            anchor: focusScrollAnchor
+                                        )
+                                    }
+                                }
                             )
                             .frame(maxWidth: .infinity)
                         }
@@ -1828,7 +1887,7 @@ struct ForYouRootView: View {
             }
         }
         .overlay(alignment: .bottom) {
-            if prayerSelection != nil {
+            if !prayerCardSequence.isEmpty {
                 HStack(spacing: 10) {
                     pageCycleControlButton(systemName: "chevron.left") {
                         cyclePrayerSelection(direction: -1)
@@ -1849,7 +1908,8 @@ struct ForYouRootView: View {
                         )
                 )
                 .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 4)
-                .padding(.bottom, 14)
+                .padding(.bottom, 104)
+                .zIndex(10)
             }
         }
         .task {
@@ -1887,6 +1947,16 @@ struct ForYouRootView: View {
         if let focusedEntryID = currentDayViewModel?.focusedEntryID,
            prayerEntries.contains(where: { $0.id == focusedEntryID }) {
             return .main(focusedEntryID)
+        }
+
+        return prayerEntries.first.map { .main($0.id) }
+    }
+
+    private var currentPrayerSelection: ForYouPrayerCardSelection? {
+        guard !prayerEntries.isEmpty else { return nil }
+
+        if let currentPrayer = prayerEntries.last(where: { $0.time <= Date() }) {
+            return .main(currentPrayer.id)
         }
 
         return prayerEntries.first.map { .main($0.id) }
