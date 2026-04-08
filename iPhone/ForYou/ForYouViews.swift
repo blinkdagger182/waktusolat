@@ -3,14 +3,14 @@ import AVFoundation
 import UIKit
 
 private enum ForYouPalette {
-    static let canvas = Color(red: 0.93, green: 0.93, blue: 0.94)
-    static let card = Color.white.opacity(0.82)
-    static let softCard = Color(red: 0.97, green: 0.97, blue: 0.98)
-    static let stroke = Color.black.opacity(0.08)
-    static let ink = Color.black.opacity(0.92)
-    static let secondaryInk = Color.black.opacity(0.58)
+    static let canvas    = Color(uiColor: .systemGroupedBackground)
+    static let card      = Color(uiColor: .secondarySystemBackground).opacity(0.82)
+    static let softCard  = Color(uiColor: .secondarySystemGroupedBackground)
+    static let stroke    = Color.primary.opacity(0.08)
+    static let ink       = Color.primary
+    static let secondaryInk = Color.secondary
     static let accentSky = Color(red: 0.61, green: 0.83, blue: 0.93)
-    static let darkTile = Color(red: 0.23, green: 0.26, blue: 0.30)
+    static let darkTile  = Color(red: 0.23, green: 0.26, blue: 0.30)
     // Prayer tab strip colors
     static let tabWirid = Color(red: 0x91/255, green: 0xcd/255, blue: 0xe1/255)
     static let tabDoa   = Color(red: 0x00/255, green: 0x35/255, blue: 0x66/255)
@@ -894,34 +894,11 @@ private struct ForYouPrayerTabPanel: View {
                     onOpenFullContent?()
                 }
 
-                HStack(spacing: 10) {
-                    Button {
-                        player.togglePlayback(for: audioFileName(tab: tab, prayer: entry.title))
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundStyle(tab.color)
-
-                            Text(player.isPlaying ? (isMalayAppLanguage() ? "Berhenti" : "Pause") : (isMalayAppLanguage() ? "Dengar" : "Play"))
-                                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                .foregroundStyle(ForYouPalette.secondaryInk)
-                        }
-                    }
-
-                    Spacer()
-
-                    if player.duration > 0 {
-                        Text(player.progressText)
-                            .font(.system(size: 10, weight: .medium, design: .rounded).monospacedDigit())
-                            .foregroundStyle(ForYouPalette.secondaryInk)
-                    }
-                }
             }
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.white.opacity(0.95))
+                    .fill(Color(uiColor: .secondarySystemGroupedBackground))
             )
             .padding(.horizontal, 10)
             .padding(.bottom, 10)
@@ -1349,118 +1326,144 @@ private struct ForYouLockedLayer: View {
 private struct ForYouSummaryHeader: View {
     let plan: ForYouDailyPlan
     let currentPrayerEntry: ForYouTimelineEntry?
+    let nextPrayerEntry: ForYouTimelineEntry?
 
     var body: some View {
-        GeometryReader { geometry in
-            let shellInset: CGFloat = 5
-            let panelSpacing: CGFloat = 5
-            let panelHeight = geometry.size.height - (shellInset * 2)
-            let availableWidth = geometry.size.width - (shellInset * 2)
-            let rightWidth = floor((availableWidth - panelSpacing) * 0.43)
-            let leftWidth = availableWidth - panelSpacing - rightWidth
-            let smallPanelHeight = floor((panelHeight - panelSpacing) / 2)
+        VStack(alignment: .leading, spacing: 6) {
+            // Widget card
+            GeometryReader { geometry in
+                let shellInset: CGFloat = 5
+                let panelSpacing: CGFloat = 5
+                let panelHeight = geometry.size.height - (shellInset * 2)
+                let availableWidth = geometry.size.width - (shellInset * 2)
+                let rightWidth = floor((availableWidth - panelSpacing) * 0.43)
+                let leftWidth = availableWidth - panelSpacing - rightWidth
+                let smallPanelHeight = floor((panelHeight - panelSpacing) / 2)
 
-            HStack(spacing: panelSpacing) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .top, spacing: 7) {
-                        Image(systemName: currentPrayerEntry?.icon ?? "sunrise")
-                            .font(.system(size: 24, weight: .regular))
-                            .foregroundStyle(ForYouPalette.ink)
-                            .frame(width: 36, height: 36, alignment: .topLeading)
+                HStack(spacing: panelSpacing) {
+                    // Left panel — icon + prayer name left-middle, weekday + location below
+                    VStack(alignment: .leading, spacing: 0) {
+                        Spacer(minLength: 0)
 
-                        Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundStyle(ForYouPalette.ink)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                            .padding(.top, 1)
+                        HStack(spacing: 8) {
+                            Image(systemName: currentPrayerEntry?.icon ?? "sunrise")
+                                .font(.system(size: 28, weight: .regular))
+                                .foregroundStyle(ForYouPalette.ink)
+
+                            Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
+                                .font(.system(size: 26, weight: .bold, design: .rounded))
+                                .foregroundStyle(ForYouPalette.ink)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                        }
+
+                        Spacer(minLength: 6)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(shortWeekday)
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundStyle(ForYouPalette.ink)
+
+                            Text(plan.locationLine ?? "")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(ForYouPalette.secondaryInk)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                        }
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 10)
+                    .frame(width: leftWidth, height: panelHeight, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(Color(uiColor: .tertiarySystemBackground))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                    .stroke(Color.primary.opacity(0.12), lineWidth: 2)
+                            )
+                    )
 
-                    Spacer(minLength: 0)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(shortWeekday)
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundStyle(ForYouPalette.ink)
-
-                        Text(plan.locationLine ?? "Kuala Lumpur")
-                            .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                            .foregroundStyle(ForYouPalette.ink)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.72)
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 7)
-                .frame(width: leftWidth, height: panelHeight, alignment: .topLeading)
-                .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(Color(red: 0.83, green: 0.83, blue: 0.83))
-                        .overlay(
+                    VStack(spacing: panelSpacing) {
+                        // Top-right — next prayer name
+                        HStack(spacing: 6) {
+                            Image(systemName: nextPrayerEntry?.icon ?? "arrow.right.circle")
+                                .font(.system(size: 18, weight: .medium))
+                            Text(nextPrayerEntry?.title ?? "—")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.62)
+                        }
+                        .foregroundStyle(ForYouPalette.ink)
+                        .frame(width: rightWidth, height: smallPanelHeight)
+                        .background(
                             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                .stroke(Color.black, lineWidth: 2)
+                                .fill(ForYouPalette.accentSky)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                        .stroke(Color.primary.opacity(0.12), lineWidth: 2)
+                                )
                         )
-                )
 
-                VStack(spacing: panelSpacing) {
-                    HStack(spacing: 7) {
-                        Image(systemName: currentPrayerEntry?.momentType == .night ? "moon.stars" : "sun.max")
-                            .font(.system(size: 16, weight: .medium))
-
-                        Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.62)
+                        // Bottom-right — next prayer time
+                        HStack(spacing: 6) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 15, weight: .medium))
+                            Text(nextPrayerTime)
+                                .font(.system(size: 18, weight: .bold, design: .rounded).monospacedDigit())
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                        }
+                        .foregroundStyle(.white)
+                        .frame(width: rightWidth, height: smallPanelHeight)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .fill(ForYouPalette.darkTile)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                        .stroke(Color.primary.opacity(0.12), lineWidth: 2)
+                                )
+                        )
                     }
-                    .foregroundStyle(ForYouPalette.ink)
-                    .frame(width: rightWidth, height: smallPanelHeight)
-                    .background(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .fill(ForYouPalette.accentSky)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                    .stroke(Color.black, lineWidth: 2)
-                            )
-                    )
-
-                    HStack(spacing: 8) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 17, weight: .medium))
-
-                        Text(currentPrayerTime)
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
-                    .foregroundStyle(.white)
-                    .frame(width: rightWidth, height: smallPanelHeight, alignment: .center)
-                    .background(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .fill(ForYouPalette.darkTile)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                    .stroke(Color.black, lineWidth: 2)
-                            )
-                    )
                 }
+                .padding(shellInset)
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .padding(shellInset)
-            .frame(width: geometry.size.width, height: geometry.size.height)
+            .frame(maxWidth: .infinity, minHeight: 110, maxHeight: 110)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(uiColor: .secondarySystemGroupedBackground))
+            )
+
+            // Date below the widget (replaces the top header)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(shortDate)
+                    .font(.system(size: 22, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+
+                Text(yearLine)
+                    .font(.system(size: 20, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.55))
+            }
+            .padding(.leading, 4)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.white.opacity(0.97))
-        )
-        .frame(maxWidth: .infinity, minHeight: 110, maxHeight: 110, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var shortWeekday: String {
         ForYouFormatters.weekday.string(from: plan.date).prefix(3).capitalized
     }
 
-    private var currentPrayerTime: String {
-        guard let currentPrayerEntry else { return "--:--" }
-        return ForYouFormatters.shortTime.string(from: currentPrayerEntry.time)
+    private var shortDate: String {
+        ForYouFormatters.monthDay.string(from: plan.date)
+    }
+
+    private var yearLine: String {
+        ForYouFormatters.year.string(from: plan.date)
+    }
+
+    private var nextPrayerTime: String {
+        guard let nextPrayerEntry else { return "--:--" }
+        return ForYouFormatters.shortTime.string(from: nextPrayerEntry.time)
     }
 }
 
@@ -1496,15 +1499,6 @@ private struct ForYouDayView: View {
     var body: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(dateLine)
-                        .font(.system(size: 22, weight: .medium, design: .rounded))
-                        .foregroundStyle(ForYouPalette.ink)
-
-                    Text(yearLine)
-                        .font(.system(size: 20, weight: .medium, design: .rounded))
-                        .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.55))
-                }
 
                 VStack(spacing: 0) {
                     ForEach(Array(timelinePages.enumerated()), id: \.offset) { index, page in
@@ -1638,6 +1632,18 @@ private struct ForYouDayView: View {
         return prayerEntries.first
     }
 
+    private var nextPrayerEntry: ForYouTimelineEntry? {
+        let prayerEntries = viewModel.plan.timelineEntries.filter { $0.kind == .prayer }
+        guard !prayerEntries.isEmpty else { return nil }
+
+        if Calendar.current.isDateInToday(viewModel.plan.date) {
+            let now = Date()
+            return prayerEntries.first(where: { $0.time > now })
+        }
+
+        return prayerEntries.dropFirst().first
+    }
+
     private var prayerEntries: [ForYouTimelineEntry] {
         viewModel.plan.timelineEntries.filter { $0.kind == .prayer }
     }
@@ -1684,7 +1690,8 @@ private struct ForYouDayView: View {
                     Button(action: onScrollToPrayerTimeline) {
                         ForYouSummaryHeader(
                             plan: viewModel.plan,
-                            currentPrayerEntry: currentPrayerEntry
+                            currentPrayerEntry: currentPrayerEntry,
+                            nextPrayerEntry: nextPrayerEntry
                         )
                     }
                     .buttonStyle(ForYouHeroJumpButtonStyle())
@@ -1922,7 +1929,7 @@ struct ForYouRootView: View {
                 .padding(.vertical, 10)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.92))
+                        .fill(Color(uiColor: .secondarySystemBackground))
                         .overlay(
                             Capsule(style: .continuous)
                                 .stroke(ForYouPalette.stroke, lineWidth: 1)
@@ -1947,7 +1954,6 @@ struct ForYouRootView: View {
             }
             .environmentObject(settings)
         }
-        .preferredColorScheme(.light)
     }
 
     private var hasPremiumAccess: Bool {
@@ -2063,7 +2069,7 @@ struct ForYouRootView: View {
                 .frame(width: 32, height: 32)
                 .background(
                     Circle()
-                        .fill(.white.opacity(0.96))
+                        .fill(Color(uiColor: .secondarySystemBackground))
                         .overlay(
                             Circle()
                                 .stroke(ForYouPalette.stroke, lineWidth: 1)
