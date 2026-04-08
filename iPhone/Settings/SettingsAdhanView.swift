@@ -608,16 +608,16 @@ struct NotificationView: View {
         switch settings.prayerNotificationMessageStyle {
         case .standard:
             return isMalayAppLanguage()
-                ? "Waktu Asar pada 4:25 PTG di Taiping, Perak"
-                : "Time for Asr at 4:25 PM in Taiping, Perak"
+                ? "Waktu Asar pada 4:25 PTG di Subang Jaya, Selangor"
+                : "Time for Asr at 4:25 PM in Subang Jaya, Selangor"
         case .gentle:
             return isMalayAppLanguage()
-                ? "Kini masuk waktu Asar di Taiping, Perak."
-                : "It's now time for Asr in Taiping, Perak."
+                ? "Kini masuk waktu Asar di Subang Jaya, Selangor."
+                : "It's now time for Asr in Subang Jaya, Selangor."
         case .concise:
             return isMalayAppLanguage()
-                ? "Asar • 4:25 PTG • Taiping, Perak"
-                : "Asr • 4:25 PM • Taiping, Perak"
+                ? "Asar • 4:25 PTG • Subang Jaya, Selangor"
+                : "Asr • 4:25 PM • Subang Jaya, Selangor"
         }
     }
 
@@ -664,8 +664,8 @@ struct NotificationView: View {
                 : "Glory be to Allah and praise be to Him.\nسُبْحَانَ اللَّهِ وَبِحَمْدِهِ"
         case .concise:
             return isMalayAppLanguage()
-                ? "Maha Suci Allah • Taiping, Perak"
-                : "Glory be to Allah • Taiping, Perak"
+                ? "Maha Suci Allah • Subang Jaya, Selangor"
+                : "Glory be to Allah • Subang Jaya, Selangor"
         }
     }
 
@@ -1850,7 +1850,7 @@ private struct HomeCountdownMediumPreviewCard: View {
                 currentPrayer: localizedPrayerName("Maghrib"),
                 nextPrayer: localizedPrayerName("Isha"),
                 nextTime: "20:38",
-                footer: "Taiping, Perak",
+                footer: "Subang Jaya, Selangor",
                 accentColor: accentColor
             )
 
@@ -1868,7 +1868,7 @@ private struct HomeCountdownMediumPreviewCard: View {
             }
 
             HStack {
-                Label("Taiping, Perak", systemImage: "location.fill")
+                Label("Subang Jaya, Selangor", systemImage: "location.fill")
                 Spacer()
                 Text("Next 20:38")
             }
@@ -1916,7 +1916,7 @@ private struct HomeCountdownSmallPreviewCard: View {
                     Image(systemName: "location.fill")
                         .font(.caption2)
                         .foregroundStyle(accentColor)
-                    Text("Taiping")
+                    Text("Subang Jaya")
                         .font(.caption2)
                         .lineLimit(1)
                 }
@@ -2036,7 +2036,7 @@ private struct HomePrayerTimesMediumPreviewCard: View {
             Spacer()
 
             HStack {
-                Label("Taiping, Perak", systemImage: "location.fill")
+                Label("Subang Jaya, Selangor", systemImage: "location.fill")
                 Spacer()
                 Image("CurrentAppIcon")
                     .resizable()
@@ -2139,7 +2139,7 @@ private struct HomePrayerTimesLargePreviewCard: View {
             Spacer(minLength: 0)
 
             HStack {
-                Label("Taiping, Perak", systemImage: "location.fill")
+                Label("Subang Jaya, Selangor", systemImage: "location.fill")
                 Spacer()
                 Image("CurrentAppIcon")
                     .resizable()
@@ -2472,11 +2472,11 @@ private struct PrayerListStyleCard: View {
 
                     Group {
                         if style == .classic {
-                            LockScreenPrayerListPreviewCard(footer: "Taiping, Perak")
+                            LockScreenPrayerListPreviewCard(footer: "Subang Jaya, Selangor")
                         } else if style == .focus {
-                            LockScreenPrayerListFocusPreviewCard(footer: "Taiping, Perak", accentColor: settings.accentColor.color)
+                            LockScreenPrayerListFocusPreviewCard(footer: "Subang Jaya, Selangor", accentColor: settings.accentColor.color)
                         } else if style == .departuresBoard {
-                            LockScreenPrayerListDeparturesPreviewCard(footer: "Taiping, Perak")
+                            LockScreenPrayerListDeparturesPreviewCard(footer: "Subang Jaya, Selangor")
                         } else if style == .departuresBoardNoLocation {
                             LockScreenPrayerListDeparturesPreviewCard(footer: nil)
                         } else if style == .iconBoard {
@@ -2732,16 +2732,16 @@ private struct LockScreenSpotlightCard: View {
                 currentPrayer: localizedPrayerName("Maghrib"),
                 nextPrayer: localizedPrayerName("Isha"),
                 nextTime: "19:31",
-                footer: "Taiping, Perak",
+                footer: "Subang Jaya, Selangor",
                 accentColor: settings.accentColor.color
             )
         case .prayerList:
-            LockScreenPrayerListPreviewCard(footer: "Taiping, Perak")
+            LockScreenPrayerListPreviewCard(footer: "Subang Jaya, Selangor")
         case .prayerCountdown:
             LockScreenCountdownPreviewCard(
                 prayer: localizedPrayerName("Isha"),
                 timerText: "19:31",
-                footer: "Taiping, Perak",
+                footer: "Subang Jaya, Selangor",
                 accentColor: settings.accentColor.color,
                 batteryStyle: false
             )
@@ -2804,7 +2804,7 @@ private struct PrayerTimesStyleCard: View {
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
-                            footer: "Taiping, Perak",
+                            footer: "Subang Jaya, Selangor",
                             accentColor: settings.accentColor.color,
                             showsLabels: true,
                             centered: false
@@ -2828,7 +2828,7 @@ private struct PrayerTimesStyleCard: View {
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
-                            footer: "Taiping, Perak",
+                            footer: "Subang Jaya, Selangor",
                             accentColor: settings.accentColor.color,
                             showsLabels: false,
                             centered: false
@@ -2852,7 +2852,7 @@ private struct PrayerTimesStyleCard: View {
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
-                            footer: "Taiping, Perak",
+                            footer: "Subang Jaya, Selangor",
                             accentColor: settings.accentColor.color,
                             showsLabels: false,
                             centered: true
@@ -2876,7 +2876,7 @@ private struct PrayerTimesStyleCard: View {
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
-                            footer: "Taiping, Perak",
+                            footer: "Subang Jaya, Selangor",
                             accentColor: settings.accentColor.color
                         )
                         .frame(width: 188)
@@ -2896,7 +2896,7 @@ private struct PrayerTimesStyleCard: View {
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
                             nextTime: "19:31",
-                            footer: "Taiping, Perak",
+                            footer: "Subang Jaya, Selangor",
                             accentColor: settings.accentColor.color
                         )
                         .frame(width: 188)
@@ -2980,7 +2980,7 @@ private struct PrayerCountdownBarStyleCard: View {
                         LockScreenCountdownPreviewCard(
                             prayer: localizedPrayerName("Maghrib"),
                             timerText: "19:31",
-                            footer: style == .withLocation ? "Taiping, Perak" : "",
+                            footer: style == .withLocation ? "Subang Jaya, Selangor" : "",
                             accentColor: settings.accentColor.color,
                             batteryStyle: false
                         )
@@ -2990,7 +2990,7 @@ private struct PrayerCountdownBarStyleCard: View {
                         LockScreenCountdownPreviewCard(
                             prayer: localizedPrayerName("Maghrib"),
                             timerText: "1h 12m",
-                            footer: style == .batteryWithLocation ? "Taiping, Perak" : "",
+                            footer: style == .batteryWithLocation ? "Subang Jaya, Selangor" : "",
                             accentColor: settings.accentColor.color,
                             batteryStyle: true
                         )

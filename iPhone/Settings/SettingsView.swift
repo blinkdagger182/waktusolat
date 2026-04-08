@@ -256,6 +256,8 @@ struct SettingsView: View {
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
+    @State private var showingLiveActivityDebug = false
+    @State private var showingWidgetPreviewDebug = false
     @State private var showingSupportToastDebugPicker = false
     @State private var supportToastDebugOptions = SupportToastDebugOption.defaultOptions
     @State private var showDonationCelebration = false
@@ -371,9 +373,36 @@ struct SettingsView: View {
                             }
                         }
                     }
-
                 }
                 .navigationTitle("Settings")
+                #if DEBUG
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Menu {
+                            Button {
+                                showingLiveActivityDebug = true
+                            } label: {
+                                Label("Live Activity Debug", systemImage: "bolt.badge.clock")
+                            }
+
+                            Button {
+                                showingWidgetPreviewDebug = true
+                            } label: {
+                                Label("Widget Preview Debug", systemImage: "square.grid.2x2")
+                            }
+
+                            Button {
+                                showingSupportToastDebugPicker = true
+                            } label: {
+                                Label("Trigger Support Toast", systemImage: "megaphone")
+                            }
+                        } label: {
+                            Image(systemName: "ladybug")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+                }
+                #endif
                 .applyConditionalListStyle(defaultView: true)
             }
             .navigationViewStyle(.stack)
@@ -409,6 +438,21 @@ struct SettingsView: View {
                 .accentColor(settings.accentColor.color)
                 .tint(settings.accentColor.color)
                 .preferredColorScheme(settings.colorScheme)
+        }
+        .sheet(isPresented: $showingLiveActivityDebug) {
+            NavigationView {
+                LiveActivitySettingsView()
+                    .environmentObject(settings)
+            }
+            .navigationViewStyle(.stack)
+        }
+        .sheet(isPresented: $showingWidgetPreviewDebug) {
+            NavigationView {
+                WidgetPreviewDebugView()
+                    .environmentObject(settings)
+                    .environmentObject(revenueCat)
+            }
+            .navigationViewStyle(.stack)
         }
         .alert("Purchase Error", isPresented: Binding(
             get: { revenueCat.lastErrorMessage != nil },
