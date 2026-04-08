@@ -1966,7 +1966,8 @@ struct ForYouRootView: View {
                     )
                     .onAppear {
                         onScrollOffsetChange?(0)
-                        if let id = currentDayViewModel?.focusedEntryID {
+                        if let id = currentPrayerSelection?.entryID ?? currentDayViewModel?.focusedEntryID {
+                            selectedPrayerCard = .main(id)
                             // Seed scrollTarget.scrollID so the first button press
                             // cycles relative to the auto-scrolled card, not index 0.
                             // token is nil so the onChange observer does NOT fire.
