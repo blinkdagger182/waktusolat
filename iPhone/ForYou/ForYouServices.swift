@@ -47,6 +47,29 @@ enum ForYouCompletionStore {
     }
 }
 
+enum ForYouDhikrProgressStore {
+    private static let storageKey = "forYou.dhikrProgressByEntry.v1"
+    private static let defaults = UserDefaults.standard
+
+    static func count(for id: String) -> Int {
+        progressMap()[id] ?? 0
+    }
+
+    static func setCount(_ count: Int, for id: String) {
+        var map = progressMap()
+        map[id] = max(0, count)
+        defaults.set(map, forKey: storageKey)
+    }
+
+    static func reset() {
+        defaults.removeObject(forKey: storageKey)
+    }
+
+    private static func progressMap() -> [String: Int] {
+        defaults.dictionary(forKey: storageKey) as? [String: Int] ?? [:]
+    }
+}
+
 enum ForYouSessionStore {
     private static var hasVisitedTodayTab = false
 
@@ -882,7 +905,9 @@ final class ForYouPlanGeneratorService {
     ) -> [ForYouTimelineEntry] {
         let prayerEntries = buildPrayerNotificationEntries(for: date, settings: settings, profile: profile, prayers: timeline.prayers)
         let zikirEntries = buildZikirEntries(for: date, settings: settings, profile: profile, prayers: timeline.prayers)
-        let wiridEntries = buildWiridEntries(for: date, prayers: timeline.prayers)
+        // Temporarily hide Wirid Ringkas / Wirid & Doa timeline cards.
+        // Keep the dedicated blue Wirid and Doa surfaces unchanged.
+        let wiridEntries: [ForYouTimelineEntry] = []
         let sunEntries = buildSunEntries(for: date, timeline: timeline)
         return (prayerEntries + zikirEntries + wiridEntries + sunEntries)
             .sorted { lhs, rhs in
@@ -896,8 +921,8 @@ final class ForYouPlanGeneratorService {
     private func buildSunEntries(for date: Date, timeline: ForYouPrayerTimeline) -> [ForYouTimelineEntry] {
         var entries: [ForYouTimelineEntry] = []
         let iso = ISO8601DateFormatter().string(from: date)
-        let featured = WiridContentRepository.featuredItem(forPrayer: "fajr")
-        let sub = WiridContentRepository.shortSubtitle(forPrayer: "fajr") // short wirid
+//        let featured = WiridContentRepository.featuredItem(forPrayer: "fajr")
+//        let sub = WiridContentRepository.shortSubtitle(forPrayer: "fajr") // short wirid
 
         // Syuruk / Shurooq — prayer entry only, no wirid (it's a forbidden prayer time)
         if let sunrise = timeline.sunrise {
@@ -928,20 +953,20 @@ final class ForYouPlanGeneratorService {
                 reference: nil,
                 recommendation: nil
             ))
-            if let wiridTime = Calendar.current.date(byAdding: .minute, value: 5, to: ishraqTime) {
-                entries.append(makeTimelineEntry(
-                    id: "\(iso)-wirid-ishraq",
-                    kind: .zikir,
-                    momentType: .morning,
-                    time: wiridTime,
-                    title: isMalayAppLanguage() ? "Wirid Ringkas" : "Wirid Ringkas",
-                    subtitle: isMalayAppLanguage() ? sub.my : sub.en,
-                    icon: "text.book.closed",
-                    arabicText: featured?.arabicText,
-                    reference: featured?.reference,
-                    recommendation: nil
-                ))
-            }
+//            if let wiridTime = Calendar.current.date(byAdding: .minute, value: 5, to: ishraqTime) {
+//                entries.append(makeTimelineEntry(
+//                    id: "\(iso)-wirid-ishraq",
+//                    kind: .zikir,
+//                    momentType: .morning,
+//                    time: wiridTime,
+//                    title: isMalayAppLanguage() ? "Wirid Ringkas" : "Wirid Ringkas",
+//                    subtitle: isMalayAppLanguage() ? sub.my : sub.en,
+//                    icon: "text.book.closed",
+//                    arabicText: featured?.arabicText,
+//                    reference: featured?.reference,
+//                    recommendation: nil
+//                ))
+//            }
         }
 
         // Dhuha — with wirid card 5 min later
@@ -958,20 +983,20 @@ final class ForYouPlanGeneratorService {
                 reference: "Sahih Muslim 720",
                 recommendation: nil
             ))
-            if let wiridTime = Calendar.current.date(byAdding: .minute, value: 5, to: dhuha) {
-                entries.append(makeTimelineEntry(
-                    id: "\(iso)-wirid-dhuha",
-                    kind: .zikir,
-                    momentType: .dhuha,
-                    time: wiridTime,
-                    title: isMalayAppLanguage() ? "Wirid Ringkas" : "Wirid Ringkas",
-                    subtitle: isMalayAppLanguage() ? sub.my : sub.en,
-                    icon: "text.book.closed",
-                    arabicText: featured?.arabicText,
-                    reference: featured?.reference,
-                    recommendation: nil
-                ))
-            }
+//            if let wiridTime = Calendar.current.date(byAdding: .minute, value: 5, to: dhuha) {
+//                entries.append(makeTimelineEntry(
+//                    id: "\(iso)-wirid-dhuha",
+//                    kind: .zikir,
+//                    momentType: .dhuha,
+//                    time: wiridTime,
+//                    title: isMalayAppLanguage() ? "Wirid Ringkas" : "Wirid Ringkas",
+//                    subtitle: isMalayAppLanguage() ? sub.my : sub.en,
+//                    icon: "text.book.closed",
+//                    arabicText: featured?.arabicText,
+//                    reference: featured?.reference,
+//                    recommendation: nil
+//                ))
+//            }
         }
 
         return entries

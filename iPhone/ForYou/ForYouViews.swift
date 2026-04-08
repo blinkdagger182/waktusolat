@@ -855,11 +855,17 @@ private struct ForYouPrayerTabPanel: View {
         let transliteration: String
         let meaning: String
         let metadata: String?
+        let progress: DhikrProgressDescriptor?
     }
 
     private struct PanelContent {
         let title: String
         let sections: [PanelSection]
+    }
+
+    struct DhikrProgressDescriptor {
+        let storageID: String
+        let target: Int
     }
 
     private var content: PanelContent {
@@ -977,6 +983,14 @@ private struct ForYouPrayerTabPanel: View {
                         .foregroundStyle(tab.color)
                         .fixedSize(horizontal: false, vertical: true)
 
+                    if let progress = section.progress {
+                        ForYouDhikrProgressBar(
+                            title: section.title,
+                            descriptor: progress,
+                            tint: tab.color
+                        )
+                    }
+
                     Text(section.arabic)
                         .font(.custom(preferredQuranArabicFontName(settings: settings, size: 20), size: 20))
                         .foregroundStyle(ForYouPalette.ink)
@@ -1089,7 +1103,8 @@ private struct ForYouPrayerTabPanel: View {
                     arabic: item.arabicText,
                     transliteration: item.transliteration,
                     meaning: item.translationMy,
-                    metadata: metadata.isEmpty ? nil : metadata.joined(separator: "\n")
+                    metadata: metadata.isEmpty ? nil : metadata.joined(separator: "\n"),
+                    progress: dhikrProgressDescriptor(for: item.id, prayer: canonicalPrayer)
                 )
             }
         )
@@ -1109,10 +1124,26 @@ private struct ForYouPrayerTabPanel: View {
                     arabic: item.arabicText,
                     transliteration: item.transliteration,
                     meaning: item.translationMy,
-                    metadata: item.note
+                    metadata: item.note,
+                    progress: nil
                 )
             }
         )
+    }
+
+    private func dhikrProgressDescriptor(for sectionID: String, prayer: String) -> DhikrProgressDescriptor? {
+        let target: Int?
+        switch sectionID {
+        case "wirid-03-ajirna":
+            target = (prayer == "fajr" || prayer == "maghrib") ? 7 : 3
+        case "wirid-21-subhanallah", "wirid-23-alhamdulillah", "wirid-25-allahuakbar":
+            target = 33
+        default:
+            target = nil
+        }
+
+        guard let target else { return nil }
+        return DhikrProgressDescriptor(storageID: "\(entry.id)::\(sectionID)", target: target)
     }
 
     private func canonicalPrayerName(from entryID: String) -> String {
@@ -1155,6 +1186,125 @@ private struct ForYouPrayerTabPanel: View {
         default:
             return title
         }
+    }
+}
+
+private struct ForYouDhikrProgressBar: View {
+    let title: String
+    let descriptor: ForYouPrayerTabPanel.DhikrProgressDescriptor
+    let tint: Color
+
+    @EnvironmentObject private var settings: Settings
+    @State private var count: Int = 0
+    @State private var shakeTrigger: CGFloat = 0
+    @State private var burstVisible = false
+
+    private let progressGreen = Color(red: 0.20, green: 0.69, blue: 0.39)
+    private let progressGreenSoft = Color(red: 0.20, green: 0.69, blue: 0.39).opacity(0.14)
+
+    var body: some View {
+        Button(action: increment) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text(title)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 0)
+
+                    Text("\(min(count, descriptor.target))/\(descriptor.target)")
+                        .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(progressGreen)
+                }
+
+                GeometryReader { geometry in
+                    let fraction = CGFloat(min(count, descriptor.target)) / CGFloat(max(descriptor.target, 1))
+                    let fillWidth = max(geometry.size.width * fraction, count > 0 ? 16 : 0)
+                    let burstX = min(max(fillWidth - 10, 0), max(geometry.size.width - 20, 0))
+
+                    ZStack(alignment: .leading) {
+                        Capsule(style: .continuous)
+                            .fill(progressGreenSoft)
+
+                        Capsule(style: .continuous)
+                            .fill(progressGreen)
+                            .frame(width: fillWidth)
+
+                        if burstVisible || count > 0 {
+                            ZStack {
+                                Circle()
+                                    .fill(progressGreen.opacity(0.18))
+                                    .frame(width: 18, height: 18)
+
+                                ForEach(0..<6, id: \.self) { index in
+                                    Circle()
+                                        .fill(progressGreen.opacity(0.85))
+                                        .frame(width: 4, height: 4)
+                                        .offset(
+                                            x: burstVisible ? cos(Double(index) * .pi / 3) * 11 : 0,
+                                            y: burstVisible ? sin(Double(index) * .pi / 3) * 11 : 0
+                                        )
+                                        .opacity(burstVisible ? 0 : 1)
+                                }
+                            }
+                            .frame(width: 20, height: 20)
+                            .offset(x: burstX, y: -4)
+                        }
+                    }
+                    .frame(height: 12)
+                }
+                .frame(height: 12)
+                .modifier(ForYouShakeEffect(animatableData: shakeTrigger))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(progressGreenSoft)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(count >= descriptor.target)
+        .onAppear {
+            count = ForYouDhikrProgressStore.count(for: descriptor.storageID)
+        }
+    }
+
+    private func increment() {
+        guard count < descriptor.target else { return }
+
+        settings.hapticFeedback()
+
+        withAnimation(.linear(duration: 0.28)) {
+            shakeTrigger += 1
+            burstVisible = true
+        }
+
+        let nextCount = min(count + 1, descriptor.target)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
+                count = nextCount
+            }
+            ForYouDhikrProgressStore.setCount(nextCount, for: descriptor.storageID)
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            withAnimation(.easeOut(duration: 0.18)) {
+                burstVisible = false
+            }
+        }
+    }
+}
+
+private struct ForYouShakeEffect: GeometryEffect {
+    var amount: CGFloat = 5
+    var shakesPerUnit: CGFloat = 3
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let translation = amount * sin(animatableData * .pi * shakesPerUnit)
+        return ProjectionTransform(CGAffineTransform(translationX: translation, y: 0))
     }
 }
 
@@ -1621,8 +1771,8 @@ private struct ForYouDayView: View {
 
             if viewModel.isLocked {
                 Rectangle()
-                    .fill(.black.opacity(0.14))
-                    .blur(radius: 16)
+                    .fill(.black.opacity(usesSoftPreviewLock ? 0.04 : 0.14))
+                    .blur(radius: usesSoftPreviewLock ? 0 : 16)
 
                 VStack {
                     Spacer()
@@ -1636,11 +1786,19 @@ private struct ForYouDayView: View {
         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .scaleEffect(viewModel.isLocked ? 0.982 : 1)
-        .opacity(viewModel.isLocked ? 0.92 : 1)
+        .scaleEffect(shouldBlurLockedContent ? 0.982 : 1)
+        .opacity(shouldBlurLockedContent ? 0.92 : 1)
         .offset(y: -10)
-        .blur(radius: viewModel.isLocked ? 7 : 0)
+        .blur(radius: shouldBlurLockedContent ? 7 : 0)
         .animation(.spring(response: 0.42, dampingFraction: 0.9), value: viewModel.isLocked)
+    }
+
+    private var usesSoftPreviewLock: Bool {
+        viewModel.isLocked && Calendar.current.isDateInTomorrow(viewModel.plan.date)
+    }
+
+    private var shouldBlurLockedContent: Bool {
+        viewModel.isLocked && !usesSoftPreviewLock
     }
 
     private var background: some View {
