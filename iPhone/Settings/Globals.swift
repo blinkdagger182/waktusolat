@@ -158,15 +158,15 @@ func syncSharedAppLanguagePreference(_ storedCode: String?) {
     }
 }
 
-func currentQuranTranslationEdition(for storedCode: String? = storedAppLanguageCode()) -> String {
+func currentQuranTranslationEdition(for storedCode: String? = storedQuranContentLanguageCode()) -> String {
     effectiveQuranContentLanguage(storedCode: storedCode).translationEdition
 }
 
-func currentQuranTranslationEditionLabel(for storedCode: String? = storedAppLanguageCode()) -> String {
+func currentQuranTranslationEditionLabel(for storedCode: String? = storedQuranContentLanguageCode()) -> String {
     effectiveQuranContentLanguage(storedCode: storedCode).translationEdition
 }
 
-func quranContentLanguageCode(for storedCode: String? = storedAppLanguageCode()) -> String {
+func quranContentLanguageCode(for storedCode: String? = storedQuranContentLanguageCode()) -> String {
     effectiveQuranContentLanguage(storedCode: storedCode).rawValue
 }
 

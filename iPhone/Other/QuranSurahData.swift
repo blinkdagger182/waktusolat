@@ -187,7 +187,7 @@ func preferredQuranArabicFontName(settings: Settings, size: CGFloat) -> String {
 }
 
 func localizedSurahName(number: Int, englishName: String) -> String {
-    guard isMalayAppLanguage() else { return englishName }
+    guard effectiveQuranContentLanguage() == .bahasaMelayu else { return englishName }
     guard (1...QuranSurahLocalizedNames.bahasaMelayu.count).contains(number) else { return englishName }
     return QuranSurahLocalizedNames.bahasaMelayu[number - 1]
 }

@@ -604,17 +604,17 @@ struct AlAdhanApp: App {
             .background(
                 ZStack {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        Capsule(style: .continuous)
                             .fill(selectedTabBackgroundColor)
 
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        Capsule(style: .continuous)
                             .fill(.ultraThinMaterial)
                             .opacity(isDarkMode ? 0.14 : 0.42)
                     }
                 }
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                Capsule(style: .continuous)
                     .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
             )
             .shadow(

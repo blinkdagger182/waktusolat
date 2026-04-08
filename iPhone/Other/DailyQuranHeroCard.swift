@@ -157,7 +157,7 @@ struct DailyQuranHeroCard: View {
                     .font(.footnote.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.black.opacity(0.82))
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(accentColor)

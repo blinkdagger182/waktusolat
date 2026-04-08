@@ -1354,7 +1354,7 @@ private struct ForYouSummaryHeader: View {
                         Spacer(minLength: 0)
 
                         HStack(spacing: 8) {
-                            Image(systemName: currentPrayerEntry?.icon ?? "sunrise")
+                            Image(systemName: currentPrayerIcon)
                                 .font(.system(size: 28, weight: .regular))
                                 .foregroundStyle(ForYouPalette.ink)
 
@@ -1394,7 +1394,7 @@ private struct ForYouSummaryHeader: View {
                     VStack(spacing: panelSpacing) {
                         // Top-right — next prayer name
                         HStack(spacing: 6) {
-                            Image(systemName: nextPrayerEntry?.icon ?? "arrow.right.circle")
+                            Image(systemName: nextPrayerIcon)
                                 .font(.system(size: 18, weight: .medium))
                             Text(nextPrayerEntry?.title ?? "—")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -1472,6 +1472,33 @@ private struct ForYouSummaryHeader: View {
     private var nextPrayerTime: String {
         guard let nextPrayerEntry else { return "--:--" }
         return ForYouFormatters.shortTime.string(from: nextPrayerEntry.time)
+    }
+
+    private var currentPrayerIcon: String {
+        guard let currentPrayerEntry else { return "sunrise" }
+        return prayerIcon(for: currentPrayerEntry.title)
+    }
+
+    private var nextPrayerIcon: String {
+        guard let nextPrayerEntry else { return "arrow.right.circle" }
+        return prayerIcon(for: nextPrayerEntry.title)
+    }
+
+    private func prayerIcon(for prayerTitle: String) -> String {
+        switch prayerTitle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "fajr", "subuh":
+            return "sunrise"
+        case "dhuhr", "zuhur", "jumuah":
+            return "sun.max.fill"
+        case "asr", "asar":
+            return "sunset"
+        case "maghrib", "magrib":
+            return "sunset.fill"
+        case "isha", "isyak":
+            return "moon.stars"
+        default:
+            return nextPrayerEntry?.icon ?? "arrow.right.circle"
+        }
     }
 }
 
