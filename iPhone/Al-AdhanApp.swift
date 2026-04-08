@@ -553,19 +553,29 @@ struct AlAdhanApp: App {
             bottomTabBarButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
             bottomTabBarButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-        .frame(maxWidth: 292)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
+        .frame(maxWidth: 254)
         .background(
-            Capsule(style: .continuous)
-                .fill(tabBarShellColor)
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(tabBarBorderColor, lineWidth: 1)
-                )
+            ZStack {
+                Capsule(style: .continuous)
+                    .fill(tabBarShellColor)
+
+                Capsule(style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .opacity(isDarkMode ? 0.28 : 0.72)
+
+                Capsule(style: .continuous)
+                    .strokeBorder(tabBarBorderColor, lineWidth: 1)
+
+                Capsule(style: .continuous)
+                    .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
+                    .blur(radius: 0.2)
+            }
         )
-        .shadow(color: Color.black.opacity(isDarkMode ? 0.22 : 0.08), radius: 24, x: 0, y: 12)
-        .padding(.bottom, 12)
+        .clipShape(Capsule(style: .continuous))
+        .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.10), radius: 18, x: 0, y: 10)
+        .padding(.bottom, 10)
         .offset(y: bottomBarVisibility.isHidden ? 190 : 0)
         .opacity(bottomBarVisibility.isHidden ? 0.001 : 1)
         .allowsHitTesting(!bottomBarVisibility.isHidden)
@@ -579,31 +589,39 @@ struct AlAdhanApp: App {
             settings.hapticFeedback()
             selectedTab = tab
         } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 3) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
 
                 Text(title)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .lineLimit(1)
             }
             .foregroundStyle(isSelected ? selectedTabColor(for: tab) : unselectedTabColor)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 10)
             .background(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(isSelected ? selectedTabBackgroundColor : Color.clear)
+                ZStack {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(selectedTabBackgroundColor)
+
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                            .opacity(isDarkMode ? 0.14 : 0.42)
+                    }
+                }
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
             )
             .shadow(
-                color: isSelected ? Color.black.opacity(isDarkMode ? 0.18 : 0.06) : Color.clear,
-                radius: 10,
+                color: isSelected ? Color.black.opacity(isDarkMode ? 0.16 : 0.05) : Color.clear,
+                radius: 8,
                 x: 0,
-                y: 6
+                y: 4
             )
         }
         .buttonStyle(.plain)
@@ -617,30 +635,30 @@ struct AlAdhanApp: App {
 
     private var tabBarShellColor: Color {
         isDarkMode
-            ? Color.black.opacity(0.88)
-            : Color(red: 0.95, green: 0.95, blue: 0.96).opacity(0.96)
+            ? Color.black.opacity(0.74)
+            : Color(red: 0.90, green: 0.90, blue: 0.92).opacity(0.70)
     }
 
     private var tabBarBorderColor: Color {
         isDarkMode
-            ? Color.white.opacity(0.08)
-            : Color.black.opacity(0.05)
+            ? Color.white.opacity(0.10)
+            : Color.white.opacity(0.78)
     }
 
     private var selectedTabBackgroundColor: Color {
         isDarkMode
-            ? Color.white.opacity(0.14)
-            : Color.black.opacity(0.08)
+            ? Color.white.opacity(0.11)
+            : Color.white.opacity(0.50)
     }
 
     private var selectedTabBorderColor: Color {
         isDarkMode
-            ? Color.white.opacity(0.06)
-            : Color.white.opacity(0.85)
+            ? Color.white.opacity(0.10)
+            : Color.white.opacity(0.92)
     }
 
     private var unselectedTabColor: Color {
-        isDarkMode ? Color.white.opacity(0.88) : Color.black.opacity(0.70)
+        isDarkMode ? Color.white.opacity(0.92) : Color.black.opacity(0.62)
     }
 
     private func selectedTabColor(for tab: AppTab) -> Color {
@@ -648,7 +666,7 @@ struct AlAdhanApp: App {
         case .today:
             return Color(red: 0.98, green: 0.39, blue: 0.37)
         case .adhan, .library, .settings:
-            return Color.white
+            return isDarkMode ? Color.white : Color.black.opacity(0.84)
         }
     }
 

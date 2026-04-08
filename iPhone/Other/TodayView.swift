@@ -158,7 +158,7 @@ enum TodayPracticeLibrary {
         .init(
             id: "midday-dhuha-prayer",
             arabicText: "صَلَاةُ ٱلضُّحَىٰ",
-            titleEn: "Dhuha Prayer",
+            titleEn: "Dhuha",
             titleMy: "Solat Dhuha",
             descriptionEn: "Two rak'ahs of Dhuha fulfill the charity due from every joint each morning.",
             descriptionMy: "Dua rakaat Dhuha mencukupi sedekah bagi setiap sendi pada setiap pagi.",

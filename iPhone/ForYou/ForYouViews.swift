@@ -1473,6 +1473,73 @@ private struct ForYouSummaryHeader: View {
     }
 }
 
+private struct ForYouCollapsedHeaderBar: View {
+    let plan: ForYouDailyPlan
+    let currentPrayerEntry: ForYouTimelineEntry?
+    let nextPrayerEntry: ForYouTimelineEntry?
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                HStack(spacing: 10) {
+                    Image(systemName: currentPrayerEntry?.icon ?? "sunrise")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(ForYouPalette.ink)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+                            .lineLimit(1)
+
+                        Text(plan.locationLine ?? shortDate)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.secondaryInk)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(nextPrayerEntry?.title ?? (isMalayAppLanguage() ? "Seterusnya" : "Next"))
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                        .lineLimit(1)
+
+                    Text(nextPrayerTime)
+                        .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(ForYouPalette.ink)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color(uiColor: .secondarySystemGroupedBackground).opacity(0.96))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(ForYouPalette.stroke, lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.06), radius: 14, x: 0, y: 6)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isMalayAppLanguage() ? "Lompat ke bahagian waktu solat" : "Jump to prayer times section")
+    }
+
+    private var shortDate: String {
+        ForYouFormatters.monthDay.string(from: plan.date)
+    }
+
+    private var nextPrayerTime: String {
+        guard let nextPrayerEntry else { return "--:--" }
+        return ForYouFormatters.shortTime.string(from: nextPrayerEntry.time)
+    }
+}
+
 private struct ForYouDayView: View {
     static let prayerTimelineSectionID = "for-you-prayer-timeline-section"
 
@@ -1843,6 +1910,7 @@ struct ForYouRootView: View {
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
+    @State private var scrollOffset: CGFloat = 0
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -1892,6 +1960,7 @@ struct ForYouRootView: View {
                     }
                     .background(
                         ScrollOffsetObserver { offset in
+                            scrollOffset = offset
                             onScrollOffsetChange?(offset)
                         }
                     )
@@ -1916,6 +1985,23 @@ struct ForYouRootView: View {
                         }
                     }
                 }
+            }
+        }
+        .overlay(alignment: .top) {
+            if let todayItem = currentDayViewModel {
+                ForYouCollapsedHeaderBar(
+                    plan: todayItem.plan,
+                    currentPrayerEntry: currentPrayerEntry,
+                    nextPrayerEntry: nextPrayerEntry,
+                    onTap: scrollToPrayerTimeline
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .offset(y: collapsedHeaderVisible ? 0 : -18)
+                .opacity(collapsedHeaderVisible ? 1 : 0)
+                .allowsHitTesting(collapsedHeaderVisible)
+                .animation(.easeOut(duration: 0.2), value: collapsedHeaderVisible)
+                .zIndex(20)
             }
         }
         .overlay(alignment: .bottom) {
@@ -1971,6 +2057,24 @@ struct ForYouRootView: View {
             ?? viewModel.dayViewModels.first
     }
 
+    private var currentPrayerEntry: ForYouTimelineEntry? {
+        currentDayViewModel?.plan.timelineEntries
+            .filter { $0.kind == .prayer }
+            .last(where: { $0.time <= Date() })
+        ?? currentDayViewModel?.plan.timelineEntries.first(where: { $0.kind == .prayer })
+    }
+
+    private var nextPrayerEntry: ForYouTimelineEntry? {
+        guard let entries = currentDayViewModel?.plan.timelineEntries.filter({ $0.kind == .prayer }),
+              !entries.isEmpty else { return nil }
+
+        return entries.first(where: { $0.time > Date() }) ?? entries.last
+    }
+
+    private var collapsedHeaderVisible: Bool {
+        scrollOffset > 64
+    }
+
     private var prayerEntries: [ForYouTimelineEntry] {
         currentDayViewModel?.plan.timelineEntries.filter { $0.kind == .prayer } ?? []
     }
@@ -2003,6 +2107,17 @@ struct ForYouRootView: View {
         }
 
         return defaultPrayerSelection
+    }
+
+    private func scrollToPrayerTimeline() {
+        settings.hapticFeedback()
+        if let currentPrayerSelection {
+            selectedPrayerCard = currentPrayerSelection
+        }
+        scrollTarget = (
+            scrollID: currentPrayerSelection?.entryID ?? ForYouDayView.prayerTimelineSectionID,
+            token: UUID()
+        )
     }
 
     // Unified ordered sequence of every focusable item in the feed:
