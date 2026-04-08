@@ -1131,6 +1131,12 @@ private struct ForYouPrayerTabPanel: View {
         if normalized.contains("-isha-") {
             return "isha"
         }
+        if normalized.hasSuffix("-ishraq") || normalized.contains("-ishraq-") {
+            return "ishraq"
+        }
+        if normalized.hasSuffix("-dhuha") || normalized.contains("-dhuha-") {
+            return "dhuha"
+        }
 
         let title = entry.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         switch title {

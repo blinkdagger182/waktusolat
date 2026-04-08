@@ -849,13 +849,98 @@ final class ForYouPlanGeneratorService {
         let prayerEntries = buildPrayerNotificationEntries(for: date, settings: settings, profile: profile, prayers: timeline.prayers)
         let zikirEntries = buildZikirEntries(for: date, settings: settings, profile: profile, prayers: timeline.prayers)
         let wiridEntries = buildWiridEntries(for: date, prayers: timeline.prayers)
-        return (prayerEntries + zikirEntries + wiridEntries)
+        let sunEntries = buildSunEntries(for: date, timeline: timeline)
+        return (prayerEntries + zikirEntries + wiridEntries + sunEntries)
             .sorted { lhs, rhs in
                 if lhs.time == rhs.time {
                     return lhs.kind.rawValue < rhs.kind.rawValue
                 }
                 return lhs.time < rhs.time
             }
+    }
+
+    private func buildSunEntries(for date: Date, timeline: ForYouPrayerTimeline) -> [ForYouTimelineEntry] {
+        var entries: [ForYouTimelineEntry] = []
+        let iso = ISO8601DateFormatter().string(from: date)
+        let featured = WiridContentRepository.featuredItem(forPrayer: "fajr")
+        let sub = WiridContentRepository.shortSubtitle(forPrayer: "fajr") // short wirid
+
+        // Syuruk / Shurooq — prayer entry only, no wirid (it's a forbidden prayer time)
+        if let sunrise = timeline.sunrise {
+            entries.append(makeTimelineEntry(
+                id: "\(iso)-syuruk",
+                kind: .prayer,
+                momentType: .morning,
+                time: sunrise,
+                title: isMalayAppLanguage() ? "Syuruk" : "Shurooq",
+                subtitle: isMalayAppLanguage() ? "Matahari terbit" : "Sunrise",
+                icon: "sunrise.fill",
+                arabicText: "الشُّرُوق",
+                reference: nil,
+                recommendation: nil
+            ))
+
+            // Ishraq — 18 min after sunrise, with wirid card 5 min later
+            let ishraqTime = sunrise.addingTimeInterval(18 * 60)
+            entries.append(makeTimelineEntry(
+                id: "\(iso)-ishraq",
+                kind: .prayer,
+                momentType: .morning,
+                time: ishraqTime,
+                title: isMalayAppLanguage() ? "Solat Ishraq" : "Ishraq Prayer",
+                subtitle: isMalayAppLanguage() ? "2 rakaat selepas matahari terbit sepenuhnya" : "2 rak'ahs after sunrise is complete",
+                icon: "sun.horizon.fill",
+                arabicText: "صَلَاةُ الْإِشْرَاق",
+                reference: nil,
+                recommendation: nil
+            ))
+            if let wiridTime = Calendar.current.date(byAdding: .minute, value: 5, to: ishraqTime) {
+                entries.append(makeTimelineEntry(
+                    id: "\(iso)-wirid-ishraq",
+                    kind: .zikir,
+                    momentType: .morning,
+                    time: wiridTime,
+                    title: isMalayAppLanguage() ? "Wirid Ringkas" : "Wirid Ringkas",
+                    subtitle: isMalayAppLanguage() ? sub.my : sub.en,
+                    icon: "text.book.closed",
+                    arabicText: featured?.arabicText,
+                    reference: featured?.reference,
+                    recommendation: nil
+                ))
+            }
+        }
+
+        // Dhuha — with wirid card 5 min later
+        if let dhuha = timeline.dhuha {
+            entries.append(makeTimelineEntry(
+                id: "\(iso)-dhuha",
+                kind: .prayer,
+                momentType: .dhuha,
+                time: dhuha,
+                title: isMalayAppLanguage() ? "Solat Dhuha" : "Dhuha Prayer",
+                subtitle: isMalayAppLanguage() ? "2–8 rakaat, amalan sunnah pagi" : "2–8 rak'ahs, a sunnah of the morning",
+                icon: "sun.max.fill",
+                arabicText: "صَلَاةُ الضُّحَى",
+                reference: "Sahih Muslim 720",
+                recommendation: nil
+            ))
+            if let wiridTime = Calendar.current.date(byAdding: .minute, value: 5, to: dhuha) {
+                entries.append(makeTimelineEntry(
+                    id: "\(iso)-wirid-dhuha",
+                    kind: .zikir,
+                    momentType: .dhuha,
+                    time: wiridTime,
+                    title: isMalayAppLanguage() ? "Wirid Ringkas" : "Wirid Ringkas",
+                    subtitle: isMalayAppLanguage() ? sub.my : sub.en,
+                    icon: "text.book.closed",
+                    arabicText: featured?.arabicText,
+                    reference: featured?.reference,
+                    recommendation: nil
+                ))
+            }
+        }
+
+        return entries
     }
 
     private func buildWiridEntries(for date: Date, prayers: [Prayer]) -> [ForYouTimelineEntry] {
