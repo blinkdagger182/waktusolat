@@ -1440,6 +1440,751 @@ struct WidgetPreviewGalleryView: View {
     }
 }
 
+struct HomeWidgetPreviewGalleryView: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                previewSection(
+                    title: "Waktu Aura",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget sebenar `systemMedium` dengan latar visual untuk solat seterusnya."
+                        : "The actual `systemMedium` visual widget for the upcoming prayer."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Aura",
+                                family: .medium,
+                                contentPadding: 0
+                            ) {
+                                HomeAuraPreviewCard(square: false)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Aura Mini",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget sebenar `systemSmall` untuk Aura."
+                        : "The actual `systemSmall` Aura widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Aura Mini",
+                                family: .small,
+                                contentPadding: 0
+                            ) {
+                                HomeAuraPreviewCard(square: true)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Next Mini",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget sebenar `systemSmall` yang fokus pada kiraan detik seterusnya."
+                        : "The actual `systemSmall` widget focused on the next-prayer countdown."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Next Mini",
+                                family: .small
+                            ) {
+                                HomeSimpleCountdownPreviewCard(accentColor: settings.accentColor.color)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Countdown Mini",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget countdown sebenar untuk saiz kecil."
+                        : "The actual countdown widget in the small size."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Countdown Mini",
+                                family: .small
+                            ) {
+                                HomeCountdownSmallPreviewCard(accentColor: settings.accentColor.color)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Countdown",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget countdown sebenar untuk saiz sederhana."
+                        : "The actual countdown widget in the medium size."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Countdown",
+                                family: .medium
+                            ) {
+                                HomeCountdownMediumPreviewCard(accentColor: settings.accentColor.color)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Countdown Max",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget countdown sebenar untuk saiz besar."
+                        : "The actual countdown widget in the large size."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Countdown Max",
+                                family: .large
+                            ) {
+                                HomeCountdownLargePreviewCard(accentColor: settings.accentColor.color)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Times Compact",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget sebenar `Prayers2Widget` untuk `systemMedium`."
+                        : "The actual `Prayers2Widget` for `systemMedium`."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Times Compact",
+                                family: .medium
+                            ) {
+                                HomePrayerTimesMediumPreviewCard(accentColor: settings.accentColor.color)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Times",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget sebenar `PrayersWidget`. Leret untuk lihat saiz yang disokong."
+                        : "The actual `PrayersWidget` in its supported sizes."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Times",
+                                family: .medium
+                            ) {
+                                HomePrayerTimesMediumGridPreviewCard(accentColor: settings.accentColor.color)
+                            }
+
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Times Max",
+                                family: .large
+                            ) {
+                                HomePrayerTimesLargePreviewCard(accentColor: settings.accentColor.color)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
+                    title: "Waktu Zikir",
+                    subtitle: isMalayAppLanguage()
+                        ? "Paparkan widget zikir skrin utama sebenar."
+                        : "Shows the actual Home Screen zikir widget."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Zikir",
+                                family: .small
+                            ) {
+                                HomeZikirPreviewCard(compact: true)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                Text(isMalayAppLanguage()
+                     ? "Pratonton ini menunjukkan semua jenis widget skrin utama yang tersedia. iOS masih memerlukan anda menambah widget sebenar secara manual pada Skrin Utama."
+                     : "These previews show the Home Screen widget types currently available. iOS still requires you to add the actual widgets to the Home Screen manually.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(isMalayAppLanguage() ? "Widget Skrin Utama" : "Home Screen Widgets")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func previewSection<Content: View>(
+        title: String,
+        subtitle: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            content()
+        }
+    }
+}
+
+private enum HomeWidgetPreviewFamily {
+    case small
+    case medium
+    case large
+
+    var canvasSize: CGSize {
+        switch self {
+        case .small:
+            return CGSize(width: 150, height: 150)
+        case .medium:
+            return CGSize(width: 318, height: 150)
+        case .large:
+            return CGSize(width: 318, height: 330)
+        }
+    }
+
+    var sizeLabel: String {
+        switch self {
+        case .small:
+            return "systemSmall"
+        case .medium:
+            return "systemMedium"
+        case .large:
+            return "systemLarge"
+        }
+    }
+}
+
+private struct HomeWidgetShowcaseCard<Preview: View>: View {
+    @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
+
+    let title: String
+    let family: HomeWidgetPreviewFamily
+    let contentPadding: CGFloat
+    let preview: Preview
+
+    init(
+        title: String,
+        family: HomeWidgetPreviewFamily,
+        contentPadding: CGFloat = 12,
+        @ViewBuilder body: () -> Preview
+    ) {
+        self.title = title
+        self.family = family
+        self.contentPadding = contentPadding
+        self.preview = body()
+    }
+
+    var cardBackground: Color {
+        colorScheme == .dark ? Color.black : Color(.systemBackground)
+    }
+
+    var bodyView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            widgetCanvas(preview: AnyView(preview), family: family)
+        }
+    }
+
+    @ViewBuilder
+    fileprivate func widgetCanvas(preview: AnyView, family: HomeWidgetPreviewFamily) -> some View {
+        let size = family.canvasSize
+        ZStack {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(cardBackground)
+
+            LinearGradient(
+                colors: [
+                    colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03),
+                    settings.accentColor.color.opacity(colorScheme == .dark ? 0.12 : 0.08)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            preview
+                .padding(contentPadding)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .frame(width: size.width, height: size.height)
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
+    }
+
+    var body: some View { bodyView }
+}
+
+private struct HomeAuraPreviewCard: View {
+    let square: Bool
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.99, green: 0.63, blue: 0.34),
+                    Color(red: 0.73, green: 0.28, blue: 0.25),
+                    Color(red: 0.21, green: 0.13, blue: 0.28)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            LinearGradient(
+                colors: [Color.black.opacity(0.08), Color.black.opacity(0.32)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: square ? 3 : 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "moon.stars.fill")
+                        .font(square ? .subheadline : .headline)
+                    Text(localizedPrayerName("Maghrib"))
+                        .font((square ? Font.title3 : Font.title2).weight(.bold))
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(square ? "7:31" : "7:31")
+                        .font(.system(size: square ? 34 : 42, weight: .bold, design: .rounded))
+                    Text("PM")
+                        .font((square ? Font.title3 : Font.title2).weight(.semibold))
+                }
+
+                HStack(spacing: 5) {
+                    Text(isMalayAppLanguage() ? "Dalam" : "In")
+                    Text("1h 14m")
+                        .monospacedDigit()
+                }
+                .font((square ? Font.subheadline : Font.title3).weight(.semibold))
+            }
+            .foregroundStyle(.white)
+            .padding(square ? 12 : 14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+}
+
+private struct HomeSimpleCountdownPreviewCard: View {
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 3) {
+                Text(appLocalized("Time left:"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text("1:14:22")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+            }
+
+            Spacer()
+
+            VStack(spacing: 6) {
+                Image(systemName: "sunset.fill")
+                    .font(.title2)
+                Text(localizedPrayerName("Maghrib"))
+                    .font(.headline.weight(.semibold))
+            }
+            .foregroundStyle(accentColor)
+
+            HStack(spacing: 4) {
+                Text("Next:")
+                Image(systemName: "moon.stars.fill")
+                Text(localizedPrayerName("Isha"))
+            }
+            .font(.caption)
+            .foregroundStyle(accentColor)
+
+            HStack(spacing: 3) {
+                Text(appLocalized("Starts at"))
+                Text("20:38")
+                    .monospacedDigit()
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct HomeCountdownMediumPreviewCard: View {
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            CurvierPrayerTimelineGraphPreviewCard(
+                currentPrayer: localizedPrayerName("Maghrib"),
+                nextPrayer: localizedPrayerName("Isha"),
+                nextTime: "20:38",
+                footer: "Taiping, Perak",
+                accentColor: accentColor
+            )
+
+            HStack {
+                Text(localizedPrayerName("Maghrib"))
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(accentColor)
+                Spacer(minLength: 8)
+                Text("1:14:22")
+                    .font(.headline.monospacedDigit())
+                Spacer(minLength: 8)
+                Text(localizedPrayerName("Isha"))
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack {
+                Label("Taiping, Perak", systemImage: "location.fill")
+                Spacer()
+                Text("Next 20:38")
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct HomeCountdownSmallPreviewCard: View {
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Spacer()
+                Text("24 Ramadan")
+                    .foregroundStyle(accentColor)
+                    .font(.caption2)
+                Spacer()
+            }
+
+            HStack {
+                Text(localizedPrayerName("Maghrib"))
+                    .font(.headline)
+                    .foregroundStyle(accentColor)
+                    .lineLimit(1)
+                Spacer()
+                Text("1:14:22")
+                    .font(.caption.monospacedDigit())
+                    .lineLimit(1)
+            }
+
+            HStack {
+                Text("Next \(localizedPrayerName("Isha"))")
+                Spacer()
+                Text("20:38")
+                    .monospacedDigit()
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+
+            if true {
+                HStack {
+                    Image(systemName: "location.fill")
+                        .font(.caption2)
+                        .foregroundStyle(accentColor)
+                    Text("Taiping")
+                        .font(.caption2)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct HomeCountdownLargePreviewCard: View {
+    let accentColor: Color
+
+    private let rows: [(String, String, String)] = [
+        (localizedPrayerName("Fajr"), "5:52", "sun.horizon.fill"),
+        (localizedPrayerName("Sunrise"), "7:08", "sunrise.fill"),
+        (localizedPrayerName("Dhuhr"), "13:23", "sun.max.fill"),
+        (localizedPrayerName("Asr"), "16:46", "sun.min.fill"),
+        (localizedPrayerName("Maghrib"), "19:31", "sunset.fill"),
+        (localizedPrayerName("Isha"), "20:38", "moon.stars.fill")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("24 Ramadan 1447")
+                    .font(.caption)
+                    .foregroundStyle(accentColor)
+                Spacer()
+            }
+
+            CurvierPrayerTimelineGraphPreviewCard(
+                currentPrayer: localizedPrayerName("Maghrib"),
+                nextPrayer: localizedPrayerName("Isha"),
+                nextTime: "20:38",
+                footer: nil,
+                accentColor: accentColor
+            )
+
+            HStack {
+                Text(localizedPrayerName("Maghrib"))
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(accentColor)
+                Spacer()
+                Text("1:14:22")
+                    .font(.headline.monospacedDigit())
+                Spacer()
+                Text(localizedPrayerName("Isha"))
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 8),
+                GridItem(.flexible(), spacing: 8),
+                GridItem(.flexible(), spacing: 8)
+            ], spacing: 8) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    VStack(spacing: 3) {
+                        HStack(spacing: 4) {
+                            Image(systemName: row.2)
+                            Text(row.0)
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(index == 4 ? accentColor : .secondary)
+
+                        Text(row.1)
+                            .font(.caption.weight(.bold))
+                            .monospacedDigit()
+                            .foregroundStyle(index == 4 ? accentColor : .primary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct HomePrayerTimesMediumPreviewCard: View {
+    let accentColor: Color
+
+    private let visiblePrayers: [(String, String, String)] = [
+        (localizedPrayerName("Maghrib"), "19:31", "sunset.fill"),
+        (localizedPrayerName("Isha"), "20:38", "moon.stars.fill"),
+        (localizedPrayerName("Fajr"), "5:52", "sun.horizon.fill")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "sunset.fill")
+                    .foregroundStyle(accentColor)
+                Text(localizedPrayerName("Maghrib"))
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(accentColor)
+                Spacer()
+                Text("1:14:22")
+                    .font(.subheadline.monospacedDigit())
+            }
+
+            VStack(spacing: 6) {
+                ForEach(Array(visiblePrayers.enumerated()), id: \.offset) { index, prayer in
+                    HStack {
+                        Image(systemName: prayer.2)
+                            .frame(width: 12)
+                        Text(prayer.0)
+                            .fontWeight(.bold)
+                        Spacer()
+                        Text(prayer.1)
+                            .fontWeight(.bold)
+                            .monospacedDigit()
+                    }
+                    .font(.caption)
+                    .foregroundStyle(index == 0 ? accentColor : (index == 1 ? .secondary : .primary))
+                }
+            }
+
+            Spacer()
+
+            HStack {
+                Label("Taiping, Perak", systemImage: "location.fill")
+                Spacer()
+                Image("CurrentAppIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .cornerRadius(3)
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct HomePrayerTimesMediumGridPreviewCard: View {
+    let accentColor: Color
+
+    private let rows: [(String, String, String)] = [
+        (localizedPrayerName("Fajr"), "5:52", "sun.horizon.fill"),
+        (localizedPrayerName("Sunrise"), "7:08", "sunrise.fill"),
+        (localizedPrayerName("Dhuhr"), "13:23", "sun.max.fill"),
+        (localizedPrayerName("Asr"), "16:46", "sun.min.fill"),
+        (localizedPrayerName("Maghrib"), "19:31", "sunset.fill"),
+        (localizedPrayerName("Isha"), "20:38", "moon.stars.fill")
+    ]
+
+    var body: some View {
+        VStack(spacing: 10) {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12),
+            ], spacing: 12) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    VStack(spacing: 4) {
+                        HStack(spacing: 2) {
+                            Image(systemName: row.2)
+                                .font(.subheadline)
+                            Text(row.0)
+                                .font(.subheadline.weight(.bold))
+                        }
+                        .foregroundStyle(index == 4 ? accentColor : .primary)
+
+                        Text(row.1)
+                            .font(.subheadline)
+                            .foregroundStyle(index == 4 ? accentColor : .secondary)
+                            .monospacedDigit()
+                    }
+                }
+            }
+            .padding(4)
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct HomePrayerTimesLargePreviewCard: View {
+    let accentColor: Color
+
+    private let rows: [(String, String, String)] = [
+        (localizedPrayerName("Fajr"), "5:52", "sun.horizon.fill"),
+        (localizedPrayerName("Sunrise"), "7:08", "sunrise.fill"),
+        (localizedPrayerName("Dhuhr"), "13:23", "sun.max.fill"),
+        (localizedPrayerName("Asr"), "16:46", "sun.min.fill"),
+        (localizedPrayerName("Maghrib"), "19:31", "sunset.fill"),
+        (localizedPrayerName("Isha"), "20:38", "moon.stars.fill")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("24 Ramadan 1447")
+                .font(.caption)
+                .foregroundStyle(accentColor)
+
+            Spacer(minLength: 0)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10)
+            ], spacing: 10) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    VStack(spacing: 4) {
+                        HStack(spacing: 4) {
+                            Image(systemName: row.2)
+                            Text(row.0)
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(index == 4 ? accentColor : .primary)
+
+                        Text(row.1)
+                            .font(.caption.weight(.bold))
+                            .monospacedDigit()
+                            .foregroundStyle(index == 4 ? accentColor : .secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            HStack {
+                Label("Taiping, Perak", systemImage: "location.fill")
+                Spacer()
+                Image("CurrentAppIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 22, height: 22)
+                    .cornerRadius(4)
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct HomeZikirPreviewCard: View {
+    let compact: Bool
+
+    var body: some View {
+        VStack(alignment: compact ? .leading : .center, spacing: compact ? 8 : 10) {
+            Text(isMalayAppLanguage() ? "Zikir malam" : "Night Zikir")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: compact ? .leading : .center)
+
+            Text("أَسْتَغْفِرُ ٱللَّٰهَ")
+                .font(.system(size: compact ? 20 : 24, weight: .regular, design: .serif))
+                .frame(maxWidth: .infinity, alignment: compact ? .leading : .center)
+
+            Text(isMalayAppLanguage() ? "Aku memohon ampun kepada Allah." : "I seek forgiveness from Allah.")
+                .font(.system(size: compact ? 11 : 13))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(compact ? .leading : .center)
+                .frame(maxWidth: .infinity, alignment: compact ? .leading : .center)
+
+            Spacer(minLength: 0)
+
+            if !compact {
+                Text(isMalayAppLanguage() ? "Dikemas kini mengikut waktu zikir harian." : "Updates with the prayer-aware daily zikir cycle.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+}
+
 private struct PremiumWidgetBadge: View {
     var body: some View {
         EmptyView()

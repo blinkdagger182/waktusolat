@@ -1,114 +1,98 @@
 import SwiftUI
 import WidgetKit
 
-private struct PrayerMiniGraph: View {
+private struct CurvierPrayerMiniGraph: View {
     @Environment(\.colorScheme) private var colorScheme
-    let tint: Color
-    let dotCount: Int
+    let prayers: [Prayer]
     let activeDotIndex: Int
+
+    private func normalizedCurveY(_ t: CGFloat) -> CGFloat {
+        let clamped = min(max(t, 0), 1)
+        let p0: CGFloat = 0.76
+        let c1: CGFloat = 0.38
+        let c2: CGFloat = 0.02
+        let p3: CGFloat = 0.88
+        let oneMinusT = 1 - clamped
+        return
+            (oneMinusT * oneMinusT * oneMinusT * p0) +
+            (3 * oneMinusT * oneMinusT * clamped * c1) +
+            (3 * oneMinusT * clamped * clamped * c2) +
+            (clamped * clamped * clamped * p3)
+    }
+
+    private func markerPoints(in size: CGSize) -> [CGPoint] {
+        let source = prayers.sorted { $0.time < $1.time }
+        guard source.count > 1 else {
+            return [
+                CGPoint(x: size.width * 0.03, y: size.height * 0.82),
+                CGPoint(x: size.width * 0.97, y: size.height * 0.82)
+            ]
+        }
+
+        let first = source.first?.time.timeIntervalSince1970 ?? 0
+        let last = max(source.last?.time.timeIntervalSince1970 ?? first + 1, first + 1)
+        let range = max(last - first, 1)
+        let leftInset = size.width * 0.03
+        let usableWidth = size.width * 0.94
+
+        return source.map { prayer in
+            let normalized = CGFloat((prayer.time.timeIntervalSince1970 - first) / range)
+            let clamped = min(max(normalized, 0), 1)
+            let x = leftInset + usableWidth * clamped
+            let y = size.height * normalizedCurveY(clamped)
+            return CGPoint(x: x, y: y)
+        }
+    }
+
+    private func sampledCurvePath(in size: CGSize) -> Path {
+        var path = Path()
+        let leftInset = size.width * 0.03
+        let usableWidth = size.width * 0.94
+        let steps = 48
+
+        for step in 0...steps {
+            let t = CGFloat(step) / CGFloat(steps)
+            let point = CGPoint(
+                x: leftInset + usableWidth * t,
+                y: size.height * normalizedCurveY(t)
+            )
+            if step == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+
+        return path
+    }
 
     var body: some View {
         GeometryReader { geo in
-            let width = geo.size.width
-            let height = max(geo.size.height, 1)
-            let P: (CGFloat, CGFloat) -> CGPoint = { x, y in .init(x: x * width, y: y * height) }
-
-            let p0 = P(0.06, 0.70)
-            let p1 = P(0.52, 0.10)
-            let p2 = P(0.78, 0.26)
-            let p3 = P(0.94, 0.66)
-
-            let c01a = P(0.22, 0.70)
-            let c01b = P(0.38, 0.08)
-            let c12a = P(0.60, 0.10)
-            let c12b = P(0.70, 0.24)
-            let c23a = P(0.84, 0.30)
-            let c23b = P(0.90, 0.66)
-            let clampedDots = min(max(dotCount, 2), 6)
-
-            let cubicPoint: (CGPoint, CGPoint, CGPoint, CGPoint, CGFloat) -> CGPoint = { a, b, c, d, t in
-                let oneMinusT = 1 - t
-                let x = (oneMinusT * oneMinusT * oneMinusT * a.x)
-                    + (3 * oneMinusT * oneMinusT * t * b.x)
-                    + (3 * oneMinusT * t * t * c.x)
-                    + (t * t * t * d.x)
-                let y = (oneMinusT * oneMinusT * oneMinusT * a.y)
-                    + (3 * oneMinusT * oneMinusT * t * b.y)
-                    + (3 * oneMinusT * t * t * c.y)
-                    + (t * t * t * d.y)
-                return CGPoint(x: x, y: y)
-            }
-
+            let markers = markerPoints(in: geo.size)
+            let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
+            let clampedActiveIndex = min(max(activeDotIndex, -1), max(markers.count - 1, -1))
             let baseLineColor = colorScheme == .light ? Color.black.opacity(0.42) : Color.white.opacity(0.68)
             let activeLineColor = colorScheme == .light ? Color.black.opacity(0.90) : Color.white.opacity(0.95)
             let futureDotStrokeColor = colorScheme == .light ? Color.black.opacity(0.55) : Color.white.opacity(0.72)
-            let clampedActiveIndex = min(max(activeDotIndex, -1), max(clampedDots - 1, -1))
-
-            let graphData: (markers: [CGPoint], stops: [CGFloat], peakIndex: Int, curve: Path) = {
-                if clampedDots == 3 {
-                    let markers = [p0, p1, p3]
-                    let curve = Path { path in
-                        path.move(to: p0)
-                        path.addCurve(to: p1, control1: c01a, control2: c01b)
-                        path.addCurve(to: p3, control1: P(0.66, 0.10), control2: P(0.84, 0.66))
-                    }
-                    return (markers, [0, 0.5, 1], 1, curve)
-                }
-
-                let m1 = cubicPoint(p0, c01a, c01b, p1, 0.50)
-                let m3 = cubicPoint(p2, c23a, c23b, p3, 0.50)
-                let sixMarkers: [CGPoint] = [p0, m1, p1, p2, m3, p3]
-                let markers = Array(sixMarkers.prefix(clampedDots))
-                let peakIndex = markers.enumerated().min(by: { $0.element.y < $1.element.y })?.offset ?? 0
-
-                let segmentLength: (CGPoint, CGPoint, CGPoint, CGPoint) -> CGFloat = { a, b, c, d in
-                    var total: CGFloat = 0
-                    var prev = a
-                    let steps = 32
-                    for step in 1...steps {
-                        let t = CGFloat(step) / CGFloat(steps)
-                        let point = cubicPoint(a, b, c, d, t)
-                        total += hypot(point.x - prev.x, point.y - prev.y)
-                        prev = point
-                    }
-                    return total
-                }
-
-                let l1 = segmentLength(p0, c01a, c01b, p1)
-                let l2 = segmentLength(p1, c12a, c12b, p2)
-                let l3 = segmentLength(p2, c23a, c23b, p3)
-                let totalLen = max(l1 + l2 + l3, 0.0001)
-                let allStops: [CGFloat] = [
-                    0,
-                    (0.5 * l1) / totalLen,
-                    (l1) / totalLen,
-                    (l1 + l2) / totalLen,
-                    (l1 + l2 + 0.5 * l3) / totalLen,
-                    1
-                ]
-                let stops = Array(allStops.prefix(markers.count))
-                let curve = Path { path in
-                    path.move(to: p0)
-                    path.addCurve(to: p1, control1: c01a, control2: c01b)
-                    path.addCurve(to: p2, control1: c12a, control2: c12b)
-                    path.addCurve(to: p3, control1: c23a, control2: c23b)
-                }
-                return (markers, stops, peakIndex, curve)
-            }()
-
-            let passedProgress = clampedActiveIndex >= 0
-                ? graphData.stops[min(clampedActiveIndex, max(graphData.stops.count - 1, 0))]
-                : 0
 
             ZStack {
-                graphData.curve
-                    .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+                let curve = sampledCurvePath(in: geo.size)
 
-                graphData.curve
-                    .trim(from: 0, to: passedProgress)
-                    .stroke(activeLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
+                ZStack {
+                    curve
+                        .stroke(baseLineColor, style: .init(lineWidth: 2.0, lineCap: .round, lineJoin: .round))
 
-                ForEach(Array(graphData.markers.enumerated()), id: \.offset) { index, point in
+                    ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: index == peakIndex ? 13 : 11, height: index == peakIndex ? 13 : 11)
+                            .position(point)
+                            .blendMode(.destinationOut)
+                    }
+                }
+                .compositingGroup()
+
+                ForEach(Array(markers.enumerated()), id: \.offset) { index, point in
                     let isReached = index <= clampedActiveIndex
                     Circle()
                         .fill(isReached ? activeLineColor : Color.clear)
@@ -119,8 +103,8 @@ private struct PrayerMiniGraph: View {
                             )
                         )
                         .frame(
-                            width: index == graphData.peakIndex ? 10 : 8,
-                            height: index == graphData.peakIndex ? 10 : 8
+                            width: index == peakIndex ? 10 : 8,
+                            height: index == peakIndex ? 10 : 8
                         )
                         .shadow(radius: isReached ? 0.6 : 0)
                         .position(point)
@@ -195,9 +179,8 @@ struct CountdownEntryView: View {
                     case .systemMedium, .systemLarge:
                         let prayersForGraph = graphPrayers()
                         VStack(alignment: .leading, spacing: 8) {
-                            PrayerMiniGraph(
-                                tint: entry.accentColor.color,
-                                dotCount: max(prayersForGraph.count, 2),
+                            CurvierPrayerMiniGraph(
+                                prayers: prayersForGraph,
                                 activeDotIndex: activeIndex(in: prayersForGraph)
                             )
 

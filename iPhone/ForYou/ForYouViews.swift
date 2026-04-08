@@ -2391,14 +2391,13 @@ private struct ForYouSwipeOnboardingView: View {
                     .ignoresSafeArea()
             }
         }
+        .onAppear {
+            updateTextPhase(for: currentCard)
+        }
+        .onChange(of: cardIndex) { _ in
+            updateTextPhase(for: currentCard)
+        }
         .task(id: cardIndex) {
-            if currentCard == .intro {
-                textPhase = false
-                try? await Task.sleep(nanoseconds: 180_000_000)
-                textPhase = true
-            } else {
-                textPhase = true
-            }
             isNameFocused = false
             runSwipeHintIfNeeded()
         }
@@ -2703,6 +2702,20 @@ private struct ForYouSwipeOnboardingView: View {
             withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                 demoOffset = 0
             }
+        }
+    }
+
+    private func updateTextPhase(for card: CardKind) {
+        if card == .intro {
+            textPhase = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                guard currentCard == .intro else { return }
+                withAnimation(.easeOut(duration: 0.32)) {
+                    textPhase = true
+                }
+            }
+        } else {
+            textPhase = true
         }
     }
 

@@ -291,8 +291,18 @@ struct SettingsView: View {
                         NavigationLink {
                             WidgetPreviewGalleryView()
                                 .environmentObject(settings)
+                                .environmentObject(revenueCat)
                         } label: {
-                            Label("Widgets", systemImage: "square.grid.2x2")
+                            Label("Lock Screen Widgets", systemImage: "lock.rectangle")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+
+                        NavigationLink {
+                            HomeWidgetPreviewGalleryView()
+                                .environmentObject(settings)
+                                .environmentObject(revenueCat)
+                        } label: {
+                            Label("Home Screen Widgets", systemImage: "apps.iphone")
                                 .foregroundColor(settings.accentColor.color)
                         }
 

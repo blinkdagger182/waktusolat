@@ -114,9 +114,12 @@ struct PrayersProvider: TimelineProvider {
             return emptyEntry(at: date, accent: baseContext.accent)
         }
 
-        let contextPrayers = obj.fullPrayers.isEmpty ? obj.prayers : obj.fullPrayers
+        let dayPrayers = settings.getPrayerTimes(for: date) ?? obj.prayers
+        let dayFullPrayers = settings.getPrayerTimes(for: date, fullPrayers: true)
+            ?? (obj.fullPrayers.isEmpty ? dayPrayers : obj.fullPrayers)
+        let contextPrayers = dayFullPrayers.isEmpty ? dayPrayers : dayFullPrayers
         let storedDhuha = settings.storedDohaDate(for: contextPrayers)
-        let inferred = inferCurrentAndNext(from: obj.prayers, at: date)
+        let inferred = inferCurrentAndNext(from: dayPrayers, at: date)
         let displayCurrent = inferred.current.map {
             promotedWidgetPrayer($0, in: contextPrayers, countryCode: baseContext.countryCode, storedDhuha: storedDhuha, at: date)
         }
@@ -129,8 +132,8 @@ struct PrayersProvider: TimelineProvider {
             accentColor: baseContext.accent,
             currentCity: settings.effectivePrayerLocationDisplayName
                 ?? (obj.city.isEmpty ? (baseContext.location?.city ?? "") : obj.city),
-            prayers: obj.prayers,
-            fullPrayers: obj.fullPrayers,
+            prayers: dayPrayers,
+            fullPrayers: dayFullPrayers,
             currentPrayer: displayCurrent,
             nextPrayer: displayNext,
             hijriOffset: settings.hijriOffset,
@@ -191,7 +194,18 @@ struct PrayersProvider: TimelineProvider {
     private func inferCurrentAndNext(from prayers: [Prayer], at now: Date) -> (current: Prayer?, next: Prayer?) {
         guard !prayers.isEmpty else { return (nil, nil) }
         if let nextIdx = prayers.firstIndex(where: { $0.time > now }) {
-            return (nextIdx == 0 ? prayers.last : prayers[nextIdx - 1], prayers[nextIdx])
+            if nextIdx > 0 {
+                return (prayers[nextIdx - 1], prayers[nextIdx])
+            }
+
+            let yesterdayLastPrayer: Prayer?
+            if let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: now) {
+                yesterdayLastPrayer = settings.getPrayerTimes(for: yesterday)?.last
+            } else {
+                yesterdayLastPrayer = nil
+            }
+
+            return (yesterdayLastPrayer, prayers[nextIdx])
         }
         // Past last prayer — compute tomorrow's Fajr so the timer counts down correctly
         let tomorrowFajr: Prayer?
