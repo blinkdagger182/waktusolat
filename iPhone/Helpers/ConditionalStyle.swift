@@ -233,6 +233,7 @@ final class BottomBarVisibilityController: ObservableObject {
     private var initialOffsets: [String: CGFloat] = [:]
     private let hideThreshold: CGFloat = 4
     private var showSuppressed = false
+    private var hideSuppressed = false
 
     func activate(source: String, hidesOnScroll: Bool) {
         activeSource = source
@@ -284,8 +285,16 @@ final class BottomBarVisibilityController: ObservableObject {
         }
     }
 
+    func suppressNextHide(for duration: TimeInterval = 0.7) {
+        hideSuppressed = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.hideSuppressed = false
+        }
+    }
+
     private func setHidden(_ hidden: Bool) {
         if !hidden && showSuppressed { return }
+        if hidden && hideSuppressed { return }
         guard isHidden != hidden else { return }
         withAnimation(.easeOut(duration: 0.18)) {
             isHidden = hidden

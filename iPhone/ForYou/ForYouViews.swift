@@ -9,6 +9,8 @@ private enum ForYouPalette {
     static let stroke    = Color.primary.opacity(0.08)
     static let ink       = Color.primary
     static let secondaryInk = Color.secondary
+    static let timePillFill = Color(uiColor: .systemBackground)
+    static let recommendationFill = Color(uiColor: .tertiarySystemBackground)
     static let accentSky = Color(red: 0.61, green: 0.83, blue: 0.93)
     static let darkTile  = Color(red: 0.23, green: 0.26, blue: 0.30)
     // Prayer tab strip colors
@@ -477,7 +479,7 @@ private struct ForYouTimelineEntryView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(.white.opacity(0.75))
+                            .fill(ForYouPalette.recommendationFill)
                     )
                 }
 
@@ -525,7 +527,7 @@ private struct ForYouTimelineRailView: View {
                 .padding(.vertical, isCompact ? 6 : 7)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(.white)
+                        .fill(ForYouPalette.timePillFill)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .stroke(isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke, lineWidth: 1)
@@ -794,7 +796,7 @@ private struct ForYouTimelineEntryContentCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(.white.opacity(0.75))
+                        .fill(ForYouPalette.recommendationFill)
                 )
             }
 
@@ -1283,7 +1285,7 @@ private struct ForYouCompactTimelineEntryView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(.white.opacity(0.75))
+                        .fill(ForYouPalette.recommendationFill)
                 )
             }
         }
@@ -1755,10 +1757,11 @@ private struct ForYouDayView: View {
         VStack(alignment: .leading, spacing: 12) {
             if index == 0 {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Hello Rizhan")
+                    Text("Hello, Rizhan!")
                         .font(ForYouTypography.playfairHeadline(size: 31))
                         .foregroundStyle(ForYouPalette.ink)
                         .accessibilityAddTraits(.isHeader)
+                        .padding(.top, 10)
 
                     Button(action: onScrollToPrayerTimeline) {
                         ForYouSummaryHeader(
@@ -1968,6 +1971,7 @@ struct ForYouRootView: View {
                         onScrollOffsetChange?(0)
                         if let id = currentPrayerSelection?.entryID ?? currentDayViewModel?.focusedEntryID {
                             selectedPrayerCard = .main(id)
+                            bottomBarVisibility.suppressNextHide()
                             // Seed scrollTarget.scrollID so the first button press
                             // cycles relative to the auto-scrolled card, not index 0.
                             // token is nil so the onChange observer does NOT fire.
