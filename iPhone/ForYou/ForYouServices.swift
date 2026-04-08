@@ -18,6 +18,10 @@ enum ForYouUserProfileService {
         guard let data = try? JSONEncoder().encode(profile) else { return }
         defaults.set(data, forKey: storageKey)
     }
+
+    static func reset() {
+        defaults.removeObject(forKey: storageKey)
+    }
 }
 
 enum ForYouCompletionStore {
@@ -37,6 +41,10 @@ enum ForYouCompletionStore {
         }
         defaults.set(Array(ids), forKey: storageKey)
     }
+
+    static func reset() {
+        defaults.removeObject(forKey: storageKey)
+    }
 }
 
 enum ForYouSessionStore {
@@ -46,6 +54,22 @@ enum ForYouSessionStore {
         let shouldAutoScroll = hasVisitedTodayTab
         hasVisitedTodayTab = true
         return shouldAutoScroll
+    }
+
+    static func reset() {
+        hasVisitedTodayTab = false
+    }
+}
+
+enum ForYouDebugStore {
+    private static let defaults = UserDefaults.standard
+    private static let swipeHintKey = "forYou.didSeeSwipeHint.v1"
+
+    static func resetAll() {
+        ForYouUserProfileService.reset()
+        ForYouCompletionStore.reset()
+        ForYouSessionStore.reset()
+        defaults.removeObject(forKey: swipeHintKey)
     }
 }
 

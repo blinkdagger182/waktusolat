@@ -2295,6 +2295,7 @@ private struct ForYouSwipeOnboardingView: View {
     }
 
     private enum CardKind: Int, CaseIterable {
+        case intro
         case name
         case reminderStyle
         case prayerTracker
@@ -2303,17 +2304,19 @@ private struct ForYouSwipeOnboardingView: View {
         var isSwipeable: Bool {
             switch self {
             case .prayerTracker, .prayerCheckIn: true
-            case .name, .reminderStyle: false
+            case .intro, .name, .reminderStyle: false
             }
         }
     }
 
     private var currentCard: CardKind {
-        CardKind(rawValue: cardIndex) ?? .name
+        CardKind(rawValue: cardIndex) ?? .intro
     }
 
     private var canAdvanceCurrentCard: Bool {
         switch currentCard {
+        case .intro:
+            true
         case .name:
             !draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .reminderStyle:
@@ -2360,7 +2363,7 @@ private struct ForYouSwipeOnboardingView: View {
 
                 if !currentCard.isSwipeable {
                     Button(action: advanceButtonTapped) {
-                        Text(currentCard == .name ? (isMalayAppLanguage() ? "Selesai" : "Done") : (isMalayAppLanguage() ? "Teruskan" : "Continue"))
+                        Text(buttonLabel)
                             .font(.system(size: 17, weight: .semibold, design: .rounded))
                             .foregroundStyle(Color(uiColor: .systemBackground))
                             .frame(maxWidth: .infinity)
@@ -2392,9 +2395,7 @@ private struct ForYouSwipeOnboardingView: View {
             textPhase = false
             try? await Task.sleep(nanoseconds: 50_000_000)
             textPhase = true
-            if currentCard == .name {
-                isNameFocused = true
-            }
+            isNameFocused = false
             runSwipeHintIfNeeded()
         }
     }
@@ -2415,9 +2416,20 @@ private struct ForYouSwipeOnboardingView: View {
     private func cardView(for kind: CardKind, isBackground: Bool) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             switch kind {
+            case .intro:
+                animatedTextBlock(
+                    eyebrow: "Today",
+                    title: isMalayAppLanguage() ? "Selamat datang ke For You" : "Welcome to For You",
+                    subtitle: isMalayAppLanguage() ? "Kami akan sediakan Today supaya terasa lebih peribadi, lebih lembut, dan lebih berguna setiap kali anda kembali." : "We’ll shape Today so it feels more personal, softer, and more useful every time you come back."
+                )
+
+                introRow(icon: "sparkles", text: isMalayAppLanguage() ? "Bina tab Today mengikut rentak anda" : "Shape Today around your rhythm")
+                introRow(icon: "bell.badge", text: isMalayAppLanguage() ? "Laraskan nada peringatan mengikut nama anda" : "Tune reminder tone around your name")
+                introRow(icon: "checkmark.circle", text: isMalayAppLanguage() ? "Tambah semakan ringkas untuk solat semasa" : "Add a quick check-in for the current prayer")
+
             case .name:
                 animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 1" : "Card 1",
+                    eyebrow: isMalayAppLanguage() ? "Kad 2" : "Card 2",
                     title: isMalayAppLanguage() ? "Siapa nama anda?" : "What is your name?",
                     subtitle: isMalayAppLanguage() ? "Kami akan gunakan nama anda untuk menjadikan tab Today terasa lebih peribadi." : "We’ll use your name to make Today feel more personal."
                 )
@@ -2439,7 +2451,7 @@ private struct ForYouSwipeOnboardingView: View {
 
             case .reminderStyle:
                 animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 2" : "Card 2",
+                    eyebrow: isMalayAppLanguage() ? "Kad 3" : "Card 3",
                     title: isMalayAppLanguage() ? "Bagaimana anda mahu diingatkan?" : "How should reminders sound?",
                     subtitle: isMalayAppLanguage() ? "Pilih gaya yang terasa paling sesuai untuk anda, \(displayName)." : "Choose the tone that feels right for you, \(displayName)."
                 )
@@ -2480,7 +2492,7 @@ private struct ForYouSwipeOnboardingView: View {
 
             case .prayerTracker:
                 animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 3" : "Card 3",
+                    eyebrow: isMalayAppLanguage() ? "Kad 4" : "Card 4",
                     title: isMalayAppLanguage() ? "Mahukan kad penjejak solat?" : "Do you want a prayer tracker card?",
                     subtitle: isMalayAppLanguage() ? "Kami boleh tanya setiap kali anda buka tab ini, supaya anda cepat semak ritma hari anda." : "We can ask each time you open this tab, so you can quickly check in with your prayer rhythm."
                 )
@@ -2489,7 +2501,7 @@ private struct ForYouSwipeOnboardingView: View {
 
             case .prayerCheckIn:
                 animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 4" : "Card 4",
+                    eyebrow: isMalayAppLanguage() ? "Kad 5" : "Card 5",
                     title: isMalayAppLanguage() ? "Sudahkah anda menunaikan \(currentPrayerTitle)?" : "Have you prayed \(currentPrayerTitle)?",
                     subtitle: isMalayAppLanguage() ? "Leret untuk jawab. Jika sudah, kami akan raikan sedikit." : "Swipe to answer. If you have, we’ll celebrate a little."
                 )
@@ -2613,7 +2625,7 @@ private struct ForYouSwipeOnboardingView: View {
                 }
                 settings.hapticFeedback()
                 completeOnboarding(afterCelebration: answer)
-            case .name, .reminderStyle:
+            case .intro, .name, .reminderStyle:
                 break
             }
         }
@@ -2662,6 +2674,43 @@ private struct ForYouSwipeOnboardingView: View {
                 demoOffset = 0
             }
         }
+    }
+
+    private var buttonLabel: String {
+        switch currentCard {
+        case .intro:
+            return isMalayAppLanguage() ? "Jom mula" : "Let's go"
+        case .name:
+            return isMalayAppLanguage() ? "Selesai" : "Done"
+        case .reminderStyle:
+            return isMalayAppLanguage() ? "Teruskan" : "Continue"
+        case .prayerTracker, .prayerCheckIn:
+            return isMalayAppLanguage() ? "Teruskan" : "Continue"
+        }
+    }
+
+    private func introRow(icon: String, text: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(settings.accentColor.color)
+                .frame(width: 32, height: 32)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(settings.accentColor.color.opacity(0.12))
+                )
+
+            Text(text)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color.primary)
+
+            Spacer()
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(uiColor: .secondarySystemBackground))
+        )
     }
 
     private func label(for style: ForYouReminderStyle) -> String {

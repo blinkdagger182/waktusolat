@@ -409,6 +409,12 @@ struct AdhanView: View {
                             Label("Malaysia Location Toast", systemImage: "mappin.circle")
                         }
 
+                        Button {
+                            ForYouDebugStore.resetAll()
+                        } label: {
+                            Label("Reset For You Onboarding", systemImage: "arrow.counterclockwise")
+                        }
+
                         Divider()
 
                         Button {
