@@ -2336,7 +2336,7 @@ private struct ForYouSwipeOnboardingView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.18).ignoresSafeArea()
+            Color.black.opacity(0.24).ignoresSafeArea()
 
             VStack(spacing: 18) {
                 HStack(spacing: 8) {
@@ -2361,7 +2361,7 @@ private struct ForYouSwipeOnboardingView: View {
                 }
                 .frame(maxWidth: 430)
 
-                if !currentCard.isSwipeable {
+                if !currentCard.isSwipeable && currentCard != .name {
                     Button(action: advanceButtonTapped) {
                         Text(buttonLabel)
                             .font(.system(size: 17, weight: .semibold, design: .rounded))
@@ -2392,9 +2392,13 @@ private struct ForYouSwipeOnboardingView: View {
             }
         }
         .task(id: cardIndex) {
-            textPhase = false
-            try? await Task.sleep(nanoseconds: 50_000_000)
-            textPhase = true
+            if currentCard == .intro {
+                textPhase = false
+                try? await Task.sleep(nanoseconds: 180_000_000)
+                textPhase = true
+            } else {
+                textPhase = true
+            }
             isNameFocused = false
             runSwipeHintIfNeeded()
         }
@@ -2419,7 +2423,7 @@ private struct ForYouSwipeOnboardingView: View {
             case .intro:
                 animatedTextBlock(
                     eyebrow: "Today",
-                    title: isMalayAppLanguage() ? "Selamat datang ke For You" : "Welcome to For You",
+                    title: isMalayAppLanguage() ? "Selamat datang ke Today" : "Welcome to Today",
                     subtitle: isMalayAppLanguage() ? "Kami akan sediakan Today supaya terasa lebih peribadi, lebih lembut, dan lebih berguna setiap kali anda kembali." : "We’ll shape Today so it feels more personal, softer, and more useful every time you come back."
                 )
 
@@ -2448,6 +2452,32 @@ private struct ForYouSwipeOnboardingView: View {
                                     .stroke(Color.primary.opacity(0.08), lineWidth: 1)
                             )
                     )
+                    .onChange(of: draftName) { value in
+                        if value.count > 15 {
+                            draftName = String(value.prefix(15))
+                        }
+                    }
+
+                HStack {
+                    Spacer()
+                    Text("\(draftName.count)/15")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.secondary)
+                }
+
+                Button(action: advanceButtonTapped) {
+                    Text(isMalayAppLanguage() ? "Selesai" : "Done")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(uiColor: .systemBackground))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(canAdvanceCurrentCard ? settings.accentColor.color : Color.primary.opacity(0.14))
+                        )
+                }
+                .disabled(!canAdvanceCurrentCard)
+                .buttonStyle(.plain)
 
             case .reminderStyle:
                 animatedTextBlock(

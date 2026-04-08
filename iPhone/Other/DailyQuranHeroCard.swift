@@ -1,8 +1,21 @@
 import SwiftUI
 
+private enum DailyQuranHeroAnimationStore {
+    private static var animatedKeys: Set<String> = []
+
+    static func hasAnimated(_ key: String) -> Bool {
+        animatedKeys.contains(key)
+    }
+
+    static func markAnimated(_ key: String) {
+        animatedKeys.insert(key)
+    }
+}
+
 struct DailyQuranHeroCard: View {
     let quote: LibraryDailyQuranQuote
     let arabicText: String?
+    let shouldAnimateArabic: Bool
     let accentColor: Color
     let arabicFontName: String
     let onOpenVerse: () -> Void
@@ -188,9 +201,22 @@ struct DailyQuranHeroCard: View {
                 .stroke(.white.opacity(0.32), lineWidth: 1)
         }
         .shadow(color: accentColor.opacity(0.12), radius: 22, x: 0, y: 12)
-        .task(id: arabicText ?? quote.reference) {
+        .task(id: "\(arabicText ?? quote.reference)|\(shouldAnimateArabic)") {
+            let animationKey = arabicText ?? quote.reference
             guard !arabicWords.isEmpty else {
                 revealedArabicWordCount = 0
+                highlightedArabicWordIndex = nil
+                return
+            }
+
+            guard shouldAnimateArabic else {
+                revealedArabicWordCount = arabicWords.count
+                highlightedArabicWordIndex = nil
+                return
+            }
+
+            if DailyQuranHeroAnimationStore.hasAnimated(animationKey) {
+                revealedArabicWordCount = arabicWords.count
                 highlightedArabicWordIndex = nil
                 return
             }
@@ -205,6 +231,7 @@ struct DailyQuranHeroCard: View {
             }
             try? await Task.sleep(nanoseconds: arabicHighlightHoldDuration)
             highlightedArabicWordIndex = nil
+            DailyQuranHeroAnimationStore.markAnimated(animationKey)
         }
     }
 }

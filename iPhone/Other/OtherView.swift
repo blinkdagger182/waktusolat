@@ -313,9 +313,12 @@ struct OtherView: View {
     @State private var expandedSurahNumber: Int?
     @State private var dailyQuranArabicText: String?
     @State private var pinnedSurahNumbers: [Int] = []
+    @State private var hasActivatedLibrary = false
+    private let isActive: Bool
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
-    init(onScrollOffsetChange: ((CGFloat) -> Void)? = nil) {
+    init(isActive: Bool = true, onScrollOffsetChange: ((CGFloat) -> Void)? = nil) {
+        self.isActive = isActive
         self.onScrollOffsetChange = onScrollOffsetChange
     }
 
@@ -540,6 +543,7 @@ struct OtherView: View {
                     DailyQuranHeroCard(
                         quote: quote,
                         arabicText: dailyQuranArabicText,
+                        shouldAnimateArabic: hasActivatedLibrary,
                         accentColor: settings.accentColor.color,
                         arabicFontName: preferredQuranArabicFontName(settings: settings, size: 29),
                         onOpenVerse: openDailyQuranModal,
@@ -815,12 +819,20 @@ struct OtherView: View {
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle(isMalayAppLanguage() ? "Pustaka" : "Library")
             .onAppear {
+                if isActive {
+                    hasActivatedLibrary = true
+                }
                 onScrollOffsetChange?(0)
                 loadResumeSelection()
                 loadPinnedSurahs()
                 syncSharedQuranContentLanguagePreference(quranLanguageCode)
                 Task { await loadSurahsIfNeeded() }
                 Task { await loadDailyQuranQuote() }
+            }
+            .onChange(of: isActive) { active in
+                if active {
+                    hasActivatedLibrary = true
+                }
             }
             .task(id: quranLanguageCode) {
                 syncSharedQuranContentLanguagePreference(quranLanguageCode)

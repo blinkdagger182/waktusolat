@@ -529,21 +529,28 @@ struct AlAdhanApp: App {
 
     @ViewBuilder
     private var currentTabContent: some View {
-        switch selectedTab {
-        case .adhan:
+        ZStack {
             AdhanView { offset in
                 bottomBarVisibility.handleScroll(offset: offset, source: AppTab.adhan.scrollSourceID)
             }
-        case .today:
+            .opacity(selectedTab == .adhan ? 1 : 0)
+            .allowsHitTesting(selectedTab == .adhan)
+
             TodayView { offset in
                 bottomBarVisibility.handleScroll(offset: offset, source: AppTab.today.scrollSourceID)
             }
-        case .library:
-            OtherView { offset in
+            .opacity(selectedTab == .today ? 1 : 0)
+            .allowsHitTesting(selectedTab == .today)
+
+            OtherView(isActive: selectedTab == .library) { offset in
                 bottomBarVisibility.handleScroll(offset: offset, source: AppTab.library.scrollSourceID)
             }
-        case .settings:
+            .opacity(selectedTab == .library ? 1 : 0)
+            .allowsHitTesting(selectedTab == .library)
+
             SettingsView()
+                .opacity(selectedTab == .settings ? 1 : 0)
+                .allowsHitTesting(selectedTab == .settings)
         }
     }
 
