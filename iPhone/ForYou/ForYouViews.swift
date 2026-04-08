@@ -435,10 +435,10 @@ private struct ForYouTimelineEntryView: View {
                     Text(arabicText)
                         .font(.custom(preferredQuranArabicFontName(settings: settings, size: isCompact ? 16 : 18), size: isCompact ? 16 : 18))
                         .foregroundStyle(ForYouPalette.ink)
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .lineSpacing(3)
-                        .lineLimit(isCompact ? 1 : nil)
-                        .minimumScaleFactor(0.8)
                 }
 
                 if let recommendation = entry.recommendation {
@@ -456,8 +456,9 @@ private struct ForYouTimelineEntryView: View {
                             Text(arabicText)
                                 .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
                                 .foregroundStyle(ForYouPalette.ink)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.82)
+                                .multilineTextAlignment(.trailing)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
                         }
 
                         Text(recommendation.shortDescription)
@@ -1828,7 +1829,7 @@ struct ForYouRootView: View {
     @EnvironmentObject private var bottomBarVisibility: BottomBarVisibilityController
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
-    @State private var scrollTarget: (scrollID: String, token: UUID)?
+    @State private var scrollTarget: (scrollID: String, token: UUID?)?
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -1884,6 +1885,10 @@ struct ForYouRootView: View {
                     .onAppear {
                         onScrollOffsetChange?(0)
                         if let id = currentDayViewModel?.focusedEntryID {
+                            // Seed scrollTarget.scrollID so the first button press
+                            // cycles relative to the auto-scrolled card, not index 0.
+                            // token is nil so the onChange observer does NOT fire.
+                            scrollTarget = (scrollID: id, token: nil)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                                 withAnimation(.easeInOut(duration: 0.5)) {
                                     proxy.scrollTo(id, anchor: focusScrollAnchor)
@@ -1909,6 +1914,7 @@ struct ForYouRootView: View {
                     }
 
                     pageCycleControlButton(systemName: "chevron.right") {
+                        bottomBarVisibility.suppressNextShow()
                         cyclePrayerSelection(direction: 1)
                     }
                 }
