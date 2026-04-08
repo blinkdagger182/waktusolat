@@ -601,6 +601,17 @@ private enum ForYouPrayerCardSelection: Equatable {
         }
     }
 
+    /// Unique scroll anchor for this exact card/tab combination.
+    /// `.main` scrolls to the prayer row; `.tab` scrolls to that tab's strip.
+    var scrollID: String {
+        switch self {
+        case .main(let entryID):
+            return entryID
+        case .tab(let entryID, let tab):
+            return "\(entryID)-\(tab.rawValue)"
+        }
+    }
+
     var expandedTab: ForYouPrayerTab? {
         switch self {
         case .main:
@@ -680,6 +691,9 @@ private struct ForYouPrayerStackedCards: View {
             }
             .buttonStyle(.plain)
             .background(tab.color)
+            // ID on the stable peek strip — never changes height, so scrollTo
+            // always lands cleanly regardless of whether the card is expanded.
+            .id("\(entry.id)-\(tab.rawValue)")
 
             if isExpanded {
                 ForYouPrayerTabPanel(
@@ -1814,7 +1828,7 @@ struct ForYouRootView: View {
     @EnvironmentObject private var bottomBarVisibility: BottomBarVisibilityController
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
-    @State private var scrollTarget: (entryID: String, token: UUID)?
+    @State private var scrollTarget: (scrollID: String, token: UUID)?
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -1878,9 +1892,9 @@ struct ForYouRootView: View {
                         }
                     }
                     .onChange(of: scrollTarget?.token) { _ in
-                        guard let entryID = scrollTarget?.entryID else { return }
+                        guard let scrollID = scrollTarget?.scrollID else { return }
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
-                            proxy.scrollTo(entryID, anchor: focusScrollAnchor)
+                            proxy.scrollTo(scrollID, anchor: focusScrollAnchor)
                         }
                     }
                 }
@@ -1973,6 +1987,42 @@ struct ForYouRootView: View {
         return defaultPrayerSelection
     }
 
+    // Unified ordered sequence of every focusable item in the feed:
+    // prayer main card → wirid strip → doa strip → zikir card → next prayer → …
+    private enum ScrollItem: Equatable {
+        case prayer(ForYouPrayerCardSelection)
+        case zikir(String) // entry.id
+
+        var scrollID: String {
+            switch self {
+            case .prayer(let sel): return sel.scrollID
+            case .zikir(let id): return id
+            }
+        }
+
+        var prayerSelection: ForYouPrayerCardSelection? {
+            if case .prayer(let sel) = self { return sel }
+            return nil
+        }
+    }
+
+    private var scrollSequence: [ScrollItem] {
+        guard let vm = currentDayViewModel else { return [] }
+        var result: [ScrollItem] = []
+        for entry in vm.plan.timelineEntries {
+            switch entry.kind {
+            case .prayer:
+                result.append(.prayer(.main(entry.id)))
+                for tab in ForYouPrayerTab.allCases {
+                    result.append(.prayer(.tab(entry.id, tab)))
+                }
+            case .zikir:
+                result.append(.zikir(entry.id))
+            }
+        }
+        return result
+    }
+
     private var prayerCardSequence: [ForYouPrayerCardSelection] {
         prayerEntries.flatMap { entry in
             [ForYouPrayerCardSelection.main(entry.id)] + ForYouPrayerTab.allCases.map { .tab(entry.id, $0) }
@@ -1980,19 +2030,23 @@ struct ForYouRootView: View {
     }
 
     private func cyclePrayerSelection(direction: Int) {
-        guard !prayerCardSequence.isEmpty else { return }
+        guard !scrollSequence.isEmpty else { return }
 
-        let current = prayerSelection ?? prayerCardSequence[0]
-        let currentIndex = prayerCardSequence.firstIndex(of: current) ?? 0
-        let nextIndex = (currentIndex + direction + prayerCardSequence.count) % prayerCardSequence.count
-        let next = prayerCardSequence[nextIndex]
+        // Find where we currently are in the unified sequence.
+        let currentScrollID = scrollTarget?.scrollID ?? scrollSequence.first?.scrollID ?? ""
+        let currentIndex = scrollSequence.firstIndex(where: { $0.scrollID == currentScrollID }) ?? 0
+        let nextIndex = (currentIndex + direction + scrollSequence.count) % scrollSequence.count
+        let next = scrollSequence[nextIndex]
 
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
-            selectedPrayerCard = next
+        // Scroll to the stable anchor first, then expand the prayer tab after
+        // scroll commits — prevents layout shift overshoot.
+        scrollTarget = (scrollID: next.scrollID, token: UUID())
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
+                // nil collapses any open tab when landing on a zikir card.
+                selectedPrayerCard = next.prayerSelection
+            }
         }
-        // UUID token ensures the observer always fires, even when the entryID
-        // or selection value wraps back to one it has seen before.
-        scrollTarget = (entryID: next.entryID, token: UUID())
     }
 
     private func pageCycleControlButton(systemName: String, action: @escaping () -> Void) -> some View {
