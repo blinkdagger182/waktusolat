@@ -1573,6 +1573,7 @@ private struct ForYouDayView: View {
     static let prayerTimelineSectionID = "for-you-prayer-timeline-section"
 
     let viewModel: ForYouDayViewModel
+    let greetingName: String?
     let completedIDs: Set<String>
     let onToggleCompletion: (String) -> Void
     let selection: ForYouPrayerCardSelection?
@@ -1583,6 +1584,7 @@ private struct ForYouDayView: View {
 
     init(
         viewModel: ForYouDayViewModel,
+        greetingName: String?,
         completedIDs: Set<String>,
         onToggleCompletion: @escaping (String) -> Void,
         selection: ForYouPrayerCardSelection?,
@@ -1590,6 +1592,7 @@ private struct ForYouDayView: View {
         onScrollToPrayerTimeline: @escaping () -> Void
     ) {
         self.viewModel = viewModel
+        self.greetingName = greetingName
         self.completedIDs = completedIDs
         self.onToggleCompletion = onToggleCompletion
         self.selection = selection
@@ -1722,6 +1725,12 @@ private struct ForYouDayView: View {
         ForYouFormatters.weekday.string(from: viewModel.plan.date)
     }
 
+    private var greetingLine: String {
+        let trimmedName = greetingName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmedName.isEmpty else { return "Hello!" }
+        return "Hello, \(trimmedName)!"
+    }
+
     private var currentPrayerEntry: ForYouTimelineEntry? {
         let prayerEntries = viewModel.plan.timelineEntries.filter { $0.kind == .prayer }
         guard !prayerEntries.isEmpty else { return nil }
@@ -1784,7 +1793,7 @@ private struct ForYouDayView: View {
         VStack(alignment: .leading, spacing: 12) {
             if index == 0 {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Hello, Rizhan!")
+                    Text(greetingLine)
                         .font(ForYouTypography.playfairHeadline(size: 31))
                         .foregroundStyle(ForYouPalette.ink)
                         .accessibilityAddTraits(.isHeader)
@@ -1941,6 +1950,7 @@ struct ForYouRootView: View {
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
     @State private var scrollOffset: CGFloat = 0
+    @State private var shouldAutoScrollOnAppear = ForYouSessionStore.shouldAutoScrollOnTodayAppear()
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -1968,6 +1978,7 @@ struct ForYouRootView: View {
                         if let todayItem = currentDayViewModel {
                             ForYouDayView(
                                 viewModel: todayItem,
+                                greetingName: viewModel.profile.firstName,
                                 completedIDs: viewModel.completedIDs,
                                 onToggleCompletion: viewModel.toggleCompletion(for:),
                                 selection: prayerSelection,
@@ -1996,7 +2007,9 @@ struct ForYouRootView: View {
                     )
                     .onAppear {
                         onScrollOffsetChange?(0)
-                        if let id = currentPrayerSelection?.entryID ?? currentDayViewModel?.focusedEntryID {
+                        if shouldAutoScrollOnAppear,
+                           !viewModel.showOnboarding,
+                           let id = currentPrayerSelection?.entryID ?? currentDayViewModel?.focusedEntryID {
                             selectedPrayerCard = .main(id)
                             bottomBarVisibility.suppressNextHide()
                             // Seed scrollTarget.scrollID so the first button press
@@ -2019,8 +2032,9 @@ struct ForYouRootView: View {
                 }
             }
         }
+        .allowsHitTesting(!viewModel.showOnboarding)
         .overlay(alignment: .top) {
-            if let todayItem = currentDayViewModel {
+            if let todayItem = currentDayViewModel, !viewModel.showOnboarding {
                 ForYouCollapsedHeaderBar(
                     plan: todayItem.plan,
                     currentPrayerEntry: currentPrayerEntry,
@@ -2037,7 +2051,7 @@ struct ForYouRootView: View {
             }
         }
         .overlay(alignment: .bottom) {
-            if !prayerCardSequence.isEmpty {
+            if !prayerCardSequence.isEmpty, !viewModel.showOnboarding {
                 HStack(spacing: 10) {
                     pageCycleControlButton(systemName: "chevron.left") {
                         bottomBarVisibility.suppressNextShow()
@@ -2065,6 +2079,20 @@ struct ForYouRootView: View {
                 .animation(.easeOut(duration: 0.18), value: bottomBarVisibility.isHidden)
             }
         }
+        .overlay {
+            if viewModel.showOnboarding {
+                ForYouSwipeOnboardingView(
+                    initialProfile: viewModel.profile,
+                    currentPrayerTitle: currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Solat" : "Prayer"),
+                    currentPrayerIcon: currentPrayerEntry?.icon ?? "sparkles",
+                    onComplete: { profile in
+                        viewModel.saveProfile(profile, settings: settings, hasPremiumAccess: hasPremiumAccess)
+                    }
+                )
+                .environmentObject(settings)
+                .zIndex(30)
+            }
+        }
         .task {
             refresh()
         }
@@ -2072,12 +2100,6 @@ struct ForYouRootView: View {
         .onChange(of: settings.nextPrayer?.id) { _ in refresh() }
         .onChange(of: settings.currentLocation?.city) { _ in refresh() }
         .onChange(of: revenueCat.hasBuyMeKopi) { _ in refresh() }
-        .sheet(isPresented: $viewModel.showOnboarding) {
-            ForYouOnboardingView(initialProfile: viewModel.profile) { profile in
-                viewModel.saveProfile(profile, settings: settings, hasPremiumAccess: hasPremiumAccess)
-            }
-            .environmentObject(settings)
-        }
     }
 
     private var hasPremiumAccess: Bool {
@@ -2235,5 +2257,468 @@ struct ForYouRootView: View {
 
     private func refresh() {
         viewModel.configure(settings: settings, hasPremiumAccess: hasPremiumAccess)
+    }
+}
+
+private struct ForYouSwipeOnboardingView: View {
+    let initialProfile: ForYouUserProfile
+    let currentPrayerTitle: String
+    let currentPrayerIcon: String
+    let onComplete: (ForYouUserProfile) -> Void
+
+    @EnvironmentObject private var settings: Settings
+    @AppStorage("forYou.didSeeSwipeHint.v1") private var didSeeSwipeHint = false
+    @FocusState private var isNameFocused: Bool
+
+    @State private var cardIndex = 0
+    @State private var draftName: String
+    @State private var selectedReminderStyle: ForYouReminderStyle
+    @State private var wantsPrayerTrackerCard: Bool?
+    @State private var swipeOffset: CGFloat = 0
+    @State private var demoOffset: CGFloat = 0
+    @State private var textPhase = false
+    @State private var showConfetti = false
+
+    init(
+        initialProfile: ForYouUserProfile,
+        currentPrayerTitle: String,
+        currentPrayerIcon: String,
+        onComplete: @escaping (ForYouUserProfile) -> Void
+    ) {
+        self.initialProfile = initialProfile
+        self.currentPrayerTitle = currentPrayerTitle
+        self.currentPrayerIcon = currentPrayerIcon
+        self.onComplete = onComplete
+        _draftName = State(initialValue: initialProfile.firstName ?? "")
+        _selectedReminderStyle = State(initialValue: initialProfile.reminderStyle ?? .gentle)
+        _wantsPrayerTrackerCard = State(initialValue: initialProfile.wantsPrayerTrackerCard)
+    }
+
+    private enum CardKind: Int, CaseIterable {
+        case name
+        case reminderStyle
+        case prayerTracker
+        case prayerCheckIn
+
+        var isSwipeable: Bool {
+            switch self {
+            case .prayerTracker, .prayerCheckIn: true
+            case .name, .reminderStyle: false
+            }
+        }
+    }
+
+    private var currentCard: CardKind {
+        CardKind(rawValue: cardIndex) ?? .name
+    }
+
+    private var canAdvanceCurrentCard: Bool {
+        switch currentCard {
+        case .name:
+            !draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .reminderStyle:
+            true
+        case .prayerTracker, .prayerCheckIn:
+            false
+        }
+    }
+
+    private var trimmedName: String {
+        draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var displayName: String {
+        trimmedName.isEmpty ? "Rizhan" : trimmedName
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.18).ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                HStack(spacing: 8) {
+                    ForEach(CardKind.allCases, id: \.rawValue) { kind in
+                        Capsule(style: .continuous)
+                            .fill(kind.rawValue <= cardIndex ? settings.accentColor.color : Color.primary.opacity(0.12))
+                            .frame(width: kind.rawValue == cardIndex ? 26 : 8, height: 6)
+                            .animation(.spring(response: 0.28, dampingFraction: 0.82), value: cardIndex)
+                    }
+                }
+                .padding(.top, 16)
+
+                ZStack {
+                    if cardIndex + 1 < CardKind.allCases.count {
+                        cardView(for: CardKind(rawValue: cardIndex + 1) ?? .prayerCheckIn, isBackground: true)
+                            .scaleEffect(0.94)
+                            .offset(y: 14)
+                            .opacity(0.35)
+                    }
+
+                    onboardingForegroundCard
+                }
+                .frame(maxWidth: 430)
+
+                if !currentCard.isSwipeable {
+                    Button(action: advanceButtonTapped) {
+                        Text(currentCard == .name ? (isMalayAppLanguage() ? "Selesai" : "Done") : (isMalayAppLanguage() ? "Teruskan" : "Continue"))
+                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color(uiColor: .systemBackground))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(canAdvanceCurrentCard ? settings.accentColor.color : Color.primary.opacity(0.14))
+                            )
+                    }
+                    .disabled(!canAdvanceCurrentCard)
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 430)
+                } else {
+                    Text(isMalayAppLanguage() ? "Leret kiri untuk Tidak, kanan untuk Ya" : "Swipe left for No, right for Yes")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(Color.secondary)
+                        .padding(.bottom, 8)
+                }
+            }
+            .padding(.horizontal, 20)
+
+            if showConfetti {
+                ForYouConfettiBurstView()
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+            }
+        }
+        .task(id: cardIndex) {
+            textPhase = false
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            textPhase = true
+            if currentCard == .name {
+                isNameFocused = true
+            }
+            runSwipeHintIfNeeded()
+        }
+    }
+
+    @ViewBuilder
+    private var onboardingForegroundCard: some View {
+        let foreground = cardView(for: currentCard, isBackground: false)
+            .offset(x: swipeOffset + demoOffset)
+            .rotationEffect(.degrees(currentCard.isSwipeable ? Double((swipeOffset + demoOffset) / 24) : 0))
+
+        if currentCard.isSwipeable {
+            foreground.gesture(swipeGesture)
+        } else {
+            foreground
+        }
+    }
+
+    private func cardView(for kind: CardKind, isBackground: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            switch kind {
+            case .name:
+                animatedTextBlock(
+                    eyebrow: isMalayAppLanguage() ? "Kad 1" : "Card 1",
+                    title: isMalayAppLanguage() ? "Siapa nama anda?" : "What is your name?",
+                    subtitle: isMalayAppLanguage() ? "Kami akan gunakan nama anda untuk menjadikan tab Today terasa lebih peribadi." : "We’ll use your name to make Today feel more personal."
+                )
+
+                TextField(isMalayAppLanguage() ? "Nama anda" : "Your name", text: $draftName)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .focused($isNameFocused)
+                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemBackground))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                            )
+                    )
+
+            case .reminderStyle:
+                animatedTextBlock(
+                    eyebrow: isMalayAppLanguage() ? "Kad 2" : "Card 2",
+                    title: isMalayAppLanguage() ? "Bagaimana anda mahu diingatkan?" : "How should reminders sound?",
+                    subtitle: isMalayAppLanguage() ? "Pilih gaya yang terasa paling sesuai untuk anda, \(displayName)." : "Choose the tone that feels right for you, \(displayName)."
+                )
+
+                VStack(spacing: 12) {
+                    ForEach(ForYouReminderStyle.allCases) { style in
+                        Button(action: { selectedReminderStyle = style }) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text(label(for: style))
+                                        .font(.headline.weight(.semibold))
+                                        .foregroundStyle(Color.primary)
+                                    Spacer()
+                                    if selectedReminderStyle == style {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(settings.accentColor.color)
+                                    }
+                                }
+
+                                Text(example(for: style))
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color.secondary)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(Color(uiColor: .secondarySystemBackground))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            .stroke(selectedReminderStyle == style ? settings.accentColor.color.opacity(0.7) : Color.primary.opacity(0.08), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+            case .prayerTracker:
+                animatedTextBlock(
+                    eyebrow: isMalayAppLanguage() ? "Kad 3" : "Card 3",
+                    title: isMalayAppLanguage() ? "Mahukan kad penjejak solat?" : "Do you want a prayer tracker card?",
+                    subtitle: isMalayAppLanguage() ? "Kami boleh tanya setiap kali anda buka tab ini, supaya anda cepat semak ritma hari anda." : "We can ask each time you open this tab, so you can quickly check in with your prayer rhythm."
+                )
+
+                swipeDecisionFooter
+
+            case .prayerCheckIn:
+                animatedTextBlock(
+                    eyebrow: isMalayAppLanguage() ? "Kad 4" : "Card 4",
+                    title: isMalayAppLanguage() ? "Sudahkah anda menunaikan \(currentPrayerTitle)?" : "Have you prayed \(currentPrayerTitle)?",
+                    subtitle: isMalayAppLanguage() ? "Leret untuk jawab. Jika sudah, kami akan raikan sedikit." : "Swipe to answer. If you have, we’ll celebrate a little."
+                )
+
+                HStack(spacing: 14) {
+                    Image(systemName: currentPrayerIcon)
+                        .font(.system(size: 28, weight: .regular))
+                        .foregroundStyle(settings.accentColor.color)
+                        .frame(width: 56, height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(settings.accentColor.color.opacity(0.12))
+                        )
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(currentPrayerTitle)
+                            .font(.title3.weight(.semibold))
+                        Text(isMalayAppLanguage() ? "Jawab dengan leretan yang ringkas." : "Answer with a simple swipe.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.secondary)
+                    }
+
+                    Spacer()
+                }
+
+                swipeDecisionFooter
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, minHeight: 430, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(Color(uiColor: .systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        .stroke(Color.white.opacity(isBackground ? 0.18 : 0.35), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(isBackground ? 0.05 : 0.10), radius: 24, x: 0, y: 12)
+        .allowsHitTesting(!isBackground)
+    }
+
+    private var swipeDecisionFooter: some View {
+        HStack {
+            Label(isMalayAppLanguage() ? "Tidak" : "No", systemImage: "arrow.left")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.secondary)
+            Spacer()
+            Label(isMalayAppLanguage() ? "Ya" : "Yes", systemImage: "arrow.right")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(settings.accentColor.color)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(uiColor: .secondarySystemBackground))
+        )
+    }
+
+    private func animatedTextBlock(eyebrow: String, title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(eyebrow.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.secondary)
+                .opacity(textPhase ? 1 : 0)
+                .offset(y: textPhase ? 0 : 8)
+                .animation(.easeOut(duration: 0.22), value: textPhase)
+
+            Text(title)
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.primary)
+                .opacity(textPhase ? 1 : 0)
+                .offset(y: textPhase ? 0 : 10)
+                .animation(.easeOut(duration: 0.26).delay(0.04), value: textPhase)
+
+            Text(subtitle)
+                .font(.body)
+                .foregroundStyle(Color.secondary)
+                .multilineTextAlignment(.leading)
+                .opacity(textPhase ? 1 : 0)
+                .offset(y: textPhase ? 0 : 12)
+                .animation(.easeOut(duration: 0.28).delay(0.08), value: textPhase)
+        }
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { value in
+                swipeOffset = value.translation.width
+            }
+            .onEnded { value in
+                let threshold: CGFloat = 90
+                if value.translation.width > threshold {
+                    completeSwipe(answer: true)
+                } else if value.translation.width < -threshold {
+                    completeSwipe(answer: false)
+                } else {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        swipeOffset = 0
+                    }
+                }
+            }
+    }
+
+    private func completeSwipe(answer: Bool) {
+        let exitOffset: CGFloat = answer ? 520 : -520
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.82)) {
+            swipeOffset = exitOffset
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            swipeOffset = 0
+            switch currentCard {
+            case .prayerTracker:
+                wantsPrayerTrackerCard = answer
+                settings.hapticFeedback()
+                cardIndex = min(cardIndex + 1, CardKind.allCases.count - 1)
+            case .prayerCheckIn:
+                if answer {
+                    showConfetti = true
+                }
+                settings.hapticFeedback()
+                completeOnboarding(afterCelebration: answer)
+            case .name, .reminderStyle:
+                break
+            }
+        }
+    }
+
+    private func advanceButtonTapped() {
+        guard canAdvanceCurrentCard else { return }
+        settings.hapticFeedback()
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+            cardIndex = min(cardIndex + 1, CardKind.allCases.count - 1)
+        }
+    }
+
+    private func completeOnboarding(afterCelebration: Bool) {
+        let profile = completedProfile()
+        let delay = afterCelebration ? 0.95 : 0.12
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            onComplete(profile)
+        }
+    }
+
+    private func completedProfile() -> ForYouUserProfile {
+        var profile = initialProfile
+        profile.firstName = trimmedName
+        profile.reminderStyle = selectedReminderStyle
+        profile.wantsPrayerTrackerCard = wantsPrayerTrackerCard
+        profile.consistencyLevel = profile.consistencyLevel ?? (wantsPrayerTrackerCard == true ? .building : .beginner)
+        profile.primaryGoal = profile.primaryGoal ?? .preserveFajr
+        return profile
+    }
+
+    private func runSwipeHintIfNeeded() {
+        guard currentCard == .prayerTracker, !didSeeSwipeHint else { return }
+        didSeeSwipeHint = true
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            withAnimation(.easeInOut(duration: 0.28)) {
+                demoOffset = 56
+            }
+            try? await Task.sleep(nanoseconds: 260_000_000)
+            withAnimation(.easeInOut(duration: 0.22)) {
+                demoOffset = -26
+            }
+            try? await Task.sleep(nanoseconds: 220_000_000)
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                demoOffset = 0
+            }
+        }
+    }
+
+    private func label(for style: ForYouReminderStyle) -> String {
+        switch style {
+        case .gentle:
+            isMalayAppLanguage() ? "Lembut" : "Gentle"
+        case .balanced:
+            isMalayAppLanguage() ? "Seimbang" : "Balanced"
+        case .focused:
+            isMalayAppLanguage() ? "Terus" : "Focused"
+        }
+    }
+
+    private func example(for style: ForYouReminderStyle) -> String {
+        switch style {
+        case .gentle:
+            return isMalayAppLanguage()
+                ? "Masa untuk bertemu Pencipta anda, \(displayName)."
+                : "Time to meet your Creator, \(displayName)."
+        case .balanced:
+            return isMalayAppLanguage()
+                ? "Masuk waktu solat, \(displayName). Mari kembali dengan tenang."
+                : "It is prayer time, \(displayName). Come back with calm."
+        case .focused:
+            return isMalayAppLanguage()
+                ? "\(displayName), \(currentPrayerTitle) sedang berjalan."
+                : "\(displayName), \(currentPrayerTitle) is in."
+        }
+    }
+}
+
+private struct ForYouConfettiBurstView: View {
+    @State private var animate = false
+    private let pieces = Array(0..<34)
+    private let colors: [Color] = [.yellow, .orange, .green, .blue, .pink, .mint]
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(pieces, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(colors[index % colors.count])
+                        .frame(width: 6, height: 12)
+                        .rotationEffect(.degrees(animate ? Double.random(in: 240...720) : 0))
+                        .position(
+                            x: animate ? CGFloat.random(in: 0...geometry.size.width) : geometry.size.width / 2,
+                            y: animate ? geometry.size.height + 40 : -20
+                        )
+                        .opacity(animate ? 0.94 : 0)
+                        .animation(
+                            .easeOut(duration: Double.random(in: 1.0...1.8))
+                                .delay(Double(index) * 0.014),
+                            value: animate
+                        )
+                }
+            }
+        }
+        .onAppear { animate = true }
     }
 }

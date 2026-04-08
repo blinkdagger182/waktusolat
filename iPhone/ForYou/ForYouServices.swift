@@ -39,6 +39,16 @@ enum ForYouCompletionStore {
     }
 }
 
+enum ForYouSessionStore {
+    private static var hasVisitedTodayTab = false
+
+    static func shouldAutoScrollOnTodayAppear() -> Bool {
+        let shouldAutoScroll = hasVisitedTodayTab
+        hasVisitedTodayTab = true
+        return shouldAutoScroll
+    }
+}
+
 enum ForYouContentRepository {
     static let templates: [ForYouContentTemplate] = [
         ForYouContentTemplate(

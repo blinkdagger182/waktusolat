@@ -40,6 +40,7 @@ enum ForYouReminderStyle: String, Codable, CaseIterable, Identifiable {
 }
 
 struct ForYouUserProfile: Codable, Equatable {
+    var firstName: String?
     var wakeTimeMinutes: Int
     var sleepTimeMinutes: Int
     var workStartMinutes: Int?
@@ -47,19 +48,27 @@ struct ForYouUserProfile: Codable, Equatable {
     var consistencyLevel: ForYouConsistencyLevel?
     var primaryGoal: ForYouPrimaryGoal?
     var reminderStyle: ForYouReminderStyle?
+    var wantsPrayerTrackerCard: Bool?
 
     var isComplete: Bool {
-        consistencyLevel != nil && primaryGoal != nil && reminderStyle != nil
+        let trimmedName = firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return !trimmedName.isEmpty
+            && consistencyLevel != nil
+            && primaryGoal != nil
+            && reminderStyle != nil
+            && wantsPrayerTrackerCard != nil
     }
 
     static let `default` = ForYouUserProfile(
+        firstName: nil,
         wakeTimeMinutes: 360,
         sleepTimeMinutes: 1380,
         workStartMinutes: 540,
         workEndMinutes: 1020,
         consistencyLevel: nil,
         primaryGoal: nil,
-        reminderStyle: nil
+        reminderStyle: nil,
+        wantsPrayerTrackerCard: nil
     )
 }
 
