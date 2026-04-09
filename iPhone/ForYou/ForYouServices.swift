@@ -1,9 +1,26 @@
 import Foundation
+import CoreLocation
+#if canImport(WeatherKit)
+import WeatherKit
+#endif
 
 struct ForYouWeatherSnapshot: Equatable {
     let temperatureText: String
     let conditionText: String
     let symbolName: String
+    let fetchedAt: Date
+}
+
+struct ForYouAppleWeatherDetails: Equatable {
+    let temperatureText: String
+    let conditionText: String
+    let symbolName: String
+    let highTemperatureText: String
+    let lowTemperatureText: String
+    let humidityPercent: Int
+    let uvIndexText: String
+    let feelsLikeText: String
+    let hourlyByHour: [Int: ForYouPrayerWeather]
     let fetchedAt: Date
 }
 
@@ -56,8 +73,14 @@ actor ForYouWeatherService {
         let expiresAt: Date
     }
 
+    private struct CachedAppleWeatherDetails {
+        let details: ForYouAppleWeatherDetails
+        let expiresAt: Date
+    }
+
     private var cache: [String: CachedSnapshot] = [:]
     private var dailyForecastCache: [String: CachedDayForecast] = [:]
+    private var appleWeatherDetailsCache: [String: CachedAppleWeatherDetails] = [:]
 
     func fetchCurrentWeather(for location: Location) async throws -> ForYouWeatherSnapshot {
         let key = cacheKey(for: location)
@@ -135,6 +158,22 @@ actor ForYouWeatherService {
             expiresAt: now.addingTimeInterval(20 * 60)
         )
         return valuesByHour
+    }
+
+    func appleWeatherDetails(for location: Location, on date: Date) async throws -> ForYouAppleWeatherDetails {
+        let key = dailyCacheKey(for: location, date: date)
+        let now = Date()
+
+        if let cached = appleWeatherDetailsCache[key], cached.expiresAt > now {
+            return cached.details
+        }
+
+        let details = try await fetchAppleWeatherDetails(for: location, on: date, now: now)
+        appleWeatherDetailsCache[key] = CachedAppleWeatherDetails(
+            details: details,
+            expiresAt: now.addingTimeInterval(20 * 60)
+        )
+        return details
     }
 
     private func cacheKey(for location: Location) -> String {
@@ -224,6 +263,91 @@ actor ForYouWeatherService {
                 isMalayAppLanguage() ? "Cuaca semasa" : "Current weather",
                 "cloud.sun.fill"
             )
+        }
+    }
+
+    private func fetchAppleWeatherDetails(for location: Location, on date: Date, now: Date) async throws -> ForYouAppleWeatherDetails {
+        guard #available(iOS 16.0, *) else {
+            throw URLError(.unsupportedURL)
+        }
+        return try await fetchAppleWeatherDetailsAvailable(for: location, on: date, now: now)
+    }
+
+    @available(iOS 16.0, *)
+    private func fetchAppleWeatherDetailsAvailable(for location: Location, on date: Date, now: Date) async throws -> ForYouAppleWeatherDetails {
+        let service = WeatherService.shared
+        let weather = try await service.weather(for: CLLocation(latitude: location.latitude, longitude: location.longitude))
+        let current = weather.currentWeather
+        let today = weather.dailyForecast.forecast.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) })
+            ?? weather.dailyForecast.forecast.first
+
+        let hourlyPairs: [(Int, ForYouPrayerWeather)] = weather.hourlyForecast.forecast.compactMap { hourWeather in
+            guard Calendar.current.isDate(hourWeather.date, inSameDayAs: date) else { return nil }
+            return (
+                Calendar.current.component(.hour, from: hourWeather.date),
+                ForYouPrayerWeather(
+                    temperatureCelsius: Int(hourWeather.temperature.converted(to: .celsius).value.rounded()),
+                    precipitationProbability: Int((hourWeather.precipitationChance * 100).rounded()),
+                    conditionText: localizedAppleConditionTitle(hourWeather.condition),
+                    symbolName: hourWeather.symbolName
+                )
+            )
+        }
+        let hourlyByHour = Dictionary(uniqueKeysWithValues: hourlyPairs)
+
+        return ForYouAppleWeatherDetails(
+            temperatureText: "\(Int(current.temperature.converted(to: .celsius).value.rounded()))°C",
+            conditionText: localizedAppleConditionTitle(current.condition),
+            symbolName: current.symbolName,
+            highTemperatureText: "\(Int((today?.highTemperature.converted(to: .celsius).value ?? current.temperature.converted(to: .celsius).value).rounded()))°C",
+            lowTemperatureText: "\(Int((today?.lowTemperature.converted(to: .celsius).value ?? current.temperature.converted(to: .celsius).value).rounded()))°C",
+            humidityPercent: Int((current.humidity * 100).rounded()),
+            uvIndexText: "\(current.uvIndex.value)",
+            feelsLikeText: "\(Int(current.apparentTemperature.converted(to: .celsius).value.rounded()))°C",
+            hourlyByHour: hourlyByHour,
+            fetchedAt: now
+        )
+    }
+
+    @available(iOS 16.0, *)
+    private func localizedAppleConditionTitle(_ condition: WeatherCondition) -> String {
+        switch condition {
+        case .clear:
+            return isMalayAppLanguage() ? "Cerah" : "Clear"
+        case .mostlyClear:
+            return isMalayAppLanguage() ? "Hampir cerah" : "Mostly Clear"
+        case .partlyCloudy:
+            return isMalayAppLanguage() ? "Sedikit berawan" : "Partly Cloudy"
+        case .mostlyCloudy:
+            return isMalayAppLanguage() ? "Kebanyakannya berawan" : "Mostly Cloudy"
+        case .cloudy:
+            return isMalayAppLanguage() ? "Berawan" : "Cloudy"
+        case .foggy:
+            return isMalayAppLanguage() ? "Berkabus" : "Foggy"
+        case .drizzle, .freezingDrizzle:
+            return isMalayAppLanguage() ? "Gerimis" : "Drizzle"
+        case .rain, .heavyRain, .sunShowers:
+            return isMalayAppLanguage() ? "Hujan" : "Rain"
+        case .snow, .heavySnow, .flurries, .sunFlurries:
+            return isMalayAppLanguage() ? "Salji" : "Snow"
+        case .sleet, .wintryMix, .freezingRain, .hail:
+            return isMalayAppLanguage() ? "Hujan batu / campuran" : "Wintry Mix"
+        case .thunderstorms, .isolatedThunderstorms, .scatteredThunderstorms, .strongStorms:
+            return isMalayAppLanguage() ? "Ribut petir" : "Thunderstorm"
+        case .blizzard, .blowingSnow:
+            return isMalayAppLanguage() ? "Ribut salji" : "Blizzard"
+        case .breezy, .windy:
+            return isMalayAppLanguage() ? "Berangin" : "Windy"
+        case .hot:
+            return isMalayAppLanguage() ? "Panas" : "Hot"
+        case .frigid:
+            return isMalayAppLanguage() ? "Sangat sejuk" : "Frigid"
+        case .haze, .smoky, .blowingDust:
+            return isMalayAppLanguage() ? "Jerebu" : "Hazy"
+        case .tropicalStorm, .hurricane:
+            return isMalayAppLanguage() ? "Ribut tropika" : "Tropical Storm"
+        @unknown default:
+            return isMalayAppLanguage() ? "Cuaca semasa" : "Current Weather"
         }
     }
 

@@ -19,16 +19,14 @@
 	</array>
 	<key>MarketingModalConfigURL</key>
 	<string>https://blinkdagger182.github.io/waktu-config/marketing-modal.json</string>
-	<key>SupportPromoPoolURL</key>
-	<string>https://api-waktusolat.vercel.app/api/donations/pool/current</string>
-	<key>SupportPromoScheduleURL</key>
-	<string>https://api-waktusolat.vercel.app/api/support/toasts/schedule</string>
-	<key>WidgetSettingsConfigURL</key>
-	<string>https://api-waktusolat.vercel.app/api/settings/widgets</string>
 	<key>PrayerCountrySupportConfigURL</key>
 	<string>https://api-waktusolat.vercel.app/api/settings/prayer-country-support</string>
 	<key>QuranProxyBaseURL</key>
 	<string>https://api-waktusolat.vercel.app/api/quran</string>
+	<key>SupportPromoPoolURL</key>
+	<string>https://api-waktusolat.vercel.app/api/donations/pool/current</string>
+	<key>SupportPromoScheduleURL</key>
+	<string>https://api-waktusolat.vercel.app/api/support/toasts/schedule</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Uthmani.otf</string>
@@ -40,11 +38,9 @@
 		<string>processing</string>
 		<string>remote-notification</string>
 	</array>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
-	<true/>
 	<key>VersionCheckConfigURL</key>
 	<string>https://blinkdagger182.github.io/waktusolat/version-check.json</string>
+	<key>WidgetSettingsConfigURL</key>
+	<string>https://api-waktusolat.vercel.app/api/settings/widgets</string>
 </dict>
 </plist>

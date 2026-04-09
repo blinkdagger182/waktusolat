@@ -36,8 +36,6 @@
 		72728CAE2B3D198300FAA3B3 /* 99_Names_Of_Allah.json in Resources */ = {isa = PBXBuildFile; fileRef = 72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */; };
 		72728CB12B3D19CF00FAA3B3 /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */; };
 		72728CB22B3D19CF00FAA3B3 /* LaunchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */; };
-		AA000001BRAND00000000001A /* WaktuBrandComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001BRAND00000000001B /* WaktuBrandComponents.swift */; };
-		AA000002PERM000000000001A /* WaktuPermissionOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */; };
 		72728CB42B3D19EE00FAA3B3 /* AdhanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB32B3D19EE00FAA3B3 /* AdhanView.swift */; };
 		72728CB92B3D1A6E00FAA3B3 /* QiblaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CB82B3D1A6E00FAA3B3 /* QiblaView.swift */; };
 		72728CBB2B3D1A7A00FAA3B3 /* PrayerCountdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CBA2B3D1A7A00FAA3B3 /* PrayerCountdown.swift */; };
@@ -86,12 +84,14 @@
 		A51000182F91000100ABCDEF /* QuranSurahBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */; };
 		A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */; };
 		A510001A2F91000100ABCDEF /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A510000A2F91000100ABCDEF /* TodayView.swift */; };
+		AA000001BRAND00000000001A /* WaktuBrandComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001BRAND00000000001B /* WaktuBrandComponents.swift */; };
+		AA000002PERM000000000001A /* WaktuPermissionOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */; };
+		B10000012F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
+		B10000022F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		B21000012FA1000100ABCDEF /* ForYouModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000002FA1000100ABCDEF /* ForYouModels.swift */; };
 		B21000022FA1000100ABCDEF /* ForYouServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000012FA1000100ABCDE0 /* ForYouServices.swift */; };
 		B21000032FA1000100ABCDEF /* ForYouViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */; };
 		B21000042FA1000100ABCDEF /* ForYouViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000032FA1000100ABCDE0 /* ForYouViews.swift */; };
-		B10000012F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
-		B10000022F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		C10000012F90000100ABCDEF /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C10000002F90000100ABCDEF /* InfoPlist.xcstrings */; };
 		FC88B03D2F6A556E00297BC9 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */; };
 		FCB183172F4D506300249966 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183162F4D506300249966 /* RevenueCat */; };
@@ -189,8 +189,6 @@
 		72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = 99_Names_Of_Allah.json; sourceTree = "<group>"; };
 		72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
 		72728CB02B3D19CF00FAA3B3 /* LaunchScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LaunchScreen.swift; sourceTree = "<group>"; };
-		AA000001BRAND00000000001B /* WaktuBrandComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuBrandComponents.swift; sourceTree = "<group>"; };
-		AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuPermissionOnboarding.swift; sourceTree = "<group>"; };
 		72728CB32B3D19EE00FAA3B3 /* AdhanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanView.swift; sourceTree = "<group>"; };
 		72728CB52B3D1A0E00FAA3B3 /* Entitlements.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Entitlements.entitlements; sourceTree = "<group>"; };
 		72728CB82B3D1A6E00FAA3B3 /* QiblaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QiblaView.swift; sourceTree = "<group>"; };
@@ -240,11 +238,13 @@
 		A51000082F91000100ABCDEF /* QuranSurahBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranSurahBrowserView.swift; sourceTree = "<group>"; };
 		A51000092F91000100ABCDEF /* LibraryDisabledSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDisabledSections.swift; sourceTree = "<group>"; };
 		A510000A2F91000100ABCDEF /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		AA000001BRAND00000000001B /* WaktuBrandComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuBrandComponents.swift; sourceTree = "<group>"; };
+		AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuPermissionOnboarding.swift; sourceTree = "<group>"; };
+		B10000002F90000100ABCDEF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B21000002FA1000100ABCDEF /* ForYouModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouModels.swift; sourceTree = "<group>"; };
 		B21000012FA1000100ABCDE0 /* ForYouServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouServices.swift; sourceTree = "<group>"; };
 		B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViewModels.swift; sourceTree = "<group>"; };
 		B21000032FA1000100ABCDE0 /* ForYouViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViews.swift; sourceTree = "<group>"; };
-		B10000002F90000100ABCDEF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C10000002F90000100ABCDEF /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		FCFBB2BB2F7B06A300544668 /* Watchkit Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Watchkit Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -381,17 +381,6 @@
 				72728CBE2B3D1A9600FAA3B3 /* Settings */,
 			);
 			path = iPhone;
-			sourceTree = "<group>";
-		};
-		B21000042FA1000100ABCDE0 /* ForYou */ = {
-			isa = PBXGroup;
-			children = (
-				B21000002FA1000100ABCDEF /* ForYouModels.swift */,
-				B21000012FA1000100ABCDE0 /* ForYouServices.swift */,
-				B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */,
-				B21000032FA1000100ABCDE0 /* ForYouViews.swift */,
-			);
-			path = ForYou;
 			sourceTree = "<group>";
 		};
 		72728CA82B3D198300FAA3B3 /* Other */ = {
@@ -536,6 +525,17 @@
 				72728CA32B3D191F00FAA3B3 /* Uthmani.otf */,
 			);
 			path = Fonts;
+			sourceTree = "<group>";
+		};
+		B21000042FA1000100ABCDE0 /* ForYou */ = {
+			isa = PBXGroup;
+			children = (
+				B21000002FA1000100ABCDEF /* ForYouModels.swift */,
+				B21000012FA1000100ABCDE0 /* ForYouServices.swift */,
+				B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */,
+				B21000032FA1000100ABCDE0 /* ForYouViews.swift */,
+			);
+			path = ForYou;
 			sourceTree = "<group>";
 		};
 		FCFBB2CE2F7B073600544668 /* Frameworks */ = {
@@ -1010,6 +1010,7 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Used to save wallpapers you choose to your Photo Library.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1050,6 +1051,7 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Needed to accurately determine prayer times based on where you are (your location stays on your device).";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Used to save wallpapers you choose to your Photo Library.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

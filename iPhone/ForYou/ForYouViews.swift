@@ -684,6 +684,7 @@ private struct ForYouPrayerTimelineEntryView: View {
 private enum ForYouPrayerTab: String, CaseIterable, Identifiable {
     case wirid = "Wirid"
     case doa   = "Doa"
+    case weather = "Weather"
 
     var id: String { rawValue }
 
@@ -691,6 +692,7 @@ private enum ForYouPrayerTab: String, CaseIterable, Identifiable {
         switch self {
         case .wirid: return ForYouPalette.tabWirid
         case .doa:   return ForYouPalette.tabDoa
+        case .weather: return ForYouPalette.darkTile
         }
     }
 
@@ -698,6 +700,7 @@ private enum ForYouPrayerTab: String, CaseIterable, Identifiable {
         switch self {
         case .wirid: return Color.black.opacity(0.85)
         case .doa:   return Color.white
+        case .weather: return Color.white
         }
     }
 }
@@ -749,7 +752,7 @@ private func forYouPrayerTabs(for entry: ForYouTimelineEntry) -> [ForYouPrayerTa
         normalizedTitle == "shurooq" ||
         normalizedTitle == "sunrise"
 
-    return isShurooqEntry ? [] : ForYouPrayerTab.allCases
+    return isShurooqEntry ? [] : [.wirid, .doa]
 }
 
 private func nextPrayerTrackerStatus(after status: PrayerTrackerStatus) -> PrayerTrackerStatus {
@@ -799,7 +802,7 @@ private struct ForYouPrayerStackedCards: View {
         .sheet(item: $presentedTab) { tab in
             NavigationView {
                 ForYouPrayerTabModalView(entry: entry, tab: tab)
-                    .navigationTitle(tab == .wirid ? (isMalayAppLanguage() ? "Wirid" : "Wirid") : (isMalayAppLanguage() ? "Doa" : "Dua"))
+                    .navigationTitle(navigationTitle(for: tab))
                     .navigationBarTitleDisplayMode(.inline)
             }
             .navigationViewStyle(.stack)
@@ -855,6 +858,17 @@ private struct ForYouPrayerStackedCards: View {
 
     private func zIndex(for tab: ForYouPrayerTab, index: Int) -> Double {
         return Double(forYouPrayerTabs(for: entry).count - index)
+    }
+
+    private func navigationTitle(for tab: ForYouPrayerTab) -> String {
+        switch tab {
+        case .wirid:
+            return isMalayAppLanguage() ? "Wirid" : "Wirid"
+        case .doa:
+            return isMalayAppLanguage() ? "Doa" : "Dua"
+        case .weather:
+            return isMalayAppLanguage() ? "Cuaca" : "Weather"
+        }
     }
 }
 
@@ -1099,6 +1113,8 @@ private struct ForYouPrayerTabPanel: View {
     @StateObject private var player = ForYouAudioPlayer()
     @State private var expandedSectionIDs: Set<String> = []
     @State private var focusedSectionID: String?
+    @State private var weatherSnapshot: ForYouWeatherSnapshot?
+    @State private var prayerWeatherRows: [WeatherPrayerRow] = []
     @EnvironmentObject private var settings: Settings
 
     private struct PanelSection: Identifiable {
@@ -1116,6 +1132,13 @@ private struct ForYouPrayerTabPanel: View {
         let sections: [PanelSection]
     }
 
+    private struct WeatherPrayerRow: Identifiable {
+        let id: String
+        let title: String
+        let time: Date
+        let weather: ForYouPrayerWeather
+    }
+
     struct DhikrProgressDescriptor {
         let storageID: String
         let target: Int
@@ -1127,6 +1150,13 @@ private struct ForYouPrayerTabPanel: View {
             return wiridContent(for: canonicalPrayerName(from: entry.id))
         case .doa:
             return doaContent(for: canonicalPrayerName(from: entry.id))
+        case .weather:
+            return PanelContent(
+                title: isMalayAppLanguage()
+                    ? "Cuaca semasa dan ramalan mengikut waktu solat"
+                    : "Current weather and prayer-by-prayer forecast",
+                sections: []
+            )
         }
     }
 
@@ -1139,11 +1169,13 @@ private struct ForYouPrayerTabPanel: View {
 
                 Text(content.title)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(ForYouPalette.ink)
+                    .foregroundStyle(tab == .weather ? Color.white : ForYouPalette.ink)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Group {
-                    if mode == .preview {
+                    if tab == .weather {
+                        weatherContent
+                    } else if mode == .preview {
                         previewContent
                     } else {
                         fullModeContent
@@ -1159,12 +1191,15 @@ private struct ForYouPrayerTabPanel: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                    .fill(tab == .weather ? ForYouPalette.darkTile : Color(uiColor: .secondarySystemGroupedBackground))
             )
             .padding(.horizontal, 10)
             .padding(.bottom, 10)
         }
         .onDisappear { player.stop() }
+        .task(id: weatherTaskKey) {
+            await loadWeatherIfNeeded()
+        }
     }
 
     private func audioFileName(tab: ForYouPrayerTab, prayer: String) -> String {
@@ -1207,6 +1242,153 @@ private struct ForYouPrayerTabPanel: View {
             }
             .foregroundStyle(tab.color)
             .padding(.top, 2)
+        }
+    }
+
+    @ViewBuilder
+    private var weatherContent: some View {
+        if mode == .preview {
+            weatherPreviewContent
+        } else {
+            weatherFullContent
+        }
+    }
+
+    @ViewBuilder
+    private var weatherPreviewContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let snapshot = weatherSnapshot {
+                HStack(alignment: .center, spacing: 10) {
+                    Image(systemName: snapshot.symbolName)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .frame(width: 36)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(snapshot.temperatureText)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.white)
+
+                        Text(snapshot.conditionText)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.84))
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                if let currentPrayerWeather = entry.weather {
+                    HStack(spacing: 8) {
+                        Label {
+                            Text("\(currentPrayerWeather.precipitationProbability)% \(isMalayAppLanguage() ? "hujan" : "rain")")
+                        } icon: {
+                            Image(systemName: "cloud.rain")
+                        }
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.84))
+
+                        Spacer(minLength: 0)
+
+                        Text(locationLine)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.68))
+                            .lineLimit(1)
+                    }
+                }
+            } else {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .tint(.white)
+                    Text(isMalayAppLanguage() ? "Memuatkan cuaca semasa..." : "Loading current weather...")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.78))
+                }
+            }
+
+            HStack(spacing: 6) {
+                Text(isMalayAppLanguage() ? "Ketik teks untuk buka ramalan penuh" : "Tap the text to open full forecast")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                Image(systemName: "arrow.up.right.square")
+                    .font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundStyle(Color.white.opacity(0.82))
+            .padding(.top, 2)
+        }
+    }
+
+    @ViewBuilder
+    private var weatherFullContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let snapshot = weatherSnapshot {
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: snapshot.symbolName)
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .frame(width: 38)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(snapshot.temperatureText)
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.white)
+                        Text(snapshot.conditionText)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.82))
+                    }
+
+                    Spacer(minLength: 0)
+                }
+            }
+
+            if !prayerWeatherRows.isEmpty {
+                VStack(spacing: 10) {
+                    ForEach(prayerWeatherRows) { row in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: row.weather.symbolName)
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.white.opacity(0.88))
+                                    Text(row.title)
+                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(Color.white)
+                                    Text(ForYouFormatters.shortTime.string(from: row.time))
+                                        .font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
+                                        .foregroundStyle(Color.white.opacity(0.74))
+                                }
+
+                                Text("\(row.weather.conditionText) • \(row.weather.precipitationProbability)% \(isMalayAppLanguage() ? "hujan" : "rain")")
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundStyle(Color.white.opacity(0.76))
+                            }
+
+                            Spacer(minLength: 0)
+
+                            Text("\(row.weather.temperatureCelsius)°C")
+                                .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(Color.white)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.white.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                )
+                        )
+                    }
+                }
+            } else {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .tint(.white)
+                    Text(isMalayAppLanguage() ? "Memuatkan ramalan waktu solat..." : "Loading prayer-time forecast...")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.78))
+                }
+                .padding(.vertical, 12)
+            }
         }
     }
 
@@ -1365,11 +1547,25 @@ private struct ForYouPrayerTabPanel: View {
     }
 
     private var modalAccentTextColor: Color {
-        tab == .doa ? Color.blue.opacity(0.88) : tab.color
+        switch tab {
+        case .doa:
+            return Color.blue.opacity(0.88)
+        case .weather:
+            return Color.white
+        case .wirid:
+            return tab.color
+        }
     }
 
     private var modalAccentFill: Color {
-        tab == .doa ? Color.blue.opacity(0.14) : tab.color.opacity(0.10)
+        switch tab {
+        case .doa:
+            return Color.blue.opacity(0.14)
+        case .weather:
+            return Color.white.opacity(0.10)
+        case .wirid:
+            return tab.color.opacity(0.10)
+        }
     }
 
     @ViewBuilder
@@ -1569,6 +1765,104 @@ private struct ForYouPrayerTabPanel: View {
             return "isha"
         default:
             return title
+        }
+    }
+
+    private var weatherTaskKey: String {
+        guard tab == .weather else { return "non-weather" }
+        guard let location = settings.currentLocation else { return "weather-no-location" }
+        return "\(location.latitude)|\(location.longitude)|\(Calendar.current.startOfDay(for: entry.time).timeIntervalSince1970)"
+    }
+
+    private var locationLine: String {
+        settings.currentPrayerAreaName
+            ?? settings.activePrayerLocationDisplayName
+            ?? settings.currentLocation?.city
+            ?? ""
+    }
+
+    @MainActor
+    private func loadWeatherIfNeeded() async {
+        guard tab == .weather else { return }
+        guard let location = settings.currentLocation, location.latitude != 1000, location.longitude != 1000 else {
+            weatherSnapshot = nil
+            prayerWeatherRows = []
+            return
+        }
+
+        do {
+            async let snapshot = ForYouWeatherService.shared.fetchCurrentWeather(for: location)
+            async let weatherByHour = ForYouWeatherService.shared.weatherByHour(for: location, on: entry.time)
+            let (resolvedSnapshot, resolvedByHour) = try await (snapshot, weatherByHour)
+            weatherSnapshot = resolvedSnapshot
+            prayerWeatherRows = makePrayerWeatherRows(using: resolvedByHour)
+        } catch {
+            weatherSnapshot = nil
+            prayerWeatherRows = []
+        }
+    }
+
+    private func makePrayerWeatherRows(using weatherByHour: [Int: ForYouPrayerWeather]) -> [WeatherPrayerRow] {
+        let timeline = ForYouPrayerTimeService.timeline(for: entry.time, settings: settings)
+        let rowCandidates: [(id: String, title: String, time: Date?)] = [
+            ("fajr", localizedWeatherPrayerTitle("fajr"), timeline.fajr),
+            ("sunrise", localizedWeatherPrayerTitle("sunrise"), timeline.sunrise),
+            ("dhuha", localizedWeatherPrayerTitle("dhuha"), timeline.dhuha),
+            ("dhuhr", localizedWeatherPrayerTitle("dhuhr"), timeline.prayers.first(where: { normalizedPrayerKey($0.nameTransliteration) == "dhuhr" })?.time),
+            ("asr", localizedWeatherPrayerTitle("asr"), timeline.asr),
+            ("maghrib", localizedWeatherPrayerTitle("maghrib"), timeline.maghrib),
+            ("isha", localizedWeatherPrayerTitle("isha"), timeline.isha)
+        ]
+
+        return rowCandidates.compactMap { candidate in
+            guard let time = candidate.time else { return nil }
+            let hour = Calendar.current.component(.hour, from: time)
+            guard let weather = weatherByHour[hour] else { return nil }
+            return WeatherPrayerRow(
+                id: "\(ISO8601DateFormatter().string(from: entry.time))-\(candidate.id)",
+                title: candidate.title,
+                time: time,
+                weather: weather
+            )
+        }
+    }
+
+    private func localizedWeatherPrayerTitle(_ key: String) -> String {
+        switch key {
+        case "fajr":
+            return isMalayAppLanguage() ? "Subuh" : "Fajr"
+        case "sunrise":
+            return isMalayAppLanguage() ? "Syuruk" : "Shurooq"
+        case "dhuha":
+            return "Dhuha"
+        case "dhuhr":
+            return isMalayAppLanguage() ? "Zuhur" : "Dhuhr"
+        case "asr":
+            return isMalayAppLanguage() ? "Asar" : "Asr"
+        case "maghrib":
+            return isMalayAppLanguage() ? "Magrib" : "Maghrib"
+        case "isha":
+            return isMalayAppLanguage() ? "Isyak" : "Isha"
+        default:
+            return key
+        }
+    }
+
+    private func normalizedPrayerKey(_ raw: String) -> String {
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch value {
+        case "subuh":
+            return "fajr"
+        case "zuhur", "jumuah":
+            return "dhuhr"
+        case "asar":
+            return "asr"
+        case "magrib":
+            return "maghrib"
+        case "isya", "isyak":
+            return "isha"
+        default:
+            return value
         }
     }
 }
@@ -1882,136 +2176,113 @@ private struct ForYouSummaryHeader: View {
     let nextPrayerEntry: ForYouTimelineEntry?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Widget card
-            GeometryReader { geometry in
-                let shellInset: CGFloat = 5
-                let panelSpacing: CGFloat = 5
-                let panelHeight = geometry.size.height - (shellInset * 2)
-                let availableWidth = geometry.size.width - (shellInset * 2)
-                let rightWidth = floor((availableWidth - panelSpacing) * 0.43)
-                let leftWidth = availableWidth - panelSpacing - rightWidth
-                let smallPanelHeight = floor((panelHeight - panelSpacing) / 2)
+        GeometryReader { geometry in
+            let shellInsetHorizontal: CGFloat = 5
+            let shellInsetTop: CGFloat = 5
+            let shellInsetBottom: CGFloat = 9
+            let panelSpacing: CGFloat = 5
+            let panelHeight = geometry.size.height - shellInsetTop - shellInsetBottom
+            let availableWidth = geometry.size.width - (shellInsetHorizontal * 2)
+            let rightWidth = floor((availableWidth - panelSpacing) * 0.43)
+            let leftWidth = availableWidth - panelSpacing - rightWidth
+            let smallPanelHeight = floor((panelHeight - panelSpacing) / 2)
 
-                HStack(spacing: panelSpacing) {
-                    // Left panel — icon + prayer name left-middle, weekday + location below
-                    VStack(alignment: .leading, spacing: 0) {
-                        Spacer(minLength: 0)
+            HStack(spacing: panelSpacing) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Spacer(minLength: 0)
 
-                        HStack(spacing: 8) {
-                            Image(systemName: currentPrayerIcon)
-                                .font(.system(size: 28, weight: .regular))
-                                .foregroundStyle(ForYouPalette.ink)
+                    HStack(spacing: 8) {
+                        Image(systemName: currentPrayerIcon)
+                            .font(.system(size: 28, weight: .regular))
+                            .foregroundStyle(ForYouPalette.ink)
 
-                            Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
-                                .font(.system(size: 26, weight: .bold, design: .rounded))
-                                .foregroundStyle(ForYouPalette.ink)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.72)
-                        }
-
-                        Spacer(minLength: 6)
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(shortWeekday)
-                                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                .foregroundStyle(ForYouPalette.ink)
-
-                            Text(plan.locationLine ?? "")
-                                .font(.system(size: 10, weight: .medium, design: .rounded))
-                                .foregroundStyle(ForYouPalette.secondaryInk)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.72)
-                        }
+                        Text(currentPrayerEntry?.title ?? (isMalayAppLanguage() ? "Subuh" : "Fajr"))
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 10)
-                    .frame(width: leftWidth, height: panelHeight, alignment: .leading)
+
+                    Spacer(minLength: 6)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(shortWeekday)
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+
+                        Text(plan.locationLine ?? "")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.secondaryInk)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 10)
+                .frame(width: leftWidth, height: panelHeight, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(Color(uiColor: .tertiarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .stroke(Color.primary.opacity(0.12), lineWidth: 2)
+                        )
+                )
+
+                VStack(spacing: panelSpacing) {
+                    HStack(spacing: 6) {
+                        Image(systemName: nextPrayerIcon)
+                            .font(.system(size: 18, weight: .medium))
+                        Text(nextPrayerEntry?.title ?? "—")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.62)
+                    }
+                    .foregroundStyle(ForYouPalette.ink)
+                    .frame(width: rightWidth, height: smallPanelHeight)
                     .background(
                         RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .fill(Color(uiColor: .tertiarySystemBackground))
+                            .fill(ForYouPalette.accentSky)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                                     .stroke(Color.primary.opacity(0.12), lineWidth: 2)
                             )
                     )
 
-                    VStack(spacing: panelSpacing) {
-                        // Top-right — next prayer name
-                        HStack(spacing: 6) {
-                            Image(systemName: nextPrayerIcon)
-                                .font(.system(size: 18, weight: .medium))
-                            Text(nextPrayerEntry?.title ?? "—")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.62)
-                        }
-                        .foregroundStyle(ForYouPalette.ink)
-                        .frame(width: rightWidth, height: smallPanelHeight)
-                        .background(
-                            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                .fill(ForYouPalette.accentSky)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                        .stroke(Color.primary.opacity(0.12), lineWidth: 2)
-                                )
-                        )
-
-                        // Bottom-right — next prayer time
-                        HStack(spacing: 6) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 15, weight: .medium))
-                            Text(nextPrayerTime)
-                                .font(.system(size: 18, weight: .bold, design: .rounded).monospacedDigit())
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-                        }
-                        .foregroundStyle(.white)
-                        .frame(width: rightWidth, height: smallPanelHeight)
-                        .background(
-                            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                .fill(ForYouPalette.darkTile)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                        .stroke(Color.primary.opacity(0.12), lineWidth: 2)
-                                )
-                        )
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 15, weight: .medium))
+                        Text(nextPrayerTime)
+                            .font(.system(size: 18, weight: .bold, design: .rounded).monospacedDigit())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
                     }
+                    .foregroundStyle(.white)
+                    .frame(width: rightWidth, height: smallPanelHeight)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(ForYouPalette.darkTile)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                    .stroke(Color.primary.opacity(0.12), lineWidth: 2)
+                            )
+                    )
                 }
-                .padding(shellInset)
-                .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .frame(maxWidth: .infinity, minHeight: 110, maxHeight: 110)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color(uiColor: .secondarySystemGroupedBackground))
-            )
-
-            // Date below the widget (replaces the top header)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(shortDate)
-                    .font(.system(size: 22, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.ink)
-
-                Text(yearLine)
-                    .font(.system(size: 20, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.55))
-            }
-            .padding(.leading, 4)
+            .padding(.horizontal, shellInsetHorizontal)
+            .padding(.top, shellInsetTop)
+            .padding(.bottom, shellInsetBottom)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 110, maxHeight: 110)
+        .background(
+            ForYouTopRoundedShape(radius: 20)
+                .fill(Color(uiColor: .secondarySystemGroupedBackground))
+        )
     }
 
     private var shortWeekday: String {
         ForYouFormatters.weekday.string(from: plan.date).prefix(3).capitalized
-    }
-
-    private var shortDate: String {
-        ForYouFormatters.monthDay.string(from: plan.date)
-    }
-
-    private var yearLine: String {
-        ForYouFormatters.year.string(from: plan.date)
     }
 
     private var nextPrayerTime: String {
@@ -2111,6 +2382,351 @@ private struct ForYouCollapsedHeaderBar: View {
     private var nextPrayerTime: String {
         guard let nextPrayerEntry else { return "--:--" }
         return ForYouFormatters.shortTime.string(from: nextPrayerEntry.time)
+    }
+}
+
+private struct ForYouExpandableWeatherCard: View {
+    let plan: ForYouDailyPlan
+    let isExpanded: Bool
+    let onToggle: () -> Void
+
+    @EnvironmentObject private var settings: Settings
+    @State private var weatherSnapshot: ForYouWeatherSnapshot?
+    @State private var appleWeatherDetails: ForYouAppleWeatherDetails?
+
+    private struct PrayerWeatherRow: Identifiable {
+        let id: String
+        let title: String
+        let time: Date
+        let weather: ForYouPrayerWeather
+    }
+
+    var body: some View {
+        Button(action: onToggle) {
+            VStack(spacing: 0) {
+                weatherStrip
+
+                if isExpanded {
+                    expandedContent
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(ForYouPalette.darkTile)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .clipShape(ForYouBottomRoundedShape(radius: 18))
+            .overlay(
+                ForYouBottomRoundedShape(radius: 18)
+                    .stroke(isExpanded ? Color.white.opacity(0.06) : ForYouPalette.stroke, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .task(id: weatherRequestKey) {
+            await loadWeather()
+        }
+    }
+
+    private var weatherStrip: some View {
+        HStack(spacing: 0) {
+            Text(isMalayAppLanguage() ? "Cuaca" : "Weather")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.white)
+
+            Spacer()
+
+            if isExpanded {
+                Image(systemName: "minus")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Color.white.opacity(0.88))
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 28)
+        .background(ForYouPalette.accentSky)
+    }
+
+    @ViewBuilder
+    private var expandedContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let details = appleWeatherDetails {
+                HStack(alignment: .top, spacing: 14) {
+                    Text(details.temperatureText)
+                        .font(.system(size: 34, weight: .light, design: .rounded))
+                        .foregroundStyle(Color.white)
+
+                    Image(systemName: details.symbolName)
+                        .font(.system(size: 26, weight: .regular))
+                        .foregroundStyle(Color.white.opacity(0.86))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(details.conditionText)
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white)
+                        Text("H:\(details.highTemperatureText)  L:\(details.lowTemperatureText)")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.64))
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                HStack(spacing: 10) {
+                    appleWeatherMetric(title: isMalayAppLanguage() ? "Kelembapan" : "Humidity", value: "\(details.humidityPercent)%", icon: "humidity.fill")
+                    appleWeatherMetric(title: "UV Index", value: details.uvIndexText, icon: "sun.max")
+                    appleWeatherMetric(title: isMalayAppLanguage() ? "Terasa" : "Feels like", value: details.feelsLikeText, icon: "thermometer")
+                }
+            } else if let snapshot = weatherSnapshot {
+                HStack(alignment: .center, spacing: 14) {
+                    Text(snapshot.temperatureText)
+                        .font(.system(size: 34, weight: .light, design: .rounded))
+                        .foregroundStyle(Color.white)
+
+                    Image(systemName: snapshot.symbolName)
+                        .font(.system(size: 26, weight: .regular))
+                        .foregroundStyle(Color.white.opacity(0.86))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(snapshot.conditionText)
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white)
+                        Text(locationLine)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.64))
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+            } else {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .tint(.white)
+                    Text(isMalayAppLanguage() ? "Memuatkan cuaca semasa..." : "Loading current weather...")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.78))
+                }
+            }
+
+            Divider()
+                .overlay(Color.white.opacity(0.12))
+
+            VStack(spacing: 10) {
+                ForEach(expandedPrayerWeatherRows) { row in
+                    HStack(spacing: 10) {
+                        Image(systemName: row.weather.symbolName)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.84))
+                            .frame(width: 16)
+
+                        Text(row.title)
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white)
+
+                        Text(ForYouFormatters.shortTime.string(from: row.time))
+                            .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
+                            .foregroundStyle(Color.white.opacity(0.92))
+
+                        Text("◔ \(row.weather.precipitationProbability)% \(isMalayAppLanguage() ? "hujan" : "rain")")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.68))
+
+                        Spacer(minLength: 0)
+
+                        Text("\(row.weather.temperatureCelsius)°C")
+                            .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(Color.white)
+                    }
+                }
+            }
+        }
+    }
+
+    private func appleWeatherMetric(title: String, value: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.8))
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.white)
+            Text(title)
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.66))
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+        )
+    }
+
+    private var expandedPrayerWeatherRows: [PrayerWeatherRow] {
+        if let appleWeatherDetails {
+            return prayerWeatherRows(from: appleWeatherDetails.hourlyByHour)
+        }
+        return prayerWeatherRows(from: nil)
+    }
+
+    private func prayerWeatherRows(from hourlyByHour: [Int: ForYouPrayerWeather]?) -> [PrayerWeatherRow] {
+        let rows = plan.timelineEntries.compactMap { entry -> PrayerWeatherRow? in
+            guard let key = prayerWeatherKey(for: entry) else { return nil }
+            let hour = Calendar.current.component(.hour, from: entry.time)
+            guard let weather = hourlyByHour?[hour] ?? entry.weather else { return nil }
+            return PrayerWeatherRow(
+                id: key,
+                title: weatherTitle(for: key),
+                time: entry.time,
+                weather: weather
+            )
+        }
+
+        var deduped: [String: PrayerWeatherRow] = [:]
+        for row in rows where deduped[row.id] == nil {
+            deduped[row.id] = row
+        }
+
+        let orderedKeys = ["fajr", "sunrise", "dhuha", "dhuhr", "asr", "maghrib", "isha"]
+        return orderedKeys.compactMap { deduped[$0] }
+    }
+
+    private func prayerWeatherKey(for entry: ForYouTimelineEntry) -> String? {
+        let normalizedID = entry.id.lowercased()
+        let normalizedTitle = entry.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        if normalizedID.contains("-fajr-") || normalizedTitle == "subuh" || normalizedTitle == "fajr" {
+            return "fajr"
+        }
+        if normalizedID.hasSuffix("-syuruk") || normalizedID.contains("-syuruk-") || normalizedID.hasSuffix("-shurooq") || normalizedTitle == "syuruk" || normalizedTitle == "shurooq" {
+            return "sunrise"
+        }
+        if normalizedID.hasSuffix("-dhuha") || normalizedID.contains("-dhuha-") || normalizedTitle == "dhuha" {
+            return "dhuha"
+        }
+        if normalizedID.contains("-dhuhr-") || normalizedTitle == "zuhur" || normalizedTitle == "dhuhr" || normalizedTitle == "jumuah" {
+            return "dhuhr"
+        }
+        if normalizedID.contains("-asr-") || normalizedTitle == "asar" || normalizedTitle == "asr" {
+            return "asr"
+        }
+        if normalizedID.contains("-maghrib-") || normalizedTitle == "magrib" || normalizedTitle == "maghrib" {
+            return "maghrib"
+        }
+        if normalizedID.contains("-isha-") || normalizedTitle == "isya" || normalizedTitle == "isyak" || normalizedTitle == "isha" {
+            return "isha"
+        }
+        return nil
+    }
+
+    private func weatherTitle(for key: String) -> String {
+        switch key {
+        case "fajr":
+            return isMalayAppLanguage() ? "Subuh" : "Fajr"
+        case "sunrise":
+            return isMalayAppLanguage() ? "Syuruk" : "Shurooq"
+        case "dhuha":
+            return "Dhuha"
+        case "dhuhr":
+            return isMalayAppLanguage() ? "Zohor" : "Dhuhr"
+        case "asr":
+            return isMalayAppLanguage() ? "Asar" : "Asr"
+        case "maghrib":
+            return isMalayAppLanguage() ? "Maghrib" : "Maghrib"
+        case "isha":
+            return isMalayAppLanguage() ? "Isyak" : "Isha"
+        default:
+            return key
+        }
+    }
+
+    private var locationLine: String {
+        plan.locationLine ?? settings.currentPrayerAreaName ?? settings.currentLocation?.city ?? ""
+    }
+
+    private var weatherRequestKey: String {
+        guard let location = settings.currentLocation else { return "weather-card-no-location" }
+        return "\(location.latitude)|\(location.longitude)|\(Calendar.current.startOfDay(for: plan.date).timeIntervalSince1970)"
+    }
+
+    @MainActor
+    private func loadWeather() async {
+        guard let location = settings.currentLocation, location.latitude != 1000, location.longitude != 1000 else {
+            weatherSnapshot = nil
+            appleWeatherDetails = nil
+            return
+        }
+
+        async let currentSnapshot = try? ForYouWeatherService.shared.fetchCurrentWeather(for: location)
+        async let appleDetails = try? ForYouWeatherService.shared.appleWeatherDetails(for: location, on: plan.date)
+
+        weatherSnapshot = await currentSnapshot
+        appleWeatherDetails = await appleDetails
+    }
+}
+
+private struct ForYouBottomRoundedShape: Shape {
+    let radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let radius = min(self.radius, min(rect.width, rect.height) / 2)
+        var path = Path()
+
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - radius))
+        path.addArc(
+            center: CGPoint(x: rect.maxX - radius, y: rect.maxY - radius),
+            radius: radius,
+            startAngle: .degrees(0),
+            endAngle: .degrees(90),
+            clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.minX + radius, y: rect.maxY))
+        path.addArc(
+            center: CGPoint(x: rect.minX + radius, y: rect.maxY - radius),
+            radius: radius,
+            startAngle: .degrees(90),
+            endAngle: .degrees(180),
+            clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.closeSubpath()
+
+        return path
+    }
+}
+
+private struct ForYouTopRoundedShape: Shape {
+    let radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let radius = min(self.radius, min(rect.width, rect.height) / 2)
+        var path = Path()
+
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + radius))
+        path.addArc(
+            center: CGPoint(x: rect.minX + radius, y: rect.minY + radius),
+            radius: radius,
+            startAngle: .degrees(180),
+            endAngle: .degrees(270),
+            clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addArc(
+            center: CGPoint(x: rect.maxX - radius, y: rect.minY + radius),
+            radius: radius,
+            startAngle: .degrees(270),
+            endAngle: .degrees(0),
+            clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+
+        return path
     }
 }
 
@@ -2217,6 +2833,7 @@ private struct ForYouDayView: View {
 
     @State private var selectedPageIndex: Int?
     @State private var showsExpandedSunEntries = false
+    @State private var showsExpandedWeatherCard = false
 
     init(
         viewModel: ForYouDayViewModel,
@@ -2466,12 +3083,13 @@ private struct ForYouDayView: View {
     private func pageContent(index: Int, page: [ForYouDisplayedTimelineItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if index == 0 {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(greetingLine)
                         .font(ForYouTypography.playfairHeadline(size: 31))
                         .foregroundStyle(ForYouPalette.ink)
                         .accessibilityAddTraits(.isHeader)
                         .padding(.top, 10)
+                        .padding(.bottom, 10)
 
                     Button(action: onScrollToPrayerTimeline) {
                         ForYouSummaryHeader(
@@ -2482,24 +3100,37 @@ private struct ForYouDayView: View {
                     }
                     .buttonStyle(ForYouHeroJumpButtonStyle())
                     .accessibilityLabel(isMalayAppLanguage() ? "Lompat ke bahagian waktu solat" : "Jump to prayer times section")
-                }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(weekdayLine)
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .foregroundStyle(ForYouPalette.ink)
-                    if let location = viewModel.plan.locationLine {
-                        Label(location, systemImage: "mappin.and.ellipse")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(ForYouPalette.secondaryInk)
-                            .lineLimit(1)
+                    ForYouExpandableWeatherCard(
+                        plan: viewModel.plan,
+                        isExpanded: showsExpandedWeatherCard,
+                        onToggle: {
+                            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+                                showsExpandedWeatherCard.toggle()
+                            }
+                        }
+                    )
+                    .padding(.top, -6)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(weekdayLine)
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+                            .padding(.top, 10)
+                        if let location = viewModel.plan.locationLine {
+                            Label(location, systemImage: "mappin.and.ellipse")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(ForYouPalette.secondaryInk)
+                                .lineLimit(1)
+                        }
                     }
-                }
 
-                Text(isMalayAppLanguage() ? "Hari penuh" : "Full day")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(ForYouPalette.secondaryInk)
-                    .id(Self.prayerTimelineSectionID)
+                    Text(isMalayAppLanguage() ? "Hari penuh" : "Full day")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                        .padding(.top, 10)
+                        .id(Self.prayerTimelineSectionID)
+                }
             }
 
             ForEach(Array(page.enumerated()), id: \.element.id) { itemIndex, item in
@@ -2594,9 +3225,20 @@ private struct ForYouDayView: View {
 private struct ForYouHeroJumpButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .opacity(configuration.isPressed ? 0.92 : 1)
-            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.982 : 1)
+            .rotationEffect(.degrees(configuration.isPressed ? -0.35 : 0))
+            .offset(y: configuration.isPressed ? -1 : 0)
+            .shadow(
+                color: Color.black.opacity(configuration.isPressed ? 0.14 : 0.08),
+                radius: configuration.isPressed ? 18 : 10,
+                x: 0,
+                y: configuration.isPressed ? 10 : 5
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color.white.opacity(configuration.isPressed ? 0.24 : 0), lineWidth: 1)
+            )
+            .animation(.spring(response: 0.22, dampingFraction: 0.82), value: configuration.isPressed)
     }
 }
 
@@ -3174,7 +3816,7 @@ struct ForYouRootView: View {
             switch entry.kind {
             case .prayer:
                 result.append(.prayer(.main(entry.id)))
-                for tab in ForYouPrayerTab.allCases {
+                for tab in forYouPrayerTabs(for: entry) {
                     result.append(.prayer(.tab(entry.id, tab)))
                 }
             case .zikir:
