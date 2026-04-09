@@ -99,12 +99,34 @@ struct PrayerDisplayInfo: Equatable {
 }
 
 enum PrayerDerivedTimes {
+    private static func resolvedDerivedSunCountryCode(for prayers: [Prayer], countryCode: String?) -> String? {
+        if let countryCode = countryCode?.uppercased(), countryCode == "MY" || countryCode == "BN" {
+            return countryCode
+        }
+
+        let normalizedNames = Set(prayers.map { normalizedPrayerKey($0.nameTransliteration) })
+        let hasSunriseSlot =
+            normalizedNames.contains("syuruk") ||
+            normalizedNames.contains("shurooq") ||
+            normalizedNames.contains("sunrise")
+        let hasFajrSlot =
+            normalizedNames.contains("subuh") ||
+            normalizedNames.contains("fajr")
+        let hasMiddaySlot =
+            normalizedNames.contains("zuhur") ||
+            normalizedNames.contains("dhuhr") ||
+            normalizedNames.contains("jumuah")
+        let looksLikeWidgetPrayerList = hasSunriseSlot && hasFajrSlot && hasMiddaySlot
+
+        return looksLikeWidgetPrayerList ? "MY" : nil
+    }
+
     static func shurooqHelpers(
         for prayers: [Prayer],
         countryCode: String?,
         storedDhuha: Date? = nil
     ) -> [UUID: ShurooqDerivedHelperTimes] {
-        guard let countryCode = countryCode?.uppercased(), countryCode == "MY" || countryCode == "BN" else { return [:] }
+        guard let countryCode = resolvedDerivedSunCountryCode(for: prayers, countryCode: countryCode) else { return [:] }
 
         guard let shurooq = prayers.first(where: { isShurooqKey(normalizedPrayerKey($0.nameTransliteration)) }) else {
             return [:]
@@ -151,11 +173,11 @@ enum PrayerDerivedTimes {
             isDerivedDhuha: false
         )
 
-        guard
-            let countryCode = countryCode?.uppercased(),
-            (countryCode == "MY" || countryCode == "BN"),
-            isShurooqKey(normalizedName)
-        else {
+        guard isShurooqKey(normalizedName) else {
+            return baseDisplay
+        }
+
+        guard let countryCode = resolvedDerivedSunCountryCode(for: prayers, countryCode: countryCode) else {
             return baseDisplay
         }
 

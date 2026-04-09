@@ -119,23 +119,23 @@ struct PrayersProvider: TimelineProvider {
             ?? (obj.fullPrayers.isEmpty ? dayPrayers : obj.fullPrayers)
         let contextPrayers = dayFullPrayers.isEmpty ? dayPrayers : dayFullPrayers
         let storedDhuha = settings.storedDohaDate(for: contextPrayers)
-        let inferred = inferCurrentAndNext(from: dayPrayers, at: date)
-        let displayCurrent = inferred.current.map {
+        let promotedDayPrayers = dayPrayers.map {
             promotedWidgetPrayer($0, in: contextPrayers, countryCode: baseContext.countryCode, storedDhuha: storedDhuha, at: date)
         }
-        let displayNext = inferred.next.map {
+        let promotedFullPrayers = dayFullPrayers.map {
             promotedWidgetPrayer($0, in: contextPrayers, countryCode: baseContext.countryCode, storedDhuha: storedDhuha, at: date)
         }
+        let inferred = inferCurrentAndNext(from: promotedDayPrayers, at: date)
 
         return PrayersEntry(
             date: date,
             accentColor: baseContext.accent,
             currentCity: settings.effectivePrayerLocationDisplayName
                 ?? (obj.city.isEmpty ? (baseContext.location?.city ?? "") : obj.city),
-            prayers: dayPrayers,
-            fullPrayers: dayFullPrayers,
-            currentPrayer: displayCurrent,
-            nextPrayer: displayNext,
+            prayers: promotedDayPrayers,
+            fullPrayers: promotedFullPrayers,
+            currentPrayer: inferred.current,
+            nextPrayer: inferred.next,
             hijriOffset: settings.hijriOffset,
             countryCode: baseContext.countryCode,
             storedDhuha: storedDhuha,
@@ -329,7 +329,11 @@ struct WidgetLocationFooter: View {
 }
 
 func widgetPrayerDisplayName(_ raw: String) -> String {
-    localizedPrayerName(raw)
+    let normalized = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    if normalized == "syuruk" || normalized == "shurooq" || normalized == "sunrise" {
+        return localizedPrayerName("Dhuha")
+    }
+    return localizedPrayerName(raw)
 }
 
 func widgetIsShurooq(_ raw: String) -> Bool {
@@ -338,14 +342,60 @@ func widgetIsShurooq(_ raw: String) -> Bool {
 }
 
 func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry) -> PrayerDisplayInfo {
-    PrayerDerivedTimes.displayInfo(
+    let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
+    let baseDisplay = PrayerDerivedTimes.displayInfo(
         for: prayer,
-        in: entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers,
+        in: sourcePrayers,
         countryCode: entry.countryCode,
         storedDhuha: entry.storedDhuha,
         // Use the live render time so Dhuha promotion does not stay stuck on an
         // older timeline entry timestamp between WidgetKit refresh boundaries.
         now: Date()
+    )
+
+    guard !baseDisplay.isDerivedDhuha else { return baseDisplay }
+
+    let normalized = prayer.nameTransliteration.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    guard normalized == "syuruk" || normalized == "shurooq" || normalized == "sunrise" else {
+        return baseDisplay
+    }
+
+    let liveNow = Date()
+    guard liveNow.isSameDay(as: prayer.time) else { return baseDisplay }
+
+    let fajr = sourcePrayers.first {
+        let key = $0.nameTransliteration.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return key == "fajr" || key == "subuh"
+    }
+    let middayPrayer = sourcePrayers.first {
+        let key = $0.nameTransliteration.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return key == "dhuhr" || key == "zuhur" || key == "jumuah"
+    }
+
+    guard let middayPrayer else { return baseDisplay }
+
+    let derivedDhuhaTime: Date?
+    if let fajr, prayer.time > fajr.time {
+        let sunriseGap = prayer.time.timeIntervalSince(fajr.time)
+        derivedDhuhaTime = sunriseGap > 0 ? prayer.time.addingTimeInterval(sunriseGap / 3) : nil
+    } else if let storedDhuha = entry.storedDhuha, storedDhuha > prayer.time {
+        derivedDhuhaTime = storedDhuha
+    } else {
+        derivedDhuhaTime = nil
+    }
+
+    guard let derivedDhuhaTime, liveNow >= derivedDhuhaTime, liveNow < middayPrayer.time else {
+        return baseDisplay
+    }
+
+    return PrayerDisplayInfo(
+        nameTransliteration: "Dhuha",
+        nameEnglish: "Forenoon",
+        nameArabic: "الضُّحَى",
+        time: derivedDhuhaTime,
+        image: prayer.image,
+        usesSecondarySunStyle: true,
+        isDerivedDhuha: true
     )
 }
 
