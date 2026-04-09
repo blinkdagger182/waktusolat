@@ -513,19 +513,27 @@ struct AlAdhanApp: App {
     }
 
     private var mainTabView: some View {
-        ZStack(alignment: .bottom) {
-            Color(uiColor: .systemGroupedBackground)
-                .ignoresSafeArea()
+        Group {
+            if #available(iOS 26, *) {
+                systemTabView
+            } else {
+                ZStack(alignment: .bottom) {
+                    Color(uiColor: .systemGroupedBackground)
+                        .ignoresSafeArea()
 
-            currentTabContent
+                    currentTabContent
 
-            customBottomTabBar
+                    customBottomTabBar
+                }
+            }
         }
         .onAppear {
-            bottomBarVisibility.activate(
-                source: selectedTab.scrollSourceID,
-                hidesOnScroll: tabHidesOnScroll(selectedTab)
-            )
+            if #unavailable(iOS 26) {
+                bottomBarVisibility.activate(
+                    source: selectedTab.scrollSourceID,
+                    hidesOnScroll: tabHidesOnScroll(selectedTab)
+                )
+            }
             if firstLaunchSheet {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     withAnimation {
@@ -540,10 +548,12 @@ struct AlAdhanApp: App {
             }
         }
         .onChange(of: selectedTab) { newTab in
-            bottomBarVisibility.activate(
-                source: newTab.scrollSourceID,
-                hidesOnScroll: tabHidesOnScroll(newTab)
-            )
+            if #unavailable(iOS 26) {
+                bottomBarVisibility.activate(
+                    source: newTab.scrollSourceID,
+                    hidesOnScroll: tabHidesOnScroll(newTab)
+                )
+            }
         }
         .sheet(
             isPresented: $showAdhanSheet,
@@ -559,6 +569,35 @@ struct AlAdhanApp: App {
                 .tint(settings.accentColor.color)
                 .preferredColorScheme(settings.colorScheme)
                 .transition(.opacity)
+        }
+    }
+
+    @available(iOS 26, *)
+    private var systemTabView: some View {
+        TabView(selection: $selectedTab) {
+            AdhanView { _ in }
+                .tabItem {
+                    Label("Azan", systemImage: "safari")
+                }
+                .tag(AppTab.adhan)
+
+            TodayView { _ in }
+                .tabItem {
+                    Label(isMalayAppLanguage() ? "Hari Ini" : "Today", systemImage: "sun.max")
+                }
+                .tag(AppTab.today)
+
+            OtherView(isActive: selectedTab == .library) { _ in }
+                .tabItem {
+                    Label(isMalayAppLanguage() ? "Pustaka" : "Library", systemImage: "books.vertical")
+                }
+                .tag(AppTab.library)
+
+            SettingsView()
+                .tabItem {
+                    Label(isMalayAppLanguage() ? "Tetapan" : "Settings", systemImage: "gearshape")
+                }
+                .tag(AppTab.settings)
         }
     }
 

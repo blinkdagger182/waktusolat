@@ -389,21 +389,109 @@ private struct ForYouMiniProgressTracker: View {
         let symbol = descriptor.maximumCount == 1 ? "moon.zzz.fill" : "sparkles"
         let rowLabel = descriptor.rowLabels.indices.contains(index) ? descriptor.rowLabels[index] : descriptor.title
 
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : 6) {
+            if descriptor.requiresLongPress {
+                HStack(spacing: 8) {
+                    Text(rowLabel)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+
+                    Image(systemName: symbol)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(isCompleted ? tint : .white)
+                        .frame(width: 22, height: 22)
+                        .background(
+                            Circle()
+                                .fill(isCompleted ? tint.opacity(0.18) : tint)
+                        )
+                        .overlay(
+                            ZStack {
+                                if burstIndex == index {
+                                    Circle()
+                                        .stroke(tint.opacity(0.35), lineWidth: 1.5)
+                                        .scaleEffect(1.6)
+                                        .opacity(0)
+                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
+                                    Circle()
+                                        .fill(tint.opacity(0.16))
+                                        .scaleEffect(1.9)
+                                        .opacity(0)
+                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
+                                }
+                            }
+                        )
+                        .scaleEffect(isHolding ? 1.08 : 1)
+                }
+            } else {
                 Text(rowLabel)
                     .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.ink)
+                    .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .trailing)
 
-            HStack(spacing: 6) {
-                ZStack(alignment: .leading) {
-                    Capsule(style: .continuous)
-                        .fill(track)
+                HStack(spacing: 6) {
+                    ZStack(alignment: .leading) {
+                        Capsule(style: .continuous)
+                            .fill(track)
 
-                    Capsule(style: .continuous)
-                        .fill(tint)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        Capsule(style: .continuous)
+                            .fill(tint)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .mask(
+                                GeometryReader { geometry in
+                                    Rectangle()
+                                        .frame(width: geometry.size.width * fillFraction(for: index), alignment: .leading)
+                                }
+                            )
+                    }
+                    .frame(height: 8)
+
+                    Image(systemName: symbol)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(isCompleted ? tint : .white)
+                        .frame(width: 22, height: 22)
+                        .background(
+                            Circle()
+                                .fill(isCompleted ? tint.opacity(0.18) : tint)
+                        )
+                        .overlay(
+                            ZStack {
+                                if burstIndex == index {
+                                    Circle()
+                                        .stroke(tint.opacity(0.35), lineWidth: 1.5)
+                                        .scaleEffect(1.6)
+                                        .opacity(0)
+                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
+                                    Circle()
+                                        .fill(tint.opacity(0.16))
+                                        .scaleEffect(1.9)
+                                        .opacity(0)
+                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
+                                }
+                            }
+                        )
+                        .scaleEffect(isHolding ? 1.08 : 1)
+
+                    Text("\(min(currentCount, rowTarget))")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(isCompleted ? tint : ForYouPalette.ink)
+                        .monospacedDigit()
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isCompleted ? tint.opacity(0.12) : Color.white.opacity(0.88))
+
+                if descriptor.requiresLongPress {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(tint.opacity(isCompleted ? 0.18 : 0.14))
                         .mask(
                             GeometryReader { geometry in
                                 Rectangle()
@@ -411,50 +499,10 @@ private struct ForYouMiniProgressTracker: View {
                             }
                         )
                 }
-                .frame(height: 8)
 
-                Image(systemName: symbol)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(isCompleted ? tint : .white)
-                    .frame(width: 22, height: 22)
-                    .background(
-                        Circle()
-                            .fill(isCompleted ? tint.opacity(0.18) : tint)
-                    )
-                    .overlay(
-                        ZStack {
-                            if burstIndex == index {
-                                Circle()
-                                    .stroke(tint.opacity(0.35), lineWidth: 1.5)
-                                    .scaleEffect(1.6)
-                                    .opacity(0)
-                                    .animation(.easeOut(duration: 0.35), value: burstIndex)
-                                Circle()
-                                    .fill(tint.opacity(0.16))
-                                    .scaleEffect(1.9)
-                                    .opacity(0)
-                                    .animation(.easeOut(duration: 0.35), value: burstIndex)
-                            }
-                        }
-                    )
-                    .scaleEffect(isHolding ? 1.08 : 1)
-
-                Text("\(min(currentCount, rowTarget))")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(isCompleted ? tint : ForYouPalette.ink)
-                    .monospacedDigit()
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isCompleted ? tint.opacity(0.28) : ForYouPalette.stroke, lineWidth: 1)
             }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(isCompleted ? tint.opacity(0.12) : Color.white.opacity(0.88))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(isCompleted ? tint.opacity(0.28) : ForYouPalette.stroke, lineWidth: 1)
-                )
         )
         .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .modifier(
@@ -483,6 +531,13 @@ private struct ForYouMiniProgressTracker: View {
             return holdProgress
         }
         return 0
+    }
+
+    private func trackerRowTextColor(isCompleted: Bool, isHolding: Bool) -> Color {
+        if descriptor.requiresLongPress && (isCompleted || isHolding) {
+            return Color.black.opacity(0.82)
+        }
+        return ForYouPalette.ink
     }
 }
 
