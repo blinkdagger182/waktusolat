@@ -344,6 +344,165 @@ private struct ForYouDaySegmentView: View {
     }
 }
 
+private struct ForYouMiniProgressTracker: View {
+    struct Descriptor {
+        let title: String
+        let compactLabel: String?
+        let maximumCount: Int
+        let requiresLongPress: Bool
+        let rowLabels: [String]
+    }
+
+    let descriptor: Descriptor
+    let count: Int
+    let activeHoldIndex: Int?
+    let holdProgress: CGFloat
+    let burstIndex: Int?
+    let onPressingChanged: (Bool, Int) -> Void
+    let onTriggered: (Int) -> Void
+
+    private let tint = Color(red: 0.24, green: 0.67, blue: 0.45)
+    private let track = Color(red: 0.24, green: 0.67, blue: 0.45).opacity(0.14)
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ForEach(0..<descriptor.maximumCount, id: \.self) { index in
+                trackerCell(index: index)
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.92))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 5)
+    }
+
+    @ViewBuilder
+    private func trackerCell(index: Int) -> some View {
+        let isCompleted = index < count
+        let isHolding = activeHoldIndex == index && !isCompleted
+        let symbol = descriptor.maximumCount == 1 ? "moon.zzz.fill" : "sparkles"
+        let rowLabel = descriptor.rowLabels.indices.contains(index) ? descriptor.rowLabels[index] : descriptor.title
+
+        VStack(alignment: .leading, spacing: 6) {
+            Text(rowLabel)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(ForYouPalette.ink)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+            HStack(spacing: 6) {
+                ZStack(alignment: .leading) {
+                    Capsule(style: .continuous)
+                        .fill(track)
+
+                    Capsule(style: .continuous)
+                        .fill(tint)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .mask(
+                            GeometryReader { geometry in
+                                Rectangle()
+                                    .frame(width: geometry.size.width * fillFraction(for: index), alignment: .leading)
+                            }
+                        )
+                }
+                .frame(height: 8)
+
+                Image(systemName: symbol)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(isCompleted ? tint : .white)
+                    .frame(width: 22, height: 22)
+                    .background(
+                        Circle()
+                            .fill(isCompleted ? tint.opacity(0.18) : tint)
+                    )
+                    .overlay(
+                        ZStack {
+                            if burstIndex == index {
+                                Circle()
+                                    .stroke(tint.opacity(0.35), lineWidth: 1.5)
+                                    .scaleEffect(1.6)
+                                    .opacity(0)
+                                    .animation(.easeOut(duration: 0.35), value: burstIndex)
+                                Circle()
+                                    .fill(tint.opacity(0.16))
+                                    .scaleEffect(1.9)
+                                    .opacity(0)
+                                    .animation(.easeOut(duration: 0.35), value: burstIndex)
+                            }
+                        }
+                    )
+                    .scaleEffect(isHolding ? 1.08 : 1)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isCompleted ? tint.opacity(0.12) : Color.white.opacity(0.88))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(isCompleted ? tint.opacity(0.28) : ForYouPalette.stroke, lineWidth: 1)
+                )
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .onLongPressGesture(minimumDuration: 10, maximumDistance: 24, pressing: { pressing in
+            guard !isCompleted else { return }
+            onPressingChanged(pressing, index)
+        }, perform: {
+            guard !isCompleted else { return }
+            onTriggered(index)
+        })
+    }
+
+    private func fillFraction(for index: Int) -> CGFloat {
+        if index < count {
+            return 1
+        }
+        if activeHoldIndex == index {
+            return holdProgress
+        }
+        return 0
+    }
+}
+
+private func forYouRecommendationTrackerDescriptor(
+    recommendation: ForYouTimelineRecommendation
+) -> ForYouMiniProgressTracker.Descriptor? {
+    let title = recommendation.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let rowLabels = recommendation.arabicText
+        .map(forYouTrackerRowLabels(from:))
+        ?? []
+
+    switch title {
+    case "morning protection", "perlindungan pagi":
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: true, rowLabels: Array(rowLabels.prefix(3)))
+    case "evening adhkar", "zikir petang":
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: true, rowLabels: Array(rowLabels.prefix(3)))
+    case "before sleep", "sebelum tidur", "night sufficiency", "kecukupan malam":
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? recommendation.title])
+    default:
+        return nil
+    }
+}
+
+private func forYouTrackerRowLabels(from arabicText: String) -> [String] {
+    let separators = CharacterSet(charactersIn: "•\n")
+    let parts = arabicText
+        .components(separatedBy: separators)
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+    return parts
+}
+
+private func forYouRecommendationTrackerStorageKey(
+    entryID: String,
+    recommendation: ForYouTimelineRecommendation
+) -> String {
+    "for-you-recommendation-progress|\(entryID)|\(recommendation.title.lowercased())"
+}
+
 private struct ForYouPremiumPreviewView: View {
     let plan: ForYouDailyPlan?
 
@@ -398,6 +557,23 @@ private struct ForYouTimelineEntryView: View {
     var extendsToNext: Bool = true
 
     @EnvironmentObject private var settings: Settings
+    @State private var progressCount: Int
+    @State private var activeHoldIndex: Int?
+    @State private var holdProgress: CGFloat = 0
+    @State private var burstIndex: Int?
+
+    init(
+        entry: ForYouTimelineEntry,
+        isFocused: Bool,
+        isCompact: Bool = false,
+        extendsToNext: Bool = true
+    ) {
+        self.entry = entry
+        self.isFocused = isFocused
+        self.isCompact = isCompact
+        self.extendsToNext = extendsToNext
+        _progressCount = State(initialValue: ForYouDhikrProgressStore.count(for: entry.id))
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: isCompact ? 8 : 10) {
@@ -456,12 +632,26 @@ private struct ForYouTimelineEntryView: View {
                             .lineLimit(1)
 
                         if let arabicText = recommendation.arabicText {
-                            Text(arabicText)
-                                .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
-                                .foregroundStyle(ForYouPalette.ink)
-                                .multilineTextAlignment(.trailing)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity, alignment: .trailing)
+                            ZStack(alignment: .topLeading) {
+                                Text(arabicText)
+                                    .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
+                                    .foregroundStyle(ForYouPalette.ink)
+                                    .multilineTextAlignment(.trailing)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+
+                                if let trackerDescriptor {
+                                    ForYouMiniProgressTracker(
+                                        descriptor: trackerDescriptor,
+                                        count: progressCount,
+                                        activeHoldIndex: activeHoldIndex,
+                                        holdProgress: holdProgress,
+                                        burstIndex: burstIndex,
+                                        onPressingChanged: handleTrackerPressing,
+                                        onTriggered: completeCurrentTrackerStep
+                                    )
+                                }
+                            }
                         }
 
                         Text(recommendation.shortDescription)
@@ -506,6 +696,52 @@ private struct ForYouTimelineEntryView: View {
 
     private var timeText: String {
         ForYouFormatters.shortTime.string(from: entry.time)
+    }
+
+    private var trackerDescriptor: ForYouMiniProgressTracker.Descriptor? {
+        guard entry.kind == .zikir else { return nil }
+        guard entry.progressTarget != nil || entry.progressRequiresLongPress else { return nil }
+        return .init(
+            title: entry.title,
+            compactLabel: entry.progressRequiresLongPress ? (isMalayAppLanguage() ? "Tahan" : "Hold") : nil,
+            maximumCount: max(entry.progressTarget ?? 1, 1),
+            requiresLongPress: true,
+            rowLabels: Array(repeating: entry.title, count: max(entry.progressTarget ?? 1, 1))
+        )
+    }
+
+    private func handleTrackerPressing(_ pressing: Bool, index: Int) {
+        if pressing {
+            activeHoldIndex = index
+            holdProgress = 0
+            withAnimation(.linear(duration: 10)) {
+                holdProgress = 1
+            }
+        } else if activeHoldIndex == index {
+            withAnimation(.easeOut(duration: 0.16)) {
+                holdProgress = 0
+            }
+            activeHoldIndex = nil
+        }
+    }
+
+    private func completeCurrentTrackerStep(_ index: Int) {
+        guard let trackerDescriptor else { return }
+        guard progressCount == index else { return }
+
+        let nextCount = min(trackerDescriptor.maximumCount, progressCount + 1)
+        progressCount = nextCount
+        ForYouDhikrProgressStore.setCount(nextCount, for: entry.id)
+        settings.hapticFeedback()
+        burstIndex = index
+        holdProgress = 0
+        activeHoldIndex = nil
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            if burstIndex == index {
+                burstIndex = nil
+            }
+        }
     }
 }
 
@@ -879,6 +1115,27 @@ private struct ForYouTimelineEntryContentCard: View {
     var trackerStatus: PrayerTrackerStatus? = nil
     var collapsed: Bool = false
     @EnvironmentObject private var settings: Settings
+    @State private var recommendationProgressCount: Int
+    @State private var recommendationActiveHoldIndex: Int?
+    @State private var recommendationHoldProgress: CGFloat = 0
+    @State private var recommendationBurstIndex: Int?
+
+    init(
+        entry: ForYouTimelineEntry,
+        trackerStatus: PrayerTrackerStatus? = nil,
+        collapsed: Bool = false
+    ) {
+        self.entry = entry
+        self.trackerStatus = trackerStatus
+        self.collapsed = collapsed
+        if let recommendation = entry.recommendation {
+            _recommendationProgressCount = State(initialValue: ForYouDhikrProgressStore.count(
+                for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation)
+            ))
+        } else {
+            _recommendationProgressCount = State(initialValue: 0)
+        }
+    }
 
     private var prayerDetailLines: [String] {
         guard entry.kind == .prayer else { return [] }
@@ -971,13 +1228,27 @@ private struct ForYouTimelineEntryContentCard: View {
                         .foregroundStyle(ForYouPalette.ink)
                         .lineLimit(1)
                     if let arabicText = recommendation.arabicText {
-                        Text(arabicText)
-                            .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
-                            .foregroundStyle(ForYouPalette.ink)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .multilineTextAlignment(.trailing)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
+                        ZStack(alignment: .topLeading) {
+                            Text(arabicText)
+                                .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
+                                .foregroundStyle(ForYouPalette.ink)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .multilineTextAlignment(.trailing)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.82)
+
+                            if let recommendationTrackerDescriptor {
+                                ForYouMiniProgressTracker(
+                                    descriptor: recommendationTrackerDescriptor,
+                                    count: recommendationProgressCount,
+                                    activeHoldIndex: recommendationActiveHoldIndex,
+                                    holdProgress: recommendationHoldProgress,
+                                    burstIndex: recommendationBurstIndex,
+                                    onPressingChanged: handleRecommendationTrackerPressing,
+                                    onTriggered: completeRecommendationTrackerStep
+                                )
+                            }
+                        }
                     }
                     Text(recommendation.shortDescription)
                         .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -1014,6 +1285,50 @@ private struct ForYouTimelineEntryContentCard: View {
                         .stroke(cardStrokeColor, lineWidth: 1)
                 )
         )
+    }
+
+    private var recommendationTrackerDescriptor: ForYouMiniProgressTracker.Descriptor? {
+        guard let recommendation = entry.recommendation else { return nil }
+        return forYouRecommendationTrackerDescriptor(recommendation: recommendation)
+    }
+
+    private func handleRecommendationTrackerPressing(_ pressing: Bool, index: Int) {
+        guard recommendationTrackerDescriptor != nil else { return }
+        if pressing {
+            recommendationActiveHoldIndex = index
+            recommendationHoldProgress = 0
+            withAnimation(.linear(duration: 10)) {
+                recommendationHoldProgress = 1
+            }
+        } else if recommendationActiveHoldIndex == index {
+            withAnimation(.easeOut(duration: 0.16)) {
+                recommendationHoldProgress = 0
+            }
+            recommendationActiveHoldIndex = nil
+        }
+    }
+
+    private func completeRecommendationTrackerStep(_ index: Int) {
+        guard let recommendation = entry.recommendation,
+              let descriptor = recommendationTrackerDescriptor else { return }
+        guard recommendationProgressCount == index else { return }
+
+        let nextCount = min(descriptor.maximumCount, recommendationProgressCount + 1)
+        recommendationProgressCount = nextCount
+        ForYouDhikrProgressStore.setCount(
+            nextCount,
+            for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation)
+        )
+        settings.hapticFeedback()
+        recommendationBurstIndex = index
+        recommendationHoldProgress = 0
+        recommendationActiveHoldIndex = nil
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            if recommendationBurstIndex == index {
+                recommendationBurstIndex = nil
+            }
+        }
     }
 
     private var cardFillColor: Color {
@@ -2438,11 +2753,15 @@ private struct ForYouExpandableWeatherCard: View {
                 Image(systemName: "minus")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.88))
+            } else if let weatherSnapshot {
+                Text((isMalayAppLanguage() ? "Kini: " : "Now: ") + weatherSnapshot.temperatureText)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.white.opacity(0.88))
             }
         }
         .padding(.horizontal, 16)
         .frame(height: 28)
-        .background(ForYouPalette.accentSky)
+        .background(ForYouPalette.darkTile)
     }
 
     @ViewBuilder
@@ -2870,6 +3189,8 @@ private struct ForYouDayView: View {
             .padding(.horizontal, 16)
             .padding(.top, 4)
             .padding(.bottom, 16)
+            .frame(maxWidth: .infinity)
+            .clipped()
             .background(background)
 
             if viewModel.isLocked {
@@ -2889,6 +3210,8 @@ private struct ForYouDayView: View {
         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .clipped()
         .scaleEffect(shouldBlurLockedContent ? 0.982 : 1)
         .opacity(shouldBlurLockedContent ? 0.92 : 1)
         .offset(y: -10)
@@ -3560,6 +3883,7 @@ struct ForYouRootView: View {
     @EnvironmentObject private var settings: Settings
     @EnvironmentObject private var revenueCat: RevenueCatManager
     @EnvironmentObject private var bottomBarVisibility: BottomBarVisibilityController
+    @AppStorage("forYou.prayerTrackerPromptVisible") private var prayerTrackerPromptVisible = false
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
@@ -3647,8 +3971,16 @@ struct ForYouRootView: View {
                     }
                 }
             }
+
+            if dimmedOverlayVisible {
+                Color.black
+                    .opacity(viewModel.showOnboarding ? 0.30 : 0.22)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .zIndex(15)
+            }
         }
-        .allowsHitTesting(!viewModel.showOnboarding)
+        .allowsHitTesting(!viewModel.showOnboarding && !prayerTrackerPromptVisible)
         .overlay(alignment: .top) {
             if let todayItem = currentDayViewModel, !viewModel.showOnboarding {
                 ForYouCollapsedHeaderBar(
@@ -3716,6 +4048,10 @@ struct ForYouRootView: View {
         .onChange(of: settings.nextPrayer?.id) { _ in refresh() }
         .onChange(of: settings.currentLocation?.city) { _ in refresh() }
         .onChange(of: revenueCat.hasBuyMeKopi) { _ in refresh() }
+    }
+
+    private var dimmedOverlayVisible: Bool {
+        viewModel.showOnboarding || prayerTrackerPromptVisible
     }
 
     private var hasPremiumAccess: Bool {

@@ -146,6 +146,8 @@ struct ForYouTimelineEntry: Identifiable, Codable {
     let rakah: String?
     let sunnahBefore: String?
     let sunnahAfter: String?
+    let progressTarget: Int?
+    let progressRequiresLongPress: Bool
     let weather: ForYouPrayerWeather?
 }
 

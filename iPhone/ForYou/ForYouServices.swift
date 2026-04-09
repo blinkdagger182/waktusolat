@@ -1250,6 +1250,8 @@ final class ForYouPlanGeneratorService {
                         rakah: entry.rakah,
                         sunnahBefore: entry.sunnahBefore,
                         sunnahAfter: entry.sunnahAfter,
+                        progressTarget: entry.progressTarget,
+                        progressRequiresLongPress: entry.progressRequiresLongPress,
                         weather: entry.kind == .prayer ? weatherByHour[hour] : nil
                     )
                 },
@@ -1552,8 +1554,21 @@ final class ForYouPlanGeneratorService {
                 icon: icon(for: moment),
                 arabicText: selection.phrase.textArabic,
                 reference: appLocalized(selection.bucket.titleKey),
-                recommendation: recommendation(for: moment, profile: profile, date: date)
+                recommendation: recommendation(for: moment, profile: profile, date: date),
+                progressTarget: progressTarget(for: anchor.bucket),
+                progressRequiresLongPress: anchor.bucket == .night
             )
+        }
+    }
+
+    private func progressTarget(for bucket: ZikirTimeBucket) -> Int? {
+        switch bucket {
+        case .morning, .evening:
+            return 3
+        case .midday:
+            return nil
+        case .night:
+            return 1
         }
     }
 
@@ -1652,7 +1667,9 @@ final class ForYouPlanGeneratorService {
         recommendation: ForYouTimelineRecommendation?,
         rakah: String? = nil,
         sunnahBefore: String? = nil,
-        sunnahAfter: String? = nil
+        sunnahAfter: String? = nil,
+        progressTarget: Int? = nil,
+        progressRequiresLongPress: Bool = false
     ) -> ForYouTimelineEntry {
         ForYouTimelineEntry(
             id: id,
@@ -1669,6 +1686,8 @@ final class ForYouPlanGeneratorService {
             rakah: rakah,
             sunnahBefore: sunnahBefore,
             sunnahAfter: sunnahAfter,
+            progressTarget: progressTarget,
+            progressRequiresLongPress: progressRequiresLongPress,
             weather: nil
         )
     }

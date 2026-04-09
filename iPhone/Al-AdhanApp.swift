@@ -188,6 +188,7 @@ struct AlAdhanApp: App {
     @AppStorage("lastDismissedMarketingModalRevisionV1") private var lastDismissedMarketingModalRevision = ""
     @AppStorage("remoteUIRecoveryEnabled") private var remoteUIRecoveryEnabled = true
     @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
+    @AppStorage("forYou.prayerTrackerPromptVisible") private var forYouPrayerTrackerPromptVisible = false
     @State var showAdhanSheet: Bool = false
     @State private var showDailyQuranWidgetIntro = false
     @State private var showMarketingModal = false
@@ -333,6 +334,7 @@ struct AlAdhanApp: App {
                                 PrayerTrackerStore.markPromptedToday()
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     showPrayerTrackerPrompt = false
+                                    forYouPrayerTrackerPromptVisible = false
                                 }
                             }
                         },
@@ -340,6 +342,7 @@ struct AlAdhanApp: App {
                             PrayerTrackerStore.markPromptedToday()
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showPrayerTrackerPrompt = false
+                                forYouPrayerTrackerPromptVisible = false
                             }
                         }
                     )
@@ -483,6 +486,8 @@ struct AlAdhanApp: App {
             .onChange(of: selectedTab) { newTab in
                 if newTab == .adhan {
                     scheduleFirstRunNotificationPromptIfNeeded()
+                } else if newTab == .today {
+                    presentPrayerTrackerPromptIfNeeded()
                 }
             }
             .onChange(of: settings.currentLocation?.countryCode) { _ in
@@ -720,6 +725,7 @@ struct AlAdhanApp: App {
         guard !isLaunching, !settings.firstLaunch else { return }
         guard !showAdhanSheet, !showDailyQuranWidgetIntro, !showMarketingModal else { return }
         guard !showPrayerTrackerPrompt else { return }
+        guard selectedTab == .today else { return }
         guard ForYouUserProfileService.load().wantsPrayerTrackerCard == true else { return }
         guard !PrayerTrackerStore.hasPromptedToday() else { return }
 
@@ -731,6 +737,7 @@ struct AlAdhanApp: App {
         prayerTrackerPromptPrayers = pendingPrayers
         withAnimation(.easeInOut(duration: 0.2)) {
             showPrayerTrackerPrompt = true
+            forYouPrayerTrackerPromptVisible = true
         }
     }
 
