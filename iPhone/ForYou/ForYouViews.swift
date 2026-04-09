@@ -514,6 +514,8 @@ private struct ForYouTimelineRailView: View {
     let isFocused: Bool
     let isCompact: Bool
     let extendsToNext: Bool
+    var trackerStatus: PrayerTrackerStatus? = nil
+    var onTrackerTap: (() -> Void)? = nil
 
     @EnvironmentObject private var settings: Settings
 
@@ -521,19 +523,16 @@ private struct ForYouTimelineRailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(ForYouFormatters.shortTime.string(from: entry.time))
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundStyle(ForYouPalette.ink)
-                .padding(.horizontal, 12)
-                .padding(.vertical, isCompact ? 6 : 7)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(ForYouPalette.timePillFill)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke, lineWidth: 1)
-                        )
-                )
+            Group {
+                if let onTrackerTap {
+                    Button(action: onTrackerTap) {
+                        timePill
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    timePill
+                }
+            }
 
             if let weather = entry.weather {
                 VStack(alignment: .leading, spacing: 4) {
@@ -559,17 +558,67 @@ private struct ForYouTimelineRailView: View {
             }
 
             RoundedRectangle(cornerRadius: 1, style: .continuous)
-                .fill(isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke)
+                .fill(connectorColor)
                 .frame(width: 2)
                 .frame(maxHeight: .infinity)
                 .padding(.top, isCompact ? 4 : 6)
                 .padding(.bottom, connectorGapBridge)
         }
     }
+
+    private var timePill: some View {
+        Text(ForYouFormatters.shortTime.string(from: entry.time))
+            .font(.system(size: 14, weight: .medium, design: .rounded))
+            .foregroundStyle(ForYouPalette.ink)
+            .padding(.horizontal, 12)
+            .padding(.vertical, isCompact ? 6 : 7)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(timePillFillColor)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(timePillStrokeColor, lineWidth: 1)
+                    )
+            )
+    }
+
+    private var timePillFillColor: Color {
+        switch trackerStatus {
+        case .prayed:
+            return Color.green.opacity(0.15)
+        case .missed:
+            return Color.red.opacity(0.12)
+        case .pending, .none:
+            return ForYouPalette.timePillFill
+        }
+    }
+
+    private var timePillStrokeColor: Color {
+        switch trackerStatus {
+        case .prayed:
+            return Color.green.opacity(0.35)
+        case .missed:
+            return Color.red.opacity(0.30)
+        case .pending, .none:
+            return isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke
+        }
+    }
+
+    private var connectorColor: Color {
+        switch trackerStatus {
+        case .prayed:
+            return Color.green.opacity(0.30)
+        case .missed:
+            return Color.red.opacity(0.22)
+        case .pending, .none:
+            return isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke
+        }
+    }
 }
 
 private struct ForYouPrayerTimelineEntryView: View {
     let entry: ForYouTimelineEntry
+    let date: Date
     let isFocused: Bool
     let extendsToNext: Bool
     let selection: ForYouPrayerCardSelection
@@ -581,16 +630,37 @@ private struct ForYouPrayerTimelineEntryView: View {
                 entry: entry,
                 isFocused: isFocused,
                 isCompact: false,
-                extendsToNext: extendsToNext
+                extendsToNext: extendsToNext,
+                trackerStatus: trackerStatus,
+                onTrackerTap: trackerPrayer.map { prayer in
+                    {
+                        settings.hapticFeedback()
+                        let next = nextPrayerTrackerStatus(after: trackerStatus ?? .pending)
+                        PrayerTrackerStore.setStatus(next, for: prayer, on: date)
+                        WidgetCenter.shared.reloadAllTimelines()
+                    }
+                }
             )
 
             ForYouPrayerStackedCards(
                 entry: entry,
+                trackerStatus: trackerStatus,
                 selection: selection,
                 onSelectionChange: onSelectionChange
             )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @EnvironmentObject private var settings: Settings
+
+    private var trackerPrayer: PrayerTrackerPrayer? {
+        PrayerTrackerPrayer.resolve(from: entry.title)
+    }
+
+    private var trackerStatus: PrayerTrackerStatus? {
+        guard let trackerPrayer else { return nil }
+        return PrayerTrackerStore.status(for: trackerPrayer, on: date)
     }
 }
 
@@ -667,6 +737,14 @@ private func forYouPrayerTabs(for entry: ForYouTimelineEntry) -> [ForYouPrayerTa
     return isShurooqEntry ? [] : ForYouPrayerTab.allCases
 }
 
+private func nextPrayerTrackerStatus(after status: PrayerTrackerStatus) -> PrayerTrackerStatus {
+    switch status {
+    case .pending: return .prayed
+    case .prayed: return .missed
+    case .missed: return .pending
+    }
+}
+
 // Each tab card slides up behind the card above it by this amount,
 // so only the label strip peeks out at the bottom.
 private let tabCardOverlap: CGFloat = 22
@@ -674,6 +752,7 @@ private let tabPeekHeight: CGFloat = 28
 
 private struct ForYouPrayerStackedCards: View {
     let entry: ForYouTimelineEntry
+    let trackerStatus: PrayerTrackerStatus?
     let selection: ForYouPrayerCardSelection
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
     @State private var presentedTab: ForYouPrayerTab?
@@ -690,6 +769,7 @@ private struct ForYouPrayerStackedCards: View {
         VStack(spacing: 0) {
             ForYouTimelineEntryContentCard(
                 entry: entry,
+                trackerStatus: trackerStatus,
                 collapsed: expandedTab != nil
             )
             .zIndex(10)
@@ -767,6 +847,7 @@ private struct ForYouPrayerStackedCards: View {
 // used by ForYouPrayerStackedCards so the time pill / connector stays separate
 private struct ForYouTimelineEntryContentCard: View {
     let entry: ForYouTimelineEntry
+    var trackerStatus: PrayerTrackerStatus? = nil
     var collapsed: Bool = false
     @EnvironmentObject private var settings: Settings
 
@@ -787,6 +868,18 @@ private struct ForYouTimelineEntryContentCard: View {
                 Text(entry.kind.displayTitle)
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(ForYouPalette.secondaryInk)
+            }
+
+            if let trackerStatus {
+                Text(prayerTrackerLabel(for: trackerStatus))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(prayerTrackerTextColor(for: trackerStatus))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(prayerTrackerFillColor(for: trackerStatus))
+                    )
             }
 
             Text(entry.subtitle)
@@ -852,12 +945,67 @@ private struct ForYouTimelineEntryContentCard: View {
         .padding(collapsed ? 9 : 10)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(ForYouPalette.softCard)
+                .fill(cardFillColor)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(ForYouPalette.stroke, lineWidth: 1)
+                        .stroke(cardStrokeColor, lineWidth: 1)
                 )
         )
+    }
+
+    private var cardFillColor: Color {
+        switch trackerStatus {
+        case .prayed:
+            return Color.green.opacity(collapsed ? 0.12 : 0.14)
+        case .missed:
+            return Color.red.opacity(collapsed ? 0.08 : 0.10)
+        case .pending, .none:
+            return ForYouPalette.softCard
+        }
+    }
+
+    private var cardStrokeColor: Color {
+        switch trackerStatus {
+        case .prayed:
+            return Color.green.opacity(0.26)
+        case .missed:
+            return Color.red.opacity(0.20)
+        case .pending, .none:
+            return ForYouPalette.stroke
+        }
+    }
+
+    private func prayerTrackerLabel(for status: PrayerTrackerStatus) -> String {
+        switch status {
+        case .pending:
+            return isMalayAppLanguage() ? "Belum" : "Pending"
+        case .prayed:
+            return isMalayAppLanguage() ? "Selesai" : "Done"
+        case .missed:
+            return isMalayAppLanguage() ? "Tertinggal" : "Missed"
+        }
+    }
+
+    private func prayerTrackerFillColor(for status: PrayerTrackerStatus) -> Color {
+        switch status {
+        case .pending:
+            return Color.secondary.opacity(0.12)
+        case .prayed:
+            return Color.green.opacity(0.16)
+        case .missed:
+            return Color.red.opacity(0.12)
+        }
+    }
+
+    private func prayerTrackerTextColor(for status: PrayerTrackerStatus) -> Color {
+        switch status {
+        case .pending:
+            return ForYouPalette.secondaryInk
+        case .prayed:
+            return .green
+        case .missed:
+            return .red
+        }
     }
 }
 
@@ -1099,36 +1247,34 @@ private struct ForYouPrayerTabPanel: View {
     @ViewBuilder
     private var fullModeContent: some View {
         ScrollViewReader { proxy in
-            VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
                 ScrollView(showsIndicators: false) {
                     fullContent
                         .padding(.top, 2)
-                        .padding(.bottom, tab == .wirid && !content.sections.isEmpty ? 96 : 0)
+                        .padding(.bottom, tab == .wirid && !content.sections.isEmpty ? 112 : 0)
                 }
 
                 if tab == .wirid, !content.sections.isEmpty {
                     HStack(spacing: 12) {
-                        modalControlButton(systemName: "chevron.left", disabled: focusedSectionIndex == 0) {
+                        modalFloatingControlButton(systemName: "chevron.left", disabled: focusedSectionIndex == 0) {
                             handleWiridBackward(proxy: proxy)
                         }
-                        modalControlButton(systemName: "chevron.right", disabled: false) {
+                        modalFloatingControlButton(systemName: "chevron.right", disabled: false) {
                             handleWiridForward(proxy: proxy)
                         }
                     }
-                    .padding(.horizontal, 4)
-                    .padding(.top, 14)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                     .background(
-                        LinearGradient(
-                            colors: [
-                                ForYouPalette.canvas.opacity(0),
-                                ForYouPalette.canvas.opacity(0.92),
-                                ForYouPalette.canvas
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+                        Capsule(style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemBackground))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(ForYouPalette.stroke, lineWidth: 1)
+                            )
                     )
+                    .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: 8)
+                    .padding(.bottom, 10)
                 }
             }
             .task {
@@ -1163,21 +1309,21 @@ private struct ForYouPrayerTabPanel: View {
     }
 
     @ViewBuilder
-    private func modalControlButton(systemName: String, disabled: Bool, action: @escaping () -> Void) -> some View {
+    private func modalFloatingControlButton(systemName: String, disabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(ForYouPalette.ink)
-                .frame(maxWidth: .infinity)
-                .frame(height: 42)
+                .frame(width: 32, height: 32)
                 .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    Circle()
                         .fill(Color(uiColor: .secondarySystemBackground))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            Circle()
                                 .stroke(ForYouPalette.stroke, lineWidth: 1)
                         )
                 )
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
         }
         .buttonStyle(.plain)
         .disabled(disabled)
@@ -1215,9 +1361,9 @@ private struct ForYouPrayerTabPanel: View {
     private func focusSection(at index: Int, proxy: ScrollViewProxy) {
         guard content.sections.indices.contains(index) else { return }
         let section = content.sections[index]
-        focusedSectionID = section.id
-        expandedSectionIDs = [section.id]
         withAnimation(.spring(response: 0.32, dampingFraction: 0.84)) {
+            focusedSectionID = section.id
+            expandedSectionIDs = [section.id]
             proxy.scrollTo(section.id, anchor: .center)
         }
     }
@@ -2176,6 +2322,7 @@ private struct ForYouDayView: View {
                     if entry.kind == .prayer {
                         ForYouPrayerTimelineEntryView(
                             entry: entry,
+                            date: viewModel.plan.date,
                             isFocused: entry.id == focusedEntryID,
                             extendsToNext: entry.id != page.last?.id,
                             selection: prayerSelection ?? .main(entry.id),
@@ -2553,7 +2700,6 @@ struct ForYouRootView: View {
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
     @State private var scrollOffset: CGFloat = 0
     @State private var shouldAutoScrollOnAppear = ForYouSessionStore.shouldAutoScrollOnTodayAppear()
-    @State private var prayerTrackerRefreshToken = UUID()
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -2580,20 +2726,6 @@ struct ForYouRootView: View {
                     ScrollView(.vertical, showsIndicators: false) {
                         if let todayItem = currentDayViewModel {
                             VStack(spacing: 0) {
-                                if viewModel.profile.wantsPrayerTrackerCard == true {
-                                    ForYouPrayerTrackerCard(
-                                        date: todayItem.plan.date,
-                                        refreshToken: prayerTrackerRefreshToken,
-                                        onStatusChange: { prayer, status in
-                                            PrayerTrackerStore.setStatus(status, for: prayer, on: todayItem.plan.date)
-                                            WidgetCenter.shared.reloadAllTimelines()
-                                            prayerTrackerRefreshToken = UUID()
-                                        }
-                                    )
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 10)
-                                }
-
                                 ForYouDayView(
                                     viewModel: todayItem,
                                     greetingName: viewModel.profile.firstName,
@@ -2669,35 +2801,35 @@ struct ForYouRootView: View {
                 .zIndex(20)
             }
         }
-        .overlay(alignment: .bottom) {
-            if !prayerCardSequence.isEmpty, !viewModel.showOnboarding {
-                HStack(spacing: 10) {
-                    pageCycleControlButton(systemName: "chevron.left") {
-                        bottomBarVisibility.suppressNextShow()
-                        cyclePrayerSelection(direction: -1)
-                    }
-
-                    pageCycleControlButton(systemName: "chevron.right") {
-                        bottomBarVisibility.suppressNextShow()
-                        cyclePrayerSelection(direction: 1)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color(uiColor: .secondarySystemBackground))
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(ForYouPalette.stroke, lineWidth: 1)
-                        )
-                )
-                .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 4)
-                .padding(.bottom, bottomBarVisibility.isHidden ? 18 : 104)
-                .zIndex(10)
-                .animation(.easeOut(duration: 0.18), value: bottomBarVisibility.isHidden)
-            }
-        }
+//        .overlay(alignment: .bottom) {
+//            if !prayerCardSequence.isEmpty, !viewModel.showOnboarding {
+//                HStack(spacing: 10) {
+//                    pageCycleControlButton(systemName: "chevron.left") {
+//                        bottomBarVisibility.suppressNextShow()
+//                        cyclePrayerSelection(direction: -1)
+//                    }
+//
+//                    pageCycleControlButton(systemName: "chevron.right") {
+//                        bottomBarVisibility.suppressNextShow()
+//                        cyclePrayerSelection(direction: 1)
+//                    }
+//                }
+//                .padding(.horizontal, 16)
+//                .padding(.vertical, 10)
+//                .background(
+//                    Capsule(style: .continuous)
+//                        .fill(Color(uiColor: .secondarySystemBackground))
+//                        .overlay(
+//                            Capsule(style: .continuous)
+//                                .stroke(ForYouPalette.stroke, lineWidth: 1)
+//                        )
+//                )
+//                .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 4)
+//                .padding(.bottom, bottomBarVisibility.isHidden ? 18 : 104)
+//                .zIndex(10)
+//                .animation(.easeOut(duration: 0.18), value: bottomBarVisibility.isHidden)
+//            }
+//        }
         .overlay {
             if viewModel.showOnboarding {
                 ForYouSwipeOnboardingView(
