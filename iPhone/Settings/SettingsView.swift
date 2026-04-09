@@ -620,6 +620,7 @@ struct SettingsView: View {
         }
         #endif
     }
+
 }
 
 private struct DonationCelebrationOverlay: View {

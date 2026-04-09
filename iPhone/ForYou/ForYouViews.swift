@@ -4110,7 +4110,7 @@ struct ForYouRootView: View {
 
             if dimmedOverlayVisible {
                 Color.black
-                    .opacity(viewModel.showOnboarding ? 0.30 : 0.22)
+                    .opacity(viewModel.showOnboarding ? 0.60 : 0.48)
                     .ignoresSafeArea()
                     .transition(.opacity)
                     .zIndex(15)
@@ -4364,6 +4364,7 @@ private struct ForYouSwipeOnboardingView: View {
     @State private var wantsPrayerTrackerCard: Bool?
     @State private var swipeOffset: CGFloat = 0
     @State private var demoOffset: CGFloat = 0
+    @State private var swipeDecision: PrayerTrackerStatus?
     @State private var textPhase = false
     @State private var showConfetti = false
 
@@ -4424,7 +4425,7 @@ private struct ForYouSwipeOnboardingView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.24).ignoresSafeArea()
+            Color.black.opacity(0.62).ignoresSafeArea()
 
             VStack(spacing: 18) {
                 HStack(spacing: 8) {
@@ -4651,10 +4652,10 @@ private struct ForYouSwipeOnboardingView: View {
         .frame(maxWidth: .infinity, minHeight: 430, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(Color(uiColor: .systemBackground))
+                .fill(onboardingCardFill(for: kind, isBackground: isBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        .stroke(Color.white.opacity(isBackground ? 0.18 : 0.35), lineWidth: 1)
+                        .stroke(onboardingCardStroke(for: kind, isBackground: isBackground), lineWidth: 1)
                 )
         )
         .shadow(color: Color.black.opacity(isBackground ? 0.05 : 0.10), radius: 24, x: 0, y: 12)
@@ -4665,17 +4666,24 @@ private struct ForYouSwipeOnboardingView: View {
         HStack {
             Label(isMalayAppLanguage() ? "Tidak" : "No", systemImage: "arrow.left")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.secondary)
+                .foregroundStyle(swipeDecision == .missed ? Color.white : Color.red.opacity(0.82))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(swipeDecision == .missed ? Color.red : Color.red.opacity(0.12))
+                )
             Spacer()
             Label(isMalayAppLanguage() ? "Ya" : "Yes", systemImage: "arrow.right")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(settings.accentColor.color)
+                .foregroundStyle(swipeDecision == .prayed ? Color.white : Color.green.opacity(0.82))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(swipeDecision == .prayed ? Color.green : Color.green.opacity(0.12))
+                )
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(uiColor: .secondarySystemBackground))
-        )
     }
 
     private func animatedTextBlock(eyebrow: String, title: String, subtitle: String) -> some View {
@@ -4698,6 +4706,7 @@ private struct ForYouSwipeOnboardingView: View {
                 .font(.body)
                 .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
                 .opacity(textPhase ? 1 : 0)
                 .offset(y: textPhase ? 0 : 12)
                 .animation(.easeOut(duration: 0.28).delay(0.08), value: textPhase)
@@ -4708,6 +4717,13 @@ private struct ForYouSwipeOnboardingView: View {
         DragGesture(minimumDistance: 12)
             .onChanged { value in
                 swipeOffset = value.translation.width
+                if value.translation.width > 32 {
+                    swipeDecision = .prayed
+                } else if value.translation.width < -32 {
+                    swipeDecision = .missed
+                } else {
+                    swipeDecision = nil
+                }
             }
             .onEnded { value in
                 let threshold: CGFloat = 90
@@ -4718,6 +4734,7 @@ private struct ForYouSwipeOnboardingView: View {
                 } else {
                     withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                         swipeOffset = 0
+                        swipeDecision = nil
                     }
                 }
             }
@@ -4738,6 +4755,7 @@ private struct ForYouSwipeOnboardingView: View {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
             swipeOffset = 0
+            swipeDecision = nil
             switch currentCard {
             case .prayerTracker:
                 wantsPrayerTrackerCard = answer
@@ -4846,6 +4864,34 @@ private struct ForYouSwipeOnboardingView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color(uiColor: .secondarySystemBackground))
         )
+    }
+
+    private func onboardingCardFill(for kind: CardKind, isBackground: Bool) -> Color {
+        guard kind.isSwipeable, !isBackground else {
+            return Color(uiColor: .systemBackground)
+        }
+        switch swipeDecision {
+        case .prayed:
+            return Color.green.opacity(0.18)
+        case .missed:
+            return Color.red.opacity(0.18)
+        case .pending, .none:
+            return Color(uiColor: .systemBackground)
+        }
+    }
+
+    private func onboardingCardStroke(for kind: CardKind, isBackground: Bool) -> Color {
+        guard kind.isSwipeable, !isBackground else {
+            return Color.white.opacity(isBackground ? 0.18 : 0.35)
+        }
+        switch swipeDecision {
+        case .prayed:
+            return Color.green.opacity(0.42)
+        case .missed:
+            return Color.red.opacity(0.42)
+        case .pending, .none:
+            return Color.primary.opacity(0.08)
+        }
     }
 
     private func label(for style: ForYouReminderStyle) -> String {

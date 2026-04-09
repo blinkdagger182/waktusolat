@@ -4,6 +4,12 @@ import StoreKit
 import AVFoundation
 import UIKit
 import UserNotifications
+#if canImport(RevenueCat)
+import RevenueCat
+#endif
+#if canImport(RevenueCatUI)
+import RevenueCatUI
+#endif
 #if canImport(WatchConnectivity)
 import WatchConnectivity
 #endif
@@ -156,7 +162,7 @@ struct AlAdhanApp: App {
         case adhan
         case today
         case library
-        case settings
+        case plus
 
         var scrollSourceID: String {
             switch self {
@@ -166,8 +172,8 @@ struct AlAdhanApp: App {
                 return "today-tab-scroll"
             case .library:
                 return "library-tab-scroll"
-            case .settings:
-                return "settings-tab-scroll"
+            case .plus:
+                return "plus-tab-scroll"
             }
         }
     }
@@ -216,15 +222,19 @@ struct AlAdhanApp: App {
     @State private var lastUIRecoveryAt = Date.distantPast
     @State private var uiRecoveryTask: Task<Void, Never>?
     @State private var showUnsupportedRegionModal = false
-    @State private var prayerTrackerPromptPrayers: [PrayerTrackerPrayer] = []
     @State private var showPrayerTrackerPrompt = false
+    private let paywallOfferingIdentifier = "Waktu Donation"
 
     init() {
         RevenueCatManager.shared.configure()
         #if canImport(WatchConnectivity)
         PhoneWatchSyncManager.shared.activate()
         #endif
-        Self.configureTabBarAppearance()
+        if #available(iOS 26, *) {
+            Self.configureTabBarAppearanceForLiquidGlass()
+        } else {
+            Self.configureLegacyTabBarAppearance()
+        }
         let defaults = UserDefaults.standard
         defaults.set(defaults.integer(forKey: "appLaunchCountV1") + 1, forKey: "appLaunchCountV1")
         syncSharedAppLanguagePreference(defaults.string(forKey: AppLanguage.storageKey))
@@ -323,14 +333,13 @@ struct AlAdhanApp: App {
                 }
             }
             .overlay {
-                if showPrayerTrackerPrompt {
+                if showPrayerTrackerPrompt, !pendingPrayerTrackerPromptPrayers.isEmpty {
                     PrayerTrackerBacklogModal(
-                        prayers: prayerTrackerPromptPrayers,
+                        prayers: pendingPrayerTrackerPromptPrayers,
                         onSelectStatus: { prayer, status in
                             PrayerTrackerStore.setStatus(status, for: prayer)
                             WidgetCenter.shared.reloadAllTimelines()
-                            prayerTrackerPromptPrayers.removeAll { $0 == prayer }
-                            if prayerTrackerPromptPrayers.isEmpty {
+                            if pendingPrayerTrackerPromptPrayers.filter({ $0 != prayer }).isEmpty {
                                 PrayerTrackerStore.markPromptedToday()
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     showPrayerTrackerPrompt = false
@@ -528,12 +537,6 @@ struct AlAdhanApp: App {
             }
         }
         .onAppear {
-            if #unavailable(iOS 26) {
-                bottomBarVisibility.activate(
-                    source: selectedTab.scrollSourceID,
-                    hidesOnScroll: tabHidesOnScroll(selectedTab)
-                )
-            }
             if firstLaunchSheet {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     withAnimation {
@@ -545,14 +548,6 @@ struct AlAdhanApp: App {
                 Task {
                     await checkForMarketingModalUpdate(force: false)
                 }
-            }
-        }
-        .onChange(of: selectedTab) { newTab in
-            if #unavailable(iOS 26) {
-                bottomBarVisibility.activate(
-                    source: newTab.scrollSourceID,
-                    hidesOnScroll: tabHidesOnScroll(newTab)
-                )
             }
         }
         .sheet(
@@ -593,11 +588,11 @@ struct AlAdhanApp: App {
                 }
                 .tag(AppTab.library)
 
-            SettingsView()
+            supportTabContent
                 .tabItem {
-                    Label(isMalayAppLanguage() ? "Tetapan" : "Settings", systemImage: "gearshape")
+                    Label("Plus", systemImage: "moon.stars")
                 }
-                .tag(AppTab.settings)
+                .tag(AppTab.plus)
         }
     }
 
@@ -622,45 +617,46 @@ struct AlAdhanApp: App {
             .opacity(selectedTab == .library ? 1 : 0)
             .allowsHitTesting(selectedTab == .library)
 
-            SettingsView()
-                .opacity(selectedTab == .settings ? 1 : 0)
-                .allowsHitTesting(selectedTab == .settings)
+            supportTabContent
+                .opacity(selectedTab == .plus ? 1 : 0)
+                .allowsHitTesting(selectedTab == .plus)
         }
     }
 
     private var customBottomTabBar: some View {
-        HStack(spacing: 10) {
-            bottomTabBarButton(for: .adhan, systemImage: "safari", title: "Azan")
-            bottomTabBarButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
-            bottomTabBarButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
-        .frame(maxWidth: 254)
-        .background(
-            ZStack {
-                Capsule(style: .continuous)
-                    .fill(tabBarShellColor)
-
-                Capsule(style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .opacity(isDarkMode ? 0.28 : 0.72)
-
-                Capsule(style: .continuous)
-                    .strokeBorder(tabBarBorderColor, lineWidth: 1)
-
-                Capsule(style: .continuous)
-                    .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
-                    .blur(radius: 0.2)
+        HStack(spacing: 20) {
+            HStack(spacing: 10) {
+                bottomTabBarButton(for: .adhan, systemImage: "safari", title: "Azan")
+                bottomTabBarButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
+                bottomTabBarButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
             }
-        )
-        .clipShape(Capsule(style: .continuous))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
+            .frame(maxWidth: 254)
+            .background(
+                ZStack {
+                    Capsule(style: .continuous)
+                        .fill(tabBarShellColor)
+
+                    Capsule(style: .continuous)
+                        .fill(.ultraThinMaterial)
+                        .opacity(isDarkMode ? 0.28 : 0.72)
+
+                    Capsule(style: .continuous)
+                        .strokeBorder(tabBarBorderColor, lineWidth: 1)
+
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
+                        .blur(radius: 0.2)
+                }
+            )
+            .clipShape(Capsule(style: .continuous))
+
+            bottomTabBarButton(for: .plus, systemImage: "moon.stars", title: "Plus")
+        }
         .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.10), radius: 18, x: 0, y: 10)
+        .padding(.horizontal, 16)
         .padding(.bottom, 10)
-        .offset(y: bottomBarVisibility.isHidden ? 190 : 0)
-        .opacity(bottomBarVisibility.isHidden ? 0.001 : 1)
-        .allowsHitTesting(!bottomBarVisibility.isHidden)
-        .animation(.spring(response: 0.28, dampingFraction: 0.88), value: bottomBarVisibility.isHidden)
     }
 
     private func bottomTabBarButton(for tab: AppTab, systemImage: String, title: String) -> some View {
@@ -669,22 +665,49 @@ struct AlAdhanApp: App {
         return Button {
             settings.hapticFeedback()
             selectedTab = tab
+            if tab == .plus {
+                Task {
+                    await revenueCat.refreshOfferings()
+                }
+            }
         } label: {
             VStack(spacing: 3) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: tab == .plus ? 20 : 18, weight: .semibold))
 
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
+                if tab != .plus {
+                    Text(title)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                }
             }
             .foregroundStyle(isSelected ? selectedTabColor(for: tab) : unselectedTabColor)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 10)
+            .frame(maxWidth: tab == .plus ? nil : .infinity)
+            .frame(width: tab == .plus ? 66 : nil, height: tab == .plus ? 66 : nil)
+            .padding(.vertical, tab == .plus ? 0 : 10)
+            .padding(.horizontal, tab == .plus ? 0 : 10)
             .background(
                 ZStack {
-                    if isSelected {
+                    if tab == .plus {
+                        Circle()
+                            .fill(tabBarShellColor)
+
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .opacity(isDarkMode ? 0.28 : 0.72)
+
+                        Circle()
+                            .strokeBorder(tabBarBorderColor, lineWidth: 1)
+
+                        Circle()
+                            .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
+                            .blur(radius: 0.2)
+
+                        if isSelected {
+                            Circle()
+                                .fill(selectedTabBackgroundColor.opacity(isDarkMode ? 0.55 : 0.85))
+                        }
+                    } else if isSelected {
                         Capsule(style: .continuous)
                             .fill(selectedTabBackgroundColor)
 
@@ -695,8 +718,15 @@ struct AlAdhanApp: App {
                 }
             )
             .overlay(
-                Capsule(style: .continuous)
-                    .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
+                Group {
+                    if tab == .plus {
+                        Circle()
+                            .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
+                    } else {
+                        Capsule(style: .continuous)
+                            .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
+                    }
+                }
             )
             .shadow(
                 color: isSelected ? Color.black.opacity(isDarkMode ? 0.16 : 0.05) : Color.clear,
@@ -746,18 +776,51 @@ struct AlAdhanApp: App {
         switch tab {
         case .today:
             return Color(red: 0.98, green: 0.39, blue: 0.37)
-        case .adhan, .library, .settings:
+        case .plus:
+            return settings.accentColor.color
+        case .adhan, .library:
             return isDarkMode ? Color.white : Color.black.opacity(0.84)
         }
     }
 
     private func tabHidesOnScroll(_ tab: AppTab) -> Bool {
         switch tab {
-        case .today, .library:
-            return true
-        case .adhan, .settings:
+        case .adhan, .today, .library, .plus:
             return false
         }
+    }
+
+    @ViewBuilder
+    private var supportTabContent: some View {
+        NavigationView {
+            supportPaywallPage
+        }
+        .navigationViewStyle(.stack)
+    }
+
+    @ViewBuilder
+    private var supportPaywallPage: some View {
+        #if canImport(RevenueCatUI)
+        if let selectedOffering = revenueCat.offerings?.all[paywallOfferingIdentifier] {
+            PaywallView(offering: selectedOffering, displayCloseButton: false)
+        } else {
+            VStack(spacing: 16) {
+                ProgressView()
+                    .tint(settings.accentColor.color)
+                Text(isMalayAppLanguage() ? "Memuatkan Plus..." : "Loading Plus...")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .task {
+                await revenueCat.refreshOfferings()
+            }
+        }
+        #else
+        Text("RevenueCatUI not installed.")
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
     }
 
     private func presentPrayerTrackerPromptIfNeeded() {
@@ -767,26 +830,39 @@ struct AlAdhanApp: App {
         guard selectedTab == .today else { return }
         guard ForYouUserProfileService.load().wantsPrayerTrackerCard == true else { return }
         guard !PrayerTrackerStore.hasPromptedToday() else { return }
-
-        let pendingPrayers = PrayerTrackerStore.pendingBacklogPrayers(
-            currentPrayerName: settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish
-        )
-        guard !pendingPrayers.isEmpty else { return }
-
-        prayerTrackerPromptPrayers = pendingPrayers
+        guard !pendingPrayerTrackerPromptPrayers.isEmpty else { return }
         withAnimation(.easeInOut(duration: 0.2)) {
             showPrayerTrackerPrompt = true
             forYouPrayerTrackerPromptVisible = true
         }
     }
 
-    private static func configureTabBarAppearance() {
+    private var pendingPrayerTrackerPromptPrayers: [PrayerTrackerPrayer] {
+        PrayerTrackerStore.pendingBacklogPrayers(
+            currentPrayerName: settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish
+        )
+    }
+
+    private static func configureLegacyTabBarAppearance() {
         let defaultAppearance = UITabBarAppearance()
         defaultAppearance.configureWithDefaultBackground()
 
         UITabBar.appearance().standardAppearance = defaultAppearance
         UITabBar.appearance().scrollEdgeAppearance = defaultAppearance
         UITabBar.appearance().isTranslucent = false
+    }
+
+    @available(iOS 26, *)
+    private static func configureTabBarAppearanceForLiquidGlass() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = .clear
+        appearance.backgroundEffect = nil
+        appearance.shadowColor = .clear
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+        UITabBar.appearance().isTranslucent = true
     }
 
     private var storefrontRegionName: String {
@@ -1344,7 +1420,6 @@ private struct PrayerTrackerBacklogModal: View {
     let onSelectStatus: (PrayerTrackerPrayer, PrayerTrackerStatus) -> Void
     let onDismiss: () -> Void
 
-    @State private var selectedPrayer: PrayerTrackerPrayer?
     @State private var dragOffset: CGSize = .zero
     @State private var swipeDecision: PrayerTrackerStatus?
 
@@ -1412,16 +1487,9 @@ private struct PrayerTrackerBacklogModal: View {
             )
             .padding(.horizontal, 20)
         }
-        .onAppear {
-            selectedPrayer = prayers.first
-        }
         .onChange(of: prayers) { updatedPrayers in
             dragOffset = .zero
             swipeDecision = nil
-            if let selectedPrayer, updatedPrayers.contains(selectedPrayer) {
-                return
-            }
-            self.selectedPrayer = updatedPrayers.first
         }
     }
 

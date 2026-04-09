@@ -441,6 +441,7 @@ struct NotificationView: View {
     @State private var notifSettings: UNNotificationSettings?
     @State private var requestAccessAlertMessage: String?
     @State private var locationAccessAlertMessage: String?
+    @State private var todayPrayerCheckInEnabled: Bool = ForYouUserProfileService.load().wantsPrayerTrackerCard ?? true
     #if os(iOS)
     @State private var previewPlayer: AVAudioPlayer?
     #endif
@@ -466,29 +467,7 @@ struct NotificationView: View {
                 }
             }
 
-            Section(header: Text(appLocalized("PRAYER MESSAGE STYLE"))) {
-                NotificationStylePreviewCard(
-                    appName: "Waktu Solat",
-                    title: prayerPreviewTitle,
-                    messageBody: prayerPreviewBody,
-                    accentColor: settings.accentColor.color
-                )
-                .listRowSeparator(.hidden)
-
-                Picker(appLocalized("Prayer Notification Style"), selection: Binding(
-                    get: { settings.prayerNotificationMessageStyle },
-                    set: { settings.prayerNotificationMessageStyle = $0 }
-                )) {
-                    ForEach(PrayerNotificationMessageStyle.allCases) { style in
-                        Text(style.title).tag(style)
-                    }
-                }
-                .pickerStyle(.menu)
-
-                Text(settings.prayerNotificationMessageStyle.summary)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            prayerMessageStyleSection
 
             Section(header: Text(appLocalized("DAILY ZIKIR REMINDERS"))) {
                 Toggle(appLocalized("Send Daily Zikir Notifications"), isOn: $settings.zikirNotificationsEnabled.animation(.easeInOut))
@@ -549,7 +528,12 @@ struct NotificationView: View {
             }
         }
         .task { await refresh() }
-        .onAppear { syncNotificationState() }
+        .onAppear {
+            syncNotificationState()
+            let profile = ForYouUserProfileService.load()
+            todayPrayerCheckInEnabled = profile.wantsPrayerTrackerCard ?? true
+            syncForYouReminderStyleWithPrayerStyle()
+        }
         .onChange(of: scenePhase) { _ in
             if scenePhase == .active {
                 syncNotificationState()
@@ -621,6 +605,44 @@ struct NotificationView: View {
         }
     }
 
+    private var prayerMessageStyleSection: some View {
+        Section(header: Text(appLocalized("PRAYER MESSAGE STYLE"))) {
+            NotificationStylePreviewCard(
+                appName: "Waktu Solat",
+                title: prayerPreviewTitle,
+                messageBody: prayerPreviewBody,
+                accentColor: settings.accentColor.color
+            )
+            .listRowSeparator(.hidden)
+
+            Picker(appLocalized("Prayer Notification Style"), selection: Binding(
+                get: { settings.prayerNotificationMessageStyle },
+                set: {
+                    settings.prayerNotificationMessageStyle = $0
+                    syncForYouReminderStyleWithPrayerStyle()
+                }
+            )) {
+                ForEach(PrayerNotificationMessageStyle.allCases) { style in
+                    Text(style.title).tag(style)
+                }
+            }
+            .pickerStyle(.menu)
+
+            Text(settings.prayerNotificationMessageStyle.summary)
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Toggle(appLocalized("Prayer Check-in Cards"), isOn: $todayPrayerCheckInEnabled.animation(.easeInOut))
+                .font(.subheadline)
+                .tint(settings.accentColor.toggleTint)
+                .onChange(of: todayPrayerCheckInEnabled) { newValue in
+                    updateForYouProfile {
+                        $0.wantsPrayerTrackerCard = newValue
+                    }
+                }
+        }
+    }
+
     private var zikirPreviewTitle: String {
         switch settings.zikirNotificationMessageStyle {
         case .guided:
@@ -666,6 +688,33 @@ struct NotificationView: View {
             return isMalayAppLanguage()
                 ? "Maha Suci Allah • Subang Jaya, Selangor"
                 : "Glory be to Allah • Subang Jaya, Selangor"
+        }
+    }
+
+    private func updateForYouProfile(_ mutate: (inout ForYouUserProfile) -> Void) {
+        var profile = ForYouUserProfileService.load()
+        mutate(&profile)
+        profile.consistencyLevel = profile.consistencyLevel ?? .beginner
+        profile.primaryGoal = profile.primaryGoal ?? .preserveFajr
+        profile.reminderStyle = profile.reminderStyle ?? forYouReminderStyle(for: settings.prayerNotificationMessageStyle)
+        profile.wantsPrayerTrackerCard = profile.wantsPrayerTrackerCard ?? todayPrayerCheckInEnabled
+        ForYouUserProfileService.save(profile)
+    }
+
+    private func syncForYouReminderStyleWithPrayerStyle() {
+        updateForYouProfile {
+            $0.reminderStyle = forYouReminderStyle(for: settings.prayerNotificationMessageStyle)
+        }
+    }
+
+    private func forYouReminderStyle(for style: PrayerNotificationMessageStyle) -> ForYouReminderStyle {
+        switch style {
+        case .gentle:
+            return .gentle
+        case .standard:
+            return .balanced
+        case .concise:
+            return .focused
         }
     }
 
@@ -946,10 +995,11 @@ private struct NotificationStylePreviewCard: View {
                 }
 
                 Text(messageBody)
-                    .font(.system(size: 15, weight: .regular))
+                    .font(.system(size: 13, weight: .regular))
                     .foregroundColor(primaryTextColor)
                     .multilineTextAlignment(.leading)
-                    .lineLimit(2)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.92)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

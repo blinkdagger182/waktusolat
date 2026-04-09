@@ -708,6 +708,12 @@ struct AdhanSetupSheet: View {
                             zoneIdentifier: resolvedPrayerArea.regionId,
                             mode: .manual
                         )
+                    } else if settings.debugIndonesiaRegionId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        settings.setActivePrayerContext(
+                            locationDisplayName: settings.currentPhoneLocationName ?? settings.effectivePrayerLocationDisplayName,
+                            zoneIdentifier: nil,
+                            mode: .manual
+                        )
                     }
                 } else if settings.debugMalaysiaZoneCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     if !detectedZone.isEmpty {
@@ -721,6 +727,11 @@ struct AdhanSetupSheet: View {
                             mode: .manual
                         )
                     } else {
+                        settings.setActivePrayerContext(
+                            locationDisplayName: settings.currentPhoneLocationName ?? settings.effectivePrayerLocationDisplayName,
+                            zoneIdentifier: nil,
+                            mode: .manual
+                        )
                         Task { @MainActor in
                             await refreshAutoDetectedZone()
                         }

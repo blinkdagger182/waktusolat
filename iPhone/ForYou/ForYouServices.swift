@@ -1630,10 +1630,26 @@ final class ForYouPlanGeneratorService {
             "Sedikit konsisten boleh membawa seluruh hari.",
             "Kembali pada saat yang tepat, bukan setiap saat."
         ]
+        let balancedEn = [
+            "Clear moments, held with calm.",
+            "A steady return is enough for today.",
+            "Let each prayer fall into place without rush."
+        ]
+        let balancedMy = [
+            "Saat yang jelas, dipegang dengan tenang.",
+            "Kembali secara stabil sudah memadai untuk hari ini.",
+            "Biarkan setiap solat jatuh pada tempatnya tanpa tergesa-gesa."
+        ]
 
-        let lines = (profile.reminderStyle ?? .gentle) == .focused
-            ? (isMalayAppLanguage() ? focusedMy : focusedEn)
-            : (isMalayAppLanguage() ? gentleMy : gentleEn)
+        let lines: [String]
+        switch profile.reminderStyle ?? .gentle {
+        case .gentle:
+            lines = isMalayAppLanguage() ? gentleMy : gentleEn
+        case .balanced:
+            lines = isMalayAppLanguage() ? balancedMy : balancedEn
+        case .focused:
+            lines = isMalayAppLanguage() ? focusedMy : focusedEn
+        }
 
         let index = abs(weekday + Calendar.current.ordinality(of: .day, in: .year, for: date)!) % lines.count
         return lines[index]
