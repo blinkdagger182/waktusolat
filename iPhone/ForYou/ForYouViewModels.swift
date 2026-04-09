@@ -50,6 +50,16 @@ final class ForYouFeedViewModel: ObservableObject {
             ForYouDayViewModel(plan: plan, isLocked: index > 1 && !hasPremiumAccess)
         }
         selectedIndex = min(max(selectedIndex, 0), max(dayViewModels.count - 1, 0))
+
+        Task { [weak self] in
+            guard let self else { return }
+            let enrichedPlans = await generator.enrichPlansWithWeather(plans, settings: settings)
+            guard self.lastSignature == signature else { return }
+            self.dayViewModels = enrichedPlans.enumerated().map { index, plan in
+                ForYouDayViewModel(plan: plan, isLocked: index > 1 && !hasPremiumAccess)
+            }
+            self.selectedIndex = min(max(self.selectedIndex, 0), max(self.dayViewModels.count - 1, 0))
+        }
     }
 
     func saveProfile(_ profile: ForYouUserProfile, settings: Settings, hasPremiumAccess: Bool) {

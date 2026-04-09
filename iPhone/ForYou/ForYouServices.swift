@@ -1,5 +1,258 @@
 import Foundation
 
+struct ForYouWeatherSnapshot: Equatable {
+    let temperatureText: String
+    let conditionText: String
+    let symbolName: String
+    let fetchedAt: Date
+}
+
+actor ForYouWeatherService {
+    static let shared = ForYouWeatherService()
+
+    private struct CachedSnapshot {
+        let snapshot: ForYouWeatherSnapshot
+        let expiresAt: Date
+    }
+
+    private struct ForecastResponse: Decodable {
+        let current: CurrentWeather
+    }
+
+    private struct HourlyForecastResponse: Decodable {
+        let hourly: HourlyWeather
+    }
+
+    private struct CurrentWeather: Decodable {
+        let temperature2m: Double
+        let weatherCode: Int
+        let isDay: Int
+
+        enum CodingKeys: String, CodingKey {
+            case temperature2m = "temperature_2m"
+            case weatherCode = "weather_code"
+            case isDay = "is_day"
+        }
+    }
+
+    private struct HourlyWeather: Decodable {
+        let time: [String]
+        let temperature2m: [Double]
+        let precipitationProbability: [Int]
+        let weatherCode: [Int]
+        let isDay: [Int]
+
+        enum CodingKeys: String, CodingKey {
+            case time
+            case temperature2m = "temperature_2m"
+            case precipitationProbability = "precipitation_probability"
+            case weatherCode = "weather_code"
+            case isDay = "is_day"
+        }
+    }
+
+    private struct CachedDayForecast {
+        let valuesByHour: [Int: ForYouPrayerWeather]
+        let expiresAt: Date
+    }
+
+    private var cache: [String: CachedSnapshot] = [:]
+    private var dailyForecastCache: [String: CachedDayForecast] = [:]
+
+    func fetchCurrentWeather(for location: Location) async throws -> ForYouWeatherSnapshot {
+        let key = cacheKey(for: location)
+        let now = Date()
+
+        if let cached = cache[key], cached.expiresAt > now {
+            return cached.snapshot
+        }
+
+        var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(location.latitude)),
+            URLQueryItem(name: "longitude", value: String(location.longitude)),
+            URLQueryItem(name: "current", value: "temperature_2m,weather_code,is_day"),
+            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "forecast_days", value: "1")
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoded = try JSONDecoder().decode(ForecastResponse.self, from: data)
+        let descriptor = descriptor(for: decoded.current.weatherCode, isDay: decoded.current.isDay == 1)
+        let snapshot = ForYouWeatherSnapshot(
+            temperatureText: "\(Int(decoded.current.temperature2m.rounded()))°C",
+            conditionText: descriptor.title,
+            symbolName: descriptor.symbolName,
+            fetchedAt: now
+        )
+        cache[key] = CachedSnapshot(
+            snapshot: snapshot,
+            expiresAt: now.addingTimeInterval(20 * 60)
+        )
+        return snapshot
+    }
+
+    func weatherByHour(for location: Location, on date: Date) async throws -> [Int: ForYouPrayerWeather] {
+        let key = dailyCacheKey(for: location, date: date)
+        let now = Date()
+
+        if let cached = dailyForecastCache[key], cached.expiresAt > now {
+            return cached.valuesByHour
+        }
+
+        var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")
+        let dayString = dayFormatter.string(from: date)
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(location.latitude)),
+            URLQueryItem(name: "longitude", value: String(location.longitude)),
+            URLQueryItem(name: "hourly", value: "temperature_2m,precipitation_probability,weather_code,is_day"),
+            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "start_date", value: dayString),
+            URLQueryItem(name: "end_date", value: dayString)
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoded = try JSONDecoder().decode(HourlyForecastResponse.self, from: data)
+        let valuesByHour = makeHourlyForecastMap(from: decoded.hourly)
+        dailyForecastCache[key] = CachedDayForecast(
+            valuesByHour: valuesByHour,
+            expiresAt: now.addingTimeInterval(20 * 60)
+        )
+        return valuesByHour
+    }
+
+    private func cacheKey(for location: Location) -> String {
+        "\(rounded(location.latitude))|\(rounded(location.longitude))"
+    }
+
+    private func dailyCacheKey(for location: Location, date: Date) -> String {
+        "\(cacheKey(for: location))|\(dayFormatter.string(from: date))"
+    }
+
+    private func rounded(_ value: Double) -> String {
+        String(format: "%.2f", value)
+    }
+
+    private func makeHourlyForecastMap(from hourly: HourlyWeather) -> [Int: ForYouPrayerWeather] {
+        let count = min(
+            hourly.time.count,
+            hourly.temperature2m.count,
+            hourly.precipitationProbability.count,
+            hourly.weatherCode.count,
+            hourly.isDay.count
+        )
+
+        var result: [Int: ForYouPrayerWeather] = [:]
+        for index in 0..<count {
+            guard let date = parseHourlyDate(hourly.time[index]) else { continue }
+            let descriptor = descriptor(for: hourly.weatherCode[index], isDay: hourly.isDay[index] == 1)
+            result[Calendar.current.component(.hour, from: date)] = ForYouPrayerWeather(
+                temperatureCelsius: Int(hourly.temperature2m[index].rounded()),
+                precipitationProbability: hourly.precipitationProbability[index],
+                conditionText: descriptor.title,
+                symbolName: descriptor.symbolName
+            )
+        }
+        return result
+    }
+
+    private func descriptor(for weatherCode: Int, isDay: Bool) -> (title: String, symbolName: String) {
+        switch weatherCode {
+        case 0:
+            return (
+                isMalayAppLanguage() ? "Cerah" : "Clear",
+                isDay ? "sun.max.fill" : "moon.stars.fill"
+            )
+        case 1:
+            return (
+                isMalayAppLanguage() ? "Hampir cerah" : "Mostly clear",
+                isDay ? "sun.max.fill" : "moon.fill"
+            )
+        case 2:
+            return (
+                isMalayAppLanguage() ? "Sedikit berawan" : "Partly cloudy",
+                isDay ? "cloud.sun.fill" : "cloud.moon.fill"
+            )
+        case 3:
+            return (
+                isMalayAppLanguage() ? "Berawan" : "Cloudy",
+                "cloud.fill"
+            )
+        case 45, 48:
+            return (
+                isMalayAppLanguage() ? "Berkabus" : "Foggy",
+                "cloud.fog.fill"
+            )
+        case 51, 53, 55, 56, 57:
+            return (
+                isMalayAppLanguage() ? "Gerimis" : "Drizzle",
+                "cloud.drizzle.fill"
+            )
+        case 61, 63, 65, 66, 67, 80, 81, 82:
+            return (
+                isMalayAppLanguage() ? "Hujan" : "Rain",
+                "cloud.rain.fill"
+            )
+        case 71, 73, 75, 77, 85, 86:
+            return (
+                isMalayAppLanguage() ? "Salji" : "Snow",
+                "cloud.snow.fill"
+            )
+        case 95, 96, 99:
+            return (
+                isMalayAppLanguage() ? "Ribut petir" : "Thunderstorm",
+                "cloud.bolt.rain.fill"
+            )
+        default:
+            return (
+                isMalayAppLanguage() ? "Cuaca semasa" : "Current weather",
+                "cloud.sun.fill"
+            )
+        }
+    }
+
+    private var dayFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }
+
+    private var hourlyDateFormatter: ISO8601DateFormatter {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }
+
+    private var hourlyDateFormatterWithFractionalSeconds: ISO8601DateFormatter {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }
+
+    private func parseHourlyDate(_ rawValue: String) -> Date? {
+        hourlyDateFormatterWithFractionalSeconds.date(from: rawValue)
+            ?? hourlyDateFormatter.date(from: rawValue)
+    }
+}
+
 enum ForYouUserProfileService {
     private static let storageKey = "forYou.userProfile.v1"
     private static let defaults = UserDefaults.standard
@@ -833,6 +1086,54 @@ final class ForYouPlanGeneratorService {
         }
     }
 
+    func enrichPlansWithWeather(
+        _ plans: [ForYouDailyPlan],
+        settings: Settings
+    ) async -> [ForYouDailyPlan] {
+        guard let location = settings.currentLocation, location.latitude != 1000, location.longitude != 1000 else {
+            return plans
+        }
+
+        var enrichedPlans = plans
+        for index in enrichedPlans.indices {
+            let day = enrichedPlans[index].date
+            guard let weatherByHour = try? await ForYouWeatherService.shared.weatherByHour(for: location, on: day) else {
+                continue
+            }
+
+            enrichedPlans[index] = ForYouDailyPlan(
+                id: enrichedPlans[index].id,
+                date: enrichedPlans[index].date,
+                title: enrichedPlans[index].title,
+                subtitle: enrichedPlans[index].subtitle,
+                locationLine: enrichedPlans[index].locationLine,
+                sourceLine: enrichedPlans[index].sourceLine,
+                segments: enrichedPlans[index].segments,
+                timelineEntries: enrichedPlans[index].timelineEntries.map { entry in
+                    let hour = Calendar.current.component(.hour, from: entry.time)
+                    return ForYouTimelineEntry(
+                        id: entry.id,
+                        kind: entry.kind,
+                        momentType: entry.momentType,
+                        time: entry.time,
+                        hourBucket: entry.hourBucket,
+                        title: entry.title,
+                        subtitle: entry.subtitle,
+                        icon: entry.icon,
+                        arabicText: entry.arabicText,
+                        reference: entry.reference,
+                        recommendation: entry.recommendation,
+                        weather: entry.kind == .prayer ? weatherByHour[hour] : nil
+                    )
+                },
+                isPremiumPreview: enrichedPlans[index].isPremiumPreview,
+                personalizationReason: enrichedPlans[index].personalizationReason
+            )
+        }
+
+        return enrichedPlans
+    }
+
     func generatePlan(
         for date: Date,
         settings: Settings,
@@ -924,7 +1225,7 @@ final class ForYouPlanGeneratorService {
 //        let featured = WiridContentRepository.featuredItem(forPrayer: "fajr")
 //        let sub = WiridContentRepository.shortSubtitle(forPrayer: "fajr") // short wirid
 
-        // Syuruk / Shurooq — prayer entry only, no wirid (it's a forbidden prayer time)
+        // Syuruk / Shurooq — sunrise marker only, never attach wirid or doa cards here.
         if let sunrise = timeline.sunrise {
             entries.append(makeTimelineEntry(
                 id: "\(iso)-syuruk",
@@ -969,14 +1270,14 @@ final class ForYouPlanGeneratorService {
 //            }
         }
 
-        // Dhuha — with wirid card 5 min later
+        // Dhuha
         if let dhuha = timeline.dhuha {
             entries.append(makeTimelineEntry(
                 id: "\(iso)-dhuha",
                 kind: .prayer,
                 momentType: .dhuha,
                 time: dhuha,
-                title: isMalayAppLanguage() ? "Solat Dhuha" : "Dhuha Prayer",
+                title: "Dhuha",
                 subtitle: isMalayAppLanguage() ? "2–8 rakaat, amalan sunnah pagi" : "2–8 rak'ahs, a sunnah of the morning",
                 icon: "sun.max.fill",
                 arabicText: "صَلَاةُ الضُّحَى",
@@ -1228,7 +1529,8 @@ final class ForYouPlanGeneratorService {
             icon: icon,
             arabicText: arabicText,
             reference: reference,
-            recommendation: recommendation
+            recommendation: recommendation,
+            weather: nil
         )
     }
 

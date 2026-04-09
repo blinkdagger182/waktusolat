@@ -535,6 +535,29 @@ private struct ForYouTimelineRailView: View {
                         )
                 )
 
+            if let weather = entry.weather {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Image(systemName: weather.symbolName)
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("\(weather.temperatureCelsius)°C")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
+                    }
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "cloud.rain")
+                            .font(.system(size: 9, weight: .semibold))
+                        Text("\(weather.precipitationProbability)% \(isMalayAppLanguage() ? "hujan" : "rain")")
+                            .font(.system(size: 10, weight: .medium, design: .rounded).monospacedDigit())
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.85))
+                }
+                .padding(.top, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             RoundedRectangle(cornerRadius: 1, style: .continuous)
                 .fill(isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke)
                 .frame(width: 2)
@@ -626,6 +649,24 @@ private enum ForYouPrayerCardSelection: Equatable {
     }
 }
 
+private func forYouPrayerTabs(for entry: ForYouTimelineEntry) -> [ForYouPrayerTab] {
+    let normalizedID = entry.id.lowercased()
+    let normalizedTitle = entry.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+    let isShurooqEntry =
+        normalizedID.hasSuffix("-syuruk") ||
+        normalizedID.contains("-syuruk-") ||
+        normalizedID.hasSuffix("-shurooq") ||
+        normalizedID.contains("-shurooq-") ||
+        normalizedID.hasSuffix("-sunrise") ||
+        normalizedID.contains("-sunrise-") ||
+        normalizedTitle == "syuruk" ||
+        normalizedTitle == "shurooq" ||
+        normalizedTitle == "sunrise"
+
+    return isShurooqEntry ? [] : ForYouPrayerTab.allCases
+}
+
 // Each tab card slides up behind the card above it by this amount,
 // so only the label strip peeks out at the bottom.
 private let tabCardOverlap: CGFloat = 22
@@ -654,7 +695,7 @@ private struct ForYouPrayerStackedCards: View {
             .zIndex(10)
             .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
 
-            ForEach(Array(ForYouPrayerTab.allCases.enumerated()), id: \.element) { index, tab in
+            ForEach(Array(forYouPrayerTabs(for: entry).enumerated()), id: \.element) { index, tab in
                 tabCard(tab: tab, index: index)
                     .padding(.top, topPadding(for: index))
                     .zIndex(zIndex(for: tab, index: index))
@@ -718,7 +759,7 @@ private struct ForYouPrayerStackedCards: View {
     }
 
     private func zIndex(for tab: ForYouPrayerTab, index: Int) -> Double {
-        return Double(ForYouPrayerTab.allCases.count - index)
+        return Double(forYouPrayerTabs(for: entry).count - index)
     }
 }
 
@@ -825,11 +866,9 @@ private struct ForYouPrayerTabModalView: View {
     let tab: ForYouPrayerTab
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            ForYouPrayerTabPanel(entry: entry, tab: tab, mode: .full)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
-        }
+        ForYouPrayerTabPanel(entry: entry, tab: tab, mode: .full)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
         .background(ForYouPalette.canvas.ignoresSafeArea())
     }
 }
@@ -847,6 +886,7 @@ private struct ForYouPrayerTabPanel: View {
 
     @StateObject private var player = ForYouAudioPlayer()
     @State private var expandedSectionIDs: Set<String> = []
+    @State private var focusedSectionID: String?
     @EnvironmentObject private var settings: Settings
 
     private struct PanelSection: Identifiable {
@@ -894,7 +934,7 @@ private struct ForYouPrayerTabPanel: View {
                     if mode == .preview {
                         previewContent
                     } else {
-                        fullContent
+                        fullModeContent
                     }
                 }
                 .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -981,7 +1021,7 @@ private struct ForYouPrayerTabPanel: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("\(index + 1). \(section.title)")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(tab.color)
+                        .foregroundStyle(modalAccentTextColor)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if let progress = section.progress {
@@ -1015,12 +1055,12 @@ private struct ForYouPrayerTabPanel: View {
                                 Image(systemName: isSectionExpanded(section.id) ? "chevron.up" : "chevron.down")
                                     .font(.system(size: 11, weight: .semibold))
                             }
-                            .foregroundStyle(tab.color)
+                            .foregroundStyle(modalAccentTextColor)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(tab.color.opacity(0.10))
+                                    .fill(modalAccentFill)
                             )
                         }
                         .buttonStyle(.plain)
@@ -1033,10 +1073,67 @@ private struct ForYouPrayerTabPanel: View {
                         translationContent(for: section)
                     }
                 }
+                .id(section.id)
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(uiColor: .secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(
+                                    focusedSectionID == section.id
+                                        ? modalAccentTextColor.opacity(0.35)
+                                        : ForYouPalette.stroke,
+                                    lineWidth: 1
+                                )
+                        )
+                )
 
                 if index < content.sections.count - 1 {
                     Divider().opacity(0.35)
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var fullModeContent: some View {
+        ScrollViewReader { proxy in
+            VStack(spacing: 0) {
+                ScrollView(showsIndicators: false) {
+                    fullContent
+                        .padding(.top, 2)
+                        .padding(.bottom, tab == .wirid && !content.sections.isEmpty ? 96 : 0)
+                }
+
+                if tab == .wirid, !content.sections.isEmpty {
+                    HStack(spacing: 12) {
+                        modalControlButton(systemName: "chevron.left", disabled: focusedSectionIndex == 0) {
+                            handleWiridBackward(proxy: proxy)
+                        }
+                        modalControlButton(systemName: "chevron.right", disabled: false) {
+                            handleWiridForward(proxy: proxy)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.top, 14)
+                    .padding(.bottom, 8)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                ForYouPalette.canvas.opacity(0),
+                                ForYouPalette.canvas.opacity(0.92),
+                                ForYouPalette.canvas
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+            }
+            .task {
+                guard mode == .full, focusedSectionID == nil else { return }
+                focusSection(at: 0, proxy: proxy)
             }
         }
     }
@@ -1053,8 +1150,84 @@ private struct ForYouPrayerTabPanel: View {
         if expandedSectionIDs.contains(id) {
             expandedSectionIDs.remove(id)
         } else {
-            expandedSectionIDs.insert(id)
+            expandedSectionIDs = [id]
         }
+    }
+
+    private var modalAccentTextColor: Color {
+        tab == .doa ? Color.blue.opacity(0.88) : tab.color
+    }
+
+    private var modalAccentFill: Color {
+        tab == .doa ? Color.blue.opacity(0.14) : tab.color.opacity(0.10)
+    }
+
+    @ViewBuilder
+    private func modalControlButton(systemName: String, disabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(ForYouPalette.ink)
+                .frame(maxWidth: .infinity)
+                .frame(height: 42)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(uiColor: .secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(ForYouPalette.stroke, lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .opacity(disabled ? 0.45 : 1)
+    }
+
+    private func handleWiridForward(proxy: ScrollViewProxy) {
+        guard !content.sections.isEmpty else { return }
+
+        let currentIndex = focusedSectionIndex ?? 0
+        if let progress = content.sections[currentIndex].progress {
+            let currentCount = ForYouDhikrProgressStore.count(for: progress.storageID)
+            if currentCount < progress.target {
+                triggerDhikrProgress(for: progress)
+                return
+            }
+        }
+
+        let nextIndex = min(currentIndex + 1, content.sections.count - 1)
+        focusSection(at: nextIndex, proxy: proxy)
+    }
+
+    private func handleWiridBackward(proxy: ScrollViewProxy) {
+        guard !content.sections.isEmpty else { return }
+        let currentIndex = focusedSectionIndex ?? 0
+        let previousIndex = max(currentIndex - 1, 0)
+        focusSection(at: previousIndex, proxy: proxy)
+    }
+
+    private var focusedSectionIndex: Int? {
+        guard let focusedSectionID else { return nil }
+        return content.sections.firstIndex(where: { $0.id == focusedSectionID })
+    }
+
+    private func focusSection(at index: Int, proxy: ScrollViewProxy) {
+        guard content.sections.indices.contains(index) else { return }
+        let section = content.sections[index]
+        focusedSectionID = section.id
+        expandedSectionIDs = [section.id]
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.84)) {
+            proxy.scrollTo(section.id, anchor: .center)
+        }
+    }
+
+    private func triggerDhikrProgress(for descriptor: DhikrProgressDescriptor) {
+        NotificationCenter.default.post(
+            name: .forYouDhikrProgressTrigger,
+            object: nil,
+            userInfo: ["storageID": descriptor.storageID]
+        )
     }
 
     @ViewBuilder
@@ -1270,6 +1443,13 @@ private struct ForYouDhikrProgressBar: View {
         .onAppear {
             count = ForYouDhikrProgressStore.count(for: descriptor.storageID)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .forYouDhikrProgressTrigger)) { notification in
+            guard
+                let storageID = notification.userInfo?["storageID"] as? String,
+                storageID == descriptor.storageID
+            else { return }
+            increment()
+        }
     }
 
     private func increment() {
@@ -1296,6 +1476,10 @@ private struct ForYouDhikrProgressBar: View {
             }
         }
     }
+}
+
+private extension Notification.Name {
+    static let forYouDhikrProgressTrigger = Notification.Name("forYouDhikrProgressTrigger")
 }
 
 private struct ForYouShakeEffect: GeometryEffect {
@@ -1939,7 +2123,7 @@ private struct ForYouDayView: View {
 
     private var prayerCardSequence: [ForYouPrayerCardSelection] {
         prayerEntries.flatMap { entry in
-            [ForYouPrayerCardSelection.main(entry.id)] + ForYouPrayerTab.allCases.map { .tab(entry.id, $0) }
+            [ForYouPrayerCardSelection.main(entry.id)] + forYouPrayerTabs(for: entry).map { .tab(entry.id, $0) }
         }
     }
 
@@ -2107,60 +2291,140 @@ private struct ForYouPrayerTrackerCard: View {
     let onStatusChange: (PrayerTrackerPrayer, PrayerTrackerStatus) -> Void
 
     @EnvironmentObject private var settings: Settings
+    @State private var weatherSnapshot: ForYouWeatherSnapshot?
+
+    private struct TimelineItem: Identifiable {
+        let prayer: PrayerTrackerPrayer
+        let time: Date?
+        let status: PrayerTrackerStatus
+        let isCurrent: Bool
+
+        var id: PrayerTrackerPrayer { prayer }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(isMalayAppLanguage() ? "Penjejak Solat" : "Prayer Tracker")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(ForYouPalette.ink)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(isMalayAppLanguage() ? "Penjejak Solat" : "Prayer Tracker")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
+
+                    if let weatherSnapshot {
+                        HStack(spacing: 8) {
+                            Image(systemName: weatherSnapshot.symbolName)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.teal)
+                            Text("\(weatherSnapshot.temperatureText) • \(weatherSnapshot.conditionText)")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(ForYouPalette.secondaryInk)
+                        }
+                    }
+
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(ForYouFormatters.monthDay.string(from: date))
+                            .font(.system(size: 22, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.ink)
+
+                        Text(ForYouFormatters.year.string(from: date))
+                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .foregroundStyle(ForYouPalette.secondaryInk.opacity(0.6))
+                    }
+
+                    Text(ForYouFormatters.weekday.string(from: date))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.secondaryInk)
+                }
 
                 Spacer()
 
-                Text("\(PrayerTrackerStore.completedCount(on: date))/\(PrayerTrackerPrayer.allCases.count)")
-                    .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(.green)
+                VStack(alignment: .trailing, spacing: 10) {
+                    Text("\(PrayerTrackerStore.completedCount(on: date))/\(PrayerTrackerPrayer.allCases.count)")
+                        .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(.green)
+
+                    ProgressView(
+                        value: Double(PrayerTrackerStore.completedCount(on: date)),
+                        total: Double(PrayerTrackerPrayer.allCases.count)
+                    )
+                    .tint(.green)
+                    .frame(width: 92)
+                }
             }
 
-            Text(isMalayAppLanguage() ? "Ketik untuk pusing status: belum, selesai, atau tertinggal." : "Tap to cycle each prayer between pending, done, and missed.")
+            Text(isMalayAppLanguage() ? "Ikut garis masa solat hari ini. Ketik satu baris untuk pusing status: belum, selesai, atau tertinggal." : "Follow today’s prayer timeline. Tap any row to cycle between pending, done, and missed.")
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(ForYouPalette.secondaryInk)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(PrayerTrackerPrayer.allCases) { prayer in
-                    let status = PrayerTrackerStore.status(for: prayer, on: date)
-
+            VStack(spacing: 10) {
+                ForEach(Array(timelineItems.enumerated()), id: \.element.id) { index, item in
                     Button {
                         settings.hapticFeedback()
-                        onStatusChange(prayer, nextStatus(after: status))
+                        onStatusChange(item.prayer, nextStatus(after: item.status))
                     } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
+                        HStack(alignment: .top, spacing: 12) {
+                            VStack(spacing: 0) {
                                 Circle()
-                                    .fill(color(for: status))
-                                    .frame(width: 10, height: 10)
-                                Text(prayer.localizedTitle)
-                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(ForYouPalette.ink)
-                                    .lineLimit(1)
-                                Spacer(minLength: 0)
-                            }
+                                    .fill(color(for: item.status))
+                                    .frame(width: 12, height: 12)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(item.isCurrent ? .green : color(for: item.status).opacity(0.22), lineWidth: item.isCurrent ? 5 : 1)
+                                            .frame(width: item.isCurrent ? 20 : 12, height: item.isCurrent ? 20 : 12)
+                                    )
+                                    .padding(.top, 4)
 
-                            Text(label(for: status))
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
-                                .foregroundStyle(color(for: status))
-                                .lineLimit(1)
+                                if index < timelineItems.count - 1 {
+                                    Rectangle()
+                                        .fill(color(for: item.status).opacity(item.status == .pending ? 0.20 : 0.32))
+                                        .frame(width: 2)
+                                        .frame(maxHeight: .infinity)
+                                        .padding(.top, 6)
+                                }
+                            }
+                            .frame(width: 20)
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text(item.prayer.localizedTitle)
+                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(ForYouPalette.ink)
+
+                                    if item.isCurrent {
+                                        Text(isMalayAppLanguage() ? "Sekarang" : "Now")
+                                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                                            .foregroundStyle(.green)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(
+                                                Capsule(style: .continuous)
+                                                    .fill(Color.green.opacity(0.12))
+                                            )
+                                    }
+
+                                    Spacer(minLength: 0)
+
+                                    Text(timeLabel(for: item.time))
+                                        .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                                        .foregroundStyle(ForYouPalette.secondaryInk)
+                                }
+
+                                Text(label(for: item.status))
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundStyle(color(for: item.status))
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(color(for: item.status).opacity(item.isCurrent ? 0.14 : 0.10))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            .stroke(color(for: item.status).opacity(item.isCurrent ? 0.32 : 0.18), lineWidth: 1)
+                                    )
+                            )
                         }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(color(for: status).opacity(0.10))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(color(for: status).opacity(0.20), lineWidth: 1)
-                                )
-                        )
                     }
                     .buttonStyle(.plain)
                 }
@@ -2176,6 +2440,9 @@ private struct ForYouPrayerTrackerCard: View {
                         .stroke(ForYouPalette.stroke, lineWidth: 1)
                 )
         )
+        .task(id: weatherRequestKey) {
+            await loadWeather()
+        }
     }
 
     private func nextStatus(after status: PrayerTrackerStatus) -> PrayerTrackerStatus {
@@ -2203,6 +2470,77 @@ private struct ForYouPrayerTrackerCard: View {
         case .prayed: return .green
         case .missed: return .red
         }
+    }
+
+    private var timelineItems: [TimelineItem] {
+        let prayers = prayerLookup
+        let now = Date()
+
+        return PrayerTrackerPrayer.allCases.enumerated().map { index, trackerPrayer in
+            let time = prayers[trackerPrayer]
+            let nextTime = PrayerTrackerPrayer.allCases.dropFirst(index + 1).compactMap { prayers[$0] }.first
+            let isCurrent = isSameDayAsToday && {
+                guard let time else { return false }
+                if let nextTime {
+                    return now >= time && now < nextTime
+                }
+                return now >= time
+            }()
+
+            return TimelineItem(
+                prayer: trackerPrayer,
+                time: time,
+                status: PrayerTrackerStore.status(for: trackerPrayer, on: date),
+                isCurrent: isCurrent
+            )
+        }
+    }
+
+    private var prayerLookup: [PrayerTrackerPrayer: Date] {
+        let prayers = settings.getPrayerTimes(for: date, fullPrayers: true)
+            ?? settings.getPrayerTimes(for: date)
+            ?? []
+
+        return Dictionary(uniqueKeysWithValues: PrayerTrackerPrayer.allCases.compactMap { trackerPrayer in
+            guard let prayer = prayers.first(where: { trackerPrayer.matches($0.nameTransliteration) }) else {
+                return nil
+            }
+            return (trackerPrayer, prayer.time)
+        })
+    }
+
+    private var weatherRequestKey: String {
+        guard let location = settings.currentLocation else { return "no-location" }
+        return "\(location.latitude)|\(location.longitude)|\(Calendar.current.startOfDay(for: date).timeIntervalSince1970)"
+    }
+
+    private var isSameDayAsToday: Bool {
+        Calendar.current.isDateInToday(date)
+    }
+
+    private func timeLabel(for time: Date?) -> String {
+        guard let time else { return "--:--" }
+        return ForYouFormatters.shortTime.string(from: time)
+    }
+
+    @MainActor
+    private func loadWeather() async {
+        guard let location = settings.currentLocation, location.latitude != 1000, location.longitude != 1000 else {
+            weatherSnapshot = nil
+            return
+        }
+
+        do {
+            weatherSnapshot = try await ForYouWeatherService.shared.fetchCurrentWeather(for: location)
+        } catch {
+            weatherSnapshot = nil
+        }
+    }
+}
+
+private extension PrayerTrackerPrayer {
+    func matches(_ rawPrayerName: String) -> Bool {
+        Self.resolve(from: rawPrayerName) == self
     }
 }
 
@@ -2493,7 +2831,7 @@ struct ForYouRootView: View {
 
     private var prayerCardSequence: [ForYouPrayerCardSelection] {
         prayerEntries.flatMap { entry in
-            [ForYouPrayerCardSelection.main(entry.id)] + ForYouPrayerTab.allCases.map { .tab(entry.id, $0) }
+            [ForYouPrayerCardSelection.main(entry.id)] + forYouPrayerTabs(for: entry).map { .tab(entry.id, $0) }
         }
     }
 

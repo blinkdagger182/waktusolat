@@ -124,6 +124,13 @@ struct ForYouTimelineRecommendation: Codable {
     let shortDescription: String
 }
 
+struct ForYouPrayerWeather: Codable, Equatable {
+    let temperatureCelsius: Int
+    let precipitationProbability: Int
+    let conditionText: String
+    let symbolName: String
+}
+
 struct ForYouTimelineEntry: Identifiable, Codable {
     let id: String
     let kind: ForYouTimelineEntryKind
@@ -136,6 +143,7 @@ struct ForYouTimelineEntry: Identifiable, Codable {
     let arabicText: String?
     let reference: String?
     let recommendation: ForYouTimelineRecommendation?
+    let weather: ForYouPrayerWeather?
 }
 
 struct DoaItem: Identifiable {
