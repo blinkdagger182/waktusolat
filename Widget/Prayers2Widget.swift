@@ -83,6 +83,16 @@ struct Prayers2EntryView: View {
                     .font(.headline)
                     .padding(.vertical, 4)
                 }
+
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                    Text("\(entry.completedPrayerCount)/\(entry.totalPrayerCount) \(isMalayAppLanguage() ? "solat selesai" : "prayers done")")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
                 
                 Spacer()
 

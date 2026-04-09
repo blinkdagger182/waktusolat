@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import UIKit
+import WidgetKit
 
 private enum ForYouPalette {
     static let canvas    = Color(uiColor: .systemGroupedBackground)
@@ -2100,6 +2101,111 @@ private struct ForYouVerticalPager<Content: View>: View {
     }
 }
 
+private struct ForYouPrayerTrackerCard: View {
+    let date: Date
+    let refreshToken: UUID
+    let onStatusChange: (PrayerTrackerPrayer, PrayerTrackerStatus) -> Void
+
+    @EnvironmentObject private var settings: Settings
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(isMalayAppLanguage() ? "Penjejak Solat" : "Prayer Tracker")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+
+                Spacer()
+
+                Text("\(PrayerTrackerStore.completedCount(on: date))/\(PrayerTrackerPrayer.allCases.count)")
+                    .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(.green)
+            }
+
+            Text(isMalayAppLanguage() ? "Ketik untuk pusing status: belum, selesai, atau tertinggal." : "Tap to cycle each prayer between pending, done, and missed.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(ForYouPalette.secondaryInk)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(PrayerTrackerPrayer.allCases) { prayer in
+                    let status = PrayerTrackerStore.status(for: prayer, on: date)
+
+                    Button {
+                        settings.hapticFeedback()
+                        onStatusChange(prayer, nextStatus(after: status))
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Circle()
+                                    .fill(color(for: status))
+                                    .frame(width: 10, height: 10)
+                                Text(prayer.localizedTitle)
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(ForYouPalette.ink)
+                                    .lineLimit(1)
+                                Spacer(minLength: 0)
+                            }
+
+                            Text(label(for: status))
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(color(for: status))
+                                .lineLimit(1)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(color(for: status).opacity(0.10))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(color(for: status).opacity(0.20), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .id(refreshToken)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(ForYouPalette.stroke, lineWidth: 1)
+                )
+        )
+    }
+
+    private func nextStatus(after status: PrayerTrackerStatus) -> PrayerTrackerStatus {
+        switch status {
+        case .pending: return .prayed
+        case .prayed: return .missed
+        case .missed: return .pending
+        }
+    }
+
+    private func label(for status: PrayerTrackerStatus) -> String {
+        switch status {
+        case .pending:
+            return isMalayAppLanguage() ? "Belum dikemas kini" : "Not updated"
+        case .prayed:
+            return isMalayAppLanguage() ? "Selesai" : "Done"
+        case .missed:
+            return isMalayAppLanguage() ? "Tertinggal" : "Missed"
+        }
+    }
+
+    private func color(for status: PrayerTrackerStatus) -> Color {
+        switch status {
+        case .pending: return .secondary
+        case .prayed: return .green
+        case .missed: return .red
+        }
+    }
+}
+
 struct ForYouRootView: View {
     @EnvironmentObject private var settings: Settings
     @EnvironmentObject private var revenueCat: RevenueCatManager
@@ -2109,6 +2215,7 @@ struct ForYouRootView: View {
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
     @State private var scrollOffset: CGFloat = 0
     @State private var shouldAutoScrollOnAppear = ForYouSessionStore.shouldAutoScrollOnTodayAppear()
+    @State private var prayerTrackerRefreshToken = UUID()
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -2134,27 +2241,43 @@ struct ForYouRootView: View {
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         if let todayItem = currentDayViewModel {
-                            ForYouDayView(
-                                viewModel: todayItem,
-                                greetingName: viewModel.profile.firstName,
-                                completedIDs: viewModel.completedIDs,
-                                onToggleCompletion: viewModel.toggleCompletion(for:),
-                                selection: prayerSelection,
-                                onSelectionChange: { selectedPrayerCard = $0 },
-                                onScrollToPrayerTimeline: {
-                                    settings.hapticFeedback()
-                                    if let currentPrayerSelection {
-                                        selectedPrayerCard = currentPrayerSelection
-                                    }
-                                    withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
-                                        proxy.scrollTo(
-                                            currentPrayerSelection?.entryID ?? ForYouDayView.prayerTimelineSectionID,
-                                            anchor: focusScrollAnchor
-                                        )
-                                    }
+                            VStack(spacing: 0) {
+                                if viewModel.profile.wantsPrayerTrackerCard == true {
+                                    ForYouPrayerTrackerCard(
+                                        date: todayItem.plan.date,
+                                        refreshToken: prayerTrackerRefreshToken,
+                                        onStatusChange: { prayer, status in
+                                            PrayerTrackerStore.setStatus(status, for: prayer, on: todayItem.plan.date)
+                                            WidgetCenter.shared.reloadAllTimelines()
+                                            prayerTrackerRefreshToken = UUID()
+                                        }
+                                    )
+                                    .padding(.horizontal, 16)
+                                    .padding(.top, 10)
                                 }
-                            )
-                            .frame(maxWidth: .infinity)
+
+                                ForYouDayView(
+                                    viewModel: todayItem,
+                                    greetingName: viewModel.profile.firstName,
+                                    completedIDs: viewModel.completedIDs,
+                                    onToggleCompletion: viewModel.toggleCompletion(for:),
+                                    selection: prayerSelection,
+                                    onSelectionChange: { selectedPrayerCard = $0 },
+                                    onScrollToPrayerTimeline: {
+                                        settings.hapticFeedback()
+                                        if let currentPrayerSelection {
+                                            selectedPrayerCard = currentPrayerSelection
+                                        }
+                                        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+                                            proxy.scrollTo(
+                                                currentPrayerSelection?.entryID ?? ForYouDayView.prayerTimelineSectionID,
+                                                anchor: focusScrollAnchor
+                                            )
+                                        }
+                                    }
+                                )
+                                .frame(maxWidth: .infinity)
+                            }
                         }
                     }
                     .background(
@@ -2795,11 +2918,18 @@ private struct ForYouSwipeOnboardingView: View {
 
     private func completeSwipe(answer: Bool) {
         let exitOffset: CGFloat = answer ? 520 : -520
-        withAnimation(.spring(response: 0.30, dampingFraction: 0.82)) {
+        withAnimation(.easeIn(duration: 0.16)) {
             swipeOffset = exitOffset
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+        let isLastCard = currentCard == .prayerCheckIn
+        if isLastCard && answer {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) {
+                showConfetti = true
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
             swipeOffset = 0
             switch currentCard {
             case .prayerTracker:
@@ -2807,9 +2937,6 @@ private struct ForYouSwipeOnboardingView: View {
                 settings.hapticFeedback()
                 cardIndex = min(cardIndex + 1, CardKind.allCases.count - 1)
             case .prayerCheckIn:
-                if answer {
-                    showConfetti = true
-                }
                 settings.hapticFeedback()
                 completeOnboarding(afterCelebration: answer)
             case .intro, .name, .reminderStyle:

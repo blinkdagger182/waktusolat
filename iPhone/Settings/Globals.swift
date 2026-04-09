@@ -5,6 +5,121 @@ let premiumWidgetsUnlockedStorageKey = "premiumWidgetsUnlockedV1"
 let premiumWidgetEligibleProductIDsStorageKey = "premiumWidgetEligibleProductIDsV1"
 let premiumWidgetsDebugOverrideStorageKey = "premiumWidgetsDebugOverrideV1"
 
+enum PrayerTrackerPrayer: String, CaseIterable, Codable, Identifiable {
+    case fajr
+    case dhuhr
+    case asr
+    case maghrib
+    case isha
+
+    var id: String { rawValue }
+
+    var localizedTitle: String {
+        switch self {
+        case .fajr: return localizedPrayerName("Fajr")
+        case .dhuhr: return localizedPrayerName("Dhuhr")
+        case .asr: return localizedPrayerName("Asr")
+        case .maghrib: return localizedPrayerName("Maghrib")
+        case .isha: return localizedPrayerName("Isha")
+        }
+    }
+
+    static func resolve(from rawName: String?) -> Self? {
+        let normalized = rawName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased() ?? ""
+
+        switch normalized {
+        case "fajr", "subuh":
+            return .fajr
+        case "dhuhr", "zuhur", "jumuah":
+            return .dhuhr
+        case "asr", "asar":
+            return .asr
+        case "maghrib", "magrib":
+            return .maghrib
+        case "isha", "isyak", "isya":
+            return .isha
+        case "syuruk", "shurooq", "sunrise":
+            return .fajr
+        default:
+            return nil
+        }
+    }
+}
+
+enum PrayerTrackerStatus: String, Codable {
+    case pending
+    case prayed
+    case missed
+
+    var isResolved: Bool { self != .pending }
+}
+
+enum PrayerTrackerStore {
+    private static let statusKey = "prayerTracker.statuses.v1"
+    private static let promptDayKey = "prayerTracker.lastPromptedDay.v1"
+    private static let defaults = UserDefaults(suiteName: sharedAppGroupID)
+
+    static func status(for prayer: PrayerTrackerPrayer, on date: Date = Date()) -> PrayerTrackerStatus {
+        let key = storageKey(for: prayer, on: date)
+        guard
+            let rawValue = (defaults?.dictionary(forKey: statusKey) as? [String: String])?[key],
+            let status = PrayerTrackerStatus(rawValue: rawValue)
+        else {
+            return .pending
+        }
+        return status
+    }
+
+    static func setStatus(_ status: PrayerTrackerStatus, for prayer: PrayerTrackerPrayer, on date: Date = Date()) {
+        var map = defaults?.dictionary(forKey: statusKey) as? [String: String] ?? [:]
+        map[storageKey(for: prayer, on: date)] = status.rawValue
+        defaults?.set(map, forKey: statusKey)
+    }
+
+    static func statuses(on date: Date = Date()) -> [PrayerTrackerPrayer: PrayerTrackerStatus] {
+        Dictionary(uniqueKeysWithValues: PrayerTrackerPrayer.allCases.map { prayer in
+            (prayer, status(for: prayer, on: date))
+        })
+    }
+
+    static func completedCount(on date: Date = Date()) -> Int {
+        PrayerTrackerPrayer.allCases.reduce(0) { partial, prayer in
+            partial + (status(for: prayer, on: date) == .prayed ? 1 : 0)
+        }
+    }
+
+    static func hasPromptedToday(on date: Date = Date()) -> Bool {
+        defaults?.string(forKey: promptDayKey) == dayKey(for: date)
+    }
+
+    static func markPromptedToday(on date: Date = Date()) {
+        defaults?.set(dayKey(for: date), forKey: promptDayKey)
+    }
+
+    static func pendingBacklogPrayers(for date: Date = Date(), currentPrayerName: String?) -> [PrayerTrackerPrayer] {
+        guard let currentPrayer = PrayerTrackerPrayer.resolve(from: currentPrayerName) else { return [] }
+        guard let dueIndex = PrayerTrackerPrayer.allCases.firstIndex(of: currentPrayer) else { return [] }
+
+        return Array(PrayerTrackerPrayer.allCases.prefix(dueIndex + 1)).filter {
+            status(for: $0, on: date) == .pending
+        }
+    }
+
+    private static func storageKey(for prayer: PrayerTrackerPrayer, on date: Date) -> String {
+        "\(dayKey(for: date))|\(prayer.rawValue)"
+    }
+
+    private static func dayKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+}
+
 func premiumWidgetsUnlocked(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> Bool {
     #if DEBUG
     if let override = defaults?.object(forKey: premiumWidgetsDebugOverrideStorageKey) as? Int {

@@ -215,6 +215,8 @@ struct AlAdhanApp: App {
     @State private var lastUIRecoveryAt = Date.distantPast
     @State private var uiRecoveryTask: Task<Void, Never>?
     @State private var showUnsupportedRegionModal = false
+    @State private var prayerTrackerPromptPrayers: [PrayerTrackerPrayer] = []
+    @State private var showPrayerTrackerPrompt = false
 
     init() {
         RevenueCatManager.shared.configure()
@@ -319,6 +321,32 @@ struct AlAdhanApp: App {
                     .zIndex(50)
                 }
             }
+            .overlay {
+                if showPrayerTrackerPrompt {
+                    PrayerTrackerBacklogModal(
+                        prayers: prayerTrackerPromptPrayers,
+                        onSelectStatus: { prayer, status in
+                            PrayerTrackerStore.setStatus(status, for: prayer)
+                            WidgetCenter.shared.reloadAllTimelines()
+                            prayerTrackerPromptPrayers.removeAll { $0 == prayer }
+                            if prayerTrackerPromptPrayers.isEmpty {
+                                PrayerTrackerStore.markPromptedToday()
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showPrayerTrackerPrompt = false
+                                }
+                            }
+                        },
+                        onDismiss: {
+                            PrayerTrackerStore.markPromptedToday()
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showPrayerTrackerPrompt = false
+                            }
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(60)
+                }
+            }
             .overlay(alignment: .top) {
                 if showSupportPromoToast || (showMalaysiaLocationToast && malaysiaLocationToastPayload != nil) {
                     VStack(spacing: 8) {
@@ -376,6 +404,7 @@ struct AlAdhanApp: App {
                 }
                 scheduleUIRecoveryWatchdog()
                 updateUnsupportedRegionModalVisibility()
+                presentPrayerTrackerPromptIfNeeded()
             }
             .onReceive(NotificationCenter.default.publisher(for: .uiContentHeartbeat)) { _ in
                 lastUIHeartbeatAt = Date()
@@ -470,6 +499,7 @@ struct AlAdhanApp: App {
                 scheduleUIRecoveryWatchdog()
                 updateUnsupportedRegionModalVisibility()
                 scheduleFirstRunNotificationPromptIfNeeded()
+                presentPrayerTrackerPromptIfNeeded()
                 Task {
                     await checkForMarketingModalUpdate(force: false)
                 }
@@ -683,6 +713,24 @@ struct AlAdhanApp: App {
             return true
         case .adhan, .settings:
             return false
+        }
+    }
+
+    private func presentPrayerTrackerPromptIfNeeded() {
+        guard !isLaunching, !settings.firstLaunch else { return }
+        guard !showAdhanSheet, !showDailyQuranWidgetIntro, !showMarketingModal else { return }
+        guard !showPrayerTrackerPrompt else { return }
+        guard ForYouUserProfileService.load().wantsPrayerTrackerCard == true else { return }
+        guard !PrayerTrackerStore.hasPromptedToday() else { return }
+
+        let pendingPrayers = PrayerTrackerStore.pendingBacklogPrayers(
+            currentPrayerName: settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish
+        )
+        guard !pendingPrayers.isEmpty else { return }
+
+        prayerTrackerPromptPrayers = pendingPrayers
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showPrayerTrackerPrompt = true
         }
     }
 
@@ -1242,6 +1290,90 @@ private struct SupportPromoPoolProgress {
         }
 
         return value.formatted(.number.precision(.fractionLength(2)))
+    }
+}
+
+private struct PrayerTrackerBacklogModal: View {
+    let prayers: [PrayerTrackerPrayer]
+    let onSelectStatus: (PrayerTrackerPrayer, PrayerTrackerStatus) -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.26)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onDismiss)
+
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(isMalayAppLanguage() ? "Semak Solat Hari Ini" : "Today's Prayer Check-in")
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+
+                        Text(isMalayAppLanguage() ? "Kemas kini solat yang sudah berlalu supaya rentak hari ini kekal tepat." : "Update the prayers that have already passed so today's rhythm stays accurate.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 30, height: 30)
+                            .background(Circle().fill(Color(uiColor: .secondarySystemBackground)))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                ForEach(prayers) { prayer in
+                    HStack(spacing: 12) {
+                        Text(prayer.localizedTitle)
+                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Button {
+                            onSelectStatus(prayer, .missed)
+                        } label: {
+                            Text(isMalayAppLanguage() ? "Belum" : "Not yet")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.red)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(Color.red.opacity(0.12))
+                                )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            onSelectStatus(prayer, .prayed)
+                        } label: {
+                            Text(isMalayAppLanguage() ? "Sudah" : "Done")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.green)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(Color.green.opacity(0.12))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: 420)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color(uiColor: .systemBackground))
+            )
+            .padding(.horizontal, 20)
+        }
     }
 }
 
