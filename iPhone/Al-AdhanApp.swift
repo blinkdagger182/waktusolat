@@ -1298,6 +1298,8 @@ private struct PrayerTrackerBacklogModal: View {
     let onSelectStatus: (PrayerTrackerPrayer, PrayerTrackerStatus) -> Void
     let onDismiss: () -> Void
 
+    @State private var selectedPrayer: PrayerTrackerPrayer?
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.26)
@@ -1327,44 +1329,73 @@ private struct PrayerTrackerBacklogModal: View {
                     .buttonStyle(.plain)
                 }
 
-                ForEach(prayers) { prayer in
-                    HStack(spacing: 12) {
-                        Text(prayer.localizedTitle)
-                            .font(.system(size: 17, weight: .semibold, design: .rounded))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                TabView(selection: selectionBinding) {
+                    ForEach(prayers) { prayer in
+                        VStack(alignment: .leading, spacing: 18) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(prayer.localizedTitle)
+                                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Button {
-                            onSelectStatus(prayer, .missed)
-                        } label: {
-                            Text(isMalayAppLanguage() ? "Belum" : "Not yet")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.red)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule(style: .continuous)
-                                        .fill(Color.red.opacity(0.12))
+                                Text(
+                                    isMalayAppLanguage()
+                                        ? "Geser untuk semak solat lain yang belum dikemas kini."
+                                        : "Swipe to review the other prayers that still need an update."
                                 )
-                        }
-                        .buttonStyle(.plain)
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            }
 
-                        Button {
-                            onSelectStatus(prayer, .prayed)
-                        } label: {
-                            Text(isMalayAppLanguage() ? "Sudah" : "Done")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.green)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule(style: .continuous)
-                                        .fill(Color.green.opacity(0.12))
-                                )
+                            VStack(spacing: 12) {
+                                Button {
+                                    onSelectStatus(prayer, .missed)
+                                } label: {
+                                    Text(isMalayAppLanguage() ? "Belum" : "Not yet")
+                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.red)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(
+                                            Capsule(style: .continuous)
+                                                .fill(Color.red.opacity(0.12))
+                                        )
+                                }
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    onSelectStatus(prayer, .prayed)
+                                } label: {
+                                    Text(isMalayAppLanguage() ? "Sudah" : "Done")
+                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.green)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(
+                                            Capsule(style: .continuous)
+                                                .fill(Color.green.opacity(0.12))
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .padding(20)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .fill(Color(uiColor: .secondarySystemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                )
+                        )
+                        .padding(.horizontal, 2)
+                        .padding(.vertical, 4)
+                        .tag(prayer)
                     }
-                    .padding(.vertical, 2)
                 }
+                .tabViewStyle(.page(indexDisplayMode: .always))
+                .frame(height: 300)
             }
             .padding(24)
             .frame(maxWidth: 420)
@@ -1374,6 +1405,22 @@ private struct PrayerTrackerBacklogModal: View {
             )
             .padding(.horizontal, 20)
         }
+        .onAppear {
+            selectedPrayer = prayers.first
+        }
+        .onChange(of: prayers) { updatedPrayers in
+            if let selectedPrayer, updatedPrayers.contains(selectedPrayer) {
+                return
+            }
+            self.selectedPrayer = updatedPrayers.first
+        }
+    }
+
+    private var selectionBinding: Binding<PrayerTrackerPrayer> {
+        Binding(
+            get: { selectedPrayer ?? prayers.first ?? .fajr },
+            set: { selectedPrayer = $0 }
+        )
     }
 }
 
