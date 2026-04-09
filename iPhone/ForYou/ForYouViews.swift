@@ -351,13 +351,16 @@ private struct ForYouMiniProgressTracker: View {
         let maximumCount: Int
         let requiresLongPress: Bool
         let rowLabels: [String]
+        let rowTargets: [Int]
+        let holdDuration: Double
     }
 
     let descriptor: Descriptor
-    let count: Int
+    let rowCounts: [Int]
     let activeHoldIndex: Int?
     let holdProgress: CGFloat
     let burstIndex: Int?
+    let onTapStep: ((Int) -> Void)?
     let onPressingChanged: (Bool, Int) -> Void
     let onTriggered: (Int) -> Void
 
@@ -379,17 +382,19 @@ private struct ForYouMiniProgressTracker: View {
 
     @ViewBuilder
     private func trackerCell(index: Int) -> some View {
-        let isCompleted = index < count
+        let rowTarget = descriptor.rowTargets.indices.contains(index) ? descriptor.rowTargets[index] : 1
+        let currentCount = rowCounts.indices.contains(index) ? rowCounts[index] : 0
+        let isCompleted = currentCount >= rowTarget
         let isHolding = activeHoldIndex == index && !isCompleted
         let symbol = descriptor.maximumCount == 1 ? "moon.zzz.fill" : "sparkles"
         let rowLabel = descriptor.rowLabels.indices.contains(index) ? descriptor.rowLabels[index] : descriptor.title
 
         VStack(alignment: .leading, spacing: 6) {
-            Text(rowLabel)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(ForYouPalette.ink)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                Text(rowLabel)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
 
             HStack(spacing: 6) {
                 ZStack(alignment: .leading) {
@@ -433,6 +438,11 @@ private struct ForYouMiniProgressTracker: View {
                         }
                     )
                     .scaleEffect(isHolding ? 1.08 : 1)
+
+                Text("\(min(currentCount, rowTarget))")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(isCompleted ? tint : ForYouPalette.ink)
+                    .monospacedDigit()
             }
         }
         .padding(.horizontal, 8)
@@ -447,23 +457,62 @@ private struct ForYouMiniProgressTracker: View {
                 )
         )
         .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .onLongPressGesture(minimumDuration: 10, maximumDistance: 24, pressing: { pressing in
-            guard !isCompleted else { return }
-            onPressingChanged(pressing, index)
-        }, perform: {
-            guard !isCompleted else { return }
-            onTriggered(index)
-        })
+        .modifier(
+            ForYouTrackerInteractionModifier(
+                requiresLongPress: descriptor.requiresLongPress,
+                holdDuration: descriptor.holdDuration,
+                isCompleted: isCompleted,
+                index: index,
+                onTapStep: onTapStep,
+                onPressingChanged: onPressingChanged,
+                onTriggered: onTriggered
+            )
+        )
     }
 
     private func fillFraction(for index: Int) -> CGFloat {
-        if index < count {
+        let rowTarget = descriptor.rowTargets.indices.contains(index) ? descriptor.rowTargets[index] : 1
+        let currentCount = rowCounts.indices.contains(index) ? rowCounts[index] : 0
+        if currentCount >= rowTarget {
             return 1
+        }
+        if rowTarget > 1 {
+            return CGFloat(currentCount) / CGFloat(rowTarget)
         }
         if activeHoldIndex == index {
             return holdProgress
         }
         return 0
+    }
+}
+
+private struct ForYouTrackerInteractionModifier: ViewModifier {
+    let requiresLongPress: Bool
+    let holdDuration: Double
+    let isCompleted: Bool
+    let index: Int
+    let onTapStep: ((Int) -> Void)?
+    let onPressingChanged: (Bool, Int) -> Void
+    let onTriggered: (Int) -> Void
+
+    func body(content: Content) -> some View {
+        if requiresLongPress {
+            content.onLongPressGesture(minimumDuration: holdDuration, maximumDistance: 24, pressing: { pressing in
+                guard !isCompleted else { return }
+                onPressingChanged(pressing, index)
+            }, perform: {
+                guard !isCompleted else { return }
+                onTriggered(index)
+            })
+        } else {
+            Button {
+                guard !isCompleted else { return }
+                onTapStep?(index)
+            } label: {
+                content
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 
@@ -477,11 +526,13 @@ private func forYouRecommendationTrackerDescriptor(
 
     switch title {
     case "morning protection", "perlindungan pagi":
-        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: true, rowLabels: Array(rowLabels.prefix(3)))
-    case "evening adhkar", "zikir petang":
-        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: true, rowLabels: Array(rowLabels.prefix(3)))
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: true, rowLabels: Array(rowLabels.prefix(3)), rowTargets: [1, 1, 1], holdDuration: 10)
+    case "evening adhkar", "evening zikir", "zikir petang":
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: false, rowLabels: Array(rowLabels.prefix(3)), rowTargets: [33, 33, 34], holdDuration: 0)
+    case "surah ad-duha", "surah ad-dhuha":
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? recommendation.title], rowTargets: [1], holdDuration: 20)
     case "before sleep", "sebelum tidur", "night sufficiency", "kecukupan malam":
-        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? recommendation.title])
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? recommendation.title], rowTargets: [1], holdDuration: 10)
     default:
         return nil
     }
@@ -498,9 +549,10 @@ private func forYouTrackerRowLabels(from arabicText: String) -> [String] {
 
 private func forYouRecommendationTrackerStorageKey(
     entryID: String,
-    recommendation: ForYouTimelineRecommendation
+    recommendation: ForYouTimelineRecommendation,
+    rowIndex: Int
 ) -> String {
-    "for-you-recommendation-progress|\(entryID)|\(recommendation.title.lowercased())"
+    "for-you-recommendation-progress|\(entryID)|\(recommendation.title.lowercased())|\(rowIndex)"
 }
 
 private struct ForYouPremiumPreviewView: View {
@@ -643,10 +695,11 @@ private struct ForYouTimelineEntryView: View {
                                 if let trackerDescriptor {
                                     ForYouMiniProgressTracker(
                                         descriptor: trackerDescriptor,
-                                        count: progressCount,
+                                        rowCounts: Array(repeating: progressCount > 0 ? 1 : 0, count: trackerDescriptor.maximumCount),
                                         activeHoldIndex: activeHoldIndex,
                                         holdProgress: holdProgress,
                                         burstIndex: burstIndex,
+                                        onTapStep: nil,
                                         onPressingChanged: handleTrackerPressing,
                                         onTriggered: completeCurrentTrackerStep
                                     )
@@ -706,7 +759,9 @@ private struct ForYouTimelineEntryView: View {
             compactLabel: entry.progressRequiresLongPress ? (isMalayAppLanguage() ? "Tahan" : "Hold") : nil,
             maximumCount: max(entry.progressTarget ?? 1, 1),
             requiresLongPress: true,
-            rowLabels: Array(repeating: entry.title, count: max(entry.progressTarget ?? 1, 1))
+            rowLabels: Array(repeating: entry.title, count: max(entry.progressTarget ?? 1, 1)),
+            rowTargets: Array(repeating: 1, count: max(entry.progressTarget ?? 1, 1)),
+            holdDuration: 10
         )
     }
 
@@ -1115,7 +1170,7 @@ private struct ForYouTimelineEntryContentCard: View {
     var trackerStatus: PrayerTrackerStatus? = nil
     var collapsed: Bool = false
     @EnvironmentObject private var settings: Settings
-    @State private var recommendationProgressCount: Int
+    @State private var recommendationRowCounts: [Int]
     @State private var recommendationActiveHoldIndex: Int?
     @State private var recommendationHoldProgress: CGFloat = 0
     @State private var recommendationBurstIndex: Int?
@@ -1128,12 +1183,20 @@ private struct ForYouTimelineEntryContentCard: View {
         self.entry = entry
         self.trackerStatus = trackerStatus
         self.collapsed = collapsed
-        if let recommendation = entry.recommendation {
-            _recommendationProgressCount = State(initialValue: ForYouDhikrProgressStore.count(
-                for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation)
-            ))
+        if let recommendation = entry.recommendation,
+           let descriptor = forYouRecommendationTrackerDescriptor(recommendation: recommendation) {
+            let counts = descriptor.rowTargets.indices.map { rowIndex in
+                ForYouDhikrProgressStore.count(
+                    for: forYouRecommendationTrackerStorageKey(
+                        entryID: entry.id,
+                        recommendation: recommendation,
+                        rowIndex: rowIndex
+                    )
+                )
+            }
+            _recommendationRowCounts = State(initialValue: counts)
         } else {
-            _recommendationProgressCount = State(initialValue: 0)
+            _recommendationRowCounts = State(initialValue: [])
         }
     }
 
@@ -1240,10 +1303,11 @@ private struct ForYouTimelineEntryContentCard: View {
                             if let recommendationTrackerDescriptor {
                                 ForYouMiniProgressTracker(
                                     descriptor: recommendationTrackerDescriptor,
-                                    count: recommendationProgressCount,
+                                    rowCounts: recommendationRowCounts,
                                     activeHoldIndex: recommendationActiveHoldIndex,
                                     holdProgress: recommendationHoldProgress,
                                     burstIndex: recommendationBurstIndex,
+                                    onTapStep: incrementRecommendationTrackerStep,
                                     onPressingChanged: handleRecommendationTrackerPressing,
                                     onTriggered: completeRecommendationTrackerStep
                                 )
@@ -1311,13 +1375,14 @@ private struct ForYouTimelineEntryContentCard: View {
     private func completeRecommendationTrackerStep(_ index: Int) {
         guard let recommendation = entry.recommendation,
               let descriptor = recommendationTrackerDescriptor else { return }
-        guard recommendationProgressCount == index else { return }
+        guard recommendationRowCounts.indices.contains(index) else { return }
 
-        let nextCount = min(descriptor.maximumCount, recommendationProgressCount + 1)
-        recommendationProgressCount = nextCount
+        var nextCounts = recommendationRowCounts
+        nextCounts[index] = descriptor.rowTargets[index]
+        recommendationRowCounts = nextCounts
         ForYouDhikrProgressStore.setCount(
-            nextCount,
-            for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation)
+            descriptor.rowTargets[index],
+            for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation, rowIndex: index)
         )
         settings.hapticFeedback()
         recommendationBurstIndex = index
@@ -1331,14 +1396,30 @@ private struct ForYouTimelineEntryContentCard: View {
         }
     }
 
+    private func incrementRecommendationTrackerStep(_ index: Int) {
+        guard let recommendation = entry.recommendation,
+              let descriptor = recommendationTrackerDescriptor else { return }
+        guard recommendationRowCounts.indices.contains(index) else { return }
+        guard recommendationRowCounts[index] < descriptor.rowTargets[index] else { return }
+
+        var nextCounts = recommendationRowCounts
+        nextCounts[index] += 1
+        recommendationRowCounts = nextCounts
+        ForYouDhikrProgressStore.setCount(
+            nextCounts[index],
+            for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation, rowIndex: index)
+        )
+        settings.hapticFeedback()
+    }
+
     private var cardFillColor: Color {
         switch trackerStatus {
         case .prayed:
-            return Color.green.opacity(collapsed ? 0.12 : 0.14)
+            return Color(red: 0.90, green: 0.97, blue: 0.92)
         case .missed:
-            return Color.red.opacity(collapsed ? 0.08 : 0.10)
+            return Color(red: 0.99, green: 0.93, blue: 0.93)
         case .pending, .none:
-            return ForYouPalette.softCard
+            return Color(uiColor: .secondarySystemBackground)
         }
     }
 

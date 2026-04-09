@@ -1306,6 +1306,8 @@ private struct PrayerTrackerBacklogModal: View {
     let onDismiss: () -> Void
 
     @State private var selectedPrayer: PrayerTrackerPrayer?
+    @State private var dragOffset: CGSize = .zero
+    @State private var swipeDecision: PrayerTrackerStatus?
 
     var body: some View {
         ZStack {
@@ -1336,73 +1338,32 @@ private struct PrayerTrackerBacklogModal: View {
                     .buttonStyle(.plain)
                 }
 
-                TabView(selection: selectionBinding) {
-                    ForEach(prayers) { prayer in
-                        VStack(alignment: .leading, spacing: 18) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text(prayer.localizedTitle)
-                                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                Text(
-                                    isMalayAppLanguage()
-                                        ? "Geser untuk semak solat lain yang belum dikemas kini."
-                                        : "Swipe to review the other prayers that still need an update."
-                                )
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            VStack(spacing: 12) {
-                                Button {
-                                    onSelectStatus(prayer, .missed)
-                                } label: {
-                                    Text(isMalayAppLanguage() ? "Belum" : "Not yet")
-                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(.red)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            Capsule(style: .continuous)
-                                                .fill(Color.red.opacity(0.12))
-                                        )
-                                }
-                                .buttonStyle(.plain)
-
-                                Button {
-                                    onSelectStatus(prayer, .prayed)
-                                } label: {
-                                    Text(isMalayAppLanguage() ? "Sudah" : "Done")
-                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(.green)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            Capsule(style: .continuous)
-                                                .fill(Color.green.opacity(0.12))
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(20)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .fill(Color(uiColor: .secondarySystemBackground))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                )
-                        )
-                        .padding(.horizontal, 2)
-                        .padding(.vertical, 4)
-                        .tag(prayer)
+                ZStack {
+                    ForEach(Array(prayers.prefix(3).enumerated()), id: \.element) { index, prayer in
+                        backlogCard(for: prayer, isTopCard: index == 0)
+                            .scaleEffect(index == 0 ? 1 : (index == 1 ? 0.965 : 0.935))
+                            .offset(
+                                x: index == 0 ? dragOffset.width : 0,
+                                y: CGFloat(index) * 14
+                            )
+                            .rotationEffect(.degrees(index == 0 ? Double(dragOffset.width / 18) : 0))
+                            .opacity(index == 0 ? 1 : (index == 1 ? 0.84 : 0.68))
+                            .zIndex(Double(3 - index))
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .frame(height: 300)
+                .frame(height: 320)
+
+                HStack {
+                    Text(isMalayAppLanguage() ? "Kiri: belum" : "Left: no")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.red.opacity(0.8))
+
+                    Spacer()
+
+                    Text(isMalayAppLanguage() ? "Kanan: sudah" : "Right: yes")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.green.opacity(0.8))
+                }
             }
             .padding(24)
             .frame(maxWidth: 420)
@@ -1416,6 +1377,8 @@ private struct PrayerTrackerBacklogModal: View {
             selectedPrayer = prayers.first
         }
         .onChange(of: prayers) { updatedPrayers in
+            dragOffset = .zero
+            swipeDecision = nil
             if let selectedPrayer, updatedPrayers.contains(selectedPrayer) {
                 return
             }
@@ -1423,11 +1386,130 @@ private struct PrayerTrackerBacklogModal: View {
         }
     }
 
-    private var selectionBinding: Binding<PrayerTrackerPrayer> {
-        Binding(
-            get: { selectedPrayer ?? prayers.first ?? .fajr },
-            set: { selectedPrayer = $0 }
+    @ViewBuilder
+    private func backlogCard(for prayer: PrayerTrackerPrayer, isTopCard: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(prayer.localizedTitle)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(
+                    isMalayAppLanguage()
+                        ? "Geser kad ke kanan jika sudah solat, atau ke kiri jika belum."
+                        : "Swipe right if you prayed, or left if you did not."
+                )
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+
+            HStack {
+                swipeBadge(
+                    text: isMalayAppLanguage() ? "Belum" : "No",
+                    color: .red,
+                    isActive: swipeDecision == .missed
+                )
+
+                Spacer()
+
+                swipeBadge(
+                    text: isMalayAppLanguage() ? "Sudah" : "Yes",
+                    color: .green,
+                    isActive: swipeDecision == .prayed
+                )
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(cardHighlightColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(cardStrokeColor, lineWidth: 1)
+                )
         )
+        .padding(.horizontal, 2)
+        .padding(.vertical, 4)
+        .shadow(color: Color.black.opacity(isTopCard ? 0.12 : 0.05), radius: isTopCard ? 18 : 8, x: 0, y: isTopCard ? 10 : 4)
+        .gesture(isTopCard ? swipeGesture(for: prayer) : nil)
+    }
+
+    private func swipeBadge(text: String, color: Color, isActive: Bool) -> some View {
+        Text(text)
+            .font(.system(size: 13, weight: .bold, design: .rounded))
+            .foregroundStyle(isActive ? .white : color.opacity(0.82))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(isActive ? color : color.opacity(0.12))
+            )
+    }
+
+    private var cardHighlightColor: Color {
+        switch swipeDecision {
+        case .prayed:
+            return Color.green.opacity(0.18)
+        case .missed:
+            return Color.red.opacity(0.18)
+        case .pending, .none:
+            return Color(uiColor: .secondarySystemBackground)
+        }
+    }
+
+    private var cardStrokeColor: Color {
+        switch swipeDecision {
+        case .prayed:
+            return Color.green.opacity(0.38)
+        case .missed:
+            return Color.red.opacity(0.34)
+        case .pending, .none:
+            return Color.primary.opacity(0.06)
+        }
+    }
+
+    private func swipeGesture(for prayer: PrayerTrackerPrayer) -> some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { value in
+                dragOffset = value.translation
+                if value.translation.width > 32 {
+                    swipeDecision = .prayed
+                } else if value.translation.width < -32 {
+                    swipeDecision = .missed
+                } else {
+                    swipeDecision = nil
+                }
+            }
+            .onEnded { value in
+                let threshold: CGFloat = 120
+                let predictedWidth = value.predictedEndTranslation.width
+
+                if predictedWidth > threshold || value.translation.width > threshold {
+                    commitSwipe(.prayed, for: prayer, flyRight: true)
+                } else if predictedWidth < -threshold || value.translation.width < -threshold {
+                    commitSwipe(.missed, for: prayer, flyRight: false)
+                } else {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        dragOffset = .zero
+                        swipeDecision = nil
+                    }
+                }
+            }
+    }
+
+    private func commitSwipe(_ status: PrayerTrackerStatus, for prayer: PrayerTrackerPrayer, flyRight: Bool) {
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.82)) {
+            dragOffset = CGSize(width: flyRight ? 900 : -900, height: 0)
+            swipeDecision = status
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            onSelectStatus(prayer, status)
+        }
     }
 }
 

@@ -548,7 +548,7 @@ enum ForYouContentRepository {
         ForYouContentTemplate(
             id: "evening-adhkar",
             type: .evening,
-            titleEn: "Evening Adhkar",
+            titleEn: "Evening Zikir",
             titleMy: "Zikir Petang",
             arabicText: "سُبْحَانَ ٱللَّٰهِ 33 • ٱلْحَمْدُ لِلَّٰهِ 33 • ٱللَّٰهُ أَكْبَرُ 34",
             shortDescriptionEn: "Close the day with compact remembrance. Enough to reset the tone without feeling heavy.",
