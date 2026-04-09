@@ -655,12 +655,27 @@ private struct ForYouPrayerTimelineEntryView: View {
     @EnvironmentObject private var settings: Settings
 
     private var trackerPrayer: PrayerTrackerPrayer? {
-        PrayerTrackerPrayer.resolve(from: entry.title)
+        guard !isSunWindowEntry else { return nil }
+        return PrayerTrackerPrayer.resolve(from: entry.title)
     }
 
     private var trackerStatus: PrayerTrackerStatus? {
         guard let trackerPrayer else { return nil }
         return PrayerTrackerStore.status(for: trackerPrayer, on: date)
+    }
+
+    private var isSunWindowEntry: Bool {
+        let normalizedID = entry.id.lowercased()
+        return normalizedID.hasSuffix("-syuruk")
+            || normalizedID.contains("-syuruk-")
+            || normalizedID.hasSuffix("-shurooq")
+            || normalizedID.contains("-shurooq-")
+            || normalizedID.hasSuffix("-sunrise")
+            || normalizedID.contains("-sunrise-")
+            || normalizedID.hasSuffix("-ishraq")
+            || normalizedID.contains("-ishraq-")
+            || normalizedID.hasSuffix("-dhuha")
+            || normalizedID.contains("-dhuha-")
     }
 }
 
@@ -2050,6 +2065,96 @@ private struct ForYouCollapsedHeaderBar: View {
     }
 }
 
+private enum ForYouDisplayedTimelineItem: Identifiable {
+    case entry(ForYouTimelineEntry)
+    case sunToggle(Date)
+
+    var id: String {
+        switch self {
+        case .entry(let entry):
+            return entry.id
+        case .sunToggle(let time):
+            return "sun-toggle-\(time.timeIntervalSince1970)"
+        }
+    }
+}
+
+private struct ForYouSunTimelineToggleRow: View {
+    let time: Date
+    let isExpanded: Bool
+    let extendsToNext: Bool
+    let action: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(spacing: 0) {
+                Text(ForYouFormatters.shortTime.string(from: time))
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(ForYouPalette.timePillFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(ForYouPalette.stroke, lineWidth: 1)
+                            )
+                    )
+
+                Button(action: action) {
+                    Image(systemName: isExpanded ? "minus" : "plus")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(ForYouPalette.ink)
+                        .frame(width: 24, height: 24)
+                        .background(
+                            Circle()
+                                .fill(Color(uiColor: .secondarySystemBackground))
+                                .overlay(
+                                    Circle()
+                                        .stroke(ForYouPalette.stroke, lineWidth: 1)
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 8)
+
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(ForYouPalette.stroke)
+                    .frame(width: 2)
+                    .frame(maxHeight: .infinity)
+                    .padding(.top, 8)
+                    .padding(.bottom, extendsToNext ? 12 : 0)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(isMalayAppLanguage() ? "Jendela pagi" : "Morning window")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(ForYouPalette.ink)
+
+                Text(
+                    isExpanded
+                        ? (isMalayAppLanguage() ? "Sembunyikan Syuruk, Ishraq dan Dhuha" : "Hide Syuruk, Ishraq and Dhuha")
+                        : (isMalayAppLanguage() ? "Tunjuk Syuruk, Ishraq dan Dhuha" : "Show Syuruk, Ishraq and Dhuha")
+                )
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(ForYouPalette.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(ForYouPalette.softCard)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(ForYouPalette.stroke, lineWidth: 1)
+                    )
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 private struct ForYouDayView: View {
     static let prayerTimelineSectionID = "for-you-prayer-timeline-section"
 
@@ -2062,6 +2167,7 @@ private struct ForYouDayView: View {
     let onScrollToPrayerTimeline: () -> Void
 
     @State private var selectedPageIndex: Int?
+    @State private var showsExpandedSunEntries = false
 
     init(
         viewModel: ForYouDayViewModel,
@@ -2151,18 +2257,18 @@ private struct ForYouDayView: View {
             return viewModel.plan.timelineEntries.first
         }
         let page = timelinePages.indices.contains(selectedPageIndex) ? timelinePages[selectedPageIndex] : nil
-        if let focused = page?.first(where: { $0.id == focusedEntryID }) {
+        if let focused = page?.compactMap(entry(from:)).first(where: { $0.id == focusedEntryID }) {
             return focused
         }
-        return page?.first ?? viewModel.plan.timelineEntries.first
+        return page?.compactMap(entry(from:)).first ?? viewModel.plan.timelineEntries.first
     }
 
     private func highlightedEntry(for pageIndex: Int) -> ForYouTimelineEntry? {
         let page = timelinePages.indices.contains(pageIndex) ? timelinePages[pageIndex] : nil
-        if let focused = page?.first(where: { $0.id == focusedEntryID }) {
+        if let focused = page?.compactMap(entry(from:)).first(where: { $0.id == focusedEntryID }) {
             return focused
         }
-        return page?.first ?? viewModel.plan.timelineEntries.first
+        return page?.compactMap(entry(from:)).first ?? viewModel.plan.timelineEntries.first
     }
 
     private var initialSegmentIndex: Int {
@@ -2175,18 +2281,48 @@ private struct ForYouDayView: View {
     }
 
     private var focusedEntryID: String? {
-        guard viewModel.plan.timelineEntries.indices.contains(initialSegmentIndex) else { return nil }
-        return viewModel.plan.timelineEntries[initialSegmentIndex].id
+        guard !displayedPrayerEntries.isEmpty else { return nil }
+        if Calendar.current.isDateInToday(viewModel.plan.date) {
+            let now = Date()
+            return (displayedPrayerEntries.last(where: { $0.time <= now }) ?? displayedPrayerEntries.first)?.id
+        }
+        return displayedPrayerEntries.first?.id
     }
 
     private var firstPageEntryCount: Int { 1 }
     private var subsequentPageEntryCount: Int { 2 }
 
-    private var timelinePages: [[ForYouTimelineEntry]] {
+    private var displayedTimelineItems: [ForYouDisplayedTimelineItem] {
         let entries = viewModel.plan.timelineEntries
         guard !entries.isEmpty else { return [] }
 
-        var pages: [[ForYouTimelineEntry]] = []
+        var items: [ForYouDisplayedTimelineItem] = []
+        var insertedToggle = false
+        for entry in entries {
+            if isCollapsibleSunEntry(entry) {
+                if !insertedToggle {
+                    items.append(.sunToggle(entry.time))
+                    insertedToggle = true
+                }
+                if showsExpandedSunEntries {
+                    items.append(.entry(entry))
+                }
+                continue
+            }
+            items.append(.entry(entry))
+        }
+        return items
+    }
+
+    private var displayedPrayerEntries: [ForYouTimelineEntry] {
+        displayedTimelineItems.compactMap(entry(from:)).filter { $0.kind == .prayer }
+    }
+
+    private var timelinePages: [[ForYouDisplayedTimelineItem]] {
+        let entries = displayedTimelineItems
+        guard !entries.isEmpty else { return [] }
+
+        var pages: [[ForYouDisplayedTimelineItem]] = []
         var start = 0
 
         let firstCount = min(firstPageEntryCount, entries.count)
@@ -2245,7 +2381,7 @@ private struct ForYouDayView: View {
     }
 
     private var prayerEntries: [ForYouTimelineEntry] {
-        viewModel.plan.timelineEntries.filter { $0.kind == .prayer }
+        displayedPrayerEntries
     }
 
     private var defaultPrayerSelection: ForYouPrayerCardSelection? {
@@ -2278,7 +2414,7 @@ private struct ForYouDayView: View {
     }
 
     @ViewBuilder
-    private func pageContent(index: Int, page: [ForYouTimelineEntry]) -> some View {
+    private func pageContent(index: Int, page: [ForYouDisplayedTimelineItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if index == 0 {
                 VStack(alignment: .leading, spacing: 10) {
@@ -2317,31 +2453,69 @@ private struct ForYouDayView: View {
                     .id(Self.prayerTimelineSectionID)
             }
 
-            ForEach(page) { entry in
+            ForEach(Array(page.enumerated()), id: \.element.id) { itemIndex, item in
                 VStack(alignment: .leading, spacing: 0) {
-                    if entry.kind == .prayer {
-                        ForYouPrayerTimelineEntryView(
-                            entry: entry,
-                            date: viewModel.plan.date,
-                            isFocused: entry.id == focusedEntryID,
-                            extendsToNext: entry.id != page.last?.id,
-                            selection: prayerSelection ?? .main(entry.id),
-                            onSelectionChange: { selection in
-                                setPrayerSelection(selection)
+                    if let entry = entry(from: item) {
+                        if entry.kind == .prayer {
+                            ForYouPrayerTimelineEntryView(
+                                entry: entry,
+                                date: viewModel.plan.date,
+                                isFocused: entry.id == focusedEntryID,
+                                extendsToNext: itemIndex != page.count - 1,
+                                selection: prayerSelection ?? .main(entry.id),
+                                onSelectionChange: { selection in
+                                    setPrayerSelection(selection)
+                                }
+                            )
+                        } else {
+                            ForYouTimelineEntryView(
+                                entry: entry,
+                                isFocused: entry.id == focusedEntryID,
+                                extendsToNext: itemIndex != page.count - 1
+                            )
+                        }
+                    } else if case .sunToggle(let time) = item {
+                        ForYouSunTimelineToggleRow(
+                            time: time,
+                            isExpanded: showsExpandedSunEntries,
+                            extendsToNext: itemIndex != page.count - 1,
+                            action: {
+                                withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                                    showsExpandedSunEntries.toggle()
+                                }
                             }
-                        )
-                    } else {
-                        ForYouTimelineEntryView(
-                            entry: entry,
-                            isFocused: entry.id == focusedEntryID,
-                            extendsToNext: entry.id != page.last?.id
                         )
                     }
                 }
-                .id(entry.id)
+                .id(item.id)
+                .transition(
+                    itemIsAnimatedSunEntry(item)
+                        ? .move(edge: .top).combined(with: .opacity)
+                        : .identity
+                )
             }
         }
         .padding(.bottom, 16)
+    }
+
+    private func entry(from item: ForYouDisplayedTimelineItem) -> ForYouTimelineEntry? {
+        if case .entry(let entry) = item { return entry }
+        return nil
+    }
+
+    private func isCollapsibleSunEntry(_ entry: ForYouTimelineEntry) -> Bool {
+        let normalizedID = entry.id.lowercased()
+        return normalizedID.hasSuffix("-syuruk")
+            || normalizedID.contains("-syuruk-")
+            || normalizedID.hasSuffix("-ishraq")
+            || normalizedID.contains("-ishraq-")
+            || normalizedID.hasSuffix("-dhuha")
+            || normalizedID.contains("-dhuha-")
+    }
+
+    private func itemIsAnimatedSunEntry(_ item: ForYouDisplayedTimelineItem) -> Bool {
+        guard let entry = entry(from: item) else { return false }
+        return isCollapsibleSunEntry(entry)
     }
 
     private static func resolveInitialPageIndex(for plan: ForYouDailyPlan) -> Int {
