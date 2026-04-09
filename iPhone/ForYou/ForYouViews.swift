@@ -866,6 +866,22 @@ private struct ForYouTimelineEntryContentCard: View {
     var collapsed: Bool = false
     @EnvironmentObject private var settings: Settings
 
+    private var prayerDetailLines: [String] {
+        guard entry.kind == .prayer else { return [] }
+
+        var lines: [String] = []
+        if let rakah = cleanedPrayerDetail(entry.rakah) {
+            lines.append(localizedPrayerRakahInfo(rakah))
+        }
+        if let sunnahBefore = cleanedPrayerDetail(entry.sunnahBefore) {
+            lines.append(localizedSunnahBeforeInfo(sunnahBefore))
+        }
+        if let sunnahAfter = cleanedPrayerDetail(entry.sunnahAfter) {
+            lines.append(localizedSunnahAfterInfo(sunnahAfter))
+        }
+        return lines
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: collapsed ? 6 : 8) {
             HStack(alignment: .top, spacing: 10) {
@@ -902,6 +918,24 @@ private struct ForYouTimelineEntryContentCard: View {
                 .foregroundStyle(ForYouPalette.secondaryInk)
                 .lineLimit(collapsed ? 1 : nil)
                 .fixedSize(horizontal: false, vertical: true)
+
+            if !collapsed, !prayerDetailLines.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(prayerDetailLines, id: \.self) { line in
+                        Text(line)
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(ForYouPalette.secondaryInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(ForYouPalette.recommendationFill)
+                )
+            }
 
             if !collapsed, let arabicText = entry.arabicText {
                 Text(arabicText)
@@ -977,6 +1011,21 @@ private struct ForYouTimelineEntryContentCard: View {
         case .pending, .none:
             return ForYouPalette.softCard
         }
+    }
+
+    private func cleanedPrayerDetail(_ value: String?) -> String? {
+        guard let raw = value?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return nil
+        }
+
+        let normalized = raw
+            .replacingOccurrences(of: " ", with: "")
+            .lowercased()
+        if normalized == "0" || normalized == "-" || normalized == "nil" {
+            return nil
+        }
+
+        return raw
     }
 
     private var cardStrokeColor: Color {

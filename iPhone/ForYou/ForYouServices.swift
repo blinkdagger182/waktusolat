@@ -1123,6 +1123,9 @@ final class ForYouPlanGeneratorService {
                         arabicText: entry.arabicText,
                         reference: entry.reference,
                         recommendation: entry.recommendation,
+                        rakah: entry.rakah,
+                        sunnahBefore: entry.sunnahBefore,
+                        sunnahAfter: entry.sunnahAfter,
                         weather: entry.kind == .prayer ? weatherByHour[hour] : nil
                     )
                 },
@@ -1363,7 +1366,10 @@ final class ForYouPlanGeneratorService {
                         icon: "bell.badge",
                         arabicText: prayer.nameArabic,
                         reference: nil,
-                        recommendation: recommendation(for: momentType(for: canonicalName), profile: profile, date: date)
+                        recommendation: recommendation(for: momentType(for: canonicalName), profile: profile, date: date),
+                        rakah: prayer.rakah,
+                        sunnahBefore: prayer.sunnahBefore,
+                        sunnahAfter: prayer.sunnahAfter
                     )
                 )
             }
@@ -1379,7 +1385,10 @@ final class ForYouPlanGeneratorService {
                     icon: icon(for: canonicalName),
                     arabicText: prayer.nameArabic,
                     reference: nil,
-                    recommendation: recommendation(for: momentType(for: canonicalName), profile: profile, date: date)
+                    recommendation: recommendation(for: momentType(for: canonicalName), profile: profile, date: date),
+                    rakah: prayer.rakah,
+                    sunnahBefore: prayer.sunnahBefore,
+                    sunnahAfter: prayer.sunnahAfter
                 )
             )
 
@@ -1516,7 +1525,10 @@ final class ForYouPlanGeneratorService {
         icon: String,
         arabicText: String?,
         reference: String?,
-        recommendation: ForYouTimelineRecommendation?
+        recommendation: ForYouTimelineRecommendation?,
+        rakah: String? = nil,
+        sunnahBefore: String? = nil,
+        sunnahAfter: String? = nil
     ) -> ForYouTimelineEntry {
         ForYouTimelineEntry(
             id: id,
@@ -1530,6 +1542,9 @@ final class ForYouPlanGeneratorService {
             arabicText: arabicText,
             reference: reference,
             recommendation: recommendation,
+            rakah: rakah,
+            sunnahBefore: sunnahBefore,
+            sunnahAfter: sunnahAfter,
             weather: nil
         )
     }

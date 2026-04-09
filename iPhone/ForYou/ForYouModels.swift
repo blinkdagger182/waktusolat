@@ -143,6 +143,9 @@ struct ForYouTimelineEntry: Identifiable, Codable {
     let arabicText: String?
     let reference: String?
     let recommendation: ForYouTimelineRecommendation?
+    let rakah: String?
+    let sunnahBefore: String?
+    let sunnahAfter: String?
     let weather: ForYouPrayerWeather?
 }
 
