@@ -10,6 +10,11 @@ import UIKit
 import ActivityKit
 #endif
 
+private struct TodayNotificationPersonalizationProfile: Codable {
+    let firstName: String?
+    let wantsPrayerTrackerCard: Bool?
+}
+
 #if os(iOS) && canImport(ActivityKit)
 @available(iOS 16.2, *)
 struct PrayerLiveActivityAttributes: ActivityAttributes {
@@ -2372,6 +2377,7 @@ extension Settings {
             "times:\(prayerTimesSignature)",
             "dateNotif:\(dateNotifications)",
             "prayerStyle:\(prayerNotificationMessageStyle.rawValue)",
+            "todayNotifPersonalization:\(todayNotificationPersonalizationSignature())",
             "zikirEnabled:\(zikirNotificationsEnabled)",
             "zikirStyle:\(zikirNotificationMessageStyle.rawValue)",
             "nagMode:\(naggingMode)",
@@ -2468,6 +2474,7 @@ extension Settings {
     private func buildBody(prayer: Prayer, minutesBefore: Int?, city: String) -> String {
         let prayerName = localizedPrayerName(prayer.nameTransliteration)
         let isMalay = isMalayAppLanguage()
+        let personalizationSuffix = todayNotificationPersonalizationSuffix()
         let specialSuffix: String = {
             switch prayer.nameTransliteration {
             case "Shurooq":
@@ -2489,18 +2496,18 @@ extension Settings {
         case .concise:
             if let m = minutesBefore {
                 return isMalay
-                    ? "\(m) minit lagi • \(prayerName) • \(city)"
-                    : "\(m)m • \(prayerName) • \(city)"
+                    ? "\(m) minit lagi • \(prayerName) • \(city)\(personalizationSuffix)"
+                    : "\(m)m • \(prayerName) • \(city)\(personalizationSuffix)"
             }
 
             return isMalay
-                ? "\(prayerName) • \(prayerTime) • \(city)"
-                : "\(prayerName) • \(prayerTime) • \(city)"
+                ? "\(prayerName) • \(prayerTime) • \(city)\(personalizationSuffix)"
+                : "\(prayerName) • \(prayerTime) • \(city)\(personalizationSuffix)"
         case .gentle:
             if let m = minutesBefore {
                 return isMalay
-                    ? "\(prayerName)\(specialSuffix) di \(city)\(travelingSuffix) akan bermula dalam \(m) minit."
-                    : "\(prayerName)\(specialSuffix) in \(city)\(travelingSuffix) begins in \(m) minutes."
+                    ? "\(prayerName)\(specialSuffix) di \(city)\(travelingSuffix)\(personalizationSuffix) akan bermula dalam \(m) minit."
+                    : "\(prayerName)\(specialSuffix) in \(city)\(travelingSuffix) begins in \(m) minutes\(personalizationSuffix)."
             }
 
             if prayer.nameTransliteration == "Fajr",
@@ -2508,23 +2515,23 @@ extension Settings {
                list.count > 1 {
                 let endsAt = formatDate(list[1].time)
                 return isMalay
-                    ? "Kini masuk waktu \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix). Berakhir pada \(endsAt)."
-                    : "It's now time for \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix). Ends at \(endsAt)."
+                    ? "Kini masuk waktu \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix)\(personalizationSuffix). Berakhir pada \(endsAt)."
+                    : "It's now time for \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix). Ends at \(endsAt)\(personalizationSuffix)."
             }
 
             return isMalay
-                ? "Kini masuk waktu \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix)."
-                : "It's now time for \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix)."
+                ? "Kini masuk waktu \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix)\(personalizationSuffix)."
+                : "It's now time for \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix)\(personalizationSuffix)."
         case .standard:
             break
         }
 
         if let m = minutesBefore {
             if isMalay {
-                return "\(m) minit sebelum \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix) [\(prayerTime)]"
+                return "\(m) minit sebelum \(prayerName)\(specialSuffix) di \(city)\(travelingSuffix)\(personalizationSuffix) [\(prayerTime)]"
             }
 
-            return "\(m)m until \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix) [\(prayerTime)]"
+            return "\(m)m until \(prayerName)\(specialSuffix) in \(city)\(travelingSuffix)\(personalizationSuffix) [\(prayerTime)]"
         }
 
         if prayer.nameTransliteration == "Fajr",
@@ -2532,17 +2539,42 @@ extension Settings {
            list.count > 1 {
             let endsAt = formatDate(list[1].time)
             if isMalay {
-                return "Waktu \(prayerName)\(specialSuffix) pada \(prayerTime) di \(city)\(travelingSuffix) [berakhir \(endsAt)]"
+                return "Waktu \(prayerName)\(specialSuffix) pada \(prayerTime) di \(city)\(travelingSuffix)\(personalizationSuffix) [berakhir \(endsAt)]"
             }
 
-            return "Time for \(prayerName)\(specialSuffix) at \(prayerTime) in \(city)\(travelingSuffix) [ends at \(endsAt)]"
+            return "Time for \(prayerName)\(specialSuffix) at \(prayerTime) in \(city)\(travelingSuffix)\(personalizationSuffix) [ends at \(endsAt)]"
         }
 
         if isMalay {
-            return "Waktu \(prayerName)\(specialSuffix) pada \(prayerTime) di \(city)\(travelingSuffix)"
+            return "Waktu \(prayerName)\(specialSuffix) pada \(prayerTime) di \(city)\(travelingSuffix)\(personalizationSuffix)"
         }
 
-        return "Time for \(prayerName)\(specialSuffix) at \(prayerTime) in \(city)\(travelingSuffix)"
+        return "Time for \(prayerName)\(specialSuffix) at \(prayerTime) in \(city)\(travelingSuffix)\(personalizationSuffix)"
+    }
+
+    private func todayNotificationPersonalizationSuffix() -> String {
+        let profile = loadTodayNotificationPersonalizationProfile()
+        guard profile.wantsPrayerTrackerCard == true else { return "" }
+        let firstName = profile.firstName?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
+        guard !firstName.isEmpty else { return "" }
+        return isMalayAppLanguage() ? " untuk \(firstName)" : ", \(firstName)"
+    }
+
+    private func todayNotificationPersonalizationSignature() -> String {
+        let profile = loadTodayNotificationPersonalizationProfile()
+        let firstName = profile.firstName?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
+        return "\(profile.wantsPrayerTrackerCard == true)-\(firstName)"
+    }
+
+    private func loadTodayNotificationPersonalizationProfile() -> TodayNotificationPersonalizationProfile {
+        let defaults = UserDefaults.standard
+        guard
+            let data = defaults.data(forKey: "forYou.userProfile.v1"),
+            let profile = try? JSONDecoder().decode(TodayNotificationPersonalizationProfile.self, from: data)
+        else {
+            return .init(firstName: nil, wantsPrayerTrackerCard: nil)
+        }
+        return profile
     }
 
     private func zikirNotificationAnchorDates(for prayerList: [Prayer]) -> [(bucket: ZikirTimeBucket, date: Date)] {

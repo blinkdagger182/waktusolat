@@ -345,6 +345,9 @@ private struct ForYouDaySegmentView: View {
 }
 
 private struct ForYouMiniProgressTracker: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var settings: Settings
+
     struct Descriptor {
         let title: String
         let compactLabel: String?
@@ -393,9 +396,10 @@ private struct ForYouMiniProgressTracker: View {
             if descriptor.requiresLongPress {
                 HStack(spacing: 8) {
                     Text(rowLabel)
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                         .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.48)
                         .frame(maxWidth: .infinity, alignment: .trailing)
 
                     Image(systemName: symbol)
@@ -426,9 +430,10 @@ private struct ForYouMiniProgressTracker: View {
                 }
             } else {
                 Text(rowLabel)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                     .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.48)
                     .frame(maxWidth: .infinity, alignment: .trailing)
 
                 HStack(spacing: 6) {
@@ -476,7 +481,7 @@ private struct ForYouMiniProgressTracker: View {
 
                     Text("\(min(currentCount, rowTarget))")
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundStyle(isCompleted ? tint : ForYouPalette.ink)
+                        .foregroundStyle(isCompleted ? tint : trackerIdleTextColor)
                         .monospacedDigit()
                 }
             }
@@ -535,9 +540,29 @@ private struct ForYouMiniProgressTracker: View {
 
     private func trackerRowTextColor(isCompleted: Bool, isHolding: Bool) -> Color {
         if descriptor.requiresLongPress && (isCompleted || isHolding) {
-            return Color.black.opacity(0.82)
+            return Color.black.opacity(0.88)
         }
-        return ForYouPalette.ink
+        return trackerIdleTextColor
+    }
+
+    private var trackerIdleTextColor: Color {
+        if colorScheme == .dark {
+            return Color.black.opacity(0.86)
+        }
+        return Color.black.opacity(0.78)
+    }
+
+    private func trackerArabicFontSize(for label: String) -> CGFloat {
+        switch label.count {
+        case 0...18:
+            return 22
+        case 19...28:
+            return 20
+        case 29...40:
+            return 18
+        default:
+            return 16
+        }
     }
 }
 
@@ -575,31 +600,43 @@ private func forYouRecommendationTrackerDescriptor(
     recommendation: ForYouTimelineRecommendation
 ) -> ForYouMiniProgressTracker.Descriptor? {
     let title = recommendation.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    let rowLabels = recommendation.arabicText
-        .map(forYouTrackerRowLabels(from:))
-        ?? []
+    let rowLabels = recommendation.arabicText.map(forYouTrackerArabicRowLabels(from:)) ?? []
+    let fallbackArabicLabel = recommendation.arabicText
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .flatMap { forYouContainsArabicScript($0) ? $0 : nil }
 
     switch title {
-    case "morning protection", "perlindungan pagi":
+    case "morning protection", "perlindungan pagi", "three quls (3x)", "tiga qul (3x)":
         return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: true, rowLabels: Array(rowLabels.prefix(3)), rowTargets: [1, 1, 1], holdDuration: 10)
-    case "evening adhkar", "evening zikir", "zikir petang":
+    case "evening adhkar", "evening zikir", "zikir petang", "tasbih, tahmid, takbir":
         return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: false, rowLabels: Array(rowLabels.prefix(3)), rowTargets: [33, 33, 34], holdDuration: 0)
     case "surah ad-duha", "surah ad-dhuha":
-        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? recommendation.title], rowTargets: [1], holdDuration: 20)
-    case "before sleep", "sebelum tidur", "night sufficiency", "kecukupan malam":
-        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? recommendation.title], rowTargets: [1], holdDuration: 10)
+        guard let fallbackArabicLabel else { return nil }
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? fallbackArabicLabel], rowTargets: [1], holdDuration: 20)
+    case "before sleep", "sebelum tidur", "night sufficiency", "kecukupan malam", "ayat kursi before sleep", "ayat kursi sebelum tidur", "last two verses of al-baqarah", "dua ayat terakhir al-baqarah":
+        guard let fallbackArabicLabel else { return nil }
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? fallbackArabicLabel], rowTargets: [1], holdDuration: 10)
     default:
         return nil
     }
 }
 
-private func forYouTrackerRowLabels(from arabicText: String) -> [String] {
+private func forYouTrackerArabicRowLabels(from arabicText: String) -> [String] {
     let separators = CharacterSet(charactersIn: "•\n")
-    let parts = arabicText
+    return arabicText
         .components(separatedBy: separators)
         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-        .filter { !$0.isEmpty }
-    return parts
+        .filter { !$0.isEmpty && forYouContainsArabicScript($0) }
+}
+
+private func forYouContainsArabicScript(_ text: String) -> Bool {
+    text.unicodeScalars.contains { scalar in
+        (0x0600...0x06FF).contains(scalar.value)
+        || (0x0750...0x077F).contains(scalar.value)
+        || (0x08A0...0x08FF).contains(scalar.value)
+        || (0xFB50...0xFDFF).contains(scalar.value)
+        || (0xFE70...0xFEFF).contains(scalar.value)
+    }
 }
 
 private func forYouRecommendationTrackerStorageKey(
@@ -738,7 +775,7 @@ private struct ForYouTimelineEntryView: View {
                             .foregroundStyle(ForYouPalette.ink)
                             .lineLimit(1)
 
-                        if let arabicText = recommendation.arabicText {
+                        if let arabicText = recommendation.arabicText, trackerDescriptor == nil {
                             ZStack(alignment: .topLeading) {
                                 Text(arabicText)
                                     .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
@@ -760,6 +797,17 @@ private struct ForYouTimelineEntryView: View {
                                     )
                                 }
                             }
+                        } else if let trackerDescriptor {
+                            ForYouMiniProgressTracker(
+                                descriptor: trackerDescriptor,
+                                rowCounts: Array(repeating: progressCount > 0 ? 1 : 0, count: trackerDescriptor.maximumCount),
+                                activeHoldIndex: activeHoldIndex,
+                                holdProgress: holdProgress,
+                                burstIndex: burstIndex,
+                                onTapStep: nil,
+                                onPressingChanged: handleTrackerPressing,
+                                onTriggered: completeCurrentTrackerStep
+                            )
                         }
 
                         Text(recommendation.shortDescription)
@@ -1345,7 +1393,7 @@ private struct ForYouTimelineEntryContentCard: View {
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundStyle(ForYouPalette.ink)
                         .lineLimit(1)
-                    if let arabicText = recommendation.arabicText {
+                    if let arabicText = recommendation.arabicText, recommendationTrackerDescriptor == nil {
                         ZStack(alignment: .topLeading) {
                             Text(arabicText)
                                 .font(.custom(preferredQuranArabicFontName(settings: settings, size: 16), size: 16))
@@ -1368,6 +1416,17 @@ private struct ForYouTimelineEntryContentCard: View {
                                 )
                             }
                         }
+                    } else if let recommendationTrackerDescriptor {
+                        ForYouMiniProgressTracker(
+                            descriptor: recommendationTrackerDescriptor,
+                            rowCounts: recommendationRowCounts,
+                            activeHoldIndex: recommendationActiveHoldIndex,
+                            holdProgress: recommendationHoldProgress,
+                            burstIndex: recommendationBurstIndex,
+                            onTapStep: incrementRecommendationTrackerStep,
+                            onPressingChanged: handleRecommendationTrackerPressing,
+                            onTriggered: completeRecommendationTrackerStep
+                        )
                     }
                     Text(recommendation.shortDescription)
                         .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -4872,9 +4931,9 @@ private struct ForYouSwipeOnboardingView: View {
         }
         switch swipeDecision {
         case .prayed:
-            return Color.green.opacity(0.18)
+            return Color.green
         case .missed:
-            return Color.red.opacity(0.18)
+            return Color.red
         case .pending, .none:
             return Color(uiColor: .systemBackground)
         }
@@ -4886,9 +4945,9 @@ private struct ForYouSwipeOnboardingView: View {
         }
         switch swipeDecision {
         case .prayed:
-            return Color.green.opacity(0.42)
+            return Color.green
         case .missed:
-            return Color.red.opacity(0.42)
+            return Color.red
         case .pending, .none:
             return Color.primary.opacity(0.08)
         }
@@ -4899,9 +4958,9 @@ private struct ForYouSwipeOnboardingView: View {
         case .gentle:
             isMalayAppLanguage() ? "Lembut" : "Gentle"
         case .balanced:
-            isMalayAppLanguage() ? "Seimbang" : "Balanced"
+            isMalayAppLanguage() ? "Standard" : "Standard"
         case .focused:
-            isMalayAppLanguage() ? "Terus" : "Focused"
+            isMalayAppLanguage() ? "Ringkas" : "Concise"
         }
     }
 
@@ -4909,16 +4968,16 @@ private struct ForYouSwipeOnboardingView: View {
         switch style {
         case .gentle:
             return isMalayAppLanguage()
-                ? "Masa untuk bertemu Pencipta anda, \(displayName)."
-                : "Time to meet your Creator, \(displayName)."
+                ? "Kini masuk waktu \(currentPrayerTitle) di Subang Jaya, Selangor untuk \(displayName)."
+                : "It's now time for \(currentPrayerTitle) in Subang Jaya, Selangor, \(displayName)."
         case .balanced:
             return isMalayAppLanguage()
-                ? "Masuk waktu solat, \(displayName). Mari kembali dengan tenang."
-                : "It is prayer time, \(displayName). Come back with calm."
+                ? "Waktu \(currentPrayerTitle) pada 4:25 PTG di Subang Jaya, Selangor untuk \(displayName)"
+                : "Time for \(currentPrayerTitle) at 4:25 PM in Subang Jaya, Selangor, \(displayName)"
         case .focused:
             return isMalayAppLanguage()
-                ? "\(displayName), \(currentPrayerTitle) sedang berjalan."
-                : "\(displayName), \(currentPrayerTitle) is in."
+                ? "\(currentPrayerTitle) • 4:25 PTG • Subang Jaya, Selangor untuk \(displayName)"
+                : "\(currentPrayerTitle) • 4:25 PM • Subang Jaya, Selangor, \(displayName)"
         }
     }
 }

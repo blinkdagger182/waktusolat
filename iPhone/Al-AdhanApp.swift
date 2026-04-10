@@ -202,7 +202,6 @@ struct AlAdhanApp: App {
     @State private var isLaunching = true
     @State private var quranDeepLink: QuranDeepLinkPayload?
     @State private var selectedTab: AppTab = .adhan
-    @State private var lastPrimaryTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
     @State private var showMalaysiaLocationToast = false
     @State private var pendingFirstRunNotificationPrompt = false
@@ -222,6 +221,7 @@ struct AlAdhanApp: App {
     @State private var lastSceneActiveAt = Date.distantPast
     @State private var lastUIRecoveryAt = Date.distantPast
     @State private var uiRecoveryTask: Task<Void, Never>?
+    @State private var isKeyboardVisible = false
     @State private var showUnsupportedRegionModal = false
     @State private var showPrayerTrackerPrompt = false
     private let paywallOfferingIdentifier = "Waktu Donation"
@@ -340,7 +340,9 @@ struct AlAdhanApp: App {
                         onSelectStatus: { prayer, status in
                             PrayerTrackerStore.setStatus(status, for: prayer)
                             WidgetCenter.shared.reloadAllTimelines()
-                            if pendingPrayerTrackerPromptPrayers.filter({ $0 != prayer }).isEmpty {
+                            if PrayerTrackerStore.pendingBacklogPrayers(
+                                currentPrayerName: settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish
+                            ).isEmpty {
                                 PrayerTrackerStore.markPromptedToday()
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     showPrayerTrackerPrompt = false
@@ -349,7 +351,6 @@ struct AlAdhanApp: App {
                             }
                         },
                         onDismiss: {
-                            PrayerTrackerStore.markPromptedToday()
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showPrayerTrackerPrompt = false
                                 forYouPrayerTrackerPromptVisible = false
@@ -533,8 +534,23 @@ struct AlAdhanApp: App {
 
                     currentTabContent
 
-                    customBottomTabBar
+                    if !isKeyboardVisible {
+                        customBottomTabBar
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            guard !isKeyboardVisible else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                isKeyboardVisible = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            guard isKeyboardVisible else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                isKeyboardVisible = false
             }
         }
         .onAppear {
@@ -570,22 +586,7 @@ struct AlAdhanApp: App {
 
     @available(iOS 26, *)
     private var systemTabView: some View {
-        ZStack(alignment: .bottomTrailing) {
-            systemPrimaryTabView(selection: systemTabSelection)
-
-            supportTabContent
-                .opacity(selectedTab == .plus ? 1 : 0)
-                .allowsHitTesting(selectedTab == .plus)
-
-            systemPlusAccessoryButton
-                .padding(.trailing, 14)
-                .padding(.bottom, 8)
-        }
-    }
-
-    @available(iOS 26, *)
-    private func systemPrimaryTabView(selection: Binding<AppTab>) -> some View {
-        TabView(selection: selection) {
+        TabView(selection: $selectedTab) {
             AdhanView { _ in }
                 .tabItem {
                     Label("Azan", systemImage: "safari")
@@ -603,36 +604,13 @@ struct AlAdhanApp: App {
                     Label(isMalayAppLanguage() ? "Pustaka" : "Library", systemImage: "books.vertical")
                 }
                 .tag(AppTab.library)
-        }
-    }
 
-    @available(iOS 26, *)
-    private var systemTabSelection: Binding<AppTab> {
-        Binding(
-            get: { selectedTab == .plus ? lastPrimaryTab : selectedTab },
-            set: { newValue in
-                lastPrimaryTab = newValue
-                selectedTab = newValue
-            }
-        )
-    }
-
-    @available(iOS 26, *)
-    private var systemPlusAccessoryButton: some View {
-        Button {
-            settings.hapticFeedback()
-            selectedTab = .plus
-            Task {
-                await revenueCat.refreshOfferings()
-            }
-        } label: {
-            Image(systemName: "moon.stars")
-                .font(.system(size: 19, weight: .semibold))
-                .padding(16)
+            supportTabContent
+                .tabItem {
+                    Label("Plus", systemImage: "moon.stars")
+                }
+                .tag(AppTab.plus)
         }
-        .buttonStyle(.glass)
-        .tint(selectedTab == .plus ? settings.accentColor.color : nil)
-        .accessibilityLabel("Plus")
     }
 
     @ViewBuilder
@@ -1599,9 +1577,9 @@ private struct PrayerTrackerBacklogModal: View {
     private var cardHighlightColor: Color {
         switch swipeDecision {
         case .prayed:
-            return Color.green.opacity(0.18)
+            return Color.green
         case .missed:
-            return Color.red.opacity(0.18)
+            return Color.red
         case .pending, .none:
             return Color(uiColor: .secondarySystemBackground)
         }
@@ -1610,9 +1588,9 @@ private struct PrayerTrackerBacklogModal: View {
     private var cardStrokeColor: Color {
         switch swipeDecision {
         case .prayed:
-            return Color.green.opacity(0.38)
+            return Color.green
         case .missed:
-            return Color.red.opacity(0.34)
+            return Color.red
         case .pending, .none:
             return Color.primary.opacity(0.06)
         }

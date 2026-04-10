@@ -589,20 +589,29 @@ struct NotificationView: View {
     }
 
     private var prayerPreviewBody: String {
+        let personalizedSuffix = personalizedTodayNotificationSuffix
         switch settings.prayerNotificationMessageStyle {
         case .standard:
             return isMalayAppLanguage()
-                ? "Waktu Asar pada 4:25 PTG di Subang Jaya, Selangor"
-                : "Time for Asr at 4:25 PM in Subang Jaya, Selangor"
+                ? "Waktu Asar pada 4:25 PTG di Subang Jaya, Selangor\(personalizedSuffix)"
+                : "Time for Asr at 4:25 PM in Subang Jaya, Selangor\(personalizedSuffix)"
         case .gentle:
             return isMalayAppLanguage()
-                ? "Kini masuk waktu Asar di Subang Jaya, Selangor."
-                : "It's now time for Asr in Subang Jaya, Selangor."
+                ? "Kini masuk waktu Asar di Subang Jaya, Selangor\(personalizedSuffix)."
+                : "It's now time for Asr in Subang Jaya, Selangor\(personalizedSuffix)."
         case .concise:
             return isMalayAppLanguage()
-                ? "Asar • 4:25 PTG • Subang Jaya, Selangor"
-                : "Asr • 4:25 PM • Subang Jaya, Selangor"
+                ? "Asar • 4:25 PTG • Subang Jaya, Selangor\(personalizedSuffix)"
+                : "Asr • 4:25 PM • Subang Jaya, Selangor\(personalizedSuffix)"
         }
+    }
+
+    private var personalizedTodayNotificationSuffix: String {
+        guard todayPrayerCheckInEnabled else { return "" }
+        let firstName = ForYouUserProfileService.load().firstName?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !firstName.isEmpty else { return "" }
+        return isMalayAppLanguage() ? " untuk \(firstName)" : ", \(firstName)"
     }
 
     private var prayerMessageStyleSection: some View {
