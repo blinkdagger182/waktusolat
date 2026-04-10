@@ -53,7 +53,8 @@ private struct ZikirProvider: TimelineProvider {
             for: .init(
                 date: now,
                 prayers: prayers,
-                surface: surface
+                surface: surface,
+                includeFridayBoostsOverride: nil
             )
         )
     }

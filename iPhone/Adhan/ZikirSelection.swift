@@ -21,6 +21,7 @@ struct ZikirSelectionContext {
     let date: Date
     let prayers: [Prayer]
     let surface: Surface
+    let includeFridayBoostsOverride: Bool?
 }
 
 struct ZikirSelectionResult {
@@ -54,17 +55,22 @@ enum ZikirSelector {
         let resolver = ZikirBucketResolver(prayers: context.prayers, now: context.date)
         let bucketWindow = resolver.resolve()
         let slotStart = slotStartDate(for: context.date, within: bucketWindow)
-        let slotKey = makeSlotKey(bucket: bucketWindow.bucket, slotStart: slotStart)
+        let includeFridayBoosts = context.includeFridayBoostsOverride ?? resolver.isFriday
+        let slotKey = makeSlotKey(
+            bucket: bucketWindow.bucket,
+            slotStart: slotStart,
+            includeFridayBoosts: includeFridayBoosts
+        )
         let candidates = filteredCandidates(
             for: bucketWindow.bucket,
-            isFriday: resolver.isFriday,
+            isFriday: includeFridayBoosts,
             maxDisplayLength: context.surface.maxDisplayLength
         )
         let fallbackPhrase = candidates.first ?? fallbackPhrase(for: bucketWindow.bucket)
 
         var state = loadState()
         if let existingID = state.slotSelections[slotKey],
-           let existing = candidates.first(where: { $0.id == existingID }) ?? ZikirLibrary.all.first(where: { $0.id == existingID }) {
+           let existing = candidates.first(where: { $0.id == existingID }) {
             let refreshDate = min(bucketWindow.end, slotStart.addingTimeInterval(ZikirSharedStore.slotLength))
             return ZikirSelectionResult(
                 phrase: existing,
@@ -149,10 +155,15 @@ enum ZikirSelector {
         return min(candidate, window.end)
     }
 
-    private static func makeSlotKey(bucket: ZikirTimeBucket, slotStart: Date) -> String {
+    private static func makeSlotKey(
+        bucket: ZikirTimeBucket,
+        slotStart: Date,
+        includeFridayBoosts: Bool
+    ) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate, .withTime, .withTimeZone]
-        return "\(bucket.rawValue)|\(formatter.string(from: slotStart))"
+        let modeKey = includeFridayBoosts ? "friday" : "standard"
+        return "\(bucket.rawValue)|\(modeKey)|\(formatter.string(from: slotStart))"
     }
 
     private static func loadState() -> ZikirSelectionState {

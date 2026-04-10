@@ -1473,6 +1473,7 @@ final class ForYouPlanGeneratorService {
     ) -> [ForYouTimelineEntry] {
         prayers.flatMap { prayer -> [ForYouTimelineEntry] in
             let canonicalName = canonicalPrayerName(prayer.nameTransliteration)
+            let displayPrayerName = todayPrayerDisplayName(for: prayer, canonicalName: canonicalName, date: prayer.time)
             guard let rule = notificationRule(for: canonicalName, settings: settings), rule.enabled else {
                 return []
             }
@@ -1487,8 +1488,8 @@ final class ForYouPlanGeneratorService {
                         kind: .prayer,
                         momentType: momentType(for: canonicalName),
                         time: preTime,
-                        title: localizedPrayerName(prayer.nameTransliteration),
-                        subtitle: preNotificationSubtitle(minutes: rule.preMinutes, prayerName: localizedPrayerName(prayer.nameTransliteration), location: settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city),
+                        title: displayPrayerName,
+                        subtitle: preNotificationSubtitle(minutes: rule.preMinutes, prayerName: displayPrayerName, location: settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city),
                         icon: "bell.badge",
                         arabicText: prayer.nameArabic,
                         reference: nil,
@@ -1506,8 +1507,8 @@ final class ForYouPlanGeneratorService {
                     kind: .prayer,
                     momentType: momentType(for: canonicalName),
                     time: prayer.time,
-                    title: localizedPrayerName(prayer.nameTransliteration),
-                    subtitle: livePrayerSubtitle(prayerName: localizedPrayerName(prayer.nameTransliteration), location: settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city),
+                    title: displayPrayerName,
+                    subtitle: livePrayerSubtitle(prayerName: displayPrayerName, location: settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city),
                     icon: icon(for: canonicalName),
                     arabicText: prayer.nameArabic,
                     reference: nil,
@@ -1520,6 +1521,13 @@ final class ForYouPlanGeneratorService {
 
             return entries
         }
+    }
+
+    private func todayPrayerDisplayName(for prayer: Prayer, canonicalName: String, date: Date) -> String {
+        guard canonicalName == "dhuhr", Calendar.current.component(.weekday, from: date) == 6 else {
+            return localizedPrayerName(prayer.nameTransliteration)
+        }
+        return isMalayAppLanguage() ? "Jumaat" : "Jumuah"
     }
 
     private func buildZikirEntries(
@@ -1535,12 +1543,13 @@ final class ForYouPlanGeneratorService {
                 for: .init(
                     date: anchor.date,
                     prayers: prayers,
-                    surface: .app
+                    surface: .app,
+                    includeFridayBoostsOverride: false
                 )
             )
 
             let location = settings.currentPrayerAreaName ?? settings.activePrayerLocationDisplayName ?? settings.currentLocation?.city
-            let title = selection.helperTitle.isEmpty ? appLocalized(selection.bucket.titleKey) : selection.helperTitle
+            let title = todayZikirDisplayTitle(for: selection)
             let subtitle = location.map { "\(selection.phrase.localizedTranslation()) • \($0)" } ?? selection.phrase.localizedTranslation()
             let moment = momentType(for: anchor.bucket)
 
@@ -1559,6 +1568,24 @@ final class ForYouPlanGeneratorService {
                 progressRequiresLongPress: anchor.bucket == .night
             )
         }
+    }
+
+    private func todayZikirDisplayTitle(for selection: ZikirSelectionResult) -> String {
+        let helper = selection.helperTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !helper.isEmpty else { return appLocalized(selection.bucket.titleKey) }
+
+        let helperLower = helper.lowercased()
+        let englishOnlyTodayTitles: Set<String> = [
+            "a fuller selawat for friday",
+            "a return to allah",
+            "a quick blessing for this hour"
+        ]
+
+        if englishOnlyTodayTitles.contains(helperLower) {
+            return selection.phrase.textArabic
+        }
+
+        return helper
     }
 
     private func progressTarget(for bucket: ZikirTimeBucket) -> Int? {

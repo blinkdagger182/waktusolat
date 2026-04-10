@@ -2643,7 +2643,8 @@ extension Settings {
                 for: .init(
                     date: triggerTime,
                     prayers: prayerObj.prayers,
-                    surface: .app
+                    surface: .app,
+                    includeFridayBoostsOverride: nil
                 )
             )
             let message = buildZikirNotificationContent(for: result, city: city)

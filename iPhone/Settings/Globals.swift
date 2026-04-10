@@ -979,8 +979,10 @@ func localizedPrayerName(_ raw: String) -> String {
         return "Ishraq"
     case "dhuha", "duha":
         return "Dhuha"
-    case "zuhur", "dhuhr", "jumuah":
-        return isMalay ? "Jumaat" : appLocalized("Dhuhr")
+    case "jumuah":
+        return isMalay ? "Jumaat" : "Jumuah"
+    case "zuhur", "dhuhr":
+        return isMalay ? "Zuhur" : appLocalized("Dhuhr")
     case "asar", "asr":
         return appLocalized("Asr")
     case "isyak", "isya", "isha":

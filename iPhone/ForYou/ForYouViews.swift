@@ -2346,6 +2346,9 @@ private struct ForYouPrayerTabPanel: View {
         case "dhuha":
             return "Dhuha"
         case "dhuhr":
+            if Calendar.current.component(.weekday, from: entry.time) == 6 {
+                return isMalayAppLanguage() ? "Jumaat" : "Jumuah"
+            }
             return isMalayAppLanguage() ? "Zuhur" : "Dhuhr"
         case "asr":
             return isMalayAppLanguage() ? "Asar" : "Asr"
@@ -3143,6 +3146,9 @@ private struct ForYouExpandableWeatherCard: View {
         case "dhuha":
             return "Dhuha"
         case "dhuhr":
+            if Calendar.current.component(.weekday, from: plan.date) == 6 {
+                return isMalayAppLanguage() ? "Jumaat" : "Jumuah"
+            }
             return isMalayAppLanguage() ? "Zohor" : "Dhuhr"
         case "asr":
             return isMalayAppLanguage() ? "Asar" : "Asr"
