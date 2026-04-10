@@ -341,7 +341,7 @@ struct AlAdhanApp: App {
                             PrayerTrackerStore.setStatus(status, for: prayer)
                             WidgetCenter.shared.reloadAllTimelines()
                             if PrayerTrackerStore.pendingBacklogPrayers(
-                                currentPrayerName: settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish
+                                currentPrayerName: prayerTrackerDuePrayerName
                             ).isEmpty {
                                 PrayerTrackerStore.markPromptedToday()
                                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -856,8 +856,27 @@ struct AlAdhanApp: App {
 
     private var pendingPrayerTrackerPromptPrayers: [PrayerTrackerPrayer] {
         PrayerTrackerStore.pendingBacklogPrayers(
-            currentPrayerName: settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish
+            currentPrayerName: prayerTrackerDuePrayerName
         )
+    }
+
+    private var prayerTrackerDuePrayerName: String? {
+        if let currentPrayerName = settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish {
+            return currentPrayerName
+        }
+
+        let prayerSource = settings.prayers?.fullPrayers.isEmpty == false
+            ? settings.prayers?.fullPrayers
+            : settings.prayers?.prayers
+
+        let now = Date()
+        let latestDuePrayer = prayerSource?
+            .filter { prayer in
+                prayer.time <= now && PrayerTrackerPrayer.resolve(from: prayer.nameTransliteration ?? prayer.nameEnglish) != nil
+            }
+            .max(by: { $0.time < $1.time })
+
+        return latestDuePrayer?.nameTransliteration ?? latestDuePrayer?.nameEnglish
     }
 
     private static func configureLegacyTabBarAppearance() {
@@ -1440,6 +1459,14 @@ private struct PrayerTrackerBacklogModal: View {
     @State private var dragOffset: CGSize = .zero
     @State private var swipeDecision: PrayerTrackerStatus?
 
+    private var topPrayer: PrayerTrackerPrayer? {
+        prayers.first
+    }
+
+    private var previewPrayers: [PrayerTrackerPrayer] {
+        Array(prayers.dropFirst().prefix(2))
+    }
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.26)
@@ -1470,19 +1497,23 @@ private struct PrayerTrackerBacklogModal: View {
                 }
 
                 ZStack {
-                    ForEach(Array(prayers.prefix(3).enumerated()), id: \.element) { index, prayer in
-                        backlogCard(for: prayer, isTopCard: index == 0)
-                            .scaleEffect(index == 0 ? 1 : (index == 1 ? 0.965 : 0.935))
-                            .offset(
-                                x: index == 0 ? dragOffset.width : 0,
-                                y: CGFloat(index) * 14
-                            )
-                            .rotationEffect(.degrees(index == 0 ? Double(dragOffset.width / 18) : 0))
-                            .opacity(index == 0 ? 1 : (index == 1 ? 0.84 : 0.68))
-                            .zIndex(Double(3 - index))
+                    ForEach(Array(previewPrayers.enumerated()), id: \.element) { index, prayer in
+                        backlogCard(for: prayer, isTopCard: false)
+                            .scaleEffect(index == 0 ? 0.965 : 0.935)
+                            .offset(y: CGFloat(index + 1) * 14)
+                            .opacity(index == 0 ? 0.84 : 0.68)
+                            .zIndex(Double(2 - index))
+                    }
+
+                    if let topPrayer {
+                        backlogCard(for: topPrayer, isTopCard: true)
+                            .offset(x: dragOffset.width, y: dragOffset.height * 0.08)
+                            .rotationEffect(.degrees(Double(dragOffset.width / 18)))
+                            .zIndex(4)
                     }
                 }
-                .frame(height: 320)
+                .frame(height: 348)
+                .animation(.spring(response: 0.34, dampingFraction: 0.86), value: prayers)
 
                 HStack {
                     Text(isMalayAppLanguage() ? "Kiri: belum" : "Left: no")
@@ -1512,10 +1543,11 @@ private struct PrayerTrackerBacklogModal: View {
 
     @ViewBuilder
     private func backlogCard(for prayer: PrayerTrackerPrayer, isTopCard: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        let baseCard = VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(prayer.localizedTitle)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(cardTextColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(
@@ -1524,7 +1556,7 @@ private struct PrayerTrackerBacklogModal: View {
                         : "Swipe right if you prayed, or left if you did not."
                 )
                 .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(cardSecondaryTextColor)
                 .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -1559,7 +1591,14 @@ private struct PrayerTrackerBacklogModal: View {
         .padding(.horizontal, 2)
         .padding(.vertical, 4)
         .shadow(color: Color.black.opacity(isTopCard ? 0.12 : 0.05), radius: isTopCard ? 18 : 8, x: 0, y: isTopCard ? 10 : 4)
-        .gesture(isTopCard ? swipeGesture(for: prayer) : nil)
+
+        if isTopCard {
+            baseCard
+                .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .highPriorityGesture(swipeGesture(for: prayer))
+        } else {
+            baseCard
+        }
     }
 
     private func swipeBadge(text: String, color: Color, isActive: Bool) -> some View {
@@ -1593,6 +1632,24 @@ private struct PrayerTrackerBacklogModal: View {
             return Color.red
         case .pending, .none:
             return Color.primary.opacity(0.06)
+        }
+    }
+
+    private var cardTextColor: Color {
+        switch swipeDecision {
+        case .prayed, .missed:
+            return Color.black.opacity(0.88)
+        case .pending, .none:
+            return .primary
+        }
+    }
+
+    private var cardSecondaryTextColor: Color {
+        switch swipeDecision {
+        case .prayed, .missed:
+            return Color.black.opacity(0.68)
+        case .pending, .none:
+            return .secondary
         }
     }
 

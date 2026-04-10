@@ -302,6 +302,7 @@ struct OtherView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
     @AppStorage(QuranContentLanguage.storageKey) private var quranLanguageCode = effectiveQuranContentLanguage().rawValue
+    @AppStorage("libraryDailyQuranAnimatedKeyV1") private var dailyQuranAnimatedKey = ""
     @State private var dailyQuranQuote: LibraryDailyQuranQuote?
     @State private var selectedFullSurah: FullSurahSelection?
     @State private var resumeSelection: FullSurahSelection?
@@ -370,14 +371,28 @@ struct OtherView: View {
         return true
     }
 
+    private func dailyQuranArabicCacheKey(for reference: String) -> String {
+        "dailyInspirationCachedArabicV1.\(quranContentLanguageCode()).\(reference)"
+    }
+
+    private func loadCachedDailyQuranArabic(for reference: String) -> String? {
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        return defaults?.string(forKey: dailyQuranArabicCacheKey(for: reference))
+    }
+
+    private func saveCachedDailyQuranArabic(_ arabicText: String, for reference: String) {
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        defaults?.set(arabicText, forKey: dailyQuranArabicCacheKey(for: reference))
+    }
+
     @MainActor
     private func loadDailyQuranQuote() async {
-        isLoadingDailyQuranQuote = true
-        defer { isLoadingDailyQuranQuote = false }
+        isLoadingDailyQuranQuote = dailyQuranQuote == nil
 
         let loadedFromCache = loadDailyQuranQuoteFromCache()
         if loadedFromCache {
             await loadDailyQuranArabicIfNeeded()
+            isLoadingDailyQuranQuote = false
             return
         }
 
@@ -390,6 +405,8 @@ struct OtherView: View {
             dailyQuranQuote = nil
             dailyQuranArabicText = nil
         }
+
+        isLoadingDailyQuranQuote = false
     }
 
     private func saveDailyQuranQuoteToCache(_ quote: LibraryDailyQuranQuote) {
@@ -439,8 +456,17 @@ struct OtherView: View {
             return
         }
 
+        if let cachedArabic = loadCachedDailyQuranArabic(for: quote.reference), !cachedArabic.isEmpty {
+            dailyQuranArabicText = cachedArabic
+            return
+        }
+
         do {
-            dailyQuranArabicText = try await DailyQuranArabicAPI.fetchArabicText(reference: quote.reference)
+            let fetchedArabic = try await DailyQuranArabicAPI.fetchArabicText(reference: quote.reference)
+            dailyQuranArabicText = fetchedArabic
+            if let fetchedArabic, !fetchedArabic.isEmpty {
+                saveCachedDailyQuranArabic(fetchedArabic, for: quote.reference)
+            }
         } catch {
             dailyQuranArabicText = nil
         }
@@ -480,6 +506,18 @@ struct OtherView: View {
             initialAyahNumber: parsed.ayahNumber,
             dailyAyahNumber: parsed.ayahNumber
         )
+    }
+
+    private func dailyQuranAnimationKey(for quote: LibraryDailyQuranQuote) -> String {
+        "\(quote.dayKey)|\(quranContentLanguageCode())|\(quote.reference)"
+    }
+
+    private func shouldAnimateDailyQuranArabic(for quote: LibraryDailyQuranQuote) -> Bool {
+        hasActivatedLibrary && dailyQuranAnimatedKey != dailyQuranAnimationKey(for: quote)
+    }
+
+    private func markDailyQuranArabicAnimationCompleted(for quote: LibraryDailyQuranQuote) {
+        dailyQuranAnimatedKey = dailyQuranAnimationKey(for: quote)
     }
 
     private func loadResumeSelection() {
@@ -530,7 +568,26 @@ struct OtherView: View {
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .listRowSeparator(.hidden)
 
-                if isLoadingDailyQuranQuote {
+                if let quote = dailyQuranQuote {
+                    DailyQuranHeroCard(
+                        quote: quote,
+                        arabicText: dailyQuranArabicText,
+                        shouldAnimateArabic: shouldAnimateDailyQuranArabic(for: quote),
+                        accentColor: settings.accentColor.color,
+                        arabicFontName: preferredQuranArabicFontName(settings: settings, size: 29),
+                        onOpenVerse: openDailyQuranModal,
+                        onOpenSurah: openDailyQuranFullSurah
+                    )
+                    .onAppear {
+                        if shouldAnimateDailyQuranArabic(for: quote),
+                           let dailyQuranArabicText,
+                           !dailyQuranArabicText.isEmpty {
+                            markDailyQuranArabicAnimationCompleted(for: quote)
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
+                    .listRowSeparator(.hidden)
+                } else if isLoadingDailyQuranQuote {
                     LibrarySkeletonBlock()
                         .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
                         .listRowSeparator(.hidden)
@@ -539,18 +596,6 @@ struct OtherView: View {
                         .frame(height: 110)
                         .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 14, trailing: 16))
                         .listRowSeparator(.hidden)
-                } else if let quote = dailyQuranQuote {
-                    DailyQuranHeroCard(
-                        quote: quote,
-                        arabicText: dailyQuranArabicText,
-                        shouldAnimateArabic: hasActivatedLibrary,
-                        accentColor: settings.accentColor.color,
-                        arabicFontName: preferredQuranArabicFontName(settings: settings, size: 29),
-                        onOpenVerse: openDailyQuranModal,
-                        onOpenSurah: openDailyQuranFullSurah
-                    )
-                    .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
-                    .listRowSeparator(.hidden)
                 } else {
                     Text(isMalayAppLanguage()
                          ? "Buka widget Al-Quran Harian sekali untuk memuatkan ayat hari ini di sini."

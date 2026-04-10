@@ -21,8 +21,34 @@ struct DailyQuranHeroCard: View {
     let onOpenVerse: () -> Void
     let onOpenSurah: () -> Void
 
+    @State private var animateThisPresentation = false
     @State private var revealedArabicWordCount = 0
     @State private var highlightedArabicWordIndex: Int?
+
+    init(
+        quote: LibraryDailyQuranQuote,
+        arabicText: String?,
+        shouldAnimateArabic: Bool,
+        accentColor: Color,
+        arabicFontName: String,
+        onOpenVerse: @escaping () -> Void,
+        onOpenSurah: @escaping () -> Void
+    ) {
+        self.quote = quote
+        self.arabicText = arabicText
+        self.shouldAnimateArabic = shouldAnimateArabic
+        self.accentColor = accentColor
+        self.arabicFontName = arabicFontName
+        self.onOpenVerse = onOpenVerse
+        self.onOpenSurah = onOpenSurah
+
+        let initialWords = arabicText?.split(separator: " ").count ?? 0
+        let alreadyAnimated = DailyQuranHeroAnimationStore.hasAnimated(quote.reference)
+        let shouldStartRevealed = !shouldAnimateArabic || alreadyAnimated
+        _animateThisPresentation = State(initialValue: shouldAnimateArabic && !alreadyAnimated)
+        _revealedArabicWordCount = State(initialValue: shouldStartRevealed ? initialWords : 0)
+        _highlightedArabicWordIndex = State(initialValue: nil)
+    }
 
     private let arabicRevealStepDuration: UInt64 = 230_000_000
     private let arabicHighlightHoldDuration: UInt64 = 160_000_000
@@ -43,6 +69,10 @@ struct DailyQuranHeroCard: View {
 
     private var arabicWords: [String] {
         arabicText?.split(separator: " ").map(String.init) ?? []
+    }
+
+    private var shouldRenderAnimatedArabic: Bool {
+        animateThisPresentation && !DailyQuranHeroAnimationStore.hasAnimated(quote.reference)
     }
 
     private var revealedArabicView: Text {
@@ -108,28 +138,38 @@ struct DailyQuranHeroCard: View {
 
             VStack(alignment: .center, spacing: 10) {
                 if let arabicText, !arabicText.isEmpty {
-                    ZStack {
+                    if shouldRenderAnimatedArabic {
+                        ZStack {
+                            Text(arabicText)
+                                .font(.custom(arabicFontName, size: 24))
+                                .lineSpacing(6)
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(.clear)
+                                .frame(maxWidth: .infinity)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityHidden(true)
+
+                            revealedArabicView
+                                .font(.custom(arabicFontName, size: 24))
+                                .lineSpacing(6)
+                                .multilineTextAlignment(.center)
+                                .shadow(
+                                    color: highlightedArabicWordIndex == nil ? .clear : .white.opacity(0.55),
+                                    radius: highlightedArabicWordIndex == nil ? 0 : 14
+                                )
+                                .frame(maxWidth: .infinity)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .animation(.easeOut(duration: arabicRevealAnimationDuration), value: revealedArabicWordCount)
+                                .animation(.easeOut(duration: arabicRevealAnimationDuration * 0.75), value: highlightedArabicWordIndex)
+                        }
+                    } else {
                         Text(arabicText)
                             .font(.custom(arabicFontName, size: 24))
                             .lineSpacing(6)
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(.clear)
+                            .foregroundStyle(.primary.opacity(0.92))
                             .frame(maxWidth: .infinity)
                             .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityHidden(true)
-
-                        revealedArabicView
-                            .font(.custom(arabicFontName, size: 24))
-                            .lineSpacing(6)
-                            .multilineTextAlignment(.center)
-                            .shadow(
-                                color: highlightedArabicWordIndex == nil ? .clear : .white.opacity(0.55),
-                                radius: highlightedArabicWordIndex == nil ? 0 : 14
-                            )
-                            .frame(maxWidth: .infinity)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .animation(.easeOut(duration: arabicRevealAnimationDuration), value: revealedArabicWordCount)
-                            .animation(.easeOut(duration: arabicRevealAnimationDuration * 0.75), value: highlightedArabicWordIndex)
                     }
                 }
 
@@ -201,21 +241,15 @@ struct DailyQuranHeroCard: View {
                 .stroke(.white.opacity(0.32), lineWidth: 1)
         }
         .shadow(color: accentColor.opacity(0.12), radius: 22, x: 0, y: 12)
-        .task(id: "\(arabicText ?? quote.reference)|\(shouldAnimateArabic)") {
-            let animationKey = arabicText ?? quote.reference
+        .task(id: "\(quote.reference)|\(arabicText == nil ? "missing-arabic" : "ready")|\(shouldAnimateArabic)") {
+            let animationKey = quote.reference
             guard !arabicWords.isEmpty else {
                 revealedArabicWordCount = 0
                 highlightedArabicWordIndex = nil
                 return
             }
 
-            guard shouldAnimateArabic else {
-                revealedArabicWordCount = arabicWords.count
-                highlightedArabicWordIndex = nil
-                return
-            }
-
-            if DailyQuranHeroAnimationStore.hasAnimated(animationKey) {
+            guard shouldRenderAnimatedArabic else {
                 revealedArabicWordCount = arabicWords.count
                 highlightedArabicWordIndex = nil
                 return

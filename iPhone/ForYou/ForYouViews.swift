@@ -1325,7 +1325,7 @@ private struct ForYouTimelineEntryContentCard: View {
                 Label {
                     Text(entry.title)
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundStyle(ForYouPalette.ink)
+                        .foregroundStyle(prayerCardPrimaryTextColor)
                         .lineLimit(1)
                 } icon: {
                     Image(systemName: entry.icon)
@@ -1335,7 +1335,7 @@ private struct ForYouTimelineEntryContentCard: View {
                 Spacer(minLength: 8)
                 Text(entry.kind.displayTitle)
                     .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(ForYouPalette.secondaryInk)
+                    .foregroundStyle(prayerCardSecondaryTextColor)
             }
 
             if let trackerStatus {
@@ -1352,7 +1352,7 @@ private struct ForYouTimelineEntryContentCard: View {
 
             Text(entry.subtitle)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(ForYouPalette.secondaryInk)
+                .foregroundStyle(prayerCardSecondaryTextColor)
                 .lineLimit(collapsed ? 1 : nil)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -1377,7 +1377,7 @@ private struct ForYouTimelineEntryContentCard: View {
             if !collapsed, let arabicText = entry.arabicText {
                 Text(arabicText)
                     .font(.custom(preferredQuranArabicFontName(settings: settings, size: 18), size: 18))
-                    .foregroundStyle(ForYouPalette.ink)
+                    .foregroundStyle(prayerCardPrimaryTextColor)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .multilineTextAlignment(.trailing)
                     .lineSpacing(3)
@@ -1534,6 +1534,24 @@ private struct ForYouTimelineEntryContentCard: View {
             return Color(red: 0.99, green: 0.93, blue: 0.93)
         case .pending, .none:
             return Color(uiColor: .secondarySystemBackground)
+        }
+    }
+
+    private var prayerCardPrimaryTextColor: Color {
+        switch trackerStatus {
+        case .prayed, .missed:
+            return Color.black.opacity(0.88)
+        case .pending, .none:
+            return ForYouPalette.ink
+        }
+    }
+
+    private var prayerCardSecondaryTextColor: Color {
+        switch trackerStatus {
+        case .prayed, .missed:
+            return Color.black.opacity(0.66)
+        case .pending, .none:
+            return ForYouPalette.secondaryInk
         }
     }
 

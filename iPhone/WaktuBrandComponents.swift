@@ -52,9 +52,9 @@ struct WaktuFloatingWordsBackground: View {
     private let malaysiaWords: [WaktuWordConfig] = [
         WaktuWordConfig(text: "waktu", size: 132, bx: 110, by: 120, dx: 105, dy: 12, speed: 0.18, phase: 0.0, dir: 1, rot: 2.0, blur: 1.0, opacity: 0.12),
         WaktuWordConfig(text: "وقت", size: 138, bx: 295, by: 195, dx: 118, dy: 14, speed: 0.16, phase: 1.0, dir: -1, rot: 2.0, blur: 1.0, opacity: 0.11),
-        WaktuWordConfig(text: "masa", size: 120, bx: 100, by: 360, dx: 88, dy: 10, speed: 0.20, phase: 2.0, dir: 1, rot: 1.6, blur: 0.8, opacity: 0.11),
-        WaktuWordConfig(text: "زمن", size: 142, bx: 305, by: 520, dx: 110, dy: 13, speed: 0.18, phase: 2.5, dir: -1, rot: 2.4, blur: 0.7, opacity: 0.13),
-        WaktuWordConfig(text: "jam", size: 114, bx: 115, by: 700, dx: 94, dy: 10, speed: 0.19, phase: 0.6, dir: 1, rot: 1.7, blur: 0.8, opacity: 0.12),
+        WaktuWordConfig(text: "waktu", size: 120, bx: 100, by: 360, dx: 88, dy: 10, speed: 0.20, phase: 2.0, dir: 1, rot: 1.6, blur: 0.8, opacity: 0.11),
+        WaktuWordConfig(text: "وقت", size: 142, bx: 305, by: 520, dx: 110, dy: 13, speed: 0.18, phase: 2.5, dir: -1, rot: 2.4, blur: 0.7, opacity: 0.13),
+        WaktuWordConfig(text: "waktu", size: 114, bx: 115, by: 700, dx: 94, dy: 10, speed: 0.19, phase: 0.6, dir: 1, rot: 1.7, blur: 0.8, opacity: 0.12),
     ]
 
     private let globalWords: [WaktuWordConfig] = [
