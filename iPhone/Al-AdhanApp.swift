@@ -202,6 +202,7 @@ struct AlAdhanApp: App {
     @State private var isLaunching = true
     @State private var quranDeepLink: QuranDeepLinkPayload?
     @State private var selectedTab: AppTab = .adhan
+    @State private var lastPrimaryTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
     @State private var showMalaysiaLocationToast = false
     @State private var pendingFirstRunNotificationPrompt = false
@@ -569,7 +570,22 @@ struct AlAdhanApp: App {
 
     @available(iOS 26, *)
     private var systemTabView: some View {
-        TabView(selection: $selectedTab) {
+        ZStack(alignment: .bottomTrailing) {
+            systemPrimaryTabView(selection: systemTabSelection)
+
+            supportTabContent
+                .opacity(selectedTab == .plus ? 1 : 0)
+                .allowsHitTesting(selectedTab == .plus)
+
+            systemPlusAccessoryButton
+                .padding(.trailing, 14)
+                .padding(.bottom, 8)
+        }
+    }
+
+    @available(iOS 26, *)
+    private func systemPrimaryTabView(selection: Binding<AppTab>) -> some View {
+        TabView(selection: selection) {
             AdhanView { _ in }
                 .tabItem {
                     Label("Azan", systemImage: "safari")
@@ -587,13 +603,36 @@ struct AlAdhanApp: App {
                     Label(isMalayAppLanguage() ? "Pustaka" : "Library", systemImage: "books.vertical")
                 }
                 .tag(AppTab.library)
-
-            supportTabContent
-                .tabItem {
-                    Label("Plus", systemImage: "moon.stars")
-                }
-                .tag(AppTab.plus)
         }
+    }
+
+    @available(iOS 26, *)
+    private var systemTabSelection: Binding<AppTab> {
+        Binding(
+            get: { selectedTab == .plus ? lastPrimaryTab : selectedTab },
+            set: { newValue in
+                lastPrimaryTab = newValue
+                selectedTab = newValue
+            }
+        )
+    }
+
+    @available(iOS 26, *)
+    private var systemPlusAccessoryButton: some View {
+        Button {
+            settings.hapticFeedback()
+            selectedTab = .plus
+            Task {
+                await revenueCat.refreshOfferings()
+            }
+        } label: {
+            Image(systemName: "moon.stars")
+                .font(.system(size: 19, weight: .semibold))
+                .padding(16)
+        }
+        .buttonStyle(.glass)
+        .tint(selectedTab == .plus ? settings.accentColor.color : nil)
+        .accessibilityLabel("Plus")
     }
 
     @ViewBuilder
