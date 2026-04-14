@@ -554,6 +554,9 @@ struct AlAdhanApp: App {
             }
         }
         .onAppear {
+            if selectedTab == .plus {
+                selectedTab = .adhan
+            }
             if firstLaunchSheet {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     withAnimation {
@@ -604,12 +607,6 @@ struct AlAdhanApp: App {
                     Label(isMalayAppLanguage() ? "Pustaka" : "Library", systemImage: "books.vertical")
                 }
                 .tag(AppTab.library)
-
-            supportTabContent
-                .tabItem {
-                    Label("Plus", systemImage: "moon.stars")
-                }
-                .tag(AppTab.plus)
         }
     }
 
@@ -633,10 +630,6 @@ struct AlAdhanApp: App {
             }
             .opacity(selectedTab == .library ? 1 : 0)
             .allowsHitTesting(selectedTab == .library)
-
-            supportTabContent
-                .opacity(selectedTab == .plus ? 1 : 0)
-                .allowsHitTesting(selectedTab == .plus)
         }
     }
 
@@ -668,8 +661,6 @@ struct AlAdhanApp: App {
                 }
             )
             .clipShape(Capsule(style: .continuous))
-
-            bottomTabBarButton(for: .plus, systemImage: "moon.stars", title: "Plus")
         }
         .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.10), radius: 18, x: 0, y: 10)
         .padding(.horizontal, 16)
@@ -843,11 +834,19 @@ struct AlAdhanApp: App {
     private func presentPrayerTrackerPromptIfNeeded() {
         guard !isLaunching, !settings.firstLaunch else { return }
         guard !showAdhanSheet, !showDailyQuranWidgetIntro, !showMarketingModal else { return }
+        guard selectedTab == .today else {
+            showPrayerTrackerPrompt = false
+            forYouPrayerTrackerPromptVisible = false
+            return
+        }
         guard !showPrayerTrackerPrompt else { return }
-        guard selectedTab == .today else { return }
         guard ForYouUserProfileService.load().wantsPrayerTrackerCard == true else { return }
         guard !PrayerTrackerStore.hasPromptedToday() else { return }
-        guard !pendingPrayerTrackerPromptPrayers.isEmpty else { return }
+        guard !pendingPrayerTrackerPromptPrayers.isEmpty else {
+            showPrayerTrackerPrompt = false
+            forYouPrayerTrackerPromptVisible = false
+            return
+        }
         withAnimation(.easeInOut(duration: 0.2)) {
             showPrayerTrackerPrompt = true
             forYouPrayerTrackerPromptVisible = true
@@ -1456,15 +1455,28 @@ private struct PrayerTrackerBacklogModal: View {
     let onSelectStatus: (PrayerTrackerPrayer, PrayerTrackerStatus) -> Void
     let onDismiss: () -> Void
 
+    @State private var displayedPrayers: [PrayerTrackerPrayer]
     @State private var dragOffset: CGSize = .zero
     @State private var swipeDecision: PrayerTrackerStatus?
+    @State private var isSwipeTransitioning = false
+
+    init(
+        prayers: [PrayerTrackerPrayer],
+        onSelectStatus: @escaping (PrayerTrackerPrayer, PrayerTrackerStatus) -> Void,
+        onDismiss: @escaping () -> Void
+    ) {
+        self.prayers = prayers
+        self.onSelectStatus = onSelectStatus
+        self.onDismiss = onDismiss
+        _displayedPrayers = State(initialValue: prayers)
+    }
 
     private var topPrayer: PrayerTrackerPrayer? {
-        prayers.first
+        displayedPrayers.first
     }
 
     private var previewPrayers: [PrayerTrackerPrayer] {
-        Array(prayers.dropFirst().prefix(2))
+        Array(displayedPrayers.dropFirst().prefix(2))
     }
 
     var body: some View {
@@ -1501,7 +1513,7 @@ private struct PrayerTrackerBacklogModal: View {
                         backlogCard(for: prayer, isTopCard: false)
                             .scaleEffect(index == 0 ? 0.965 : 0.935)
                             .offset(y: CGFloat(index + 1) * 14)
-                            .opacity(index == 0 ? 0.84 : 0.68)
+                            .opacity(1)
                             .zIndex(Double(2 - index))
                     }
 
@@ -1513,7 +1525,6 @@ private struct PrayerTrackerBacklogModal: View {
                     }
                 }
                 .frame(height: 348)
-                .animation(.spring(response: 0.34, dampingFraction: 0.86), value: prayers)
 
                 HStack {
                     Text(isMalayAppLanguage() ? "Kiri: belum" : "Left: no")
@@ -1536,8 +1547,15 @@ private struct PrayerTrackerBacklogModal: View {
             .padding(.horizontal, 20)
         }
         .onChange(of: prayers) { updatedPrayers in
-            dragOffset = .zero
-            swipeDecision = nil
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                if !isSwipeTransitioning {
+                    displayedPrayers = updatedPrayers
+                }
+                dragOffset = .zero
+                swipeDecision = nil
+            }
         }
     }
 
@@ -1656,16 +1674,22 @@ private struct PrayerTrackerBacklogModal: View {
     private func swipeGesture(for prayer: PrayerTrackerPrayer) -> some Gesture {
         DragGesture(minimumDistance: 12)
             .onChanged { value in
-                dragOffset = value.translation
-                if value.translation.width > 32 {
-                    swipeDecision = .prayed
-                } else if value.translation.width < -32 {
-                    swipeDecision = .missed
-                } else {
-                    swipeDecision = nil
+                guard !isSwipeTransitioning else { return }
+                var transaction = Transaction()
+                transaction.animation = nil
+                withTransaction(transaction) {
+                    dragOffset = value.translation
+                    if value.translation.width > 32 {
+                        swipeDecision = .prayed
+                    } else if value.translation.width < -32 {
+                        swipeDecision = .missed
+                    } else {
+                        swipeDecision = nil
+                    }
                 }
             }
             .onEnded { value in
+                guard !isSwipeTransitioning else { return }
                 let threshold: CGFloat = 120
                 let predictedWidth = value.predictedEndTranslation.width
 
@@ -1683,12 +1707,26 @@ private struct PrayerTrackerBacklogModal: View {
     }
 
     private func commitSwipe(_ status: PrayerTrackerStatus, for prayer: PrayerTrackerPrayer, flyRight: Bool) {
+        isSwipeTransitioning = true
         withAnimation(.spring(response: 0.24, dampingFraction: 0.82)) {
             dragOffset = CGSize(width: flyRight ? 900 : -900, height: 0)
             swipeDecision = status
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            var transaction = Transaction()
+            transaction.animation = .spring(response: 0.28, dampingFraction: 0.88)
+            withTransaction(transaction) {
+                displayedPrayers.removeAll { $0 == prayer }
+            }
+
+            var resetTransaction = Transaction()
+            resetTransaction.animation = nil
+            withTransaction(resetTransaction) {
+                dragOffset = .zero
+                swipeDecision = nil
+                isSwipeTransitioning = false
+            }
             onSelectStatus(prayer, status)
         }
     }

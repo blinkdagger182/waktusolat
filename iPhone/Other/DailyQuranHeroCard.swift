@@ -21,6 +21,8 @@ struct DailyQuranHeroCard: View {
     let onOpenVerse: () -> Void
     let onOpenSurah: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @State private var animateThisPresentation = false
     @State private var revealedArabicWordCount = 0
     @State private var highlightedArabicWordIndex: Int?
@@ -210,7 +212,7 @@ struct DailyQuranHeroCard: View {
                     .font(.footnote.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
-                    .foregroundStyle(Color.black.opacity(0.82))
+                    .foregroundStyle(colorScheme == .dark ? Color.white : Color.black.opacity(0.82))
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(accentColor)

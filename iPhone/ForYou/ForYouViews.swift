@@ -399,7 +399,7 @@ private struct ForYouMiniProgressTracker: View {
                         .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                         .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.48)
+                        .minimumScaleFactor(0.60)
                         .frame(maxWidth: .infinity, alignment: .trailing)
 
                     Image(systemName: symbol)
@@ -433,7 +433,7 @@ private struct ForYouMiniProgressTracker: View {
                     .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                     .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.48)
+                    .minimumScaleFactor(0.60)
                     .frame(maxWidth: .infinity, alignment: .trailing)
 
                 HStack(spacing: 6) {
@@ -555,13 +555,13 @@ private struct ForYouMiniProgressTracker: View {
     private func trackerArabicFontSize(for label: String) -> CGFloat {
         switch label.count {
         case 0...18:
-            return 22
+            return 25
         case 19...28:
-            return 20
+            return 23
         case 29...40:
-            return 18
+            return 21
         default:
-            return 16
+            return 19
         }
     }
 }
@@ -675,7 +675,6 @@ private struct ForYouPremiumPreviewView: View {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(.white.opacity(0.08))
                 )
-                .blur(radius: 6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(.black.opacity(0.20))
