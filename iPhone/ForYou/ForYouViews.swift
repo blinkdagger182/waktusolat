@@ -3384,6 +3384,8 @@ private struct ForYouDayView: View {
     let selection: ForYouPrayerCardSelection?
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
     let onScrollToPrayerTimeline: () -> Void
+    let greetingNamespace: Namespace.ID
+    let greetingSplashActive: Bool
 
     @State private var selectedPageIndex: Int?
     @State private var showsExpandedSunEntries = false
@@ -3396,7 +3398,9 @@ private struct ForYouDayView: View {
         onToggleCompletion: @escaping (String) -> Void,
         selection: ForYouPrayerCardSelection?,
         onSelectionChange: @escaping (ForYouPrayerCardSelection) -> Void,
-        onScrollToPrayerTimeline: @escaping () -> Void
+        onScrollToPrayerTimeline: @escaping () -> Void,
+        greetingNamespace: Namespace.ID,
+        greetingSplashActive: Bool
     ) {
         self.viewModel = viewModel
         self.greetingName = greetingName
@@ -3405,6 +3409,8 @@ private struct ForYouDayView: View {
         self.selection = selection
         self.onSelectionChange = onSelectionChange
         self.onScrollToPrayerTimeline = onScrollToPrayerTimeline
+        self.greetingNamespace = greetingNamespace
+        self.greetingSplashActive = greetingSplashActive
         _selectedPageIndex = State(initialValue: Self.resolveInitialPageIndex(for: viewModel.plan))
     }
 
@@ -3645,6 +3651,8 @@ private struct ForYouDayView: View {
                     Text(greetingLine)
                         .font(ForYouTypography.playfairHeadline(size: 31))
                         .foregroundStyle(ForYouPalette.ink)
+                        .matchedGeometryEffect(id: "forYouGreeting", in: greetingNamespace, isSource: !greetingSplashActive)
+                        .opacity(greetingSplashActive ? 0 : 1)
                         .accessibilityAddTraits(.isHeader)
                         .padding(.top, 10)
                         .padding(.bottom, 10)
@@ -4124,6 +4132,8 @@ struct ForYouRootView: View {
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
     @State private var scrollOffset: CGFloat = 0
     @State private var shouldAutoScrollOnAppear = ForYouSessionStore.shouldAutoScrollOnTodayAppear()
+    @Namespace private var greetingNamespace
+    @State private var greetingSplashActive = false
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
 
     private let focusScrollAnchor = UnitPoint(x: 0.5, y: 0.18)
@@ -4168,7 +4178,9 @@ struct ForYouRootView: View {
                                                 anchor: focusScrollAnchor
                                             )
                                         }
-                                    }
+                                    },
+                                    greetingNamespace: greetingNamespace,
+                                    greetingSplashActive: greetingSplashActive
                                 )
                                 .frame(maxWidth: .infinity)
                             }
@@ -4276,6 +4288,19 @@ struct ForYouRootView: View {
                 .zIndex(30)
             }
         }
+        .overlay {
+            ForYouGreetingSplashOverlay(
+                name: viewModel.profile.firstName,
+                namespace: greetingNamespace,
+                isActive: greetingSplashActive,
+                onDismiss: {
+                    withAnimation(.easeIn(duration: 0.48)) {
+                        greetingSplashActive = false
+                    }
+                }
+            )
+            .zIndex(40)
+        }
         .task {
             refresh()
         }
@@ -4283,10 +4308,30 @@ struct ForYouRootView: View {
         .onChange(of: settings.nextPrayer?.id) { _ in refresh() }
         .onChange(of: settings.currentLocation?.city) { _ in refresh() }
         .onChange(of: revenueCat.hasBuyMeKopi) { _ in refresh() }
+        .onChange(of: viewModel.showOnboarding) { isShowing in
+            // Trigger immediately so greetingSplashActive=true bridges the dim gap
+            // (dimmedOverlayVisible includes greetingSplashActive — no clear frame)
+            if !isShowing {
+                triggerGreetingSplashIfNeeded()
+            }
+        }
+        .onChange(of: viewModel.dayViewModels.isEmpty) { isEmpty in
+            // Data just loaded for the first time this session — show splash
+            if !isEmpty, !viewModel.showOnboarding {
+                triggerGreetingSplashIfNeeded()
+            }
+        }
     }
 
     private var dimmedOverlayVisible: Bool {
-        viewModel.showOnboarding || prayerTrackerPromptVisible
+        viewModel.showOnboarding || prayerTrackerPromptVisible || greetingSplashActive
+    }
+
+    private func triggerGreetingSplashIfNeeded() {
+        guard ForYouSessionStore.shouldShowGreetingSplash() else { return }
+        let name = viewModel.profile.firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !name.isEmpty else { return }
+        greetingSplashActive = true
     }
 
     private var hasPremiumAccess: Bool {
@@ -4539,11 +4584,22 @@ private struct ForYouSwipeOnboardingView: View {
                 .padding(.top, 16)
 
                 ZStack {
+                    // Third card (furthest back)
+                    if cardIndex + 2 < CardKind.allCases.count {
+                        cardView(for: CardKind(rawValue: cardIndex + 2) ?? .reminderStyle, isBackground: true)
+                            .scaleEffect(0.88)
+                            .offset(y: 22)
+                            .opacity(0.22)
+                            .allowsHitTesting(false)
+                    }
+
+                    // Second card
                     if cardIndex + 1 < CardKind.allCases.count {
                         cardView(for: CardKind(rawValue: cardIndex + 1) ?? .reminderStyle, isBackground: true)
                             .scaleEffect(0.94)
-                            .offset(y: 14)
-                            .opacity(0.35)
+                            .offset(y: 11)
+                            .opacity(0.55)
+                            .allowsHitTesting(false)
                     }
 
                     onboardingForegroundCard
@@ -4566,10 +4622,10 @@ private struct ForYouSwipeOnboardingView: View {
                     .buttonStyle(.plain)
                     .frame(maxWidth: 430)
                 } else {
-                    Text(isMalayAppLanguage() ? "Leret kiri untuk Tidak, kanan untuk Ya" : "Swipe left for No, right for Yes")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(Color.secondary)
-                        .padding(.bottom, 8)
+//                    Text(isMalayAppLanguage() ? "Leret kiri untuk Tidak, kanan untuk Ya" : "Swipe left for No, right for Yes")
+//                        .font(.footnote.weight(.medium))
+//                        .foregroundStyle(Color.secondary)
+//                        .padding(.bottom, 8)
                 }
             }
             .padding(.horizontal, 20)
@@ -4657,12 +4713,16 @@ private struct ForYouSwipeOnboardingView: View {
                 Button(action: advanceButtonTapped) {
                     Text(isMalayAppLanguage() ? "Selesai" : "Done")
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color(uiColor: .systemBackground))
+                        .foregroundStyle(
+                            canAdvanceCurrentCard
+                                ? Color(uiColor: .systemBackground)
+                                : Color.primary.opacity(0.30)
+                        )
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
                         .background(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(canAdvanceCurrentCard ? settings.accentColor.color : Color.primary.opacity(0.14))
+                                .fill(canAdvanceCurrentCard ? settings.accentColor.color : Color.primary.opacity(0.10))
                         )
                 }
                 .disabled(!canAdvanceCurrentCard)
@@ -4691,9 +4751,10 @@ private struct ForYouSwipeOnboardingView: View {
                                 }
 
                                 Text(example(for: style))
-                                    .font(.subheadline)
+                                    .font(.caption)
                                     .foregroundStyle(Color.secondary)
-                                    .multilineTextAlignment(.leading)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
                             }
                             .padding(16)
                             .background(
@@ -4707,6 +4768,18 @@ private struct ForYouSwipeOnboardingView: View {
                         }
                         .buttonStyle(.plain)
                     }
+
+                    Button(action: {
+                        selectedReminderStyle = .gentle
+                        advanceButtonTapped()
+                    }) {
+                        Text(isMalayAppLanguage() ? "Langkau buat masa ini" : "Skip for now")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(Color.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
                 }
 
             // DISABLED: prayer tracker onboarding cards
@@ -4729,7 +4802,9 @@ private struct ForYouSwipeOnboardingView: View {
             }
         }
         .padding(24)
-        .frame(maxWidth: .infinity, minHeight: 430, alignment: .topLeading)
+        .frame(maxWidth: .infinity)
+        .frame(height: 480, alignment: .topLeading)
+        .clipped()
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .fill(onboardingCardFill(for: kind, isBackground: isBackground))
@@ -5038,5 +5113,64 @@ private struct ForYouConfettiBurstView: View {
             }
         }
         .onAppear { animate = true }
+    }
+}
+
+// MARK: - Greeting Splash
+
+private struct ForYouGreetingSplashOverlay: View {
+    let name: String?
+    let namespace: Namespace.ID
+    let isActive: Bool
+    let onDismiss: () -> Void
+
+    @State private var visibleCharCount = 0
+
+    private var greetingText: String {
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? "Hello!" : "Hello, \(trimmed)!"
+    }
+
+    private var characters: [Character] { Array(greetingText) }
+
+    var body: some View {
+        if isActive {
+            ZStack {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .ignoresSafeArea()
+
+                Color.black.opacity(0.62)
+                    .ignoresSafeArea()
+
+                // Letter-by-letter greeting — wrapped in a single layout group
+                // so matchedGeometryEffect tracks the whole text block as one unit
+                HStack(spacing: 0) {
+                    ForEach(Array(characters.enumerated()), id: \.offset) { index, char in
+                        Text(String(char))
+                            .opacity(visibleCharCount > index ? 1 : 0)
+                            .offset(y: visibleCharCount > index ? 0 : 6)
+                            .animation(
+                                .easeOut(duration: 0.16).delay(Double(index) * 0.055),
+                                value: visibleCharCount
+                            )
+                    }
+                }
+                .font(ForYouTypography.playfairHeadline(size: 31))
+                .foregroundStyle(Color.white)
+                .matchedGeometryEffect(id: "forYouGreeting", in: namespace, isSource: true)
+                .padding(.horizontal, 32)
+            }
+            .transition(.opacity)
+            .onAppear {
+                // Reveal characters
+                visibleCharCount = characters.count
+                // Dismiss after characters finish + brief hold
+                let revealDuration = Double(characters.count) * 0.055 + 0.16
+                DispatchQueue.main.asyncAfter(deadline: .now() + revealDuration + 0.6) {
+                    onDismiss()
+                }
+            }
+        }
     }
 }

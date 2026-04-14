@@ -665,7 +665,7 @@ struct AlAdhanApp: App {
         }
         .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.10), radius: 18, x: 0, y: 10)
         .padding(.horizontal, 16)
-        .padding(.bottom, 10)
+        .padding(.bottom, -10)
     }
 
     private func bottomTabBarButton(for tab: AppTab, systemImage: String, title: String) -> some View {

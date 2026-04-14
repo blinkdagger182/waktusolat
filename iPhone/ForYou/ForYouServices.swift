@@ -449,6 +449,7 @@ enum ForYouDhikrProgressStore {
 
 enum ForYouSessionStore {
     private static var hasVisitedTodayTab = false
+    private static var hasShownGreetingSplash = false
 
     static func shouldAutoScrollOnTodayAppear() -> Bool {
         let shouldAutoScroll = hasVisitedTodayTab
@@ -456,8 +457,16 @@ enum ForYouSessionStore {
         return shouldAutoScroll
     }
 
+    /// Returns true the first time called per session (in-memory only, resets on launch).
+    static func shouldShowGreetingSplash() -> Bool {
+        guard !hasShownGreetingSplash else { return false }
+        hasShownGreetingSplash = true
+        return true
+    }
+
     static func reset() {
         hasVisitedTodayTab = false
+        hasShownGreetingSplash = false
     }
 }
 
