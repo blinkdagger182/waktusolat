@@ -333,34 +333,35 @@ struct AlAdhanApp: App {
                     .zIndex(50)
                 }
             }
-            .overlay {
-                if showPrayerTrackerPrompt, !pendingPrayerTrackerPromptPrayers.isEmpty {
-                    PrayerTrackerBacklogModal(
-                        prayers: pendingPrayerTrackerPromptPrayers,
-                        onSelectStatus: { prayer, status in
-                            PrayerTrackerStore.setStatus(status, for: prayer)
-                            WidgetCenter.shared.reloadAllTimelines()
-                            if PrayerTrackerStore.pendingBacklogPrayers(
-                                currentPrayerName: prayerTrackerDuePrayerName
-                            ).isEmpty {
-                                PrayerTrackerStore.markPromptedToday()
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    showPrayerTrackerPrompt = false
-                                    forYouPrayerTrackerPromptVisible = false
-                                }
-                            }
-                        },
-                        onDismiss: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showPrayerTrackerPrompt = false
-                                forYouPrayerTrackerPromptVisible = false
-                            }
-                        }
-                    )
-                    .transition(.opacity)
-                    .zIndex(60)
-                }
-            }
+            // DISABLED: prayer tracker backlog modal
+//            .overlay {
+//                if showPrayerTrackerPrompt, !pendingPrayerTrackerPromptPrayers.isEmpty {
+//                    PrayerTrackerBacklogModal(
+//                        prayers: pendingPrayerTrackerPromptPrayers,
+//                        onSelectStatus: { prayer, status in
+//                            PrayerTrackerStore.setStatus(status, for: prayer)
+//                            WidgetCenter.shared.reloadAllTimelines()
+//                            if PrayerTrackerStore.pendingBacklogPrayers(
+//                                currentPrayerName: prayerTrackerDuePrayerName
+//                            ).isEmpty {
+//                                PrayerTrackerStore.markPromptedToday()
+//                                withAnimation(.easeInOut(duration: 0.2)) {
+//                                    showPrayerTrackerPrompt = false
+//                                    forYouPrayerTrackerPromptVisible = false
+//                                }
+//                            }
+//                        },
+//                        onDismiss: {
+//                            withAnimation(.easeInOut(duration: 0.2)) {
+//                                showPrayerTrackerPrompt = false
+//                                forYouPrayerTrackerPromptVisible = false
+//                            }
+//                        }
+//                    )
+//                    .transition(.opacity)
+//                    .zIndex(60)
+//                }
+//            }
             .overlay(alignment: .top) {
                 if showSupportPromoToast || (showMalaysiaLocationToast && malaysiaLocationToastPayload != nil) {
                     VStack(spacing: 8) {
@@ -832,25 +833,28 @@ struct AlAdhanApp: App {
     }
 
     private func presentPrayerTrackerPromptIfNeeded() {
-        guard !isLaunching, !settings.firstLaunch else { return }
-        guard !showAdhanSheet, !showDailyQuranWidgetIntro, !showMarketingModal else { return }
-        guard selectedTab == .today else {
-            showPrayerTrackerPrompt = false
-            forYouPrayerTrackerPromptVisible = false
-            return
-        }
-        guard !showPrayerTrackerPrompt else { return }
-        guard ForYouUserProfileService.load().wantsPrayerTrackerCard == true else { return }
-        guard !PrayerTrackerStore.hasPromptedToday() else { return }
-        guard !pendingPrayerTrackerPromptPrayers.isEmpty else {
-            showPrayerTrackerPrompt = false
-            forYouPrayerTrackerPromptVisible = false
-            return
-        }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            showPrayerTrackerPrompt = true
-            forYouPrayerTrackerPromptVisible = true
-        }
+        // DISABLED: prayer tracker backlog prompt
+        showPrayerTrackerPrompt = false
+        forYouPrayerTrackerPromptVisible = false
+//        guard !isLaunching, !settings.firstLaunch else { return }
+//        guard !showAdhanSheet, !showDailyQuranWidgetIntro, !showMarketingModal else { return }
+//        guard selectedTab == .today else {
+//            showPrayerTrackerPrompt = false
+//            forYouPrayerTrackerPromptVisible = false
+//            return
+//        }
+//        guard !showPrayerTrackerPrompt else { return }
+//        guard ForYouUserProfileService.load().wantsPrayerTrackerCard == true else { return }
+//        guard !PrayerTrackerStore.hasPromptedToday() else { return }
+//        guard !pendingPrayerTrackerPromptPrayers.isEmpty else {
+//            showPrayerTrackerPrompt = false
+//            forYouPrayerTrackerPromptVisible = false
+//            return
+//        }
+//        withAnimation(.easeInOut(duration: 0.2)) {
+//            showPrayerTrackerPrompt = true
+//            forYouPrayerTrackerPromptVisible = true
+//        }
     }
 
     private var pendingPrayerTrackerPromptPrayers: [PrayerTrackerPrayer] {

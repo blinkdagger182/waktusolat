@@ -976,36 +976,42 @@ private struct ForYouTimelineRailView: View {
     }
 
     private var timePillFillColor: Color {
-        switch trackerStatus {
-        case .prayed:
-            return Color.green.opacity(0.15)
-        case .missed:
-            return Color.red.opacity(0.12)
-        case .pending, .none:
-            return ForYouPalette.timePillFill
-        }
+        // DISABLED: prayer tracker status colors
+//        switch trackerStatus {
+//        case .prayed:
+//            return Color.green.opacity(0.15)
+//        case .missed:
+//            return Color.red.opacity(0.12)
+//        case .pending, .none:
+//            return ForYouPalette.timePillFill
+//        }
+        return ForYouPalette.timePillFill
     }
 
     private var timePillStrokeColor: Color {
-        switch trackerStatus {
-        case .prayed:
-            return Color.green.opacity(0.35)
-        case .missed:
-            return Color.red.opacity(0.30)
-        case .pending, .none:
-            return isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke
-        }
+        // DISABLED: prayer tracker status colors
+//        switch trackerStatus {
+//        case .prayed:
+//            return Color.green.opacity(0.35)
+//        case .missed:
+//            return Color.red.opacity(0.30)
+//        case .pending, .none:
+//            return isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke
+//        }
+        return isFocused ? settings.accentColor.color.opacity(0.45) : ForYouPalette.stroke
     }
 
     private var connectorColor: Color {
-        switch trackerStatus {
-        case .prayed:
-            return Color.green.opacity(0.30)
-        case .missed:
-            return Color.red.opacity(0.22)
-        case .pending, .none:
-            return isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke
-        }
+        // DISABLED: prayer tracker status colors
+//        switch trackerStatus {
+//        case .prayed:
+//            return Color.green.opacity(0.30)
+//        case .missed:
+//            return Color.red.opacity(0.22)
+//        case .pending, .none:
+//            return isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke
+//        }
+        return isFocused ? settings.accentColor.color.opacity(0.28) : ForYouPalette.stroke
     }
 }
 
@@ -1023,21 +1029,22 @@ private struct ForYouPrayerTimelineEntryView: View {
                 entry: entry,
                 isFocused: isFocused,
                 isCompact: false,
-                extendsToNext: extendsToNext,
-                trackerStatus: trackerStatus,
-                onTrackerTap: trackerPrayer.map { prayer in
-                    {
-                        settings.hapticFeedback()
-                        let next = nextPrayerTrackerStatus(after: trackerStatus ?? .pending)
-                        PrayerTrackerStore.setStatus(next, for: prayer, on: date)
-                        WidgetCenter.shared.reloadAllTimelines()
-                    }
-                }
+                extendsToNext: extendsToNext
+                // DISABLED: prayer tracker status
+//                trackerStatus: trackerStatus,
+//                onTrackerTap: trackerPrayer.map { prayer in
+//                    {
+//                        settings.hapticFeedback()
+//                        let next = nextPrayerTrackerStatus(after: trackerStatus ?? .pending)
+//                        PrayerTrackerStore.setStatus(next, for: prayer, on: date)
+//                        WidgetCenter.shared.reloadAllTimelines()
+//                    }
+//                }
             )
 
             ForYouPrayerStackedCards(
                 entry: entry,
-                trackerStatus: trackerStatus,
+                trackerStatus: nil, // DISABLED: prayer tracker status
                 selection: selection,
                 onSelectionChange: onSelectionChange
             )
@@ -1047,15 +1054,16 @@ private struct ForYouPrayerTimelineEntryView: View {
 
     @EnvironmentObject private var settings: Settings
 
-    private var trackerPrayer: PrayerTrackerPrayer? {
-        guard !isSunWindowEntry else { return nil }
-        return PrayerTrackerPrayer.resolve(from: entry.title)
-    }
-
-    private var trackerStatus: PrayerTrackerStatus? {
-        guard let trackerPrayer else { return nil }
-        return PrayerTrackerStore.status(for: trackerPrayer, on: date)
-    }
+    // DISABLED: prayer tracker status
+//    private var trackerPrayer: PrayerTrackerPrayer? {
+//        guard !isSunWindowEntry else { return nil }
+//        return PrayerTrackerPrayer.resolve(from: entry.title)
+//    }
+//
+//    private var trackerStatus: PrayerTrackerStatus? {
+//        guard let trackerPrayer else { return nil }
+//        return PrayerTrackerStore.status(for: trackerPrayer, on: date)
+//    }
 
     private var isSunWindowEntry: Bool {
         let normalizedID = entry.id.lowercased()
@@ -1337,17 +1345,18 @@ private struct ForYouTimelineEntryContentCard: View {
                     .foregroundStyle(prayerCardSecondaryTextColor)
             }
 
-            if let trackerStatus {
-                Text(prayerTrackerLabel(for: trackerStatus))
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundStyle(prayerTrackerTextColor(for: trackerStatus))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(prayerTrackerFillColor(for: trackerStatus))
-                    )
-            }
+            // DISABLED: prayer tracker status pill
+//            if let trackerStatus {
+//                Text(prayerTrackerLabel(for: trackerStatus))
+//                    .font(.system(size: 11, weight: .bold, design: .rounded))
+//                    .foregroundStyle(prayerTrackerTextColor(for: trackerStatus))
+//                    .padding(.horizontal, 10)
+//                    .padding(.vertical, 6)
+//                    .background(
+//                        Capsule(style: .continuous)
+//                            .fill(prayerTrackerFillColor(for: trackerStatus))
+//                    )
+//            }
 
             Text(entry.subtitle)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -1526,32 +1535,38 @@ private struct ForYouTimelineEntryContentCard: View {
     }
 
     private var cardFillColor: Color {
-        switch trackerStatus {
-        case .prayed:
-            return Color(red: 0.90, green: 0.97, blue: 0.92)
-        case .missed:
-            return Color(red: 0.99, green: 0.93, blue: 0.93)
-        case .pending, .none:
-            return Color(uiColor: .secondarySystemBackground)
-        }
+        // DISABLED: prayer tracker card background colors
+//        switch trackerStatus {
+//        case .prayed:
+//            return Color(red: 0.90, green: 0.97, blue: 0.92)
+//        case .missed:
+//            return Color(red: 0.99, green: 0.93, blue: 0.93)
+//        case .pending, .none:
+//            return Color(uiColor: .secondarySystemBackground)
+//        }
+        return Color(uiColor: .secondarySystemBackground)
     }
 
     private var prayerCardPrimaryTextColor: Color {
-        switch trackerStatus {
-        case .prayed, .missed:
-            return Color.black.opacity(0.88)
-        case .pending, .none:
-            return ForYouPalette.ink
-        }
+        // DISABLED: prayer tracker text colors
+//        switch trackerStatus {
+//        case .prayed, .missed:
+//            return Color.black.opacity(0.88)
+//        case .pending, .none:
+//            return ForYouPalette.ink
+//        }
+        return ForYouPalette.ink
     }
 
     private var prayerCardSecondaryTextColor: Color {
-        switch trackerStatus {
-        case .prayed, .missed:
-            return Color.black.opacity(0.66)
-        case .pending, .none:
-            return ForYouPalette.secondaryInk
-        }
+        // DISABLED: prayer tracker text colors
+//        switch trackerStatus {
+//        case .prayed, .missed:
+//            return Color.black.opacity(0.66)
+//        case .pending, .none:
+//            return ForYouPalette.secondaryInk
+//        }
+        return ForYouPalette.secondaryInk
     }
 
     private func cleanedPrayerDetail(_ value: String?) -> String? {
@@ -1570,14 +1585,16 @@ private struct ForYouTimelineEntryContentCard: View {
     }
 
     private var cardStrokeColor: Color {
-        switch trackerStatus {
-        case .prayed:
-            return Color.green.opacity(0.26)
-        case .missed:
-            return Color.red.opacity(0.20)
-        case .pending, .none:
-            return ForYouPalette.stroke
-        }
+        // DISABLED: prayer tracker stroke colors
+//        switch trackerStatus {
+//        case .prayed:
+//            return Color.green.opacity(0.26)
+//        case .missed:
+//            return Color.red.opacity(0.20)
+//        case .pending, .none:
+//            return ForYouPalette.stroke
+//        }
+        return ForYouPalette.stroke
     }
 
     private func prayerTrackerLabel(for status: PrayerTrackerStatus) -> String {
@@ -4443,10 +4460,11 @@ private struct ForYouSwipeOnboardingView: View {
     @State private var cardIndex = 0
     @State private var draftName: String
     @State private var selectedReminderStyle: ForYouReminderStyle
-    @State private var wantsPrayerTrackerCard: Bool?
+    // DISABLED: prayer tracker onboarding state
+//    @State private var wantsPrayerTrackerCard: Bool?
     @State private var swipeOffset: CGFloat = 0
     @State private var demoOffset: CGFloat = 0
-    @State private var swipeDecision: PrayerTrackerStatus?
+    @State private var swipeDecision: PrayerTrackerStatus? // kept for gesture compatibility, unused
     @State private var textPhase = false
     @State private var showConfetti = false
 
@@ -4462,19 +4480,20 @@ private struct ForYouSwipeOnboardingView: View {
         self.onComplete = onComplete
         _draftName = State(initialValue: initialProfile.firstName ?? "")
         _selectedReminderStyle = State(initialValue: initialProfile.reminderStyle ?? .gentle)
-        _wantsPrayerTrackerCard = State(initialValue: initialProfile.wantsPrayerTrackerCard)
+        // DISABLED: _wantsPrayerTrackerCard = State(initialValue: initialProfile.wantsPrayerTrackerCard)
     }
 
     private enum CardKind: Int, CaseIterable {
         case intro
         case name
         case reminderStyle
-        case prayerTracker
-        case prayerCheckIn
+        // DISABLED: prayer tracker onboarding cards
+//        case prayerTracker
+//        case prayerCheckIn
 
         var isSwipeable: Bool {
             switch self {
-            case .prayerTracker, .prayerCheckIn: true
+            // DISABLED: case .prayerTracker, .prayerCheckIn: true
             case .intro, .name, .reminderStyle: false
             }
         }
@@ -4492,8 +4511,7 @@ private struct ForYouSwipeOnboardingView: View {
             !draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .reminderStyle:
             true
-        case .prayerTracker, .prayerCheckIn:
-            false
+        // DISABLED: case .prayerTracker, .prayerCheckIn: false
         }
     }
 
@@ -4522,7 +4540,7 @@ private struct ForYouSwipeOnboardingView: View {
 
                 ZStack {
                     if cardIndex + 1 < CardKind.allCases.count {
-                        cardView(for: CardKind(rawValue: cardIndex + 1) ?? .prayerCheckIn, isBackground: true)
+                        cardView(for: CardKind(rawValue: cardIndex + 1) ?? .reminderStyle, isBackground: true)
                             .scaleEffect(0.94)
                             .offset(y: 14)
                             .opacity(0.35)
@@ -4599,7 +4617,8 @@ private struct ForYouSwipeOnboardingView: View {
 
                 introRow(icon: "sparkles", text: isMalayAppLanguage() ? "Bina tab Today mengikut rentak anda" : "Shape Today around your rhythm")
                 introRow(icon: "bell.badge", text: isMalayAppLanguage() ? "Laraskan nada peringatan mengikut nama anda" : "Tune reminder tone around your name")
-                introRow(icon: "checkmark.circle", text: isMalayAppLanguage() ? "Tambah semakan ringkas untuk solat semasa" : "Add a quick check-in for the current prayer")
+                // DISABLED: prayer tracker intro row
+//                introRow(icon: "checkmark.circle", text: isMalayAppLanguage() ? "Tambah semakan ringkas untuk solat semasa" : "Add a quick check-in for the current prayer")
 
             case .name:
                 animatedTextBlock(
@@ -4690,44 +4709,23 @@ private struct ForYouSwipeOnboardingView: View {
                     }
                 }
 
-            case .prayerTracker:
-                animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 4" : "Card 4",
-                    title: isMalayAppLanguage() ? "Mahukan kad penjejak solat?" : "Do you want a prayer tracker card?",
-                    subtitle: isMalayAppLanguage() ? "Kami boleh tanya setiap kali anda buka tab ini, supaya anda cepat semak ritma hari anda." : "We can ask each time you open this tab, so you can quickly check in with your prayer rhythm."
-                )
-
-                swipeDecisionFooter
-
-            case .prayerCheckIn:
-                animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 5" : "Card 5",
-                    title: isMalayAppLanguage() ? "Sudahkah anda menunaikan \(currentPrayerTitle)?" : "Have you prayed \(currentPrayerTitle)?",
-                    subtitle: isMalayAppLanguage() ? "Leret untuk jawab. Jika sudah, kami akan raikan sedikit." : "Swipe to answer. If you have, we’ll celebrate a little."
-                )
-
-                HStack(spacing: 14) {
-                    Image(systemName: currentPrayerIcon)
-                        .font(.system(size: 28, weight: .regular))
-                        .foregroundStyle(settings.accentColor.color)
-                        .frame(width: 56, height: 56)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(settings.accentColor.color.opacity(0.12))
-                        )
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(currentPrayerTitle)
-                            .font(.title3.weight(.semibold))
-                        Text(isMalayAppLanguage() ? "Jawab dengan leretan yang ringkas." : "Answer with a simple swipe.")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.secondary)
-                    }
-
-                    Spacer()
-                }
-
-                swipeDecisionFooter
+            // DISABLED: prayer tracker onboarding cards
+//            case .prayerTracker:
+//                animatedTextBlock(
+//                    eyebrow: isMalayAppLanguage() ? "Kad 4" : "Card 4",
+//                    title: isMalayAppLanguage() ? "Mahukan kad penjejak solat?" : "Do you want a prayer tracker card?",
+//                    subtitle: isMalayAppLanguage() ? "Kami boleh tanya setiap kali anda buka tab ini, supaya anda cepat semak ritma hari anda." : "We can ask each time you open this tab, so you can quickly check in with your prayer rhythm."
+//                )
+//                swipeDecisionFooter
+//
+//            case .prayerCheckIn:
+//                animatedTextBlock(
+//                    eyebrow: isMalayAppLanguage() ? "Kad 5" : "Card 5",
+//                    title: isMalayAppLanguage() ? "Sudahkah anda menunaikan \(currentPrayerTitle)?" : "Have you prayed \(currentPrayerTitle)?",
+//                    subtitle: isMalayAppLanguage() ? "Leret untuk jawab. Jika sudah, kami akan raikan sedikit." : "Swipe to answer. If you have, we’ll celebrate a little."
+//                )
+//                HStack(spacing: 14) { ... }
+//                swipeDecisionFooter
             }
         }
         .padding(24)
@@ -4828,24 +4826,26 @@ private struct ForYouSwipeOnboardingView: View {
             swipeOffset = exitOffset
         }
 
-        let isLastCard = currentCard == .prayerCheckIn
-        if isLastCard && answer {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) {
-                showConfetti = true
-            }
-        }
+        // DISABLED: prayer tracker last card confetti
+//        let isLastCard = currentCard == .prayerCheckIn
+//        if isLastCard && answer {
+//            DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) {
+//                showConfetti = true
+//            }
+//        }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
             swipeOffset = 0
             swipeDecision = nil
             switch currentCard {
-            case .prayerTracker:
-                wantsPrayerTrackerCard = answer
-                settings.hapticFeedback()
-                cardIndex = min(cardIndex + 1, CardKind.allCases.count - 1)
-            case .prayerCheckIn:
-                settings.hapticFeedback()
-                completeOnboarding(afterCelebration: answer)
+            // DISABLED: prayer tracker swipe handlers
+//            case .prayerTracker:
+//                wantsPrayerTrackerCard = answer
+//                settings.hapticFeedback()
+//                cardIndex = min(cardIndex + 1, CardKind.allCases.count - 1)
+//            case .prayerCheckIn:
+//                settings.hapticFeedback()
+//                completeOnboarding(afterCelebration: answer)
             case .intro, .name, .reminderStyle:
                 break
             }
@@ -4855,6 +4855,11 @@ private struct ForYouSwipeOnboardingView: View {
     private func advanceButtonTapped() {
         guard canAdvanceCurrentCard else { return }
         settings.hapticFeedback()
+        // If this is the last onboarding card, complete instead of advancing
+        if cardIndex == CardKind.allCases.count - 1 {
+            completeOnboarding(afterCelebration: false)
+            return
+        }
         withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
             cardIndex = min(cardIndex + 1, CardKind.allCases.count - 1)
         }
@@ -4872,14 +4877,16 @@ private struct ForYouSwipeOnboardingView: View {
         var profile = initialProfile
         profile.firstName = trimmedName
         profile.reminderStyle = selectedReminderStyle
-        profile.wantsPrayerTrackerCard = wantsPrayerTrackerCard
-        profile.consistencyLevel = profile.consistencyLevel ?? (wantsPrayerTrackerCard == true ? .building : .beginner)
+        // DISABLED: profile.wantsPrayerTrackerCard = wantsPrayerTrackerCard
+        profile.wantsPrayerTrackerCard = false
+        profile.consistencyLevel = profile.consistencyLevel ?? .beginner
         profile.primaryGoal = profile.primaryGoal ?? .preserveFajr
         return profile
     }
 
     private func runSwipeHintIfNeeded() {
-        guard currentCard == .prayerTracker, !didSeeSwipeHint else { return }
+        // DISABLED: prayer tracker swipe hint
+        guard false, !didSeeSwipeHint else { return }
         didSeeSwipeHint = true
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 450_000_000)
@@ -4918,9 +4925,8 @@ private struct ForYouSwipeOnboardingView: View {
         case .name:
             return isMalayAppLanguage() ? "Selesai" : "Done"
         case .reminderStyle:
-            return isMalayAppLanguage() ? "Teruskan" : "Continue"
-        case .prayerTracker, .prayerCheckIn:
-            return isMalayAppLanguage() ? "Teruskan" : "Continue"
+            return isMalayAppLanguage() ? "Mula" : "Get Started"
+        // DISABLED: case .prayerTracker, .prayerCheckIn: return "Continue"
         }
     }
 
