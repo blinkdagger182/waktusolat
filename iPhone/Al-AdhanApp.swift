@@ -526,21 +526,9 @@ struct AlAdhanApp: App {
 
     private var mainTabView: some View {
         Group {
-            if #available(iOS 26, *) {
-                systemTabView
-            } else {
-                ZStack(alignment: .bottom) {
-                    Color(uiColor: .systemGroupedBackground)
-                        .ignoresSafeArea()
-
-                    currentTabContent
-
-                    if !isKeyboardVisible {
-                        customBottomTabBar
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                }
-            }
+            // Temporarily disable the custom legacy tab bar and use the system tab bar
+            // on older iOS versions until the non-iOS 26 safe-area behavior is fixed.
+            systemTabView
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             guard !isKeyboardVisible else { return }
@@ -588,7 +576,6 @@ struct AlAdhanApp: App {
         }
     }
 
-    @available(iOS 26, *)
     private var systemTabView: some View {
         TabView(selection: $selectedTab) {
             AdhanView { _ in }
@@ -634,7 +621,7 @@ struct AlAdhanApp: App {
         }
     }
 
-    private var customBottomTabBar: some View {
+    private func customBottomTabBar(bottomSafeAreaInset: CGFloat) -> some View {
         HStack(spacing: 20) {
             HStack(spacing: 10) {
                 bottomTabBarButton(for: .adhan, systemImage: "safari", title: "Azan")
@@ -665,7 +652,8 @@ struct AlAdhanApp: App {
         }
         .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.10), radius: 18, x: 0, y: 10)
         .padding(.horizontal, 16)
-        .padding(.bottom, -10)
+        .padding(.top, 8)
+        .padding(.bottom, max(bottomSafeAreaInset, 10))
     }
 
     private func bottomTabBarButton(for tab: AppTab, systemImage: String, title: String) -> some View {
@@ -883,12 +871,15 @@ struct AlAdhanApp: App {
     }
 
     private static func configureLegacyTabBarAppearance() {
-        let defaultAppearance = UITabBarAppearance()
-        defaultAppearance.configureWithDefaultBackground()
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = .clear
+        appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+        appearance.shadowColor = UIColor.separator.withAlphaComponent(0.12)
 
-        UITabBar.appearance().standardAppearance = defaultAppearance
-        UITabBar.appearance().scrollEdgeAppearance = defaultAppearance
-        UITabBar.appearance().isTranslucent = false
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+        UITabBar.appearance().isTranslucent = true
     }
 
     @available(iOS 26, *)

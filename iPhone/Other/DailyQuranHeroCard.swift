@@ -56,6 +56,16 @@ struct DailyQuranHeroCard: View {
     private let arabicHighlightHoldDuration: UInt64 = 160_000_000
     private let arabicRevealAnimationDuration: Double = 0.72
 
+    /// Picks white or black text to contrast against `accentColor` fill,
+    /// regardless of color scheme (handles white accent in dark mode, etc.)
+    private var buttonTextColor: Color {
+        let ui = UIColor(accentColor)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        ui.getRed(&r, green: &g, blue: &b, alpha: &a)
+        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        return luminance > 0.55 ? Color.black.opacity(0.82) : Color.white
+    }
+
     private var reflectionSourceLabel: String {
         if isMalayAppLanguage() {
             return "Sumber: Abdullah Basmeih"
@@ -212,7 +222,7 @@ struct DailyQuranHeroCard: View {
                     .font(.footnote.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 11)
-                    .foregroundStyle(colorScheme == .dark ? Color.white : Color.black.opacity(0.82))
+                    .foregroundStyle(buttonTextColor)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(accentColor)

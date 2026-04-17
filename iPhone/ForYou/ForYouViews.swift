@@ -2958,7 +2958,7 @@ private struct ForYouExpandableWeatherCard: View {
                         .padding(14)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(ForYouPalette.darkTile)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(.scale(scale: 0.96, anchor: .top).combined(with: .opacity))
                 }
             }
             .clipShape(ForYouBottomRoundedShape(radius: 18))
@@ -4668,11 +4668,11 @@ private struct ForYouSwipeOnboardingView: View {
                 animatedTextBlock(
                     eyebrow: "Today",
                     title: isMalayAppLanguage() ? "Selamat datang ke Today" : "Welcome to Today",
-                    subtitle: isMalayAppLanguage() ? "Kami akan sediakan Today supaya terasa lebih peribadi, lebih lembut, dan lebih berguna setiap kali anda kembali." : "We’ll shape Today so it feels more personal, softer, and more useful every time you come back."
+                    subtitle: isMalayAppLanguage() ? "Kami akan sediakan Today supaya terasa lebih peribadi, lebih lembut, dan lebih berguna setiap kali anda kembali." : "Set the tone once — we’ll take care of the rest."
                 )
 
                 introRow(icon: "sparkles", text: isMalayAppLanguage() ? "Bina tab Today mengikut rentak anda" : "Shape Today around your rhythm")
-                introRow(icon: "bell.badge", text: isMalayAppLanguage() ? "Laraskan nada peringatan mengikut nama anda" : "Tune reminder tone around your name")
+                introRow(icon: "bell.badge", text: isMalayAppLanguage() ? "Laraskan nada peringatan mengikut nama anda" : "Personalize how reminders feel")
                 // DISABLED: prayer tracker intro row
 //                introRow(icon: "checkmark.circle", text: isMalayAppLanguage() ? "Tambah semakan ringkas untuk solat semasa" : "Add a quick check-in for the current prayer")
 
