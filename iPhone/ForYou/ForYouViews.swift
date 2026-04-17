@@ -1668,9 +1668,12 @@ private struct ForYouPrayerTabModalView: View {
     let tab: ForYouPrayerTab
 
     var body: some View {
-        ForYouPrayerTabPanel(entry: entry, tab: tab, mode: .full)
-            .padding(.top, 8)
-            .padding(.bottom, 20)
+        VStack(spacing: 0) {
+            ForYouPrayerTabPanel(entry: entry, tab: tab, mode: .full)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(ForYouPalette.canvas.ignoresSafeArea())
     }
 }
@@ -1772,6 +1775,7 @@ private struct ForYouPrayerTabPanel: View {
             .padding(.horizontal, 10)
             .padding(.bottom, 10)
         }
+        .frame(maxHeight: mode == .full ? .infinity : nil, alignment: .top)
         .onDisappear { player.stop() }
         .task(id: weatherTaskKey) {
             await loadWeatherIfNeeded()
@@ -2076,7 +2080,7 @@ private struct ForYouPrayerTabPanel: View {
                 ScrollView(showsIndicators: false) {
                     fullContent
                         .padding(.top, 2)
-                        .padding(.bottom, tab == .wirid && !content.sections.isEmpty ? 112 : 0)
+                        .padding(.bottom, tab == .wirid && !content.sections.isEmpty ? 164 : 20)
                 }
 
                 if tab == .wirid, !content.sections.isEmpty {
