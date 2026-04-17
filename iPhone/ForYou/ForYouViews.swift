@@ -1041,6 +1041,7 @@ private struct ForYouPrayerTimelineEntryView: View {
 //                    }
 //                }
             )
+            .fixedSize(horizontal: true, vertical: false)
 
             ForYouPrayerStackedCards(
                 entry: entry,
@@ -1048,6 +1049,8 @@ private struct ForYouPrayerTimelineEntryView: View {
                 selection: selection,
                 onSelectionChange: onSelectionChange
             )
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -1108,11 +1111,12 @@ private enum ForYouPrayerTab: String, CaseIterable, Identifiable {
 
 private enum ForYouPrayerCardSelection: Equatable {
     case main(String)
+    case collapsed(String)
     case tab(String, ForYouPrayerTab)
 
     var entryID: String {
         switch self {
-        case .main(let entryID), .tab(let entryID, _):
+        case .main(let entryID), .collapsed(let entryID), .tab(let entryID, _):
             return entryID
         }
     }
@@ -1121,7 +1125,7 @@ private enum ForYouPrayerCardSelection: Equatable {
     /// `.main` scrolls to the prayer row; `.tab` scrolls to that tab's strip.
     var scrollID: String {
         switch self {
-        case .main(let entryID):
+        case .main(let entryID), .collapsed(let entryID):
             return entryID
         case .tab(let entryID, let tab):
             return "\(entryID)-\(tab.rawValue)"
@@ -1130,11 +1134,18 @@ private enum ForYouPrayerCardSelection: Equatable {
 
     var expandedTab: ForYouPrayerTab? {
         switch self {
-        case .main:
+        case .main, .collapsed:
             return nil
         case .tab(_, let tab):
             return tab
         }
+    }
+
+    var isCollapsedMainCard: Bool {
+        if case .collapsed = self {
+            return true
+        }
+        return false
     }
 }
 
@@ -1184,18 +1195,28 @@ private struct ForYouPrayerStackedCards: View {
         isActiveEntry ? selection.expandedTab : nil
     }
 
+    private var mainCardCollapsed: Bool {
+        isActiveEntry ? selection.isCollapsedMainCard : false
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ForYouTimelineEntryContentCard(
                 entry: entry,
                 trackerStatus: trackerStatus,
-                collapsed: expandedTab != nil
+                collapsed: expandedTab != nil || mainCardCollapsed
             )
             .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .onTapGesture {
-                guard selection != .main(entry.id) else { return }
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
-                    onSelectionChange(.main(entry.id))
+                    switch selection {
+                    case .main(let selectedID) where selectedID == entry.id:
+                        onSelectionChange(.collapsed(entry.id))
+                    case .collapsed(let selectedID) where selectedID == entry.id:
+                        onSelectionChange(.main(entry.id))
+                    default:
+                        onSelectionChange(.main(entry.id))
+                    }
                 }
             }
             .zIndex(10)
@@ -1207,6 +1228,8 @@ private struct ForYouPrayerStackedCards: View {
                     .zIndex(zIndex(for: tab, index: index))
             }
         }
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .clipped()
         .sheet(item: $presentedTab) { tab in
             NavigationView {
                 ForYouPrayerTabModalView(entry: entry, tab: tab)
@@ -1258,6 +1281,7 @@ private struct ForYouPrayerStackedCards: View {
         }
         .background(tab.color)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
     }
 
     private func topPadding(for index: Int) -> CGFloat {
@@ -1469,6 +1493,7 @@ private struct ForYouTimelineEntryContentCard: View {
                     .lineLimit(1)
             }
         }
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .padding(collapsed ? 9 : 10)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -1751,6 +1776,8 @@ private struct ForYouPrayerTabPanel: View {
         .task(id: weatherTaskKey) {
             await loadWeatherIfNeeded()
         }
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .clipped()
     }
 
     private func audioFileName(tab: ForYouPrayerTab, prayer: String) -> String {
@@ -1794,6 +1821,7 @@ private struct ForYouPrayerTabPanel: View {
             .foregroundStyle(tab.color)
             .padding(.top, 2)
         }
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
@@ -3633,7 +3661,7 @@ private struct ForYouDayView: View {
 
     private var prayerSelection: ForYouPrayerCardSelection? {
         if let selection,
-           prayerCardSequence.contains(selection) {
+           prayerEntries.contains(where: { $0.id == selection.entryID }) {
             return selection
         }
 
@@ -4395,7 +4423,7 @@ struct ForYouRootView: View {
 
     private var prayerSelection: ForYouPrayerCardSelection? {
         if let selectedPrayerCard,
-           prayerCardSequence.contains(selectedPrayerCard) {
+           prayerEntries.contains(where: { $0.id == selectedPrayerCard.entryID }) {
             return selectedPrayerCard
         }
 
