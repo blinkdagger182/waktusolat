@@ -3448,6 +3448,7 @@ private struct ForYouDayView: View {
     @State private var selectedPageIndex: Int?
     @State private var showsExpandedSunEntries = false
     @State private var showsExpandedWeatherCard = false
+    @EnvironmentObject private var settings: Settings
 
     init(
         viewModel: ForYouDayViewModel,
@@ -3513,19 +3514,12 @@ private struct ForYouDayView: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
         .clipped()
-        .scaleEffect(shouldBlurLockedContent ? 0.982 : 1)
-        .opacity(shouldBlurLockedContent ? 0.92 : 1)
         .offset(y: -10)
-        .blur(radius: shouldBlurLockedContent ? 7 : 0)
         .animation(.spring(response: 0.42, dampingFraction: 0.9), value: viewModel.isLocked)
     }
 
     private var usesSoftPreviewLock: Bool {
         viewModel.isLocked && Calendar.current.isDateInTomorrow(viewModel.plan.date)
-    }
-
-    private var shouldBlurLockedContent: Bool {
-        viewModel.isLocked && !usesSoftPreviewLock
     }
 
     private var background: some View {
@@ -3710,7 +3704,7 @@ private struct ForYouDayView: View {
 
     private func greetingPrayerWindowKey(for prayer: Prayer?) -> String {
         guard let prayer else { return "isha" }
-        let normalized = canonicalPrayerName(prayer.nameTransliteration ?? prayer.nameEnglish)
+        let normalized = normalizedGreetingPrayerName(prayer.nameTransliteration ?? prayer.nameEnglish)
 
         switch normalized {
         case "fajr":
@@ -3729,6 +3723,31 @@ private struct ForYouDayView: View {
             return "isha"
         default:
             return "isha"
+        }
+    }
+
+    private func normalizedGreetingPrayerName(_ value: String?) -> String {
+        let normalized = value?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased() ?? ""
+
+        switch normalized {
+        case "fajr", "subuh":
+            return "fajr"
+        case "shurooq", "syuruk", "sunrise", "ishraq":
+            return "sunrise"
+        case "dhuha":
+            return "dhuha"
+        case "dhuhr", "zuhur", "jumuah":
+            return "dhuhr"
+        case "asr", "asar":
+            return "asr"
+        case "maghrib", "magrib":
+            return "maghrib"
+        case "isha", "isyak", "isya":
+            return "isha"
+        default:
+            return normalized
         }
     }
 
