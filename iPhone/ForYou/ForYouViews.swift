@@ -599,7 +599,12 @@ private struct ForYouTrackerInteractionModifier: ViewModifier {
 private func forYouRecommendationTrackerDescriptor(
     recommendation: ForYouTimelineRecommendation
 ) -> ForYouMiniProgressTracker.Descriptor? {
-    let title = recommendation.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let title = recommendation.title
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .lowercased()
+        .replacingOccurrences(of: "‑", with: "-")
+        .replacingOccurrences(of: "–", with: "-")
+        .replacingOccurrences(of: "—", with: "-")
     let rowLabels = recommendation.arabicText.map(forYouTrackerArabicRowLabels(from:)) ?? []
     let fallbackArabicLabel = recommendation.arabicText
         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -612,7 +617,7 @@ private func forYouRecommendationTrackerDescriptor(
         return .init(title: recommendation.title, compactLabel: nil, maximumCount: 3, requiresLongPress: false, rowLabels: Array(rowLabels.prefix(3)), rowTargets: [33, 33, 34], holdDuration: 0)
     case "surah ad-duha", "surah ad-dhuha":
         guard let fallbackArabicLabel else { return nil }
-        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? fallbackArabicLabel], rowTargets: [1], holdDuration: 20)
+        return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? fallbackArabicLabel], rowTargets: [1], holdDuration: 10)
     case "before sleep", "sebelum tidur", "night sufficiency", "kecukupan malam", "ayat kursi before sleep", "ayat kursi sebelum tidur", "last two verses of al-baqarah", "dua ayat terakhir al-baqarah":
         guard let fallbackArabicLabel else { return nil }
         return .init(title: recommendation.title, compactLabel: nil, maximumCount: 1, requiresLongPress: true, rowLabels: [rowLabels.first ?? fallbackArabicLabel], rowTargets: [1], holdDuration: 10)
@@ -1021,6 +1026,7 @@ private struct ForYouPrayerTimelineEntryView: View {
     let isFocused: Bool
     let extendsToNext: Bool
     let selection: ForYouPrayerCardSelection
+    let collapsedEntryIDs: Set<String>
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
 
     var body: some View {
@@ -1047,6 +1053,7 @@ private struct ForYouPrayerTimelineEntryView: View {
                 entry: entry,
                 trackerStatus: nil, // DISABLED: prayer tracker status
                 selection: selection,
+                collapsedEntryIDs: collapsedEntryIDs,
                 onSelectionChange: onSelectionChange
             )
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
@@ -1184,6 +1191,7 @@ private struct ForYouPrayerStackedCards: View {
     let entry: ForYouTimelineEntry
     let trackerStatus: PrayerTrackerStatus?
     let selection: ForYouPrayerCardSelection
+    let collapsedEntryIDs: Set<String>
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
     @State private var presentedTab: ForYouPrayerTab?
 
@@ -1196,7 +1204,7 @@ private struct ForYouPrayerStackedCards: View {
     }
 
     private var mainCardCollapsed: Bool {
-        isActiveEntry ? selection.isCollapsedMainCard : false
+        collapsedEntryIDs.contains(entry.id) || (isActiveEntry ? selection.isCollapsedMainCard : false)
     }
 
     var body: some View {
@@ -1311,6 +1319,7 @@ private struct ForYouTimelineEntryContentCard: View {
     var trackerStatus: PrayerTrackerStatus? = nil
     var collapsed: Bool = false
     @EnvironmentObject private var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
     @State private var recommendationRowCounts: [Int]
     @State private var recommendationActiveHoldIndex: Int?
     @State private var recommendationHoldProgress: CGFloat = 0
@@ -1567,16 +1576,7 @@ private struct ForYouTimelineEntryContentCard: View {
     }
 
     private var cardFillColor: Color {
-        // DISABLED: prayer tracker card background colors
-//        switch trackerStatus {
-//        case .prayed:
-//            return Color(red: 0.90, green: 0.97, blue: 0.92)
-//        case .missed:
-//            return Color(red: 0.99, green: 0.93, blue: 0.93)
-//        case .pending, .none:
-//            return Color(uiColor: .secondarySystemBackground)
-//        }
-        return Color(uiColor: .secondarySystemBackground)
+        colorScheme == .light ? .white : Color(uiColor: .secondarySystemBackground)
     }
 
     private var prayerCardPrimaryTextColor: Color {
@@ -1695,6 +1695,8 @@ private struct ForYouPrayerTabPanel: View {
     @State private var weatherSnapshot: ForYouWeatherSnapshot?
     @State private var prayerWeatherRows: [WeatherPrayerRow] = []
     @EnvironmentObject private var settings: Settings
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     private struct PanelSection: Identifiable {
         let id: String
@@ -2132,7 +2134,9 @@ private struct ForYouPrayerTabPanel: View {
     private var modalAccentTextColor: Color {
         switch tab {
         case .doa:
-            return Color.blue.opacity(0.88)
+            return colorScheme == .dark
+                ? Color(red: 0.58, green: 0.79, blue: 1.00)
+                : Color(red: 0.10, green: 0.37, blue: 0.78)
         case .weather:
             return Color.white
         case .wirid:
@@ -2185,7 +2189,12 @@ private struct ForYouPrayerTabPanel: View {
             }
         }
 
-        let nextIndex = min(currentIndex + 1, content.sections.count - 1)
+        guard currentIndex < content.sections.count - 1 else {
+            dismiss()
+            return
+        }
+
+        let nextIndex = currentIndex + 1
         focusSection(at: nextIndex, proxy: proxy)
     }
 
@@ -3421,6 +3430,7 @@ private struct ForYouDayView: View {
     let completedIDs: Set<String>
     let onToggleCompletion: (String) -> Void
     let selection: ForYouPrayerCardSelection?
+    let collapsedEntryIDs: Set<String>
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
     let onScrollToPrayerTimeline: () -> Void
     let greetingNamespace: Namespace.ID
@@ -3436,6 +3446,7 @@ private struct ForYouDayView: View {
         completedIDs: Set<String>,
         onToggleCompletion: @escaping (String) -> Void,
         selection: ForYouPrayerCardSelection?,
+        collapsedEntryIDs: Set<String>,
         onSelectionChange: @escaping (ForYouPrayerCardSelection) -> Void,
         onScrollToPrayerTimeline: @escaping () -> Void,
         greetingNamespace: Namespace.ID,
@@ -3446,6 +3457,7 @@ private struct ForYouDayView: View {
         self.completedIDs = completedIDs
         self.onToggleCompletion = onToggleCompletion
         self.selection = selection
+        self.collapsedEntryIDs = collapsedEntryIDs
         self.onSelectionChange = onSelectionChange
         self.onScrollToPrayerTimeline = onScrollToPrayerTimeline
         self.greetingNamespace = greetingNamespace
@@ -3748,6 +3760,7 @@ private struct ForYouDayView: View {
                                 isFocused: entry.id == focusedEntryID,
                                 extendsToNext: itemIndex != page.count - 1,
                                 selection: prayerSelection ?? .main(entry.id),
+                                collapsedEntryIDs: collapsedEntryIDs,
                                 onSelectionChange: { selection in
                                     setPrayerSelection(selection)
                                 }
@@ -4168,6 +4181,7 @@ struct ForYouRootView: View {
     @AppStorage("forYou.prayerTrackerPromptVisible") private var prayerTrackerPromptVisible = false
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
+    @State private var collapsedPrayerCardIDs: Set<String> = []
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
     @State private var scrollOffset: CGFloat = 0
     @State private var shouldAutoScrollOnAppear = ForYouSessionStore.shouldAutoScrollOnTodayAppear()
@@ -4205,10 +4219,12 @@ struct ForYouRootView: View {
                                     completedIDs: viewModel.completedIDs,
                                     onToggleCompletion: viewModel.toggleCompletion(for:),
                                     selection: prayerSelection,
-                                    onSelectionChange: { selectedPrayerCard = $0 },
+                                    collapsedEntryIDs: collapsedPrayerCardIDs,
+                                    onSelectionChange: handlePrayerSelectionChange,
                                     onScrollToPrayerTimeline: {
                                         settings.hapticFeedback()
                                         if let currentPrayerSelection {
+                                            collapsedPrayerCardIDs.remove(currentPrayerSelection.entryID)
                                             selectedPrayerCard = currentPrayerSelection
                                         }
                                         withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
@@ -4236,6 +4252,8 @@ struct ForYouRootView: View {
                         if shouldAutoScrollOnAppear,
                            !viewModel.showOnboarding,
                            let id = currentPrayerSelection?.entryID ?? currentDayViewModel?.focusedEntryID {
+                            collapsedPrayerCardIDs = previousPrayerEntry.map { [$0.id] } ?? []
+                            collapsedPrayerCardIDs.remove(id)
                             selectedPrayerCard = .main(id)
                             bottomBarVisibility.suppressNextHide()
                             // Seed scrollTarget.scrollID so the first button press
@@ -4425,6 +4443,18 @@ struct ForYouRootView: View {
         return prayerEntries.first.map { .main($0.id) }
     }
 
+    private var previousPrayerEntry: ForYouTimelineEntry? {
+        guard !prayerEntries.isEmpty else { return nil }
+
+        if let currentPrayer = prayerEntries.last(where: { $0.time <= Date() }),
+           let currentIndex = prayerEntries.firstIndex(where: { $0.id == currentPrayer.id }),
+           currentIndex > 0 {
+            return prayerEntries[currentIndex - 1]
+        }
+
+        return nil
+    }
+
     private var prayerSelection: ForYouPrayerCardSelection? {
         if let selectedPrayerCard,
            prayerEntries.contains(where: { $0.id == selectedPrayerCard.entryID }) {
@@ -4437,6 +4467,7 @@ struct ForYouRootView: View {
     private func scrollToPrayerTimeline() {
         settings.hapticFeedback()
         if let currentPrayerSelection {
+            collapsedPrayerCardIDs.remove(currentPrayerSelection.entryID)
             selectedPrayerCard = currentPrayerSelection
         }
         scrollTarget = (
@@ -4502,8 +4533,23 @@ struct ForYouRootView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
             withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
                 // nil collapses any open tab when landing on a zikir card.
-                selectedPrayerCard = next.prayerSelection
+                if let selection = next.prayerSelection {
+                    handlePrayerSelectionChange(selection)
+                } else {
+                    selectedPrayerCard = nil
+                }
             }
+        }
+    }
+
+    private func handlePrayerSelectionChange(_ selection: ForYouPrayerCardSelection) {
+        switch selection {
+        case .collapsed(let entryID):
+            collapsedPrayerCardIDs.insert(entryID)
+            selectedPrayerCard = selection
+        case .main(let entryID), .tab(let entryID, _):
+            collapsedPrayerCardIDs.remove(entryID)
+            selectedPrayerCard = selection
         }
     }
 
