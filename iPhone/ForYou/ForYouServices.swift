@@ -1388,7 +1388,7 @@ final class ForYouPlanGeneratorService {
                 title: isMalayAppLanguage() ? "Solat Ishraq" : "Ishraq Prayer",
                 subtitle: isMalayAppLanguage() ? "2 rakaat selepas matahari terbit sepenuhnya" : "2 rak'ahs after sunrise is complete",
                 icon: "sun.horizon.fill",
-                arabicText: "صَلَاةُ الْإِشْرَاق",
+                arabicText: "أُصَلِّي سُنَّةَ الْإِشْرَاقِ رَكْعَتَيْنِ لِلَّهِ تَعَالَى",
                 reference: nil,
                 recommendation: nil
             ))
@@ -1418,7 +1418,7 @@ final class ForYouPlanGeneratorService {
                 title: "Dhuha",
                 subtitle: isMalayAppLanguage() ? "2–8 rakaat, amalan sunnah pagi" : "2–8 rak'ahs, a sunnah of the morning",
                 icon: "sun.max.fill",
-                arabicText: "صَلَاةُ الضُّحَى",
+                arabicText: "أُصَلِّي سُنَّةَ الضُّحَى رَكْعَتَيْنِ لِلَّهِ تَعَالَى",
                 reference: "Sahih Muslim 720",
                 recommendation: nil
             ))

@@ -3418,6 +3418,8 @@ private struct ForYouSunTimelineToggleRow: View {
                     )
             )
         }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: action)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
