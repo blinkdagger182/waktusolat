@@ -13,12 +13,13 @@ private func storedLockScreenPrayerTimesStyle() -> LockScreenPrayerTimesStyle {
 }
 
 private func countdownBarPrayerWindow(for entry: PrayersProvider.Entry) -> PrayerCountdownBarWindow? {
-    guard let nextPrayer = entry.nextPrayer else { return nil }
+    let resolved = widgetResolvedCurrentAndNextPrayers(in: entry)
+    guard let nextPrayer = resolved.next else { return nil }
 
-    let source = (entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers).sorted { $0.time < $1.time }
-    let now = entry.date
+    let source = widgetResolvedPrayers(in: entry).sorted { $0.time < $1.time }
+    let now = Date()
 
-    if let currentPrayer = entry.currentPrayer, currentPrayer.time < nextPrayer.time, currentPrayer.time <= now {
+    if let currentPrayer = resolved.current, currentPrayer.time < nextPrayer.time, currentPrayer.time <= now {
         return PrayerCountdownBarWindow(start: currentPrayer.time, end: nextPrayer.time)
     }
 
@@ -371,8 +372,7 @@ struct LockScreen2EntryView: View {
     }
 
     private func graphPrayers() -> [Prayer] {
-        let source = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
-        let sorted = source.sorted { $0.time < $1.time }
+        let sorted = widgetResolvedPrayers(in: entry).sorted { $0.time < $1.time }
         guard entry.travelingMode else {
             return Array(sorted.prefix(6))
         }
@@ -417,8 +417,8 @@ struct LockScreen2EntryView: View {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
                     .font(.caption)
-            } else if let currentPrayer = entry.currentPrayer,
-                      let nextPrayer = entry.nextPrayer,
+            } else if let currentPrayer = widgetResolvedCurrentAndNextPrayers(in: entry).current,
+                      let nextPrayer = widgetResolvedCurrentAndNextPrayers(in: entry).next,
                       let window = countdownBarPrayerWindow(for: entry) {
                 if selectedStyle == .prayerTimelineWithLocation
                     || selectedStyle == .prayerTimelineWithoutLocation

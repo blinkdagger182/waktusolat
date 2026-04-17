@@ -37,7 +37,8 @@ struct SimpleEntryView: View {
                 Text("Open app to get prayer times")
                     .foregroundColor(entry.accentColor.color)
             } else {
-                if let currentPrayer = entry.currentPrayer, let nextPrayer = entry.nextPrayer {
+                let resolved = widgetResolvedCurrentAndNextPrayers(in: entry)
+                if let currentPrayer = resolved.current, let nextPrayer = resolved.next {
                     VStack(alignment: .leading) {
                         HStack(spacing: 3) {
                             Text(appLocalized("Time left:"))

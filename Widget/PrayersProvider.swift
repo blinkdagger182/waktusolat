@@ -329,11 +329,7 @@ struct WidgetLocationFooter: View {
 }
 
 func widgetPrayerDisplayName(_ raw: String) -> String {
-    let normalized = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    if normalized == "syuruk" || normalized == "shurooq" || normalized == "sunrise" {
-        return localizedPrayerName("Dhuha")
-    }
-    return localizedPrayerName(raw)
+    localizedPrayerName(raw)
 }
 
 func widgetIsShurooq(_ raw: String) -> Bool {
@@ -341,16 +337,14 @@ func widgetIsShurooq(_ raw: String) -> Bool {
     return normalized == "syuruk" || normalized == "shurooq" || normalized == "sunrise"
 }
 
-func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry) -> PrayerDisplayInfo {
+func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry, at renderDate: Date = Date()) -> PrayerDisplayInfo {
     let sourcePrayers = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
     let baseDisplay = PrayerDerivedTimes.displayInfo(
         for: prayer,
         in: sourcePrayers,
         countryCode: entry.countryCode,
         storedDhuha: entry.storedDhuha,
-        // Use the live render time so Dhuha promotion does not stay stuck on an
-        // older timeline entry timestamp between WidgetKit refresh boundaries.
-        now: Date()
+        now: renderDate
     )
 
     guard !baseDisplay.isDerivedDhuha else { return baseDisplay }
@@ -360,7 +354,7 @@ func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry) -> Prayer
         return baseDisplay
     }
 
-    let liveNow = Date()
+    let liveNow = renderDate
     guard liveNow.isSameDay(as: prayer.time) else { return baseDisplay }
 
     let fajr = sourcePrayers.first {
@@ -397,6 +391,53 @@ func widgetPrayerDisplayInfo(_ prayer: Prayer, in entry: PrayersEntry) -> Prayer
         usesSecondarySunStyle: true,
         isDerivedDhuha: true
     )
+}
+
+private func widgetResolvedPrayer(_ prayer: Prayer, in entry: PrayersEntry, at renderDate: Date = Date()) -> Prayer {
+    let display = widgetPrayerDisplayInfo(prayer, in: entry, at: renderDate)
+    guard display.nameTransliteration != prayer.nameTransliteration || display.time != prayer.time else {
+        return prayer
+    }
+
+    return Prayer(
+        id: prayer.id,
+        nameArabic: display.nameArabic,
+        nameTransliteration: display.nameTransliteration,
+        nameEnglish: display.nameEnglish,
+        time: display.time,
+        image: display.image,
+        rakah: prayer.rakah,
+        sunnahBefore: prayer.sunnahBefore,
+        sunnahAfter: prayer.sunnahAfter
+    )
+}
+
+func widgetResolvedPrayers(in entry: PrayersEntry, at renderDate: Date = Date()) -> [Prayer] {
+    let source = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
+    return source.map { widgetResolvedPrayer($0, in: entry, at: renderDate) }
+}
+
+func widgetResolvedCurrentAndNextPrayers(in entry: PrayersEntry, at renderDate: Date = Date()) -> (current: Prayer?, next: Prayer?) {
+    let prayers = widgetResolvedPrayers(in: entry, at: renderDate).sorted { $0.time < $1.time }
+    guard !prayers.isEmpty else { return (nil, nil) }
+
+    if let nextIndex = prayers.firstIndex(where: { $0.time > renderDate }) {
+        let current: Prayer?
+        if nextIndex > 0 {
+            current = prayers[nextIndex - 1]
+        } else if let storedCurrent = entry.currentPrayer {
+            current = widgetResolvedPrayer(storedCurrent, in: entry, at: renderDate)
+        } else {
+            current = prayers.last
+        }
+        return (current, prayers[nextIndex])
+    }
+
+    if let storedNext = entry.nextPrayer, storedNext.time > renderDate {
+        return (prayers.last, widgetResolvedPrayer(storedNext, in: entry, at: renderDate))
+    }
+
+    return (prayers.last, prayers.first)
 }
 
 func widgetPrayerDisplayName(_ prayer: Prayer, in entry: PrayersEntry) -> String {

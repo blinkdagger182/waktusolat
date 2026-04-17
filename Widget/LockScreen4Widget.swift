@@ -10,10 +10,12 @@ struct LockScreen4EntryView: View {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
             } else {
+                let resolvedPrayers = widgetResolvedPrayers(in: entry)
+                let resolved = widgetResolvedCurrentAndNextPrayers(in: entry)
                 let prayers = Array(
-                    entry.prayers
+                    resolvedPrayers
                         .suffix(Int(floor(Double(
-                            entry.prayers.count / 2
+                            resolvedPrayers.count / 2
                         ))))
                 )
                 
@@ -33,7 +35,7 @@ struct LockScreen4EntryView: View {
                         Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                             .fontWeight(.bold)
                     }
-                    .foregroundColor((entry.currentPrayer?.nameTransliteration ?? "").contains(prayer.nameTransliteration) ? .primary : .secondary)
+                    .foregroundColor(resolved.current?.id == prayer.id ? .primary : .secondary)
                 }
 
                 WidgetLocationFooter(entry: entry, widgetKind: "LockScreen4Widget")

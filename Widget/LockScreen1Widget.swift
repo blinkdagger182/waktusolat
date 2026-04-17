@@ -11,11 +11,11 @@ struct LockScreen1EntryView: View {
     }
 
     private func currentPrayerForRing(nextPrayer: Prayer) -> Prayer? {
-        if let current = entry.currentPrayer {
+        if let current = widgetResolvedCurrentAndNextPrayers(in: entry).current {
             return current
         }
 
-        let sorted = entry.prayers.sorted { $0.time < $1.time }
+        let sorted = widgetResolvedPrayers(in: entry).sorted { $0.time < $1.time }
         guard let nextIndex = sorted.firstIndex(where: { $0.id == nextPrayer.id }) else {
             return sorted.last
         }
@@ -73,7 +73,7 @@ struct LockScreen1EntryView: View {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
                     .font(.caption)
-            } else if let nextPrayer = entry.nextPrayer {
+            } else if let nextPrayer = widgetResolvedCurrentAndNextPrayers(in: entry).next {
                 switch style {
                 case .classic:
                     HStack(spacing: 2) {

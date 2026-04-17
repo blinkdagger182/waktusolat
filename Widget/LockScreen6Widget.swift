@@ -13,8 +13,9 @@ private func storedLockScreenPrayerCountdownBarStyle() -> LockScreenPrayerCountd
 }
 
 private func resolvedCountdownNextPrayer(for entry: PrayersProvider.Entry) -> Prayer? {
-    guard let nextPrayer = entry.nextPrayer else { return nil }
-    guard nextPrayer.time <= entry.date else { return nextPrayer }
+    guard let nextPrayer = widgetResolvedCurrentAndNextPrayers(in: entry).next else { return nil }
+    let now = Date()
+    guard nextPrayer.time <= now else { return nextPrayer }
 
     let shiftedTime = Calendar.current.date(byAdding: .day, value: 1, to: nextPrayer.time) ?? nextPrayer.time
     return Prayer(
@@ -32,10 +33,11 @@ private func resolvedCountdownNextPrayer(for entry: PrayersProvider.Entry) -> Pr
 private func countdownBarPrayerWindow(for entry: PrayersProvider.Entry) -> PrayerCountdownBarWindow? {
     guard let nextPrayer = resolvedCountdownNextPrayer(for: entry) else { return nil }
 
-    let source = (entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers).sorted { $0.time < $1.time }
-    let now = entry.date
+    let source = widgetResolvedPrayers(in: entry).sorted { $0.time < $1.time }
+    let now = Date()
+    let resolved = widgetResolvedCurrentAndNextPrayers(in: entry, at: now)
 
-    if let currentPrayer = entry.currentPrayer, currentPrayer.time <= now {
+    if let currentPrayer = resolved.current, currentPrayer.time <= now {
         return PrayerCountdownBarWindow(start: currentPrayer.time, end: nextPrayer.time)
     }
 
@@ -388,8 +390,7 @@ struct LockScreen6EntryView: View {
     }
 
     private func graphPrayers() -> [Prayer] {
-        let source = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
-        let sorted = source.sorted { $0.time < $1.time }
+        let sorted = widgetResolvedPrayers(in: entry).sorted { $0.time < $1.time }
         guard entry.travelingMode else {
             return Array(sorted.prefix(6))
         }
@@ -419,8 +420,11 @@ struct LockScreen6EntryView: View {
                       let window = countdownBarPrayerWindow(for: entry) {
                 TimelineView(.periodic(from: entry.date, by: 1)) { context in
                     let liveNow = context.date
+                    let resolved = widgetResolvedCurrentAndNextPrayers(in: entry, at: liveNow)
+                    let liveNextPrayer = resolved.next ?? nextPrayer
+                    let liveWindow = countdownBarPrayerWindow(for: entry) ?? window
                     VStack(alignment: .leading, spacing: 4) {
-                        if let currentPrayer = entry.currentPrayer {
+                        if let currentPrayer = resolved.current {
                             HStack(alignment: .firstTextBaseline, spacing: 8) {
                                 Text(widgetPrayerDisplayName(currentPrayer, in: entry))
                                     .font(.system(size: 13, weight: .semibold, design: .rounded))
@@ -430,12 +434,12 @@ struct LockScreen6EntryView: View {
                                 Spacer(minLength: 6)
 
                                 if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
-                                    Text(widgetPrayerDisplayName(nextPrayer, in: entry))
+                                    Text(widgetPrayerDisplayName(liveNextPrayer, in: entry))
                                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
                                 } else {
-                                    Text(remainingIntervalText(at: liveNow, until: window.end))
+                                    Text(remainingIntervalText(at: liveNow, until: liveWindow.end))
                                         .font(.system(size: 13, weight: .bold, design: .rounded))
                                         .foregroundStyle(.secondary)
                                         .monospacedDigit()
@@ -445,7 +449,7 @@ struct LockScreen6EntryView: View {
                         }
 
                         if selectedStyle == .batteryWithLocation || selectedStyle == .batteryWithoutLocation {
-                            let progress = remainingProgressValue(at: liveNow, for: window)
+                            let progress = remainingProgressValue(at: liveNow, for: liveWindow)
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .stroke(Color.primary.opacity(0.28), lineWidth: 1.4)
@@ -459,7 +463,7 @@ struct LockScreen6EntryView: View {
                                         .padding(.vertical, 3)
                                 }
 
-                                Text(remainingIntervalText(at: liveNow, until: window.end))
+                                Text(remainingIntervalText(at: liveNow, until: liveWindow.end))
                                     .font(.system(size: 11, weight: .bold, design: .rounded))
                                     .foregroundStyle(progress > 0.45 ? Color.black.opacity(0.82) : .primary)
                                     .monospacedDigit()
@@ -467,12 +471,12 @@ struct LockScreen6EntryView: View {
                             }
                             .frame(height: 24)
                         } else {
-                            ProgressView(value: progressValue(at: liveNow, for: window))
+                            ProgressView(value: progressValue(at: liveNow, for: liveWindow))
                                 .progressViewStyle(.linear)
                                 .tint(entry.accentColor.color)
                         }
 
-                        Text("Ends at \(endTimeText(widgetPrayerDisplayTime(nextPrayer, in: entry)))")
+                        Text("Ends at \(endTimeText(widgetPrayerDisplayTime(liveNextPrayer, in: entry)))")
                             .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)

@@ -81,8 +81,7 @@ private struct LockScreenSparkEntryView: View {
     var entry: PrayersProvider.Entry
 
     private func graphPrayers() -> [Prayer] {
-        let source = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
-        let sorted = source.sorted { $0.time < $1.time }
+        let sorted = widgetResolvedPrayers(in: entry).sorted { $0.time < $1.time }
         guard entry.travelingMode else {
             return Array(sorted.prefix(6))
         }
@@ -103,7 +102,7 @@ private struct LockScreenSparkEntryView: View {
     }
 
     var body: some View {
-        if let nextPrayer = entry.nextPrayer {
+        if let nextPrayer = widgetResolvedCurrentAndNextPrayers(in: entry).next {
             let graph = graphPrayers()
             VStack(alignment: .leading, spacing: 6) {
                 LockScreen5Sparkline(dotCount: graph.count, activeDotIndex: activeIndex(in: graph))

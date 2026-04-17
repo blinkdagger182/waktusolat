@@ -18,23 +18,25 @@ struct LockScreen3EntryView: View {
     }
 
     var body: some View {
-        let now = entry.date
+        let now = Date()
+        let resolvedPrayers = widgetResolvedPrayers(in: entry)
+        let resolved = widgetResolvedCurrentAndNextPrayers(in: entry)
 
         let visiblePrayers: [Prayer] = {
-            guard !entry.prayers.isEmpty else { return [] }
-            let half = entry.prayers.count / 2
-            if entry.prayers.allSatisfy({ $0.time > now }) {
-                return Array(entry.prayers.prefix(half))
+            guard !resolvedPrayers.isEmpty else { return [] }
+            let half = resolvedPrayers.count / 2
+            if resolvedPrayers.allSatisfy({ $0.time > now }) {
+                return Array(resolvedPrayers.prefix(half))
             }
-            if entry.prayers.allSatisfy({ $0.time <= now }) {
-                return Array(entry.prayers.suffix(half))
+            if resolvedPrayers.allSatisfy({ $0.time <= now }) {
+                return Array(resolvedPrayers.suffix(half))
             }
-            let nextIndex = entry.prayers.firstIndex(where: {
-                $0.nameTransliteration == entry.nextPrayer?.nameTransliteration
+            let nextIndex = resolvedPrayers.firstIndex(where: {
+                $0.id == resolved.next?.id
             }) ?? 0
             return nextIndex < half
-                ? Array(entry.prayers.prefix(half))
-                : Array(entry.prayers.suffix(half))
+                ? Array(resolvedPrayers.prefix(half))
+                : Array(resolvedPrayers.suffix(half))
         }()
 
         let usesCompactDeparturesBoard = style == .departuresBoard

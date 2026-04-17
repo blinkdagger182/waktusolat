@@ -95,17 +95,8 @@ private func widgetBackgroundAssetName(for prayer: Prayer?) -> String {
 }
 
 private func resolvedDisplayPrayer(for entry: PrayersEntry) -> Prayer? {
-    if let next = entry.nextPrayer { return next }
-    if let current = entry.currentPrayer { return current }
-    if !entry.prayers.isEmpty {
-        let now = entry.date
-        return entry.prayers.first(where: { $0.time > now }) ?? entry.prayers.first
-    }
-    if !entry.fullPrayers.isEmpty {
-        let now = entry.date
-        return entry.fullPrayers.first(where: { $0.time > now }) ?? entry.fullPrayers.first
-    }
-    return nil
+    let resolved = widgetResolvedCurrentAndNextPrayers(in: entry)
+    return resolved.next ?? resolved.current
 }
 
 private func auraDisplayPrayerName(_ name: String) -> String {

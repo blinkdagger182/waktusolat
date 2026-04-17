@@ -146,8 +146,7 @@ struct CountdownEntryView: View {
     }
 
     private func graphPrayers() -> [Prayer] {
-        let source = entry.fullPrayers.isEmpty ? entry.prayers : entry.fullPrayers
-        let sorted = source.sorted { $0.time < $1.time }
+        let sorted = widgetResolvedPrayers(in: entry).sorted { $0.time < $1.time }
         guard entry.travelingMode else {
             return Array(sorted.prefix(6))
         }
@@ -174,7 +173,8 @@ struct CountdownEntryView: View {
                 Text("Open app to get prayer times")
                     .foregroundColor(entry.accentColor.color)
             } else {
-                if let currentPrayer = entry.currentPrayer, let nextPrayer = entry.nextPrayer {
+                let resolved = widgetResolvedCurrentAndNextPrayers(in: entry)
+                if let currentPrayer = resolved.current, let nextPrayer = resolved.next {
                     switch widgetFamily {
                     case .systemMedium, .systemLarge:
                         let prayersForGraph = graphPrayers()

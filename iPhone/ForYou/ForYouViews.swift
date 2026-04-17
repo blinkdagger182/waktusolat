@@ -1191,6 +1191,13 @@ private struct ForYouPrayerStackedCards: View {
                 trackerStatus: trackerStatus,
                 collapsed: expandedTab != nil
             )
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .onTapGesture {
+                guard selection != .main(entry.id) else { return }
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.80)) {
+                    onSelectionChange(.main(entry.id))
+                }
+            }
             .zIndex(10)
             .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
 
