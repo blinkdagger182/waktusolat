@@ -915,6 +915,7 @@ struct OtherView: View {
                                     .fill(Color(.secondarySystemBackground))
                             )
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel(isMalayAppLanguage() ? "Pilih bahasa Al-Quran" : "Choose Quran language")
                 }
             }

@@ -252,7 +252,12 @@ struct DailyQuranHeroCard: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(.white.opacity(0.32), lineWidth: 1)
         }
-        .shadow(color: accentColor.opacity(0.12), radius: 22, x: 0, y: 12)
+        .shadow(
+            color: colorScheme == .dark ? .black.opacity(0.18) : .black.opacity(0.06),
+            radius: 16,
+            x: 0,
+            y: 8
+        )
         .task(id: "\(quote.reference)|\(arabicText == nil ? "missing-arabic" : "ready")|\(shouldAnimateArabic)") {
             let animationKey = quote.reference
             guard !arabicWords.isEmpty else {

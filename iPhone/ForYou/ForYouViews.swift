@@ -1791,6 +1791,13 @@ private struct ForYouPrayerTabPanel: View {
         return "\(base)_\(tab.rawValue.lowercased())"
     }
 
+    private var previewHintColor: Color {
+        if tab == .doa, colorScheme == .dark {
+            return ForYouPalette.tabWirid
+        }
+        return tab.color
+    }
+
     @ViewBuilder
     private var previewContent: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1813,7 +1820,7 @@ private struct ForYouPrayerTabPanel: View {
                 if remainingPreviewCount > 0 {
                     Text(previewSummaryLine)
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(tab.color)
+                        .foregroundStyle(previewHintColor)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1824,7 +1831,7 @@ private struct ForYouPrayerTabPanel: View {
                 Image(systemName: "arrow.up.right.square")
                     .font(.system(size: 10, weight: .semibold))
             }
-            .foregroundStyle(tab.color)
+            .foregroundStyle(previewHintColor)
             .padding(.top, 2)
         }
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
@@ -3634,9 +3641,95 @@ private struct ForYouDayView: View {
     }
 
     private var greetingLine: String {
-        let trimmedName = greetingName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !trimmedName.isEmpty else { return "Hello!" }
-        return "Hello, \(trimmedName)!"
+        greetingVariants(for: greetingPrayerWindowKey)[rotatingGreetingIndex]
+    }
+
+    private var greetingPrayerWindowKey: String {
+        currentPrayerWindowKey(at: Date())
+    }
+
+    private var rotatingGreetingIndex: Int {
+        let day = Calendar.current.ordinality(of: .day, in: .year, for: viewModel.plan.date) ?? 0
+        return day % 3
+    }
+
+    private func greetingVariants(for window: String) -> [String] {
+        switch window {
+        case "fajr":
+            return ["Good morning", "Good morning", "Good morning"]
+        case "sunrise":
+            return ["After Fajr", "Hold the calm", "Keep the light"]
+        case "dhuha":
+            return ["Ease into Dhuha", "Keep the day open", "A softer midday"]
+        case "dhuhr":
+            return ["Pause for Dhuhr", "Reset at midday", "A steady noon"]
+        case "asr":
+            return ["Stay present at Asr", "Protect the afternoon", "Finish with care"]
+        case "maghrib":
+            return ["Ease into Maghrib", "A calm sunset", "Let evening settle"]
+        case "isha":
+            return ["Close with Isha", "Wind down well", "A settled night"]
+        default:
+            return ["Good morning", "Start with barakah", "A bright beginning"]
+        }
+    }
+
+    private func currentPrayerWindowKey(at now: Date) -> String {
+        let calendar = Calendar.current
+        guard let todaysPrayers = settings.prayers?.prayers, !todaysPrayers.isEmpty else {
+            return "isha"
+        }
+
+        let shiftedPrayers = todaysPrayers.map { prayer in
+            Prayer(
+                id: prayer.id,
+                nameArabic: prayer.nameArabic,
+                nameTransliteration: prayer.nameTransliteration,
+                nameEnglish: prayer.nameEnglish,
+                time: shiftedTime(prayer.time, onto: now, calendar: calendar),
+                image: prayer.image,
+                rakah: prayer.rakah,
+                sunnahBefore: prayer.sunnahBefore,
+                sunnahAfter: prayer.sunnahAfter
+            )
+        }
+
+        let activePrayer = shiftedPrayers.last(where: { $0.time <= now }) ?? shiftedPrayers.last
+        return greetingPrayerWindowKey(for: activePrayer)
+    }
+
+    private func shiftedTime(_ source: Date, onto target: Date, calendar: Calendar) -> Date {
+        let components = calendar.dateComponents([.hour, .minute, .second], from: source)
+        return calendar.date(
+            bySettingHour: components.hour ?? 0,
+            minute: components.minute ?? 0,
+            second: components.second ?? 0,
+            of: target
+        ) ?? target
+    }
+
+    private func greetingPrayerWindowKey(for prayer: Prayer?) -> String {
+        guard let prayer else { return "isha" }
+        let normalized = canonicalPrayerName(prayer.nameTransliteration ?? prayer.nameEnglish)
+
+        switch normalized {
+        case "fajr":
+            return "fajr"
+        case "shurooq", "syuruk", "sunrise", "ishraq":
+            return "sunrise"
+        case "dhuha":
+            return "dhuha"
+        case "dhuhr":
+            return "dhuhr"
+        case "asr":
+            return "asr"
+        case "maghrib":
+            return "maghrib"
+        case "isha":
+            return "isha"
+        default:
+            return "isha"
+        }
     }
 
     private var currentPrayerEntry: ForYouTimelineEntry? {
