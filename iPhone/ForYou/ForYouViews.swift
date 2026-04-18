@@ -348,6 +348,11 @@ private struct ForYouMiniProgressTracker: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var settings: Settings
 
+    enum LayoutStyle {
+        case regular
+        case compact
+    }
+
     struct Descriptor {
         let title: String
         let compactLabel: String?
@@ -366,17 +371,19 @@ private struct ForYouMiniProgressTracker: View {
     let onTapStep: ((Int) -> Void)?
     let onPressingChanged: (Bool, Int) -> Void
     let onTriggered: (Int) -> Void
+    var layoutStyle: LayoutStyle = .regular
 
     private let tint = Color(red: 0.24, green: 0.67, blue: 0.45)
     private let track = Color(red: 0.24, green: 0.67, blue: 0.45).opacity(0.14)
+    private var isCompact: Bool { layoutStyle == .compact }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: isCompact ? 6 : 8) {
             ForEach(0..<descriptor.maximumCount, id: \.self) { index in
                 trackerCell(index: index)
             }
         }
-        .padding(8)
+        .padding(isCompact ? 6 : 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white.opacity(0.92))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -392,9 +399,9 @@ private struct ForYouMiniProgressTracker: View {
         let symbol = descriptor.maximumCount == 1 ? "moon.zzz.fill" : "sparkles"
         let rowLabel = descriptor.rowLabels.indices.contains(index) ? descriptor.rowLabels[index] : descriptor.title
 
-        VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : 6) {
+        VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : (isCompact ? 4 : 6)) {
             if descriptor.requiresLongPress {
-                HStack(spacing: 8) {
+                HStack(spacing: isCompact ? 6 : 8) {
                     Text(rowLabel)
                         .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                         .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
@@ -403,9 +410,9 @@ private struct ForYouMiniProgressTracker: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
 
                     Image(systemName: symbol)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: isCompact ? 10 : 11, weight: .bold))
                         .foregroundStyle(isCompleted ? tint : .white)
-                        .frame(width: 22, height: 22)
+                        .frame(width: isCompact ? 20 : 22, height: isCompact ? 20 : 22)
                         .background(
                             Circle()
                                 .fill(isCompleted ? tint.opacity(0.18) : tint)
@@ -436,7 +443,7 @@ private struct ForYouMiniProgressTracker: View {
                     .minimumScaleFactor(0.60)
                     .frame(maxWidth: .infinity, alignment: .trailing)
 
-                HStack(spacing: 6) {
+                HStack(spacing: isCompact ? 5 : 6) {
                     ZStack(alignment: .leading) {
                         Capsule(style: .continuous)
                             .fill(track)
@@ -454,9 +461,9 @@ private struct ForYouMiniProgressTracker: View {
                     .frame(height: 8)
 
                     Image(systemName: symbol)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: isCompact ? 10 : 11, weight: .bold))
                         .foregroundStyle(isCompleted ? tint : .white)
-                        .frame(width: 22, height: 22)
+                        .frame(width: isCompact ? 20 : 22, height: isCompact ? 20 : 22)
                         .background(
                             Circle()
                                 .fill(isCompleted ? tint.opacity(0.18) : tint)
@@ -486,8 +493,8 @@ private struct ForYouMiniProgressTracker: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
+        .padding(.horizontal, isCompact ? 6 : 8)
+        .padding(.vertical, isCompact ? 6 : 8)
         .frame(maxWidth: .infinity)
         .background(
             ZStack(alignment: .leading) {
@@ -553,16 +560,18 @@ private struct ForYouMiniProgressTracker: View {
     }
 
     private func trackerArabicFontSize(for label: String) -> CGFloat {
+        let baseSize: CGFloat
         switch label.count {
         case 0...18:
-            return 25
+            baseSize = 25
         case 19...28:
-            return 23
+            baseSize = 23
         case 29...40:
-            return 21
+            baseSize = 21
         default:
-            return 19
+            baseSize = 19
         }
+        return isCompact ? baseSize - 2 : baseSize
     }
 }
 
@@ -577,7 +586,7 @@ private struct ForYouTrackerInteractionModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         if requiresLongPress {
-            content.onLongPressGesture(minimumDuration: holdDuration, maximumDistance: 24, pressing: { pressing in
+            content.onLongPressGesture(minimumDuration: holdDuration, maximumDistance: .greatestFiniteMagnitude, pressing: { pressing in
                 guard !isCompleted else { return }
                 onPressingChanged(pressing, index)
             }, perform: {
@@ -2987,6 +2996,720 @@ private struct ForYouCollapsedHeaderBar: View {
     }
 }
 
+private struct ForYouInlinePrayerMetaRow: View {
+    let plan: ForYouDailyPlan
+
+    @EnvironmentObject private var settings: Settings
+    @State private var weatherSnapshot: ForYouWeatherSnapshot?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let locationLine, !locationLine.isEmpty {
+                Text(locationLine)
+                    .lineLimit(1)
+            }
+
+            if let weatherSnapshot {
+                Text("·")
+                Text(weatherSnapshot.temperatureText)
+                    .monospacedDigit()
+            }
+        }
+        .font(.system(size: 13, weight: .medium, design: .rounded))
+        .foregroundStyle(ForYouPalette.secondaryInk)
+        .task(id: weatherTaskKey) {
+            await loadWeather()
+        }
+    }
+
+    private var locationLine: String? {
+        plan.locationLine
+            ?? settings.currentPrayerAreaName
+            ?? settings.activePrayerLocationDisplayName
+            ?? settings.currentLocation?.city
+    }
+
+    private var weatherTaskKey: String {
+        guard let location = settings.currentLocation else { return "no-location" }
+        return "\(location.latitude)|\(location.longitude)|\(Calendar.current.startOfDay(for: plan.date).timeIntervalSince1970)"
+    }
+
+    @MainActor
+    private func loadWeather() async {
+        guard let location = settings.currentLocation, location.latitude != 1000, location.longitude != 1000 else {
+            weatherSnapshot = nil
+            return
+        }
+
+        weatherSnapshot = try? await ForYouWeatherService.shared.fetchCurrentWeather(for: location)
+    }
+}
+
+private struct ForYouCurrentPrayerHeroCard: View {
+    let entry: ForYouTimelineEntry
+    let nextEntry: ForYouTimelineEntry?
+    let onScrollToTimeline: () -> Void
+
+    @EnvironmentObject private var settings: Settings
+    @State private var presentedTab: ForYouPrayerTab?
+    private let heroPrimaryText = Color.black.opacity(0.90)
+    private let heroSecondaryText = Color.black.opacity(0.50)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        statusBadge
+
+                        HStack(spacing: 10) {
+                            Image(systemName: entry.icon)
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundStyle(entry.momentType.tint)
+
+                            Text(entry.title)
+                                .font(.system(size: 34, weight: .bold, design: .rounded))
+                                .foregroundStyle(heroPrimaryText)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.58)
+                        }
+
+                        Text(statusLine)
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundStyle(heroSecondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Spacer(minLength: 8)
+
+                    VStack(alignment: .trailing, spacing: 5) {
+                        Text(ForYouFormatters.shortTime.string(from: entry.time))
+                            .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(heroPrimaryText)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+
+                        Text(entry.kind.displayTitle)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(heroSecondaryText)
+                    }
+                    .layoutPriority(2)
+                }
+
+                if !quickActionTabs.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(quickActionTabs, id: \.id) { tab in
+                            Button {
+                                presentedTab = tab
+                            } label: {
+                                Text(tab == .wirid ? (isMalayAppLanguage() ? "Wirid" : "Wirid") : (isMalayAppLanguage() ? "Doa" : "Dua"))
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(tab.textColor)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 9)
+                                    .background(
+                                        Capsule(style: .continuous)
+                                            .fill(tab.color)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .padding(20)
+
+            Divider()
+                .overlay(Color.black.opacity(0.08))
+
+            ForYouCurrentPrayerGuidanceSection(
+                entry: entry,
+                onOpenWirid: {
+                    presentedTab = .wirid
+                },
+                onOpenDoa: {
+                    presentedTab = .doa
+                }
+            )
+            .padding(20)
+            .fixedSize(horizontal: false, vertical: true)
+
+            if let nextEntry {
+                Divider()
+                    .overlay(Color.black.opacity(0.08))
+
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(isMalayAppLanguage() ? "Seterusnya" : "Next prayer")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(heroSecondaryText)
+
+                        HStack(spacing: 6) {
+                            Text(nextEntry.title)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .foregroundStyle(heroPrimaryText)
+
+                            Text("·")
+                                .foregroundStyle(heroSecondaryText)
+
+                            Text(ForYouFormatters.shortTime.string(from: nextEntry.time))
+                                .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(heroPrimaryText)
+                        }
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Button(action: onScrollToTimeline) {
+                        Text(isMalayAppLanguage() ? "Lihat hari ini" : "See full day")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(ForYouPalette.darkTile)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .fixedSize(horizontal: false, vertical: true)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: heroGradientColors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(Color.white.opacity(0.78), lineWidth: 1)
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 10)
+        .sheet(item: $presentedTab) { tab in
+            NavigationView {
+                ForYouPrayerTabModalView(entry: entry, tab: tab)
+                    .navigationTitle(tab == .wirid ? (isMalayAppLanguage() ? "Wirid" : "Wirid") : (isMalayAppLanguage() ? "Doa" : "Dua"))
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .navigationViewStyle(.stack)
+        }
+    }
+
+    private var statusBadge: some View {
+        Text(statusBadgeText)
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(statusBadgeColor)
+            )
+    }
+
+    private var statusBadgeText: String {
+        guard Calendar.current.isDateInToday(entry.time) else {
+            return isMalayAppLanguage() ? "Hari ini" : "Today"
+        }
+
+        let now = Date()
+        if now < entry.time {
+            return isMalayAppLanguage() ? "Akan datang" : "Up next"
+        }
+        if let nextEntry, now < nextEntry.time {
+            return isMalayAppLanguage() ? "Sekarang" : "Now"
+        }
+        if now.timeIntervalSince(entry.time) < 45 * 60 {
+            return isMalayAppLanguage() ? "Baru berlalu" : "Just passed"
+        }
+        return isMalayAppLanguage() ? "Tadi" : "Earlier"
+    }
+
+    private var statusBadgeColor: Color {
+        switch statusBadgeText {
+        case isMalayAppLanguage() ? "Sekarang" : "Now":
+            return ForYouPalette.darkTile
+        case isMalayAppLanguage() ? "Akan datang" : "Up next":
+            return ForYouPalette.accentSky.opacity(0.95)
+        default:
+            return Color.black.opacity(0.70)
+        }
+    }
+
+    private var statusLine: String {
+        if let nextEntry, Date() < nextEntry.time, Date() >= entry.time {
+            return isMalayAppLanguage()
+                ? "Fokus pada amalan yang sesuai untuk waktu ini sebelum \(nextEntry.title)."
+                : "Stay with the guidance for this moment before \(nextEntry.title)."
+        }
+        return entry.subtitle
+    }
+
+    private var quickActionTabs: [ForYouPrayerTab] {
+        forYouPrayerTabs(for: entry).filter { $0 == .wirid || $0 == .doa }
+    }
+
+    private var heroGradientColors: [Color] {
+        switch heroPrayerThemeKey {
+        case "fajr":
+            return [
+                Color(red: 1.00, green: 0.98, blue: 0.93),
+                Color(red: 0.89, green: 0.95, blue: 0.99)
+            ]
+        case "sunrise":
+            return [
+                Color(red: 1.00, green: 0.95, blue: 0.88),
+                Color(red: 0.98, green: 0.91, blue: 0.77)
+            ]
+        case "dhuha":
+            return [
+                Color(red: 1.00, green: 0.97, blue: 0.91),
+                Color(red: 0.95, green: 0.93, blue: 0.83)
+            ]
+        case "dhuhr":
+            return [
+                Color(red: 0.99, green: 0.98, blue: 0.95),
+                Color(red: 0.87, green: 0.94, blue: 0.99)
+            ]
+        case "asr":
+            return [
+                Color(red: 0.98, green: 0.94, blue: 0.88),
+                Color(red: 0.88, green: 0.91, blue: 0.95)
+            ]
+        case "maghrib":
+            return [
+                Color(red: 0.99, green: 0.93, blue: 0.89),
+                Color(red: 0.94, green: 0.84, blue: 0.77)
+            ]
+        case "isha":
+            return [
+                Color(red: 0.92, green: 0.95, blue: 0.99),
+                Color(red: 0.77, green: 0.84, blue: 0.96)
+            ]
+        default:
+            return [
+                Color.white,
+                ForYouPalette.accentSky.opacity(0.24)
+            ]
+        }
+    }
+
+    private var heroPrayerThemeKey: String {
+        let normalizedID = entry.id.lowercased()
+        let normalizedTitle = entry.title
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        if normalizedID.contains("-fajr-") || normalizedTitle == "fajr" || normalizedTitle == "subuh" {
+            return "fajr"
+        }
+        if normalizedID.hasSuffix("-syuruk")
+            || normalizedID.contains("-syuruk-")
+            || normalizedID.hasSuffix("-shurooq")
+            || normalizedID.contains("-shurooq-")
+            || normalizedID.hasSuffix("-sunrise")
+            || normalizedID.contains("-sunrise-")
+            || normalizedID.hasSuffix("-ishraq")
+            || normalizedID.contains("-ishraq-")
+            || normalizedTitle == "syuruk"
+            || normalizedTitle == "shurooq"
+            || normalizedTitle == "sunrise"
+            || normalizedTitle == "ishraq prayer"
+            || normalizedTitle == "ishraq" {
+            return "sunrise"
+        }
+        if normalizedID.hasSuffix("-dhuha") || normalizedID.contains("-dhuha-") || normalizedTitle == "dhuha" {
+            return "dhuha"
+        }
+        if normalizedID.contains("-dhuhr-") || normalizedTitle == "dhuhr" || normalizedTitle == "zuhur" || normalizedTitle == "jumuah" {
+            return "dhuhr"
+        }
+        if normalizedID.contains("-asr-") || normalizedTitle == "asr" || normalizedTitle == "asar" {
+            return "asr"
+        }
+        if normalizedID.contains("-maghrib-") || normalizedTitle == "maghrib" || normalizedTitle == "magrib" {
+            return "maghrib"
+        }
+        if normalizedID.contains("-isha-") || normalizedTitle == "isha" || normalizedTitle == "isya" || normalizedTitle == "isyak" {
+            return "isha"
+        }
+
+        return "default"
+    }
+}
+
+private struct ForYouCurrentPrayerGuidanceSection: View {
+    let entry: ForYouTimelineEntry
+    let onOpenWirid: () -> Void
+    let onOpenDoa: () -> Void
+
+    @EnvironmentObject private var settings: Settings
+    @State private var recommendationRowCounts: [Int]
+    @State private var recommendationActiveHoldIndex: Int?
+    @State private var recommendationHoldProgress: CGFloat = 0
+    @State private var recommendationBurstIndex: Int?
+    private let heroPrimaryText = Color.black.opacity(0.90)
+    private let heroSecondaryText = Color.black.opacity(0.50)
+
+    init(
+        entry: ForYouTimelineEntry,
+        onOpenWirid: @escaping () -> Void,
+        onOpenDoa: @escaping () -> Void
+    ) {
+        self.entry = entry
+        self.onOpenWirid = onOpenWirid
+        self.onOpenDoa = onOpenDoa
+
+        if let recommendation = entry.recommendation,
+           let descriptor = forYouRecommendationTrackerDescriptor(recommendation: recommendation) {
+            let counts = descriptor.rowTargets.indices.map { rowIndex in
+                ForYouDhikrProgressStore.count(
+                    for: forYouRecommendationTrackerStorageKey(
+                        entryID: entry.id,
+                        recommendation: recommendation,
+                        rowIndex: rowIndex
+                    )
+                )
+            }
+            _recommendationRowCounts = State(initialValue: counts)
+        } else {
+            _recommendationRowCounts = State(initialValue: [])
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(isMalayAppLanguage() ? "Panduan sekarang" : "Guidance now")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(heroSecondaryText)
+
+                    Text(recommendation?.title ?? (isMalayAppLanguage() ? "Amalan sesuai untuk waktu ini" : "Practice that fits this moment"))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(heroPrimaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                if let recommendationSummaryLabel {
+                    Text(recommendationSummaryLabel)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(heroPrimaryText)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color.white.opacity(0.86))
+                        )
+                }
+            }
+
+            if let recommendation, let arabicText = recommendation.arabicText, recommendationTrackerDescriptor == nil {
+                Text(arabicText)
+                    .font(.custom(preferredQuranArabicFontName(settings: settings, size: 24), size: 24))
+                    .foregroundStyle(heroPrimaryText)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
+                    .lineSpacing(6)
+                    .minimumScaleFactor(0.78)
+            }
+
+            if let recommendationTrackerDescriptor {
+                ForYouMiniProgressTracker(
+                    descriptor: recommendationTrackerDescriptor,
+                    rowCounts: recommendationRowCounts,
+                    activeHoldIndex: recommendationActiveHoldIndex,
+                    holdProgress: recommendationHoldProgress,
+                    burstIndex: recommendationBurstIndex,
+                    onTapStep: incrementRecommendationTrackerStep,
+                    onPressingChanged: handleRecommendationTrackerPressing,
+                    onTriggered: completeRecommendationTrackerStep,
+                    layoutStyle: recommendationTrackerDescriptor.maximumCount > 1 ? .compact : .regular
+                )
+            }
+
+            if let recommendation, !usesCompactHeroTracker {
+                Text(recommendation.shortDescription)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundStyle(heroSecondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let reference = recommendation.reference {
+                    Text(reference)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(heroSecondaryText)
+                }
+            }
+
+            HStack(spacing: 10) {
+                if forYouPrayerTabs(for: entry).contains(.wirid) {
+                    guidanceActionButton(
+                        title: isMalayAppLanguage() ? "Buka wirid" : "Open wirid",
+                        color: ForYouPalette.tabWirid,
+                        textColor: Color.black.opacity(0.84),
+                        action: onOpenWirid
+                    )
+                }
+
+                if forYouPrayerTabs(for: entry).contains(.doa) {
+                    guidanceActionButton(
+                        title: isMalayAppLanguage() ? "Buka doa" : "Open dua",
+                        color: ForYouPalette.tabDoa,
+                        textColor: .white,
+                        action: onOpenDoa
+                    )
+                }
+            }
+        }
+    }
+
+    private var recommendation: ForYouTimelineRecommendation? {
+        entry.recommendation
+    }
+
+    private var recommendationTrackerDescriptor: ForYouMiniProgressTracker.Descriptor? {
+        guard let recommendation = entry.recommendation else { return nil }
+        return forYouRecommendationTrackerDescriptor(recommendation: recommendation)
+    }
+
+    private var usesCompactHeroTracker: Bool {
+        guard let recommendationTrackerDescriptor else { return false }
+        return recommendationTrackerDescriptor.maximumCount > 1
+    }
+
+    private var recommendationSummaryLabel: String? {
+        guard let descriptor = recommendationTrackerDescriptor else { return nil }
+
+        let completedRows = zip(recommendationRowCounts, descriptor.rowTargets).filter { $0 >= $1 }.count
+        if completedRows == descriptor.maximumCount {
+            return isMalayAppLanguage() ? "Selesai" : "Completed"
+        }
+        if completedRows == 0 {
+            return nil
+        }
+        return "\(completedRows) / \(descriptor.maximumCount)"
+    }
+
+    private func guidanceActionButton(title: String, color: Color, textColor: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(textColor)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(color)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func handleRecommendationTrackerPressing(_ pressing: Bool, index: Int) {
+        guard recommendationTrackerDescriptor != nil else { return }
+        if pressing {
+            recommendationActiveHoldIndex = index
+            recommendationHoldProgress = 0
+            withAnimation(.linear(duration: 10)) {
+                recommendationHoldProgress = 1
+            }
+        } else if recommendationActiveHoldIndex == index {
+            withAnimation(.easeOut(duration: 0.16)) {
+                recommendationHoldProgress = 0
+            }
+            recommendationActiveHoldIndex = nil
+        }
+    }
+
+    private func completeRecommendationTrackerStep(_ index: Int) {
+        guard let recommendation = entry.recommendation,
+              let descriptor = recommendationTrackerDescriptor,
+              recommendationRowCounts.indices.contains(index) else { return }
+
+        var nextCounts = recommendationRowCounts
+        nextCounts[index] = descriptor.rowTargets[index]
+        recommendationRowCounts = nextCounts
+        ForYouDhikrProgressStore.setCount(
+            descriptor.rowTargets[index],
+            for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation, rowIndex: index)
+        )
+        settings.hapticFeedback()
+        recommendationBurstIndex = index
+        recommendationHoldProgress = 0
+        recommendationActiveHoldIndex = nil
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            if recommendationBurstIndex == index {
+                recommendationBurstIndex = nil
+            }
+        }
+    }
+
+    private func incrementRecommendationTrackerStep(_ index: Int) {
+        guard let recommendation = entry.recommendation,
+              let descriptor = recommendationTrackerDescriptor,
+              recommendationRowCounts.indices.contains(index),
+              recommendationRowCounts[index] < descriptor.rowTargets[index] else { return }
+
+        var nextCounts = recommendationRowCounts
+        nextCounts[index] += 1
+        recommendationRowCounts = nextCounts
+        ForYouDhikrProgressStore.setCount(
+            nextCounts[index],
+            for: forYouRecommendationTrackerStorageKey(entryID: entry.id, recommendation: recommendation, rowIndex: index)
+        )
+        settings.hapticFeedback()
+    }
+}
+
+private struct ForYouCompactPrayerTimelineStrip: View {
+    let entries: [ForYouTimelineEntry]
+    let currentEntryID: String?
+    let nextEntryID: String?
+    let onTap: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
+                Text(isMalayAppLanguage() ? "Ritma hari ini" : "Today’s rhythm")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(ForYouPalette.secondaryInk)
+
+                Spacer(minLength: 8)
+
+                Button(action: onTap) {
+                    Text(isMalayAppLanguage() ? "Buka" : "Open")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(ForYouPalette.ink)
+                }
+                .buttonStyle(.plain)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(entries) { entry in
+                        ForYouCompactPrayerTimelineChip(
+                            entry: entry,
+                            state: state(for: entry)
+                        )
+                    }
+                }
+            }
+            .frame(height: 74, alignment: .topLeading)
+            .clipped()
+        }
+        .padding(.horizontal, 2)
+    }
+
+    private func state(for entry: ForYouTimelineEntry) -> ForYouCompactPrayerTimelineChip.State {
+        if entry.id == currentEntryID {
+            return .current
+        }
+        if entry.id == nextEntryID {
+            return .next
+        }
+        if entry.time < Date() {
+            return .past
+        }
+        return .upcoming
+    }
+}
+
+private struct ForYouCompactPrayerTimelineChip: View {
+    enum State {
+        case current
+        case next
+        case past
+        case upcoming
+    }
+
+    let entry: ForYouTimelineEntry
+    let state: State
+    private let lightChipPrimaryText = Color.black.opacity(0.86)
+    private let lightChipSecondaryText = Color.black.opacity(0.56)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(entry.title)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .foregroundStyle(primaryTextColor)
+
+            Text(ForYouFormatters.shortTime.string(from: entry.time))
+                .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
+                .lineLimit(1)
+                .foregroundStyle(secondaryTextColor)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(fillColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(strokeColor, lineWidth: 1)
+                )
+        )
+    }
+
+    private var fillColor: Color {
+        switch state {
+        case .current:
+            return ForYouPalette.darkTile
+        case .next:
+            return ForYouPalette.accentSky.opacity(0.86)
+        case .past:
+            return Color.white.opacity(0.62)
+        case .upcoming:
+            return Color.white.opacity(0.86)
+        }
+    }
+
+    private var strokeColor: Color {
+        switch state {
+        case .current:
+            return Color.white.opacity(0.08)
+        case .next:
+            return Color.white.opacity(0.40)
+        case .past:
+            return ForYouPalette.stroke.opacity(0.65)
+        case .upcoming:
+            return ForYouPalette.stroke
+        }
+    }
+
+    private var primaryTextColor: Color {
+        switch state {
+        case .current:
+            return .white
+        case .past, .next, .upcoming:
+            return lightChipPrimaryText
+        }
+    }
+
+    private var secondaryTextColor: Color {
+        switch state {
+        case .current:
+            return Color.white.opacity(0.92)
+        case .past, .next, .upcoming:
+            return lightChipSecondaryText
+        }
+    }
+}
+
 private struct ForYouExpandableWeatherCard: View {
     let plan: ForYouDailyPlan
     let isExpanded: Bool
@@ -3447,7 +4170,6 @@ private struct ForYouDayView: View {
 
     @State private var selectedPageIndex: Int?
     @State private var showsExpandedSunEntries = false
-    @State private var showsExpandedWeatherCard = false
     @EnvironmentObject private var settings: Settings
 
     init(
@@ -3688,6 +4410,11 @@ private struct ForYouDayView: View {
             )
         }
 
+        if shiftedPrayers.allSatisfy({ $0.time > now }),
+           normalizedGreetingPrayerName(settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish) == "isha" {
+            return "isha"
+        }
+
         let activePrayer = shiftedPrayers.last(where: { $0.time <= now }) ?? shiftedPrayers.last
         return greetingPrayerWindowKey(for: activePrayer)
     }
@@ -3757,7 +4484,13 @@ private struct ForYouDayView: View {
 
         if Calendar.current.isDateInToday(viewModel.plan.date) {
             let now = Date()
-            return prayerEntries.last(where: { $0.time <= now }) ?? prayerEntries.first
+            if let currentPrayer = prayerEntries.last(where: { $0.time <= now }) {
+                return currentPrayer
+            }
+            if normalizedGreetingPrayerName(settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish) == "isha" {
+                return prayerEntries.last(where: { normalizedGreetingPrayerName($0.title) == "isha" }) ?? prayerEntries.first
+            }
+            return prayerEntries.first
         }
 
         return prayerEntries.first
@@ -3777,6 +4510,12 @@ private struct ForYouDayView: View {
 
     private var prayerEntries: [ForYouTimelineEntry] {
         displayedPrayerEntries
+    }
+
+    private var compactTimelineEntries: [ForYouTimelineEntry] {
+        viewModel.plan.timelineEntries.filter { entry in
+            entry.kind == .prayer && isPrimaryPrayerEntry(entry)
+        }
     }
 
     private var defaultPrayerSelection: ForYouPrayerCardSelection? {
@@ -3812,7 +4551,7 @@ private struct ForYouDayView: View {
     private func pageContent(index: Int, page: [ForYouDisplayedTimelineItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if index == 0 {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 14) {
                     Text(greetingLine)
                         .font(ForYouTypography.playfairHeadline(size: 31))
                         .foregroundStyle(ForYouPalette.ink)
@@ -3820,46 +4559,31 @@ private struct ForYouDayView: View {
                         .opacity(greetingSplashActive ? 0 : 1)
                         .accessibilityAddTraits(.isHeader)
                         .padding(.top, 10)
-                        .padding(.bottom, 10)
+                        .padding(.bottom, 2)
 
-                    Button(action: onScrollToPrayerTimeline) {
-                        ForYouSummaryHeader(
-                            plan: viewModel.plan,
-                            currentPrayerEntry: currentPrayerEntry,
-                            nextPrayerEntry: nextPrayerEntry
+                    ForYouInlinePrayerMetaRow(plan: viewModel.plan)
+
+                    if let currentPrayerEntry {
+                        ForYouCurrentPrayerHeroCard(
+                            entry: currentPrayerEntry,
+                            nextEntry: nextPrayerEntry,
+                            onScrollToTimeline: onScrollToPrayerTimeline
                         )
                     }
-                    .buttonStyle(ForYouHeroJumpButtonStyle())
-                    .accessibilityLabel(isMalayAppLanguage() ? "Lompat ke bahagian waktu solat" : "Jump to prayer times section")
 
-                    ForYouExpandableWeatherCard(
-                        plan: viewModel.plan,
-                        isExpanded: showsExpandedWeatherCard,
-                        onToggle: {
-                            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-                                showsExpandedWeatherCard.toggle()
-                            }
-                        }
-                    )
-                    .padding(.top, -6)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(weekdayLine)
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
-                            .foregroundStyle(ForYouPalette.ink)
-                            .padding(.top, 10)
-                        if let location = viewModel.plan.locationLine {
-                            Label(location, systemImage: "mappin.and.ellipse")
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                                .foregroundStyle(ForYouPalette.secondaryInk)
-                                .lineLimit(1)
-                        }
+                    if !compactTimelineEntries.isEmpty {
+                        ForYouCompactPrayerTimelineStrip(
+                            entries: compactTimelineEntries,
+                            currentEntryID: currentPrayerEntry?.id,
+                            nextEntryID: nextPrayerEntry?.id,
+                            onTap: onScrollToPrayerTimeline
+                        )
                     }
 
-                    Text(isMalayAppLanguage() ? "Hari penuh" : "Full day")
+                    Text(isMalayAppLanguage() ? "Garis masa solat" : "Prayer timeline")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(ForYouPalette.secondaryInk)
-                        .padding(.top, 10)
+                        .padding(.top, 6)
                         .id(Self.prayerTimelineSectionID)
                 }
             }
@@ -3923,6 +4647,15 @@ private struct ForYouDayView: View {
             || normalizedID.contains("-ishraq-")
             || normalizedID.hasSuffix("-dhuha")
             || normalizedID.contains("-dhuha-")
+    }
+
+    private func isPrimaryPrayerEntry(_ entry: ForYouTimelineEntry) -> Bool {
+        switch normalizedGreetingPrayerName(entry.title) {
+        case "fajr", "dhuhr", "asr", "maghrib", "isha":
+            return true
+        default:
+            return false
+        }
     }
 
     private func itemIsAnimatedSunEntry(_ item: ForYouDisplayedTimelineItem) -> Bool {
@@ -4515,10 +5248,18 @@ struct ForYouRootView: View {
     }
 
     private var currentPrayerEntry: ForYouTimelineEntry? {
-        currentDayViewModel?.plan.timelineEntries
-            .filter { $0.kind == .prayer }
-            .last(where: { $0.time <= Date() })
-        ?? currentDayViewModel?.plan.timelineEntries.first(where: { $0.kind == .prayer })
+        guard let prayerEntries = currentDayViewModel?.plan.timelineEntries.filter({ $0.kind == .prayer }),
+              !prayerEntries.isEmpty else { return nil }
+
+        if let currentPrayer = prayerEntries.last(where: { $0.time <= Date() }) {
+            return currentPrayer
+        }
+
+        if normalizedCurrentPrayerKey == "isha" {
+            return prayerEntries.last(where: { normalizedPrayerKey(from: $0) == "isha" }) ?? prayerEntries.first
+        }
+
+        return prayerEntries.first
     }
 
     private var nextPrayerEntry: ForYouTimelineEntry? {
@@ -4554,6 +5295,11 @@ struct ForYouRootView: View {
             return .main(currentPrayer.id)
         }
 
+        if normalizedCurrentPrayerKey == "isha",
+           let ishaPrayer = prayerEntries.last(where: { normalizedPrayerKey(from: $0) == "isha" }) {
+            return .main(ishaPrayer.id)
+        }
+
         return prayerEntries.first.map { .main($0.id) }
     }
 
@@ -4567,6 +5313,51 @@ struct ForYouRootView: View {
         }
 
         return nil
+    }
+
+    private var normalizedCurrentPrayerKey: String {
+        normalizedPrayerKey(settings.currentPrayer?.nameTransliteration ?? settings.currentPrayer?.nameEnglish)
+    }
+
+    private func normalizedPrayerKey(_ value: String?) -> String {
+        let normalized = value?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased() ?? ""
+
+        switch normalized {
+        case "fajr", "subuh":
+            return "fajr"
+        case "shurooq", "syuruk", "sunrise", "ishraq":
+            return "sunrise"
+        case "dhuha":
+            return "dhuha"
+        case "dhuhr", "zuhur", "jumuah":
+            return "dhuhr"
+        case "asr", "asar":
+            return "asr"
+        case "maghrib", "magrib":
+            return "maghrib"
+        case "isha", "isyak", "isya":
+            return "isha"
+        default:
+            return normalized
+        }
+    }
+
+    private func normalizedPrayerKey(from entry: ForYouTimelineEntry) -> String {
+        let normalizedID = entry.id.lowercased()
+
+        if normalizedID.contains("-fajr-") { return "fajr" }
+        if normalizedID.contains("-dhuhr-") { return "dhuhr" }
+        if normalizedID.contains("-asr-") { return "asr" }
+        if normalizedID.contains("-maghrib-") { return "maghrib" }
+        if normalizedID.contains("-isha-") { return "isha" }
+        if normalizedID.hasSuffix("-ishraq") || normalizedID.contains("-ishraq-") || normalizedID.hasSuffix("-sunrise") || normalizedID.contains("-sunrise-") || normalizedID.hasSuffix("-syuruk") || normalizedID.contains("-syuruk-") || normalizedID.hasSuffix("-shurooq") || normalizedID.contains("-shurooq-") {
+            return "sunrise"
+        }
+        if normalizedID.hasSuffix("-dhuha") || normalizedID.contains("-dhuha-") { return "dhuha" }
+
+        return normalizedPrayerKey(entry.title)
     }
 
     private var prayerSelection: ForYouPrayerCardSelection? {
