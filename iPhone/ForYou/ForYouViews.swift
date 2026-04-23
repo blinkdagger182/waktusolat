@@ -1029,6 +1029,7 @@ private struct ForYouPrayerTimelineEntryView: View {
     let extendsToNext: Bool
     let selection: ForYouPrayerCardSelection
     let collapsedEntryIDs: Set<String>
+    let bounceToken: UUID?
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
 
     var body: some View {
@@ -1056,6 +1057,7 @@ private struct ForYouPrayerTimelineEntryView: View {
                 trackerStatus: nil, // DISABLED: prayer tracker status
                 selection: selection,
                 collapsedEntryIDs: collapsedEntryIDs,
+                bounceToken: bounceToken,
                 onSelectionChange: onSelectionChange
             )
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
@@ -1135,7 +1137,7 @@ private enum ForYouPrayerCardSelection: Equatable {
     var scrollID: String {
         switch self {
         case .main(let entryID), .collapsed(let entryID):
-            return entryID
+            return Self.mainAnchorID(for: entryID)
         case .tab(let entryID, let tab):
             return "\(entryID)-\(tab.rawValue)"
         }
@@ -1155,6 +1157,10 @@ private enum ForYouPrayerCardSelection: Equatable {
             return true
         }
         return false
+    }
+
+    static func mainAnchorID(for entryID: String) -> String {
+        "anchor-\(entryID)"
     }
 }
 
@@ -1194,8 +1200,10 @@ private struct ForYouPrayerStackedCards: View {
     let trackerStatus: PrayerTrackerStatus?
     let selection: ForYouPrayerCardSelection
     let collapsedEntryIDs: Set<String>
+    let bounceToken: UUID?
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
     @State private var presentedTab: ForYouPrayerTab?
+    @State private var bounceScale: CGFloat = 1
 
     private var isActiveEntry: Bool {
         selection.entryID == entry.id
@@ -1240,6 +1248,11 @@ private struct ForYouPrayerStackedCards: View {
         }
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .clipped()
+        .scaleEffect(bounceScale)
+        .onChange(of: bounceToken) { newValue in
+            guard newValue != nil else { return }
+            runBounceAnimation()
+        }
         .sheet(item: $presentedTab) { tab in
             NavigationView {
                 ForYouPrayerTabModalView(entry: entry, tab: tab)
@@ -1310,6 +1323,26 @@ private struct ForYouPrayerStackedCards: View {
             return isMalayAppLanguage() ? "Doa" : "Dua"
         case .weather:
             return isMalayAppLanguage() ? "Cuaca" : "Weather"
+        }
+    }
+
+    private func runBounceAnimation() {
+        bounceScale = 1
+
+        withAnimation(.spring(response: 0.20, dampingFraction: 0.58)) {
+            bounceScale = 1.035
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.72)) {
+                bounceScale = 0.992
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.84)) {
+                bounceScale = 1
+            }
         }
     }
 }
@@ -3046,6 +3079,7 @@ private struct ForYouCurrentPrayerHeroCard: View {
     @EnvironmentObject private var settings: Settings
     @Environment(\.colorScheme) private var colorScheme
     @State private var presentedTab: ForYouPrayerTab?
+    @State private var selectedFullSurah: FullSurahSelection?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -3107,6 +3141,34 @@ private struct ForYouCurrentPrayerHeroCard: View {
             .padding(20)
             .fixedSize(horizontal: false, vertical: true)
 
+            Divider()
+                .overlay(Color.black.opacity(0.08))
+
+            Button {
+                selectedFullSurah = FullSurahSelection(
+                    surahNumber: 67,
+                    initialAyahNumber: nil,
+                    dailyAyahNumber: nil
+                )
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "book.pages")
+                        .font(.system(size: 14, weight: .semibold))
+
+                    Text(isMalayAppLanguage() ? "Baca Surah Al-Mulk" : "Read Surah Al-Mulk")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(heroPrimaryText)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                        .fill(Color.white.opacity(colorScheme == .dark ? 0.03 : 0.16))
+                )
+            }
+            .buttonStyle(.plain)
+
             if let nextEntry {
                 Divider()
                     .overlay(Color.black.opacity(0.08))
@@ -3133,18 +3195,18 @@ private struct ForYouCurrentPrayerHeroCard: View {
 
                     Spacer(minLength: 8)
 
-                    Button(action: onScrollToTimeline) {
-                        Text(isMalayAppLanguage() ? "Lihat hari ini" : "See full day")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(ForYouPalette.darkTile)
-                            )
-                    }
-                    .buttonStyle(.plain)
+//                    Button(action: onScrollToTimeline) {
+//                        Text(isMalayAppLanguage() ? "Lihat hari ini" : "See full day")
+//                            .font(.system(size: 12, weight: .bold, design: .rounded))
+//                            .foregroundStyle(Color.white)
+//                            .padding(.horizontal, 14)
+//                            .padding(.vertical, 10)
+//                            .background(
+//                                Capsule(style: .continuous)
+//                                    .fill(ForYouPalette.darkTile)
+//                            )
+//                    }
+//                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -3175,6 +3237,25 @@ private struct ForYouCurrentPrayerHeroCard: View {
                     .navigationBarTitleDisplayMode(.inline)
             }
             .navigationViewStyle(.stack)
+        }
+        .sheet(item: $selectedFullSurah) { selection in
+            NavigationView {
+                QuranSurahDetailsView(
+                    surahNumber: selection.surahNumber,
+                    initialAyahNumber: selection.initialAyahNumber,
+                    dailyAyahNumber: selection.dailyAyahNumber
+                )
+                .environmentObject(settings)
+                .navigationTitle(isMalayAppLanguage() ? "Surah Al-Mulk" : "Surah Al-Mulk")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(isMalayAppLanguage() ? "Selesai" : "Done") {
+                            selectedFullSurah = nil
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -3610,7 +3691,8 @@ private struct ForYouCompactPrayerTimelineStrip: View {
     let entries: [ForYouTimelineEntry]
     let currentEntryID: String?
     let nextEntryID: String?
-    let onTap: () -> Void
+    let onOpen: () -> Void
+    let onEntryTap: (ForYouTimelineEntry) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -3621,12 +3703,12 @@ private struct ForYouCompactPrayerTimelineStrip: View {
 
                 Spacer(minLength: 8)
 
-                Button(action: onTap) {
-                    Text(isMalayAppLanguage() ? "Buka" : "Open")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(ForYouPalette.ink)
-                }
-                .buttonStyle(.plain)
+//                Button(action: onOpen) {
+//                    Text(isMalayAppLanguage() ? "Buka" : "Open")
+//                        .font(.system(size: 11, weight: .bold, design: .rounded))
+//                        .foregroundStyle(ForYouPalette.ink)
+//                }
+//                .buttonStyle(.plain)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -3636,6 +3718,10 @@ private struct ForYouCompactPrayerTimelineStrip: View {
                             entry: entry,
                             state: state(for: entry)
                         )
+                        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .onTapGesture {
+                            onEntryTap(entry)
+                        }
                     }
                 }
             }
@@ -4196,6 +4282,9 @@ private struct ForYouDayView: View {
     let collapsedEntryIDs: Set<String>
     let onSelectionChange: (ForYouPrayerCardSelection) -> Void
     let onScrollToPrayerTimeline: () -> Void
+    let onPrayerChipTap: (ForYouTimelineEntry) -> Void
+    let bounceEntryID: String?
+    let bounceToken: UUID?
     let greetingNamespace: Namespace.ID
     let greetingSplashActive: Bool
 
@@ -4212,6 +4301,9 @@ private struct ForYouDayView: View {
         collapsedEntryIDs: Set<String>,
         onSelectionChange: @escaping (ForYouPrayerCardSelection) -> Void,
         onScrollToPrayerTimeline: @escaping () -> Void,
+        onPrayerChipTap: @escaping (ForYouTimelineEntry) -> Void,
+        bounceEntryID: String?,
+        bounceToken: UUID?,
         greetingNamespace: Namespace.ID,
         greetingSplashActive: Bool
     ) {
@@ -4223,6 +4315,9 @@ private struct ForYouDayView: View {
         self.collapsedEntryIDs = collapsedEntryIDs
         self.onSelectionChange = onSelectionChange
         self.onScrollToPrayerTimeline = onScrollToPrayerTimeline
+        self.onPrayerChipTap = onPrayerChipTap
+        self.bounceEntryID = bounceEntryID
+        self.bounceToken = bounceToken
         self.greetingNamespace = greetingNamespace
         self.greetingSplashActive = greetingSplashActive
         _selectedPageIndex = State(initialValue: Self.resolveInitialPageIndex(for: viewModel.plan))
@@ -4605,7 +4700,8 @@ private struct ForYouDayView: View {
                             entries: compactTimelineEntries,
                             currentEntryID: currentPrayerEntry?.id,
                             nextEntryID: nextPrayerEntry?.id,
-                            onTap: onScrollToPrayerTimeline
+                            onOpen: onScrollToPrayerTimeline,
+                            onEntryTap: onPrayerChipTap
                         )
                     }
 
@@ -4621,17 +4717,24 @@ private struct ForYouDayView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     if let entry = entry(from: item) {
                         if entry.kind == .prayer {
-                            ForYouPrayerTimelineEntryView(
-                                entry: entry,
-                                date: viewModel.plan.date,
-                                isFocused: entry.id == focusedEntryID,
-                                extendsToNext: itemIndex != page.count - 1,
-                                selection: prayerSelection ?? .main(entry.id),
-                                collapsedEntryIDs: collapsedEntryIDs,
-                                onSelectionChange: { selection in
-                                    setPrayerSelection(selection)
-                                }
-                            )
+                            VStack(spacing: 0) {
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id(ForYouPrayerCardSelection.mainAnchorID(for: entry.id))
+
+                                ForYouPrayerTimelineEntryView(
+                                    entry: entry,
+                                    date: viewModel.plan.date,
+                                    isFocused: entry.id == focusedEntryID,
+                                    extendsToNext: itemIndex != page.count - 1,
+                                    selection: prayerSelection ?? .main(entry.id),
+                                    collapsedEntryIDs: collapsedEntryIDs,
+                                    bounceToken: bounceEntryID == entry.id ? bounceToken : nil,
+                                    onSelectionChange: { selection in
+                                        setPrayerSelection(selection)
+                                    }
+                                )
+                            }
                         } else {
                             ForYouTimelineEntryView(
                                 entry: entry,
@@ -5058,9 +5161,12 @@ struct ForYouRootView: View {
     @StateObject private var viewModel = ForYouFeedViewModel()
     @State private var selectedPrayerCard: ForYouPrayerCardSelection?
     @State private var collapsedPrayerCardIDs: Set<String> = []
+    @State private var bouncePrayerEntryID: String?
+    @State private var bouncePrayerToken: UUID?
     @State private var scrollTarget: (scrollID: String, token: UUID?)?
     @State private var scrollOffset: CGFloat = 0
     @State private var shouldAutoScrollOnAppear = ForYouSessionStore.shouldAutoScrollOnTodayAppear()
+    @State private var didSeedCollapsedPrayerCards = false
     @Namespace private var greetingNamespace
     @State private var greetingSplashActive = false
     private let onScrollOffsetChange: ((CGFloat) -> Void)?
@@ -5110,6 +5216,11 @@ struct ForYouRootView: View {
                                             )
                                         }
                                     },
+                                    onPrayerChipTap: { entry in
+                                        focusPrayerEntry(entry, proxy: proxy)
+                                    },
+                                    bounceEntryID: bouncePrayerEntryID,
+                                    bounceToken: bouncePrayerToken,
                                     greetingNamespace: greetingNamespace,
                                     greetingSplashActive: greetingSplashActive
                                 )
@@ -5125,12 +5236,11 @@ struct ForYouRootView: View {
                     )
                     .onAppear {
                         onScrollOffsetChange?(0)
+                        seedCollapsedPrayerCardsIfNeeded()
                         if shouldAutoScrollOnAppear,
                            !viewModel.showOnboarding,
                            let id = currentPrayerSelection?.entryID ?? currentDayViewModel?.focusedEntryID {
-                            collapsedPrayerCardIDs = previousPrayerEntry.map { [$0.id] } ?? []
-                            collapsedPrayerCardIDs.remove(id)
-                            selectedPrayerCard = .main(id)
+                            selectedPrayerCard = .collapsed(id)
                             bottomBarVisibility.suppressNextHide()
                             // Seed scrollTarget.scrollID so the first button press
                             // cycles relative to the auto-scrolled card, not index 0.
@@ -5148,6 +5258,10 @@ struct ForYouRootView: View {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
                             proxy.scrollTo(scrollID, anchor: focusScrollAnchor)
                         }
+                    }
+                    .onChange(of: currentDayViewModel?.id) { _ in
+                        didSeedCollapsedPrayerCards = false
+                        seedCollapsedPrayerCardsIfNeeded()
                     }
                 }
             }
@@ -5398,6 +5512,17 @@ struct ForYouRootView: View {
         return defaultPrayerSelection
     }
 
+    private func seedCollapsedPrayerCardsIfNeeded() {
+        guard !didSeedCollapsedPrayerCards, !prayerEntries.isEmpty else { return }
+        collapsedPrayerCardIDs = Set(prayerEntries.map(\.id))
+        if let currentPrayerSelection {
+            selectedPrayerCard = .collapsed(currentPrayerSelection.entryID)
+        } else {
+            selectedPrayerCard = prayerEntries.first.map { .collapsed($0.id) }
+        }
+        didSeedCollapsedPrayerCards = true
+    }
+
     private func scrollToPrayerTimeline() {
         settings.hapticFeedback()
         if let currentPrayerSelection {
@@ -5408,6 +5533,39 @@ struct ForYouRootView: View {
             scrollID: currentPrayerSelection?.entryID ?? ForYouDayView.prayerTimelineSectionID,
             token: UUID()
         )
+    }
+
+    private func focusPrayerEntry(_ entry: ForYouTimelineEntry, proxy: ScrollViewProxy) {
+        settings.hapticFeedback()
+        bouncePrayerEntryID = nil
+        bouncePrayerToken = nil
+        let currentSelection = selectedPrayerCard
+        let isCollapsed = collapsedPrayerCardIDs.contains(entry.id)
+            || currentSelection == .collapsed(entry.id)
+        let scrollID = ForYouPrayerCardSelection.mainAnchorID(for: entry.id)
+
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
+            proxy.scrollTo(scrollID, anchor: focusScrollAnchor)
+        }
+
+        if isCollapsed {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+                collapsedPrayerCardIDs.remove(entry.id)
+                selectedPrayerCard = .main(entry.id)
+
+                guard entry.id == currentPrayerEntry?.id else { return }
+                bouncePrayerEntryID = entry.id
+                bouncePrayerToken = UUID()
+            }
+            return
+        }
+
+        if entry.id == currentPrayerEntry?.id {
+            bouncePrayerEntryID = entry.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+                bouncePrayerToken = UUID()
+            }
+        }
     }
 
     // Unified ordered sequence of every focusable item in the feed:

@@ -829,9 +829,23 @@ private struct CannyWebView: View {
 
 struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings
+    @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
     
     var body: some View {
         #if !os(watchOS)
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("App Language", selection: $appLanguageCode.animation(.easeInOut)) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.displayName).tag(language.rawValue)
+                }
+            }
+            .pickerStyle(.menu)
+
+            Text("Choose how the app interface is displayed.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+
         Picker("Color Theme", selection: $settings.colorSchemeString.animation(.easeInOut)) {
             Text("System").tag("system")
             Text("Light").tag("light")

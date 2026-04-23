@@ -1904,25 +1904,23 @@ private struct HomeCountdownMediumPreviewCard: View {
     let accentColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            CurvierPrayerTimelineGraphPreviewCard(
-                currentPrayer: localizedPrayerName("Maghrib"),
-                nextPrayer: localizedPrayerName("Isha"),
-                nextTime: "20:38",
-                footer: "Subang Jaya, Selangor",
-                accentColor: accentColor
+        VStack(alignment: .leading, spacing: 8) {
+            CurvierPreviewPrayerMiniGraph(
+                sampleMinutes: [330, 430, 780, 1000, 1166, 1238],
+                activeDotIndex: 2
             )
+            .frame(height: 16)
 
             HStack {
                 Text(localizedPrayerName("Maghrib"))
-                    .font(.headline.weight(.semibold))
+                    .font(.title3.weight(.semibold))
                     .foregroundStyle(accentColor)
                 Spacer(minLength: 8)
                 Text("1:14:22")
-                    .font(.headline.monospacedDigit())
+                    .font(.title3.monospacedDigit())
                 Spacer(minLength: 8)
                 Text(localizedPrayerName("Isha"))
-                    .font(.headline.weight(.semibold))
+                    .font(.title3.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
 
@@ -1933,6 +1931,8 @@ private struct HomeCountdownMediumPreviewCard: View {
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
         }
     }
 }
