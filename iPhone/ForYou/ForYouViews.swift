@@ -398,8 +398,7 @@ private struct ForYouMiniProgressTracker: View {
         let isHolding = activeHoldIndex == index && !isCompleted
         let symbol = descriptor.maximumCount == 1 ? "moon.zzz.fill" : "sparkles"
         let rowLabel = descriptor.rowLabels.indices.contains(index) ? descriptor.rowLabels[index] : descriptor.title
-
-        VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : (isCompact ? 4 : 6)) {
+        let cellContent = VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : (isCompact ? 4 : 6)) {
             if descriptor.requiresLongPress {
                 HStack(spacing: isCompact ? 6 : 8) {
                     Text(rowLabel)
@@ -409,31 +408,7 @@ private struct ForYouMiniProgressTracker: View {
                         .minimumScaleFactor(0.60)
                         .frame(maxWidth: .infinity, alignment: .trailing)
 
-                    Image(systemName: symbol)
-                        .font(.system(size: isCompact ? 10 : 11, weight: .bold))
-                        .foregroundStyle(isCompleted ? tint : .white)
-                        .frame(width: isCompact ? 20 : 22, height: isCompact ? 20 : 22)
-                        .background(
-                            Circle()
-                                .fill(isCompleted ? tint.opacity(0.18) : tint)
-                        )
-                        .overlay(
-                            ZStack {
-                                if burstIndex == index {
-                                    Circle()
-                                        .stroke(tint.opacity(0.35), lineWidth: 1.5)
-                                        .scaleEffect(1.6)
-                                        .opacity(0)
-                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
-                                    Circle()
-                                        .fill(tint.opacity(0.16))
-                                        .scaleEffect(1.9)
-                                        .opacity(0)
-                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
-                                }
-                            }
-                        )
-                        .scaleEffect(isHolding ? 1.08 : 1)
+                    trackerSymbol(isCompleted: isCompleted, isHolding: isHolding, index: index, symbol: symbol)
                 }
             } else {
                 Text(rowLabel)
@@ -460,31 +435,7 @@ private struct ForYouMiniProgressTracker: View {
                     }
                     .frame(height: 8)
 
-                    Image(systemName: symbol)
-                        .font(.system(size: isCompact ? 10 : 11, weight: .bold))
-                        .foregroundStyle(isCompleted ? tint : .white)
-                        .frame(width: isCompact ? 20 : 22, height: isCompact ? 20 : 22)
-                        .background(
-                            Circle()
-                                .fill(isCompleted ? tint.opacity(0.18) : tint)
-                        )
-                        .overlay(
-                            ZStack {
-                                if burstIndex == index {
-                                    Circle()
-                                        .stroke(tint.opacity(0.35), lineWidth: 1.5)
-                                        .scaleEffect(1.6)
-                                        .opacity(0)
-                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
-                                    Circle()
-                                        .fill(tint.opacity(0.16))
-                                        .scaleEffect(1.9)
-                                        .opacity(0)
-                                        .animation(.easeOut(duration: 0.35), value: burstIndex)
-                                }
-                            }
-                        )
-                        .scaleEffect(isHolding ? 1.08 : 1)
+                    trackerSymbol(isCompleted: isCompleted, isHolding: isHolding, index: index, symbol: symbol)
 
                     Text("\(min(currentCount, rowTarget))")
                         .font(.system(size: 12, weight: .bold, design: .rounded))
@@ -495,6 +446,7 @@ private struct ForYouMiniProgressTracker: View {
         }
         .padding(.horizontal, isCompact ? 6 : 8)
         .padding(.vertical, isCompact ? 6 : 8)
+        .frame(minHeight: descriptor.requiresLongPress ? (isCompact ? 40 : 44) : (isCompact ? 52 : 58))
         .frame(maxWidth: .infinity)
         .background(
             ZStack(alignment: .leading) {
@@ -516,18 +468,59 @@ private struct ForYouMiniProgressTracker: View {
                     .stroke(isCompleted ? tint.opacity(0.28) : ForYouPalette.stroke, lineWidth: 1)
             }
         )
-        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .modifier(
-            ForYouTrackerInteractionModifier(
-                requiresLongPress: descriptor.requiresLongPress,
-                holdDuration: descriptor.holdDuration,
-                isCompleted: isCompleted,
-                index: index,
-                onTapStep: onTapStep,
-                onPressingChanged: onPressingChanged,
-                onTriggered: onTriggered
+        .contentShape(Rectangle())
+
+        if descriptor.requiresLongPress {
+            cellContent
+                .modifier(
+                    ForYouTrackerInteractionModifier(
+                        requiresLongPress: true,
+                        holdDuration: descriptor.holdDuration,
+                        isCompleted: isCompleted,
+                        index: index,
+                        onTapStep: nil,
+                        onPressingChanged: onPressingChanged,
+                        onTriggered: onTriggered
+                    )
+                )
+        } else {
+            Button {
+                guard !isCompleted else { return }
+                onTapStep?(index)
+            } label: {
+                cellContent
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private func trackerSymbol(isCompleted: Bool, isHolding: Bool, index: Int, symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: isCompact ? 10 : 11, weight: .bold))
+            .foregroundStyle(isCompleted ? tint : .white)
+            .frame(width: isCompact ? 20 : 22, height: isCompact ? 20 : 22)
+            .background(
+                Circle()
+                    .fill(isCompleted ? tint.opacity(0.18) : tint)
             )
-        )
+            .overlay(
+                ZStack {
+                    if burstIndex == index {
+                        Circle()
+                            .stroke(tint.opacity(0.35), lineWidth: 1.5)
+                            .scaleEffect(1.6)
+                            .opacity(0)
+                            .animation(.easeOut(duration: 0.35), value: burstIndex)
+                        Circle()
+                            .fill(tint.opacity(0.16))
+                            .scaleEffect(1.9)
+                            .opacity(0)
+                            .animation(.easeOut(duration: 0.35), value: burstIndex)
+                    }
+                }
+            )
+            .scaleEffect(isHolding ? 1.08 : 1)
     }
 
     private func fillFraction(for index: Int) -> CGFloat {
@@ -3051,9 +3044,8 @@ private struct ForYouCurrentPrayerHeroCard: View {
     let onScrollToTimeline: () -> Void
 
     @EnvironmentObject private var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
     @State private var presentedTab: ForYouPrayerTab?
-    private let heroPrimaryText = Color.black.opacity(0.90)
-    private let heroSecondaryText = Color.black.opacity(0.50)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -3097,26 +3089,6 @@ private struct ForYouCurrentPrayerHeroCard: View {
                     .layoutPriority(2)
                 }
 
-                if !quickActionTabs.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(quickActionTabs, id: \.id) { tab in
-                            Button {
-                                presentedTab = tab
-                            } label: {
-                                Text(tab == .wirid ? (isMalayAppLanguage() ? "Wirid" : "Wirid") : (isMalayAppLanguage() ? "Doa" : "Dua"))
-                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(tab.textColor)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 9)
-                                    .background(
-                                        Capsule(style: .continuous)
-                                            .fill(tab.color)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
             }
             .padding(20)
 
@@ -3255,12 +3227,11 @@ private struct ForYouCurrentPrayerHeroCard: View {
         }
         return entry.subtitle
     }
-
-    private var quickActionTabs: [ForYouPrayerTab] {
-        forYouPrayerTabs(for: entry).filter { $0 == .wirid || $0 == .doa }
+    private var heroGradientColors: [Color] {
+        colorScheme == .dark ? darkHeroGradientColors : lightHeroGradientColors
     }
 
-    private var heroGradientColors: [Color] {
+    private var lightHeroGradientColors: [Color] {
         switch heroPrayerThemeKey {
         case "fajr":
             return [
@@ -3303,6 +3274,59 @@ private struct ForYouCurrentPrayerHeroCard: View {
                 ForYouPalette.accentSky.opacity(0.24)
             ]
         }
+    }
+
+    private var darkHeroGradientColors: [Color] {
+        switch heroPrayerThemeKey {
+        case "fajr":
+            return [
+                Color(red: 0.17, green: 0.16, blue: 0.20),
+                Color(red: 0.23, green: 0.30, blue: 0.39)
+            ]
+        case "sunrise":
+            return [
+                Color(red: 0.28, green: 0.20, blue: 0.16),
+                Color(red: 0.39, green: 0.28, blue: 0.20)
+            ]
+        case "dhuha":
+            return [
+                Color(red: 0.23, green: 0.20, blue: 0.14),
+                Color(red: 0.33, green: 0.28, blue: 0.18)
+            ]
+        case "dhuhr":
+            return [
+                Color(red: 0.16, green: 0.19, blue: 0.23),
+                Color(red: 0.21, green: 0.29, blue: 0.36)
+            ]
+        case "asr":
+            return [
+                Color(red: 0.22, green: 0.19, blue: 0.17),
+                Color(red: 0.30, green: 0.27, blue: 0.26)
+            ]
+        case "maghrib":
+            return [
+                Color(red: 0.25, green: 0.16, blue: 0.17),
+                Color(red: 0.38, green: 0.22, blue: 0.20)
+            ]
+        case "isha":
+            return [
+                Color(red: 0.11, green: 0.14, blue: 0.20),
+                Color(red: 0.16, green: 0.22, blue: 0.32)
+            ]
+        default:
+            return [
+                Color(red: 0.14, green: 0.16, blue: 0.20),
+                Color(red: 0.19, green: 0.23, blue: 0.29)
+            ]
+        }
+    }
+
+    private var heroPrimaryText: Color {
+        colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.90)
+    }
+
+    private var heroSecondaryText: Color {
+        colorScheme == .dark ? Color.white.opacity(0.68) : Color.black.opacity(0.50)
     }
 
     private var heroPrayerThemeKey: String {
@@ -3355,12 +3379,11 @@ private struct ForYouCurrentPrayerGuidanceSection: View {
     let onOpenDoa: () -> Void
 
     @EnvironmentObject private var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
     @State private var recommendationRowCounts: [Int]
     @State private var recommendationActiveHoldIndex: Int?
     @State private var recommendationHoldProgress: CGFloat = 0
     @State private var recommendationBurstIndex: Int?
-    private let heroPrimaryText = Color.black.opacity(0.90)
-    private let heroSecondaryText = Color.black.opacity(0.50)
 
     init(
         entry: ForYouTimelineEntry,
@@ -3488,6 +3511,14 @@ private struct ForYouCurrentPrayerGuidanceSection: View {
     private var usesCompactHeroTracker: Bool {
         guard let recommendationTrackerDescriptor else { return false }
         return recommendationTrackerDescriptor.maximumCount > 1
+    }
+
+    private var heroPrimaryText: Color {
+        colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.90)
+    }
+
+    private var heroSecondaryText: Color {
+        colorScheme == .dark ? Color.white.opacity(0.68) : Color.black.opacity(0.50)
     }
 
     private var recommendationSummaryLabel: String? {
@@ -4214,7 +4245,6 @@ private struct ForYouDayView: View {
             .padding(.top, 4)
             .padding(.bottom, 16)
             .frame(maxWidth: .infinity)
-            .clipped()
             .background(background)
 
             if viewModel.isLocked {
@@ -4235,7 +4265,6 @@ private struct ForYouDayView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .clipped()
         .offset(y: -10)
         .animation(.spring(response: 0.42, dampingFraction: 0.9), value: viewModel.isLocked)
     }
