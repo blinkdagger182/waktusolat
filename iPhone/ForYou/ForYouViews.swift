@@ -3009,7 +3009,7 @@ private struct ForYouCollapsedHeaderBar: View {
             .shadow(color: Color.black.opacity(0.06), radius: 14, x: 0, y: 6)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isMalayAppLanguage() ? "Lompat ke bahagian waktu solat" : "Jump to prayer times section")
+        .accessibilityLabel(isMalayAppLanguage() ? "Lompat ke kad utama hari ini" : "Jump to today's main widget")
     }
 
     private var shortDate: String {
@@ -4272,6 +4272,7 @@ private struct ForYouSunTimelineToggleRow: View {
 }
 
 private struct ForYouDayView: View {
+    static let mainHeroSectionID = "for-you-main-hero-section"
     static let prayerTimelineSectionID = "for-you-prayer-timeline-section"
 
     let viewModel: ForYouDayViewModel
@@ -4676,6 +4677,10 @@ private struct ForYouDayView: View {
         VStack(alignment: .leading, spacing: 12) {
             if index == 0 {
                 VStack(alignment: .leading, spacing: 14) {
+                    Color.clear
+                        .frame(height: 1)
+                        .id(Self.mainHeroSectionID)
+
                     Text(greetingLine)
                         .font(ForYouTypography.playfairHeadline(size: 31))
                         .foregroundStyle(ForYouPalette.ink)
@@ -5281,7 +5286,7 @@ struct ForYouRootView: View {
                     plan: todayItem.plan,
                     currentPrayerEntry: currentPrayerEntry,
                     nextPrayerEntry: nextPrayerEntry,
-                    onTap: scrollToPrayerTimeline
+                    onTap: scrollToMainHero
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -5531,6 +5536,14 @@ struct ForYouRootView: View {
         }
         scrollTarget = (
             scrollID: currentPrayerSelection?.entryID ?? ForYouDayView.prayerTimelineSectionID,
+            token: UUID()
+        )
+    }
+
+    private func scrollToMainHero() {
+        settings.hapticFeedback()
+        scrollTarget = (
+            scrollID: ForYouDayView.mainHeroSectionID,
             token: UUID()
         )
     }

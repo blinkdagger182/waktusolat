@@ -60,6 +60,9 @@ enum WatchWidgetSupport {
     static let locationStorageKey = "currentLocation"
     static let prayerCalculationStorageKey = "prayerCalculation"
     static let accentColorStorageKey = "accentColor"
+    static let appLanguageStorageKey = "appLanguageCode"
+    static let currentPrayerStorageKey = "currentPrayerData"
+    static let nextPrayerStorageKey = "nextPrayerData"
     static let legacyMonthCacheKey = "waktusolat.gps.month.cache.v1"
     static let monthCacheKeyPrefix = "waktusolat.gps.month.cache.v2."
 
@@ -104,6 +107,38 @@ enum WatchWidgetSupport {
     static func monthCacheKey(for date: Date) -> String {
         let components = Calendar(identifier: .gregorian).dateComponents([.year, .month], from: date)
         return "\(monthCacheKeyPrefix)\(components.year ?? 0)-\(String(format: "%02d", components.month ?? 0))"
+    }
+
+    static func isMalayLanguageCode(_ raw: String?) -> Bool {
+        let normalizedRaw = raw?.lowercased()
+        let code = (
+            normalizedRaw == "system"
+            ? Locale.preferredLanguages.first
+            : normalizedRaw
+        )?.lowercased() ?? "en"
+        return code.hasPrefix("ms")
+    }
+
+    static func localizedPrayerTitle(for prayer: WatchWidgetPrayer, languageCode: String?) -> String {
+        let key = normalizedPrayerKey(prayer.nameTransliteration)
+        let isMalay = isMalayLanguageCode(languageCode)
+
+        switch key {
+        case "subuh", "fajr":
+            return isMalay ? "Subuh" : "Fajr"
+        case "syuruk", "shurooq", "sunrise":
+            return isMalay ? "Syuruk" : "Shurooq"
+        case "zuhur", "dhuhr", "jumuah":
+            return isMalay ? "Zuhur" : "Dhuhr"
+        case "asar", "asr":
+            return isMalay ? "Asar" : "Asr"
+        case "maghrib", "magrib":
+            return "Maghrib"
+        case "isyak", "isya", "isha":
+            return isMalay ? "Isyak" : "Isha"
+        default:
+            return prayer.nameTransliteration
+        }
     }
 }
 

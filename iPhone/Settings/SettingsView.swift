@@ -263,7 +263,7 @@ struct SettingsView: View {
     @State private var showDonationCelebration = false
     @State private var hasInitializedEntitlementState = false
     @State private var lastKnownDonationState = false
-    private let paywallOfferingIdentifier = "Waktu Donation"
+    private let paywallOfferingIdentifier = "Waktu Plus Supporter"
 
     private func postUIHeartbeat() {
         NotificationCenter.default.post(name: .uiContentHeartbeat, object: nil)

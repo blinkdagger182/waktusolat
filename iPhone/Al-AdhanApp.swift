@@ -35,6 +35,8 @@ final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate
     static let snapshotPrayerCalculationKey = "watchSnapshot.prayerCalculation"
     static let snapshotAccentColorKey = "watchSnapshot.accentColor"
     static let snapshotAppLanguageCodeKey = "watchSnapshot.appLanguageCode"
+    static let snapshotCurrentPrayerDataKey = "watchSnapshot.currentPrayerData"
+    static let snapshotNextPrayerDataKey = "watchSnapshot.nextPrayerData"
     static let snapshotMonthCacheDataKey = "watchSnapshot.monthCacheData"
     static let snapshotMonthCacheKeyKey = "watchSnapshot.monthCacheKey"
     static let snapshotGeneratedAtKey = "watchSnapshot.generatedAt"
@@ -92,6 +94,16 @@ final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate
 
         if let appLanguageCode = appGroupDefaults?.string(forKey: AppLanguage.storageKey) {
             context[Self.snapshotAppLanguageCodeKey] = appLanguageCode
+        }
+
+        if let currentPrayer = Settings.shared.currentPrayer,
+           let currentPrayerData = try? Settings.encoder.encode(currentPrayer) {
+            context[Self.snapshotCurrentPrayerDataKey] = currentPrayerData
+        }
+
+        if let nextPrayer = Settings.shared.nextPrayer,
+           let nextPrayerData = try? Settings.encoder.encode(nextPrayer) {
+            context[Self.snapshotNextPrayerDataKey] = nextPrayerData
         }
 
         let monthCacheKey = currentMonthCacheKey()
@@ -224,7 +236,7 @@ struct AlAdhanApp: App {
     @State private var isKeyboardVisible = false
     @State private var showUnsupportedRegionModal = false
     @State private var showPrayerTrackerPrompt = false
-    private let paywallOfferingIdentifier = "Waktu Donation"
+    private let paywallOfferingIdentifier = "Waktu Plus Supporter"
 
     init() {
         RevenueCatManager.shared.configure()
@@ -286,6 +298,12 @@ struct AlAdhanApp: App {
                 phoneWatchSync.syncNow()
             }
             .onChange(of: appLanguageCode) { _ in
+                phoneWatchSync.syncNow()
+            }
+            .onChange(of: settings.currentPrayer?.id) { _ in
+                phoneWatchSync.syncNow()
+            }
+            .onChange(of: settings.nextPrayer?.id) { _ in
                 phoneWatchSync.syncNow()
             }
             #endif

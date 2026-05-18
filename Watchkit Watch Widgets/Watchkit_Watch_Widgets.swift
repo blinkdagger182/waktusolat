@@ -40,8 +40,8 @@ private struct NextPrayerWidgetEntryView: View {
     }
 
     private var inlineView: some View {
-        let nextPrayer = entry.nextPrayer ?? entry.currentPrayer
-        let info = nextPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
+        let currentPrayer = entry.currentPrayer ?? entry.nextPrayer
+        let info = currentPrayer.map { provider.displayInfo(for: $0, in: entry, now: entry.date) }
         return HStack(spacing: 4) {
             Text(info?.title ?? "Waktu")
                 .lineLimit(1)

@@ -6,6 +6,7 @@ struct WatchPrayerWidgetEntry: TimelineEntry {
     let date: Date
     let city: String
     let sourceLabel: String
+    let languageCode: String?
     let currentPrayer: WatchWidgetPrayer?
     let nextPrayer: WatchWidgetPrayer?
     let prayers: [WatchWidgetPrayer]
@@ -56,9 +57,26 @@ struct WatchPrayerWidgetProvider: TimelineProvider {
 
         let locationData = defaults?.data(forKey: WatchWidgetSupport.locationStorageKey)
         let location = locationData.flatMap { try? decoder.decode(WatchWidgetLocation.self, from: $0) }
-        let prayers = prayerDay.fullPrayers.isEmpty ? prayerDay.prayers : prayerDay.fullPrayers
-        let current = prayers.last(where: { $0.time <= date }) ?? prayers.last
-        let next = prayers.first(where: { $0.time > date }) ?? prayers.first
+        let prayers = (prayerDay.fullPrayers.isEmpty ? prayerDay.prayers : prayerDay.fullPrayers)
+            .sorted { $0.time < $1.time }
+        let syncedCurrent = defaults?.data(forKey: WatchWidgetSupport.currentPrayerStorageKey)
+            .flatMap { try? decoder.decode(WatchWidgetPrayer.self, from: $0) }
+        let syncedNext = defaults?.data(forKey: WatchWidgetSupport.nextPrayerStorageKey)
+            .flatMap { try? decoder.decode(WatchWidgetPrayer.self, from: $0) }
+        let inferredCurrent = prayers.last(where: { $0.time <= date }) ?? prayers.last
+        let inferredNext = prayers.first(where: { $0.time > date }) ?? prayers.first
+
+        let hasValidSyncedWindow: Bool = {
+            guard let syncedCurrent else { return false }
+            guard syncedCurrent.time <= date else { return false }
+            if let syncedNext {
+                return syncedNext.time > date
+            }
+            return true
+        }()
+
+        let current = hasValidSyncedWindow ? syncedCurrent : inferredCurrent
+        let next = hasValidSyncedWindow ? (syncedNext ?? inferredNext) : inferredNext
         let calculation = defaults?.string(forKey: WatchWidgetSupport.prayerCalculationStorageKey) ?? "Auto (By Location)"
         let countryCode = location?.countryCode?.uppercased()
 
@@ -66,6 +84,7 @@ struct WatchPrayerWidgetProvider: TimelineProvider {
             date: date,
             city: prayerDay.city.isEmpty ? (location?.city ?? "Waktu") : prayerDay.city,
             sourceLabel: WatchWidgetSupport.sourceLabel(calculation: calculation, countryCode: countryCode),
+            languageCode: defaults?.string(forKey: WatchWidgetSupport.appLanguageStorageKey),
             currentPrayer: current,
             nextPrayer: next,
             prayers: prayers,
@@ -169,7 +188,7 @@ extension WatchPrayerWidgetProvider {
 
     func displayInfo(for prayer: WatchWidgetPrayer, in entry: WatchPrayerWidgetEntry, now: Date) -> WatchWidgetPrayerDisplayInfo {
         let base = WatchWidgetPrayerDisplayInfo(
-            title: prayer.nameTransliteration,
+            title: WatchWidgetSupport.localizedPrayerTitle(for: prayer, languageCode: entry.languageCode),
             subtitle: prayer.nameEnglish,
             time: prayer.time,
             image: prayer.image,
@@ -241,6 +260,7 @@ extension WatchPrayerWidgetProvider {
             date: date,
             city: "Kuala Lumpur",
             sourceLabel: "",
+            languageCode: "en",
             currentPrayer: prayers.first,
             nextPrayer: prayers.dropFirst().first,
             prayers: prayers,
