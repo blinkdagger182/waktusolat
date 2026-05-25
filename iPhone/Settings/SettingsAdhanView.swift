@@ -6,6 +6,27 @@ import WidgetKit
 import AVFoundation
 import AudioToolbox
 import UIKit
+
+private enum AzanPreviewAudioCoordinator {
+    static var player: AVAudioPlayer?
+
+    static func stop() {
+        player?.stop()
+        player = nil
+    }
+
+    static func play(url: URL) {
+        stop()
+        do {
+            player = try AVAudioPlayer(contentsOf: url)
+            player?.volume = 1.0
+            player?.prepareToPlay()
+            player?.play()
+        } catch {
+            player = nil
+        }
+    }
+}
 #endif
 
 struct SettingsAdhanView: View {
@@ -77,6 +98,62 @@ struct SettingsAdhanView: View {
                     #endif
                     */
                     #endif
+                }
+            }
+            #endif
+
+            #if os(iOS)
+            Section(header: Text(appLocalized("AZAN SOUND"))) {
+                Picker(appLocalized("Notification Sound"), selection: Binding(
+                    get: { settings.notificationSoundOption },
+                    set: {
+                        settings.setNotificationSoundOption($0)
+                        playAzanPreviewIfNeeded(for: $0)
+                    }
+                )) {
+                    ForEach(NotificationSoundOption.allCases) { option in
+                        Text(option.title).tag(option)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                if settings.notificationSoundOption == .azan {
+                    Picker(appLocalized("Playback"), selection: Binding(
+                        get: { settings.azanAudioClipMode },
+                        set: {
+                            settings.azanAudioClipMode = $0
+                            playAzanPreviewIfNeeded(for: .azan)
+                        }
+                    )) {
+                        ForEach(AzanAudioClipMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Picker(appLocalized("Azan Voice"), selection: Binding(
+                        get: { settings.azanAudioTrack },
+                        set: {
+                            settings.azanAudioTrack = $0
+                            playAzanPreviewIfNeeded(for: .azan)
+                        }
+                    )) {
+                        ForEach(AzanAudioTrack.allCases) { track in
+                            Text(track.title).tag(track)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Button {
+                        playAzanPreviewIfNeeded(for: .azan)
+                    } label: {
+                        Label(appLocalized("Play Preview"), systemImage: "play.circle.fill")
+                            .font(.subheadline)
+                    }
+
+                    Text(appLocalized("Tip: Choose Takbir for a short intro clip, or Full Azan for complete recitation."))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             #endif
@@ -263,6 +340,35 @@ struct SettingsAdhanView: View {
             }
         }
     }
+
+    #if os(iOS)
+    private func playAzanPreviewIfNeeded(for option: NotificationSoundOption) {
+        switch option {
+        case .azan:
+            guard let url = resolvedAzanPreviewURL() else {
+                AzanPreviewAudioCoordinator.stop()
+                return
+            }
+            AzanPreviewAudioCoordinator.play(url: url)
+        case .iosDefault:
+            AzanPreviewAudioCoordinator.stop()
+            AudioServicesPlaySystemSound(1007)
+        }
+    }
+
+    private func resolvedAzanPreviewURL() -> URL? {
+        for name in settings.selectedAzanSoundCandidates {
+            let ns = name as NSString
+            let base = ns.deletingPathExtension
+            let ext = ns.pathExtension
+            guard !base.isEmpty, !ext.isEmpty else { continue }
+            if let url = Bundle.main.url(forResource: base, withExtension: ext) {
+                return url
+            }
+        }
+        return nil
+    }
+    #endif
 }
 
 struct LiveActivitySettingsView: View {
@@ -441,10 +547,6 @@ struct NotificationView: View {
     @State private var notifSettings: UNNotificationSettings?
     @State private var requestAccessAlertMessage: String?
     @State private var locationAccessAlertMessage: String?
-    @State private var todayPrayerCheckInEnabled: Bool = ForYouUserProfileService.load().wantsPrayerTrackerCard ?? true
-    #if os(iOS)
-    @State private var previewPlayer: AVAudioPlayer?
-    #endif
     
     var body: some View {
         List {
@@ -507,31 +609,10 @@ struct NotificationView: View {
                 }
             }
 
-            Section(header: Text(appLocalized("NOTIFICATION SOUND"))) {
-                Picker(
-                    selection: Binding(
-                        get: { settings.notificationSoundOption },
-                        set: {
-                            settings.setNotificationSoundOption($0)
-                            playPreviewIfNeeded(for: $0)
-                        }
-                    )
-                ) {
-                    ForEach(NotificationSoundOption.allCases) { option in
-                        Text(option.title).tag(option)
-                    }
-                } label: {
-                    Label(appLocalized("Notification Sound"), systemImage: "speaker.wave.2.fill")
-                        .font(.subheadline)
-                }
-                .pickerStyle(.menu)
-            }
         }
         .task { await refresh() }
         .onAppear {
             syncNotificationState()
-            let profile = ForYouUserProfileService.load()
-            todayPrayerCheckInEnabled = profile.wantsPrayerTrackerCard ?? true
             syncForYouReminderStyleWithPrayerStyle()
         }
         .onChange(of: scenePhase) { _ in
@@ -589,29 +670,20 @@ struct NotificationView: View {
     }
 
     private var prayerPreviewBody: String {
-        let personalizedSuffix = personalizedTodayNotificationSuffix
         switch settings.prayerNotificationMessageStyle {
         case .standard:
             return isMalayAppLanguage()
-                ? "Waktu Asar pada 4:25 PTG di Subang Jaya, Selangor\(personalizedSuffix)"
-                : "Time for Asr at 4:25 PM in Subang Jaya, Selangor\(personalizedSuffix)"
+                ? "Waktu Asar pada 4:25 PTG di Subang Jaya, Selangor"
+                : "Time for Asr at 4:25 PM in Subang Jaya, Selangor"
         case .gentle:
             return isMalayAppLanguage()
-                ? "Kini masuk waktu Asar di Subang Jaya, Selangor\(personalizedSuffix)."
-                : "It's now time for Asr in Subang Jaya, Selangor\(personalizedSuffix)."
+                ? "Kini masuk waktu Asar di Subang Jaya, Selangor."
+                : "It's now time for Asr in Subang Jaya, Selangor."
         case .concise:
             return isMalayAppLanguage()
-                ? "Asar • 4:25 PTG • Subang Jaya, Selangor\(personalizedSuffix)"
-                : "Asr • 4:25 PM • Subang Jaya, Selangor\(personalizedSuffix)"
+                ? "Asar • 4:25 PTG • Subang Jaya, Selangor"
+                : "Asr • 4:25 PM • Subang Jaya, Selangor"
         }
-    }
-
-    private var personalizedTodayNotificationSuffix: String {
-        guard todayPrayerCheckInEnabled else { return "" }
-        let firstName = ForYouUserProfileService.load().firstName?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !firstName.isEmpty else { return "" }
-        return isMalayAppLanguage() ? " untuk \(firstName)" : ", \(firstName)"
     }
 
     private var prayerMessageStyleSection: some View {
@@ -640,15 +712,6 @@ struct NotificationView: View {
             Text(settings.prayerNotificationMessageStyle.summary)
                 .font(.caption)
                 .foregroundColor(.secondary)
-
-            Toggle(appLocalized("Prayer Check-in Cards"), isOn: $todayPrayerCheckInEnabled.animation(.easeInOut))
-                .font(.subheadline)
-                .tint(settings.accentColor.toggleTint)
-                .onChange(of: todayPrayerCheckInEnabled) { newValue in
-                    updateForYouProfile {
-                        $0.wantsPrayerTrackerCard = newValue
-                    }
-                }
         }
     }
 
@@ -706,7 +769,7 @@ struct NotificationView: View {
         profile.consistencyLevel = profile.consistencyLevel ?? .beginner
         profile.primaryGoal = profile.primaryGoal ?? .preserveFajr
         profile.reminderStyle = profile.reminderStyle ?? forYouReminderStyle(for: settings.prayerNotificationMessageStyle)
-        profile.wantsPrayerTrackerCard = profile.wantsPrayerTrackerCard ?? todayPrayerCheckInEnabled
+        profile.wantsPrayerTrackerCard = false
         ForYouUserProfileService.save(profile)
     }
 
@@ -727,31 +790,6 @@ struct NotificationView: View {
         }
     }
 
-    private func playPreviewIfNeeded(for option: NotificationSoundOption) {
-        #if os(iOS)
-        switch option {
-        case .azan:
-            guard let url = Bundle.main.url(forResource: "azan_waktu", withExtension: "mp3") else {
-                previewPlayer?.stop()
-                previewPlayer = nil
-                return
-            }
-            do {
-                previewPlayer = try AVAudioPlayer(contentsOf: url)
-                previewPlayer?.volume = 1.0
-                previewPlayer?.prepareToPlay()
-                previewPlayer?.play()
-            } catch {
-                previewPlayer = nil
-            }
-        case .iosDefault:
-            previewPlayer?.stop()
-            previewPlayer = nil
-            AudioServicesPlaySystemSound(1007)
-        }
-        #endif
-    }
-    
     #if !os(watchOS)
     private var permissionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -3984,29 +4022,33 @@ private struct LockScreenVerseCenteredPreviewCard: View {
 
 struct NotificationSoundSelectionView: View {
     @EnvironmentObject var settings: Settings
-    #if os(iOS)
-    @State private var previewPlayer: AVAudioPlayer?
-    #endif
 
     private func playPreviewIfNeeded(for option: NotificationSoundOption) {
         #if os(iOS)
         guard option == .azan,
-              let url = Bundle.main.url(forResource: "azan_waktu", withExtension: "mp3")
+              let url = resolvedAzanPreviewURL()
         else {
-            previewPlayer?.stop()
-            previewPlayer = nil
+            AzanPreviewAudioCoordinator.stop()
             return
         }
-        do {
-            previewPlayer = try AVAudioPlayer(contentsOf: url)
-            previewPlayer?.volume = 1.0
-            previewPlayer?.prepareToPlay()
-            previewPlayer?.play()
-        } catch {
-            previewPlayer = nil
-        }
+        AzanPreviewAudioCoordinator.play(url: url)
         #endif
     }
+
+    #if os(iOS)
+    private func resolvedAzanPreviewURL() -> URL? {
+        for name in settings.selectedAzanSoundCandidates {
+            let ns = name as NSString
+            let base = ns.deletingPathExtension
+            let ext = ns.pathExtension
+            guard !base.isEmpty, !ext.isEmpty else { continue }
+            if let url = Bundle.main.url(forResource: base, withExtension: ext) {
+                return url
+            }
+        }
+        return nil
+    }
+    #endif
 
     var body: some View {
         List {
@@ -4028,6 +4070,34 @@ struct NotificationSoundSelectionView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                }
+
+                if settings.notificationSoundOption == .azan {
+                    Picker("Azan Voice", selection: Binding(
+                        get: { settings.azanAudioTrack },
+                        set: {
+                            settings.azanAudioTrack = $0
+                            playPreviewIfNeeded(for: .azan)
+                        }
+                    )) {
+                        ForEach(AzanAudioTrack.allCases) { track in
+                            Text(track.title).tag(track)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Picker("Playback", selection: Binding(
+                        get: { settings.azanAudioClipMode },
+                        set: {
+                            settings.azanAudioClipMode = $0
+                            playPreviewIfNeeded(for: .azan)
+                        }
+                    )) {
+                        ForEach(AzanAudioClipMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
             }
         }

@@ -301,7 +301,7 @@ private struct LibrarySurahSkeletonRow: View {
 struct OtherView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
-    @AppStorage(QuranContentLanguage.storageKey) private var quranLanguageCode = effectiveQuranContentLanguage().rawValue
+    @AppStorage(QuranContentLanguage.storageKey) private var quranLanguageCode = QuranContentLanguage.system.rawValue
     @AppStorage("libraryDailyQuranAnimatedKeyV1") private var dailyQuranAnimatedKey = ""
     @State private var dailyQuranQuote: LibraryDailyQuranQuote?
     @State private var selectedFullSurah: FullSurahSelection?
@@ -327,7 +327,7 @@ struct OtherView: View {
     private static let maxPinnedSurahs = 3
 
     private var currentQuranLanguage: QuranContentLanguage {
-        QuranContentLanguage(rawValue: quranLanguageCode) ?? effectiveQuranContentLanguage()
+        QuranContentLanguage(rawValue: quranLanguageCode) ?? .system
     }
 
     private var isSearchingSurahs: Bool {

@@ -186,6 +186,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 enum QuranContentLanguage: String, CaseIterable, Identifiable {
     static let storageKey = "quranContentLanguageCode"
 
+    case system = "system"
     case english = "en"
     case bahasaMelayu = "ms"
 
@@ -193,6 +194,8 @@ enum QuranContentLanguage: String, CaseIterable, Identifiable {
 
     var shortLabel: String {
         switch self {
+        case .system:
+            return "SYS"
         case .english:
             return "EN"
         case .bahasaMelayu:
@@ -202,6 +205,8 @@ enum QuranContentLanguage: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
+        case .system:
+            return appLocalized("System")
         case .english:
             return "English"
         case .bahasaMelayu:
@@ -211,6 +216,8 @@ enum QuranContentLanguage: String, CaseIterable, Identifiable {
 
     var translationEdition: String {
         switch self {
+        case .system:
+            return resolvedSystemLanguage.quranTranslationEdition
         case .english:
             return "en.asad"
         case .bahasaMelayu:
@@ -291,11 +298,26 @@ func storedQuranContentLanguageCode() -> String? {
 }
 
 func effectiveQuranContentLanguage(storedCode: String? = storedQuranContentLanguageCode(), appLanguageCode: String? = storedAppLanguageCode()) -> QuranContentLanguage {
+    func resolveSystemQuranLanguage() -> QuranContentLanguage {
+        let appLanguage = effectiveAppLanguage(from: appLanguageCode)
+        switch appLanguage {
+        case .bahasaMelayu:
+            return .bahasaMelayu
+        case .english:
+            return .english
+        case .system:
+            return resolvedSystemLanguage == .bahasaMelayu ? .bahasaMelayu : .english
+        }
+    }
+
     if let storedCode, let language = QuranContentLanguage(rawValue: storedCode) {
+        if language == .system {
+            return resolveSystemQuranLanguage()
+        }
         return language
     }
 
-    return isMalayAppLanguage(appLanguageCode) ? .bahasaMelayu : .english
+    return resolveSystemQuranLanguage()
 }
 
 func syncSharedQuranContentLanguagePreference(_ storedCode: String?) {

@@ -23,6 +23,63 @@ enum NotificationSoundOption: String, CaseIterable, Identifiable {
     }
 }
 
+enum AzanAudioTrack: String, CaseIterable, Identifiable {
+    case waktu = "waktu"
+    case egypt = "egypt"
+    case makkah = "makkah"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .waktu:
+            return appLocalized("Sheikh Abdul Basit (Broadcast)")
+        case .egypt:
+            return appLocalized("Sheikh Abdul Basit (Makkah)")
+        case .makkah:
+            return appLocalized("Sheikh Ali Mulla (Makkah)")
+        }
+    }
+
+    var takbirFileName: String {
+        switch self {
+        case .waktu:
+            return "azan_track0_takbir.mp3"
+        case .egypt:
+            return "azan_track1_takbir.mp3"
+        case .makkah:
+            return "azan_track2_takbir.mp3"
+        }
+    }
+
+    var fullFileName: String {
+        switch self {
+        case .waktu:
+            return "azan_track0_full.mp3"
+        case .egypt:
+            return "azan_track1_full.mp3"
+        case .makkah:
+            return "azan_track2_full.mp3"
+        }
+    }
+}
+
+enum AzanAudioClipMode: String, CaseIterable, Identifiable {
+    case takbir
+    case full
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .takbir:
+            return appLocalized("Takbir")
+        case .full:
+            return appLocalized("Full Azan")
+        }
+    }
+}
+
 enum PrayerNotificationMessageStyle: String, CaseIterable, Identifiable {
     case standard
     case gentle
@@ -818,6 +875,12 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("notificationSoundOptionRaw") var notificationSoundOptionRaw: String = NotificationSoundOption.iosDefault.rawValue {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
+    @AppStorage("azanAudioTrackRaw") var azanAudioTrackRaw: String = AzanAudioTrack.waktu.rawValue {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("azanAudioClipModeRaw") var azanAudioClipModeRaw: String = AzanAudioClipMode.takbir.rawValue {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
     @AppStorage("prayerNotificationMessageStyleRaw") var prayerNotificationMessageStyleRaw: String = PrayerNotificationMessageStyle.standard.rawValue {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
@@ -845,6 +908,49 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     func setNotificationSoundOption(_ option: NotificationSoundOption) {
         objectWillChange.send()
         notificationSoundOptionRaw = option.rawValue
+    }
+
+    var azanAudioTrack: AzanAudioTrack {
+        get { AzanAudioTrack(rawValue: azanAudioTrackRaw) ?? .waktu }
+        set { azanAudioTrackRaw = newValue.rawValue }
+    }
+
+    var azanAudioClipMode: AzanAudioClipMode {
+        get {
+            switch notificationSoundOptionRaw {
+            case "allahuakbar_only":
+                return .takbir
+            case "full_azan":
+                return .full
+            default:
+                return AzanAudioClipMode(rawValue: azanAudioClipModeRaw) ?? .takbir
+            }
+        }
+        set { azanAudioClipModeRaw = newValue.rawValue }
+    }
+
+    var selectedAzanSoundFileName: String {
+        switch azanAudioClipMode {
+        case .takbir:
+            return azanAudioTrack.takbirFileName
+        case .full:
+            return azanAudioTrack.fullFileName
+        }
+    }
+
+    var selectedAzanSoundCandidates: [String] {
+        var names = [selectedAzanSoundFileName, "azan_waktu.mp3"]
+        if azanAudioClipMode == .full {
+            names.append(contentsOf: ["full_azan.mp3"])
+        } else {
+            names.append(contentsOf: ["allahuakbar_only.mp3"])
+        }
+        var deduped: [String] = []
+        deduped.reserveCapacity(names.count)
+        for name in names where !deduped.contains(name) {
+            deduped.append(name)
+        }
+        return deduped
     }
 
     var prayerNotificationMessageStyle: PrayerNotificationMessageStyle {

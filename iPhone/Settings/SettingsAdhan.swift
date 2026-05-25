@@ -2553,17 +2553,11 @@ extension Settings {
     }
 
     private func todayNotificationPersonalizationSuffix() -> String {
-        let profile = loadTodayNotificationPersonalizationProfile()
-        guard profile.wantsPrayerTrackerCard == true else { return "" }
-        let firstName = profile.firstName?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
-        guard !firstName.isEmpty else { return "" }
-        return isMalayAppLanguage() ? " untuk \(firstName)" : ", \(firstName)"
+        ""
     }
 
     private func todayNotificationPersonalizationSignature() -> String {
-        let profile = loadTodayNotificationPersonalizationProfile()
-        let firstName = profile.firstName?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
-        return "\(profile.wantsPrayerTrackerCard == true)-\(firstName)"
+        "false"
     }
 
     private func loadTodayNotificationPersonalizationProfile() -> TodayNotificationPersonalizationProfile {
@@ -2701,7 +2695,7 @@ extension Settings {
         case .iosDefault:
             return .default
         case .azan:
-            let candidates = ["azan_waktu.mp3"]
+            let candidates = selectedAzanSoundCandidates
             if let name = availableSoundName(candidates: candidates) {
                 return UNNotificationSound(named: name)
             }

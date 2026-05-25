@@ -72,6 +72,12 @@
 		A10000022F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
 		A20000012F80000100ABCDEF /* IMG_9643.jpg in Resources */ = {isa = PBXBuildFile; fileRef = A20000002F80000100ABCDEF /* IMG_9643.jpg */; };
 		A30000012F90000100ABCDEF /* azan_waktu.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A30000002F90000100ABCDEF /* azan_waktu.mp3 */; };
+		A30000102FA0000100ABCDEF /* azan_track0_full.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A300000A2FA0000100ABCDEF /* azan_track0_full.mp3 */; };
+		A30000112FA0000100ABCDEF /* azan_track0_takbir.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A300000B2FA0000100ABCDEF /* azan_track0_takbir.mp3 */; };
+		A30000122FA0000100ABCDEF /* azan_track1_full.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A300000C2FA0000100ABCDEF /* azan_track1_full.mp3 */; };
+		A30000132FA0000100ABCDEF /* azan_track1_takbir.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A300000D2FA0000100ABCDEF /* azan_track1_takbir.mp3 */; };
+		A30000142FA0000100ABCDEF /* azan_track2_full.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A300000E2FA0000100ABCDEF /* azan_track2_full.mp3 */; };
+		A30000152FA0000100ABCDEF /* azan_track2_takbir.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A300000F2FA0000100ABCDEF /* azan_track2_takbir.mp3 */; };
 		A4F510012F900AB100ABCDEF /* LockScreen5Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */; };
 		A4F510032F900AB100ABCDEF /* LockScreen6Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */; };
 		A51000112F91000100ABCDEF /* LibraryIntroHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */; };
@@ -226,6 +232,12 @@
 		A10000002F70000100ABCDEF /* quotes.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = quotes.json; sourceTree = "<group>"; };
 		A20000002F80000100ABCDEF /* IMG_9643.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = IMG_9643.jpg; sourceTree = "<group>"; };
 		A30000002F90000100ABCDEF /* azan_waktu.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_waktu.mp3; sourceTree = "<group>"; };
+		A300000A2FA0000100ABCDEF /* azan_track0_full.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_track0_full.mp3; sourceTree = "<group>"; };
+		A300000B2FA0000100ABCDEF /* azan_track0_takbir.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_track0_takbir.mp3; sourceTree = "<group>"; };
+		A300000C2FA0000100ABCDEF /* azan_track1_full.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_track1_full.mp3; sourceTree = "<group>"; };
+		A300000D2FA0000100ABCDEF /* azan_track1_takbir.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_track1_takbir.mp3; sourceTree = "<group>"; };
+		A300000E2FA0000100ABCDEF /* azan_track2_full.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_track2_full.mp3; sourceTree = "<group>"; };
+		A300000F2FA0000100ABCDEF /* azan_track2_takbir.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = azan_track2_takbir.mp3; sourceTree = "<group>"; };
 		A4F510002F900AB100ABCDEF /* LockScreen5Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen5Widget.swift; sourceTree = "<group>"; };
 		A4F510022F900AB100ABCDEF /* LockScreen6Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen6Widget.swift; sourceTree = "<group>"; };
 		A51000012F91000100ABCDEF /* LibraryIntroHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIntroHeader.swift; sourceTree = "<group>"; };
@@ -511,6 +523,12 @@
 				72728C992B3D18E600FAA3B3 /* Assets.xcassets */,
 				A20000002F80000100ABCDEF /* IMG_9643.jpg */,
 				A30000002F90000100ABCDEF /* azan_waktu.mp3 */,
+				A300000A2FA0000100ABCDEF /* azan_track0_full.mp3 */,
+				A300000B2FA0000100ABCDEF /* azan_track0_takbir.mp3 */,
+				A300000C2FA0000100ABCDEF /* azan_track1_full.mp3 */,
+				A300000D2FA0000100ABCDEF /* azan_track1_takbir.mp3 */,
+				A300000E2FA0000100ABCDEF /* azan_track2_full.mp3 */,
+				A300000F2FA0000100ABCDEF /* azan_track2_takbir.mp3 */,
 				72BC6B2F2E2D787D00ACD832 /* Logo.jpg */,
 				72F1EA402D421CC7008F6FBE /* Fonts */,
 				72CCAE5E2D42213700871A6A /* JSONs */,
@@ -705,6 +723,12 @@
 				C10000012F90000100ABCDEF /* InfoPlist.xcstrings in Resources */,
 				B10000012F90000100ABCDEF /* Localizable.xcstrings in Resources */,
 				A30000012F90000100ABCDEF /* azan_waktu.mp3 in Resources */,
+				A30000102FA0000100ABCDEF /* azan_track0_full.mp3 in Resources */,
+				A30000112FA0000100ABCDEF /* azan_track0_takbir.mp3 in Resources */,
+				A30000122FA0000100ABCDEF /* azan_track1_full.mp3 in Resources */,
+				A30000132FA0000100ABCDEF /* azan_track1_takbir.mp3 in Resources */,
+				A30000142FA0000100ABCDEF /* azan_track2_full.mp3 in Resources */,
+				A30000152FA0000100ABCDEF /* azan_track2_takbir.mp3 in Resources */,
 				A20000012F80000100ABCDEF /* IMG_9643.jpg in Resources */,
 				A10000012F70000100ABCDEF /* quotes.json in Resources */,
 				72728CAE2B3D198300FAA3B3 /* 99_Names_Of_Allah.json in Resources */,
@@ -1021,7 +1045,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.15;
+				MARKETING_VERSION = 1.0.16;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1062,7 +1086,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.15;
+				MARKETING_VERSION = 1.0.16;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1092,7 +1116,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.15;
+				MARKETING_VERSION = 1.0.16;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1121,7 +1145,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.15;
+				MARKETING_VERSION = 1.0.16;
 				PRODUCT_BUNDLE_IDENTIFIER = app.riskcreatives.waktu.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
