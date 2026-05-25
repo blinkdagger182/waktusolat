@@ -514,10 +514,6 @@ struct AlAdhanApp: App {
                 updateUnsupportedRegionModalVisibility()
             }
             .onChange(of: selectedTab) { newTab in
-                if newTab == .today {
-                    selectedTab = .adhan
-                    return
-                }
                 if newTab == .adhan {
                     scheduleFirstRunNotificationPromptIfNeeded()
                 }
@@ -563,7 +559,7 @@ struct AlAdhanApp: App {
             }
         }
         .onAppear {
-            if selectedTab == .plus || selectedTab == .today {
+            if selectedTab == .plus {
                 selectedTab = .adhan
             }
             if firstLaunchSheet {
@@ -604,11 +600,11 @@ struct AlAdhanApp: App {
                 }
                 .tag(AppTab.adhan)
 
-//            TodayView { _ in }
-//                .tabItem {
-//                    Label(isMalayAppLanguage() ? "Hari Ini" : "Today", systemImage: "sun.max")
-//                }
-//                .tag(AppTab.today)
+            TodayView { _ in }
+                .tabItem {
+                    Label(isMalayAppLanguage() ? "Hari Ini" : "Today", systemImage: "sun.max")
+                }
+                .tag(AppTab.today)
 
             OtherView(isActive: selectedTab == .library) { _ in }
                 .tabItem {

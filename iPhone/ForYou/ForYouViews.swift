@@ -3080,6 +3080,8 @@ private struct ForYouCurrentPrayerHeroCard: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var presentedTab: ForYouPrayerTab?
     @State private var selectedFullSurah: FullSurahSelection?
+    @StateObject private var checkInManager = PrayerCheckInManager()
+    @State private var autoCheckInTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -3123,6 +3125,9 @@ private struct ForYouCurrentPrayerHeroCard: View {
                     .layoutPriority(2)
                 }
 
+                if checkInManager.displayState.hasCurrentUserCheckedIn {
+                    checkInRow
+                }
             }
             .padding(20)
 
@@ -3132,9 +3137,11 @@ private struct ForYouCurrentPrayerHeroCard: View {
             ForYouCurrentPrayerGuidanceSection(
                 entry: entry,
                 onOpenWirid: {
+                    checkInManager.checkIn(prayer: entry.title, source: .wirid)
                     presentedTab = .wirid
                 },
                 onOpenDoa: {
+                    checkInManager.checkIn(prayer: entry.title, source: .dua)
                     presentedTab = .doa
                 }
             )
@@ -3145,6 +3152,7 @@ private struct ForYouCurrentPrayerHeroCard: View {
                 .overlay(Color.black.opacity(0.08))
 
             Button {
+                checkInManager.checkIn(prayer: entry.title, source: .guidance)
                 selectedFullSurah = FullSurahSelection(
                     surahNumber: 67,
                     initialAyahNumber: nil,
@@ -3230,6 +3238,13 @@ private struct ForYouCurrentPrayerHeroCard: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 10)
+        .onAppear {
+            checkInManager.configure(prayer: entry.title)
+            scheduleAutoCheckIn()
+        }
+        .onDisappear {
+            cancelAutoCheckIn()
+        }
         .sheet(item: $presentedTab) { tab in
             NavigationView {
                 ForYouPrayerTabModalView(entry: entry, tab: tab)
@@ -3257,6 +3272,54 @@ private struct ForYouCurrentPrayerHeroCard: View {
                 }
             }
         }
+    }
+
+    private var checkInRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "person.2.fill")
+                .font(.caption2)
+                .foregroundStyle(heroSecondaryText)
+            Text(checkInDisplayText)
+                .font(.caption)
+                .foregroundStyle(heroSecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var checkInDisplayText: String {
+        let state = checkInManager.displayState
+        var text = isMalayAppLanguage()
+            ? "\(state.count) hadir untuk \(entry.title) hari ini"
+            : "\(state.count) checked in for \(entry.title) today"
+        if let at = state.lastCheckedInAt {
+            let timeStr = ForYouFormatters.shortTime.string(from: at)
+            text += isMalayAppLanguage()
+                ? " · Terakhir \(timeStr)"
+                : " · Last checked in \(timeStr)"
+        }
+        return text
+    }
+
+    private var isActivePrayerWindow: Bool {
+        guard Calendar.current.isDateInToday(entry.time) else { return false }
+        let now = Date()
+        guard now >= entry.time else { return false }
+        if let nextEntry { return now < nextEntry.time }
+        return now.timeIntervalSince(entry.time) < 45 * 60
+    }
+
+    private func scheduleAutoCheckIn() {
+        guard isActivePrayerWindow, !checkInManager.hasCheckedIn(prayer: entry.title) else { return }
+        autoCheckInTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard !Task.isCancelled, isActivePrayerWindow else { return }
+            checkInManager.checkIn(prayer: entry.title, source: PrayerCheckInSource.autoOpen)
+        }
+    }
+
+    private func cancelAutoCheckIn() {
+        autoCheckInTask?.cancel()
+        autoCheckInTask = nil
     }
 
     private var statusBadge: some View {

@@ -374,15 +374,12 @@ enum PrayerCountrySupportRemoteConfigLoader {
         }
 
         do {
-            let url = resolveNoCacheURL(countryCode: countryCode, languageCode: languageCode)
+            let url = resolveURL(countryCode: countryCode, languageCode: languageCode)
             var request = URLRequest(url: url)
-            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.cachePolicy = force ? .reloadIgnoringLocalCacheData : .useProtocolCachePolicy
             request.timeoutInterval = 12
-            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
-            request.setValue("no-cache", forHTTPHeaderField: "Pragma")
 
-            let session = URLSession(configuration: .ephemeral)
-            let (data, _) = try await session.data(for: request)
+            let (data, _) = try await URLSession.shared.data(for: request)
             let decoded = try JSONDecoder().decode(PrayerCountrySupportRemoteConfig.self, from: data)
 
             if let payload = String(data: data, encoding: .utf8) {
@@ -427,14 +424,13 @@ enum PrayerCountrySupportRemoteConfigLoader {
         return URL(string: "https://api-waktusolat.vercel.app/api/settings/prayer-country-support")!
     }
 
-    private static func resolveNoCacheURL(countryCode: String, languageCode: String) -> URL {
+    private static func resolveURL(countryCode: String, languageCode: String) -> URL {
         let url = resolveURL()
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
         var items = components.queryItems ?? []
-        items.removeAll(where: { ["countryCode", "lang", "_nocache"].contains($0.name) })
+        items.removeAll(where: { ["countryCode", "lang"].contains($0.name) })
         items.append(URLQueryItem(name: "countryCode", value: countryCode))
         items.append(URLQueryItem(name: "lang", value: languageCode))
-        items.append(URLQueryItem(name: "_nocache", value: String(Int(Date().timeIntervalSince1970 / 60))))
         components.queryItems = items
         return components.url ?? url
     }

@@ -98,6 +98,7 @@
 		B21000022FA1000100ABCDEF /* ForYouServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000012FA1000100ABCDE0 /* ForYouServices.swift */; };
 		B21000032FA1000100ABCDEF /* ForYouViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */; };
 		B21000042FA1000100ABCDEF /* ForYouViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000032FA1000100ABCDE0 /* ForYouViews.swift */; };
+		B21000052FA1000100ABCDEF /* PrayerCheckInManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000052FA1000100ABCDE0 /* PrayerCheckInManager.swift */; };
 		C10000012F90000100ABCDEF /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C10000002F90000100ABCDEF /* InfoPlist.xcstrings */; };
 		FC88B03D2F6A556E00297BC9 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */; };
 		FCB183172F4D506300249966 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FCB183162F4D506300249966 /* RevenueCat */; };
@@ -257,6 +258,7 @@
 		B21000012FA1000100ABCDE0 /* ForYouServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouServices.swift; sourceTree = "<group>"; };
 		B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViewModels.swift; sourceTree = "<group>"; };
 		B21000032FA1000100ABCDE0 /* ForYouViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViews.swift; sourceTree = "<group>"; };
+		B21000052FA1000100ABCDE0 /* PrayerCheckInManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerCheckInManager.swift; sourceTree = "<group>"; };
 		C10000002F90000100ABCDEF /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		FC88B03C2F6A556E00297BC9 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		FCFBB2BB2F7B06A300544668 /* Watchkit Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Watchkit Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -552,6 +554,7 @@
 				B21000012FA1000100ABCDE0 /* ForYouServices.swift */,
 				B21000022FA1000100ABCDE0 /* ForYouViewModels.swift */,
 				B21000032FA1000100ABCDE0 /* ForYouViews.swift */,
+				B21000052FA1000100ABCDE0 /* PrayerCheckInManager.swift */,
 			);
 			path = ForYou;
 			sourceTree = "<group>";
@@ -806,6 +809,7 @@
 				B21000022FA1000100ABCDEF /* ForYouServices.swift in Sources */,
 				B21000032FA1000100ABCDEF /* ForYouViewModels.swift in Sources */,
 				B21000042FA1000100ABCDEF /* ForYouViews.swift in Sources */,
+				B21000052FA1000100ABCDEF /* PrayerCheckInManager.swift in Sources */,
 				A51000192F91000100ABCDEF /* LibraryDisabledSections.swift in Sources */,
 				72574CD52E49F35600BFF138 /* AppIntents.swift in Sources */,
 				72BC6B242E2B9D9300ACD832 /* OtherView.swift in Sources */,
