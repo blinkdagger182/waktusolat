@@ -139,9 +139,7 @@ struct PrayersProvider: TimelineProvider {
             hijriOffset: settings.hijriOffset,
             countryCode: baseContext.countryCode,
             storedDhuha: storedDhuha,
-            travelingMode: settings.travelingMode,
-            completedPrayerCount: PrayerTrackerStore.completedCount(on: date),
-            totalPrayerCount: PrayerTrackerPrayer.allCases.count
+            travelingMode: settings.travelingMode
         )
     }
 
@@ -157,9 +155,7 @@ struct PrayersProvider: TimelineProvider {
             hijriOffset: 0,
             countryCode: "MY",
             storedDhuha: nil,
-            travelingMode: false,
-            completedPrayerCount: 0,
-            totalPrayerCount: PrayerTrackerPrayer.allCases.count
+            travelingMode: false
         )
     }
 
@@ -191,9 +187,7 @@ struct PrayersProvider: TimelineProvider {
             hijriOffset: 0,
             countryCode: "MY",
             storedDhuha: nil,
-            travelingMode: false,
-            completedPrayerCount: 3,
-            totalPrayerCount: PrayerTrackerPrayer.allCases.count
+            travelingMode: false
         )
     }
 
@@ -299,8 +293,6 @@ struct PrayersEntry: TimelineEntry {
     let countryCode: String?
     let storedDhuha: Date?
     let travelingMode: Bool
-    let completedPrayerCount: Int
-    let totalPrayerCount: Int
 }
 
 struct WidgetLocationFooter: View {
