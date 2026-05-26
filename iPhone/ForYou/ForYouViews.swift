@@ -3148,34 +3148,36 @@ private struct ForYouCurrentPrayerHeroCard: View {
             .padding(20)
             .fixedSize(horizontal: false, vertical: true)
 
-            Divider()
-                .overlay(Color.black.opacity(0.08))
+            if heroPrayerThemeKey == "isha" {
+                Divider()
+                    .overlay(Color.black.opacity(0.08))
 
-            Button {
-                checkInManager.checkIn(prayer: entry.title, source: .guidance)
-                selectedFullSurah = FullSurahSelection(
-                    surahNumber: 67,
-                    initialAyahNumber: nil,
-                    dailyAyahNumber: nil
-                )
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "book.pages")
-                        .font(.system(size: 14, weight: .semibold))
+                Button {
+                    checkInManager.checkIn(prayer: entry.title, source: .guidance)
+                    selectedFullSurah = FullSurahSelection(
+                        surahNumber: 67,
+                        initialAyahNumber: nil,
+                        dailyAyahNumber: nil
+                    )
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "book.pages")
+                            .font(.system(size: 14, weight: .semibold))
 
-                    Text(isMalayAppLanguage() ? "Baca Surah Al-Mulk" : "Read Surah Al-Mulk")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        Text(isMalayAppLanguage() ? "Baca Surah Al-Mulk" : "Read Surah Al-Mulk")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(heroPrimaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                            .fill(Color.white.opacity(colorScheme == .dark ? 0.03 : 0.16))
+                    )
                 }
-                .foregroundStyle(heroPrimaryText)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 0, style: .continuous)
-                        .fill(Color.white.opacity(colorScheme == .dark ? 0.03 : 0.16))
-                )
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             if let nextEntry {
                 Divider()
