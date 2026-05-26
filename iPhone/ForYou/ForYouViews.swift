@@ -4547,7 +4547,10 @@ private struct ForYouDayView: View {
     }
 
     private var greetingLine: String {
-        greetingVariants(for: greetingPrayerWindowKey)[rotatingGreetingIndex]
+        if let special = IslamicCalendarGreetings.specialDay(for: viewModel.plan.date, hijriOffset: settings.hijriOffset) {
+            return isMalayAppLanguage() ? special.greetingBM : special.greetingEN
+        }
+        return greetingVariants(for: greetingPrayerWindowKey)[rotatingGreetingIndex]
     }
 
     private var greetingPrayerWindowKey: String {
@@ -4570,7 +4573,7 @@ private struct ForYouDayView: View {
         case "dhuhr":
             return ["Pause for Dhuhr", "Reset at midday", "A steady noon"]
         case "asr":
-            return ["Stay present at Asr", "Protect the afternoon", "Finish with care"]
+            return ["Stay present at Asr", "Protect the afternoon"]
         case "maghrib":
             return ["Ease into Maghrib", "A calm sunset", "Let evening settle"]
         case "isha":

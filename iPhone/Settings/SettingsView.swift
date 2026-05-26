@@ -830,8 +830,29 @@ private struct CannyWebView: View {
 struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings
     @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
-    
+    @State private var draftName: String = {
+        ForYouUserProfileService.load().firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }()
+
     var body: some View {
+        #if !os(watchOS)
+        HStack {
+            Text(isMalayAppLanguage() ? "Nama" : "Name")
+                .font(.subheadline)
+            Spacer()
+            TextField(isMalayAppLanguage() ? "Nama anda" : "Your name", text: $draftName)
+                .font(.subheadline)
+                .multilineTextAlignment(.trailing)
+                .foregroundColor(.secondary)
+                .onChange(of: draftName) { newValue in
+                    var profile = ForYouUserProfileService.load()
+                    let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    profile.firstName = trimmed.isEmpty ? nil : trimmed
+                    ForYouUserProfileService.save(profile)
+                }
+        }
+        #endif
+
         #if !os(watchOS)
         VStack(alignment: .leading, spacing: 10) {
             Picker("App Language", selection: $appLanguageCode.animation(.easeInOut)) {
