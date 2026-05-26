@@ -3799,7 +3799,7 @@ private enum QuranVerseAPI {
         return QuranVerseDetails(
             reference: details.reference,
             translationText: normalize(details.translationText),
-            arabicText: details.arabicText.map(normalize),
+            arabicText: details.arabicText.map(normalizeArabic),
             surahNameEnglish: details.surahNameEnglish,
             surahNameArabic: details.surahNameArabic,
             revelationType: details.revelationType,
@@ -3833,6 +3833,18 @@ private enum QuranVerseAPI {
         text
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func normalizeArabic(_ text: String) -> String {
+        // Strip Quranic annotation marks (tajweed, pause, sajdah markers) that
+        // render as plain circles/dots when the font lacks proper glyphs for them.
+        // Ranges: U+0610–U+061A (annotation signs), U+06D6–U+06ED (small high/low marks incl. end-of-ayah U+06DD).
+        let stripped = text.unicodeScalars.filter { scalar in
+            let v = scalar.value
+            return !((v >= 0x0610 && v <= 0x061A) || (v >= 0x06D6 && v <= 0x06ED))
+        }
+        let cleaned = String(String.UnicodeScalarView(stripped))
+        return normalize(cleaned)
     }
 }
 

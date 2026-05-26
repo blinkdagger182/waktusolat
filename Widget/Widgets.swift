@@ -124,7 +124,7 @@ private extension UIColor {
     }
 }
 
-@available(iOSApplicationExtension 17.2, *)
+@available(iOS 18.0, *)
 struct NextPrayerLiveActivityWidgetWithCarPlay: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PrayerLiveActivityAttributes.self) { context in
@@ -168,7 +168,7 @@ struct NextPrayerLiveActivityWidgetWithCarPlay: Widget {
     }
 }
 
-@available(iOSApplicationExtension 17.2, *)
+@available(iOS 18.0, *)
 private struct CarPlayAwareContentView: View {
     @Environment(\.activityFamily) private var activityFamily
     @Environment(\.colorScheme) private var colorScheme
@@ -183,7 +183,7 @@ private struct CarPlayAwareContentView: View {
     }
 }
 
-@available(iOSApplicationExtension 17.2, *)
+@available(iOS 18.0, *)
 private struct CarPlayLiveActivityView: View {
     let context: ActivityViewContext<PrayerLiveActivityAttributes>
 
@@ -446,13 +446,14 @@ struct Widgets: WidgetBundle {
             LockScreenZikirWidget()
             // LockScreen5Widget()
             LockScreenVerseWidget()
-            #if canImport(ActivityKit)
-            if #available(iOSApplicationExtension 17.2, *) {
-                NextPrayerLiveActivityWidgetWithCarPlay()
-            } else if #available(iOSApplicationExtension 16.2, *) {
-                NextPrayerLiveActivityWidget()
-            }
-            #endif
+        }
+        #endif
+        #if os(iOS) && canImport(ActivityKit)
+        if #available(iOS 16.2, *) {
+            NextPrayerLiveActivityWidget()
+        }
+        if #available(iOS 18.0, *) {
+            NextPrayerLiveActivityWidgetWithCarPlay()
         }
         #endif
     }
