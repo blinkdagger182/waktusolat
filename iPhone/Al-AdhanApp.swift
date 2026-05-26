@@ -3370,7 +3370,7 @@ private enum QuranShareVariant: Int, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .fullVerse: return "Full Verse"
-        case .englishTranslation: return "Bahasa Melayu Translation"
+        case .englishTranslation: return isMalayAppLanguage() ? "Bahasa Melayu Translation" : "Translation"
         case .summary: return "Summary"
         }
     }
@@ -3617,7 +3617,7 @@ private struct DailyQuranEnglishTranslationSharePreviewCard: View {
 
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Bahasa Melayu Translation")
+                    Text(isMalayAppLanguage() ? "Bahasa Melayu Translation" : "Translation")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(titleColor)
                     Text("Surah \(details.surahNameEnglish) • \(details.reference)")

@@ -856,30 +856,28 @@ struct SettingsAppearanceView: View {
         #endif
         
         VStack(alignment: .leading) {
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12),
-            ], spacing: 12) {
-                ForEach(accentColors, id: \.self) { accentColor in
-                    Circle()
-                        .fill(accentColor.color)
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Circle()
-                                .stroke(settings.accentColor == accentColor ? Color.primary : Color.clear, lineWidth: 1)
-                        )
-                        .onTapGesture {
-                            settings.hapticFeedback()
-                            
-                            withAnimation {
-                                settings.accentColor = accentColor
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(accentColors, id: \.self) { accentColor in
+                        Circle()
+                            .fill(accentColor.color)
+                            .frame(width: 30, height: 30)
+                            .overlay(
+                                Circle()
+                                    .stroke(settings.accentColor == accentColor ? Color.primary : Color.clear, lineWidth: 1)
+                            )
+                            .onTapGesture {
+                                settings.hapticFeedback()
+
+                                withAnimation {
+                                    settings.accentColor = accentColor
+                                }
                             }
-                        }
+                    }
                 }
+                .padding(.vertical)
+                .padding(.horizontal, 4)
             }
-            .padding(.vertical)
             
             #if !os(watchOS)
             Text("Anas ibn Malik (may Allah be pleased with him) said, “The most beloved of colors to the Messenger of Allah (peace be upon him) was green.”")
