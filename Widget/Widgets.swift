@@ -124,6 +124,104 @@ private extension UIColor {
     }
 }
 
+@available(iOSApplicationExtension 17.2, *)
+struct NextPrayerLiveActivityWidgetWithCarPlay: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: PrayerLiveActivityAttributes.self) { context in
+            CarPlayAwareContentView(context: context)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Text(localizedPrayerName(context.state.prayerName))
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    Text(context.state.prayerTime, style: .time)
+                        .font(.system(.subheadline, design: .rounded))
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    HStack(spacing: 6) {
+                        LiveActivityCountdownText(
+                            prayerTime: context.state.prayerTime,
+                            reachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
+                            countdownPrefix: appLocalized("Next in"),
+                            compactReachedText: appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)),
+                            isStale: context.isStale,
+                            compact: false
+                        )
+                    }
+                }
+            } compactLeading: {
+                EmptyView()
+            } compactTrailing: {
+                LiveActivityCompactTimerText(
+                    prayerTime: context.state.prayerTime,
+                    prayerName: context.state.prayerName,
+                    isStale: context.isStale
+                )
+            } minimal: {
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 10, weight: .bold))
+            }
+        }
+        .supplementalActivityFamilies([.medium])
+    }
+}
+
+@available(iOSApplicationExtension 17.2, *)
+private struct CarPlayAwareContentView: View {
+    @Environment(\.activityFamily) private var activityFamily
+    @Environment(\.colorScheme) private var colorScheme
+    let context: ActivityViewContext<PrayerLiveActivityAttributes>
+
+    var body: some View {
+        if activityFamily == .medium {
+            CarPlayLiveActivityView(context: context)
+        } else {
+            NextPrayerLiveActivityContentView(context: context)
+        }
+    }
+}
+
+@available(iOSApplicationExtension 17.2, *)
+private struct CarPlayLiveActivityView: View {
+    let context: ActivityViewContext<PrayerLiveActivityAttributes>
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(localizedPrayerName(context.state.prayerName))
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+                if !context.state.city.isEmpty {
+                    Text(context.state.city)
+                        .font(.system(.caption, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+            TimelineView(.explicit([.distantPast, context.state.prayerTime])) { _ in
+                let now = Date()
+                if context.isStale || now >= context.state.prayerTime {
+                    Text(appLocalized("It's time for %@", localizedPrayerName(context.state.prayerName)))
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .multilineTextAlignment(.trailing)
+                } else {
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(appLocalized("Next in"))
+                            .font(.system(.caption2, design: .rounded))
+                            .foregroundStyle(.secondary)
+                        Text(timerInterval: now...context.state.prayerTime, countsDown: true)
+                            .font(.system(.title3, design: .rounded).weight(.black))
+                            .monospacedDigit()
+                    }
+                }
+            }
+        }
+        .padding()
+    }
+}
+
 @available(iOSApplicationExtension 16.2, *)
 struct NextPrayerLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
@@ -349,7 +447,9 @@ struct Widgets: WidgetBundle {
             // LockScreen5Widget()
             LockScreenVerseWidget()
             #if canImport(ActivityKit)
-            if #available(iOSApplicationExtension 16.2, *) {
+            if #available(iOSApplicationExtension 17.2, *) {
+                NextPrayerLiveActivityWidgetWithCarPlay()
+            } else if #available(iOSApplicationExtension 16.2, *) {
                 NextPrayerLiveActivityWidget()
             }
             #endif
