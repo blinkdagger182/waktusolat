@@ -23,6 +23,7 @@ extension Notification.Name {
     static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
     static let supportDonationPaywallDismissed = Notification.Name("supportDonationPaywallDismissed")
     static let uiContentHeartbeat = Notification.Name("uiContentHeartbeat")
+    static let forYouOnboardingActive = Notification.Name("forYouOnboardingActive")
 }
 
 #if canImport(WatchConnectivity)

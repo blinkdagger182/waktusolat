@@ -5891,6 +5891,14 @@ private struct ForYouSwipeOnboardingView: View {
         }
         .onAppear {
             updateTextPhase(for: currentCard)
+            #if os(iOS)
+            if #unavailable(iOS 26) { setTabBarAlpha(0) }
+            #endif
+        }
+        .onDisappear {
+            #if os(iOS)
+            if #unavailable(iOS 26) { setTabBarAlpha(1) }
+            #endif
         }
         .onChange(of: cardIndex) { _ in
             updateTextPhase(for: currentCard)
@@ -5931,7 +5939,7 @@ private struct ForYouSwipeOnboardingView: View {
 
             case .name:
                 animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 2" : "Card 2",
+                    eyebrow: "",
                     title: isMalayAppLanguage() ? "Siapa nama anda?" : "What is your name?",
                     subtitle: isMalayAppLanguage() ? "Kami akan gunakan nama anda untuk menjadikan tab Today terasa lebih peribadi." : "We’ll use your name to make Today feel more personal."
                 )
@@ -5983,7 +5991,7 @@ private struct ForYouSwipeOnboardingView: View {
 
             case .reminderStyle:
                 animatedTextBlock(
-                    eyebrow: isMalayAppLanguage() ? "Kad 3" : "Card 3",
+                    eyebrow: "",
                     title: isMalayAppLanguage() ? "Bagaimana anda mahu diingatkan?" : "How should reminders sound?",
                     subtitle: isMalayAppLanguage() ? "Pilih gaya yang terasa paling sesuai untuk anda, \(displayName)." : "Choose the tone that feels right for you, \(displayName)."
                 )
@@ -6096,12 +6104,14 @@ private struct ForYouSwipeOnboardingView: View {
 
     private func animatedTextBlock(eyebrow: String, title: String, subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(eyebrow.uppercased())
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.secondary)
-                .opacity(textPhase ? 1 : 0)
-                .offset(y: textPhase ? 0 : 8)
-                .animation(.easeOut(duration: 0.22), value: textPhase)
+            if !eyebrow.isEmpty {
+                Text(eyebrow.uppercased())
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.secondary)
+                    .opacity(textPhase ? 1 : 0)
+                    .offset(y: textPhase ? 0 : 8)
+                    .animation(.easeOut(duration: 0.22), value: textPhase)
+            }
 
             Text(title)
                 .font(.system(size: 30, weight: .bold, design: .rounded))
@@ -6337,6 +6347,40 @@ private struct ForYouSwipeOnboardingView: View {
                 : "\(currentPrayerTitle) • 4:25 PM • Subang Jaya, Selangor, \(displayName)"
         }
     }
+
+    #if os(iOS)
+    private static let tabBarDimTag = 88_421
+
+    private func setTabBarAlpha(_ alpha: CGFloat) {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first(where: { $0.isKeyWindow }),
+              let tabBar = findTabBar(in: window) else { return }
+        let dim = alpha < 1
+        if dim {
+            guard tabBar.viewWithTag(Self.tabBarDimTag) == nil else { return }
+            let overlay = UIView(frame: tabBar.bounds)
+            overlay.tag = Self.tabBarDimTag
+            overlay.backgroundColor = UIColor.black.withAlphaComponent(0.62)
+            overlay.isUserInteractionEnabled = false
+            overlay.alpha = 0
+            tabBar.addSubview(overlay)
+            UIView.animate(withDuration: 0.25) { overlay.alpha = 1 }
+        } else {
+            guard let overlay = tabBar.viewWithTag(Self.tabBarDimTag) else { return }
+            UIView.animate(withDuration: 0.25, animations: { overlay.alpha = 0 }) { _ in
+                overlay.removeFromSuperview()
+            }
+        }
+    }
+
+    private func findTabBar(in view: UIView) -> UITabBar? {
+        if let bar = view as? UITabBar { return bar }
+        for sub in view.subviews {
+            if let bar = findTabBar(in: sub) { return bar }
+        }
+        return nil
+    }
+    #endif
 }
 
 private struct ForYouConfettiBurstView: View {

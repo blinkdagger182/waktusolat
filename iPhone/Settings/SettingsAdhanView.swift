@@ -547,7 +547,11 @@ struct NotificationView: View {
     @State private var notifSettings: UNNotificationSettings?
     @State private var requestAccessAlertMessage: String?
     @State private var locationAccessAlertMessage: String?
-    
+    @State private var todayPrayerCheckInEnabled: Bool = ForYouUserProfileService.load().wantsPrayerTrackerCard ?? true
+    @State private var draftFirstName: String = {
+        ForYouUserProfileService.load().firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }()
+
     var body: some View {
         List {
             #if !os(watchOS)
@@ -613,6 +617,9 @@ struct NotificationView: View {
         .task { await refresh() }
         .onAppear {
             syncNotificationState()
+            let profile = ForYouUserProfileService.load()
+            todayPrayerCheckInEnabled = profile.wantsPrayerTrackerCard ?? true
+            draftFirstName = profile.firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             syncForYouReminderStyleWithPrayerStyle()
         }
         .onChange(of: scenePhase) { _ in
@@ -670,20 +677,28 @@ struct NotificationView: View {
     }
 
     private var prayerPreviewBody: String {
+        let personalizedSuffix = personalizedTodayNotificationSuffix
         switch settings.prayerNotificationMessageStyle {
         case .standard:
             return isMalayAppLanguage()
-                ? "Waktu Asar pada 4:25 PTG di Subang Jaya, Selangor"
-                : "Time for Asr at 4:25 PM in Subang Jaya, Selangor"
+                ? "Waktu Asar pada 4:25 PTG di Subang Jaya, Selangor\(personalizedSuffix)"
+                : "Time for Asr at 4:25 PM in Subang Jaya, Selangor\(personalizedSuffix)"
         case .gentle:
             return isMalayAppLanguage()
-                ? "Kini masuk waktu Asar di Subang Jaya, Selangor."
-                : "It's now time for Asr in Subang Jaya, Selangor."
+                ? "Kini masuk waktu Asar di Subang Jaya, Selangor\(personalizedSuffix)."
+                : "It's now time for Asr in Subang Jaya, Selangor\(personalizedSuffix)."
         case .concise:
             return isMalayAppLanguage()
-                ? "Asar • 4:25 PTG • Subang Jaya, Selangor"
-                : "Asr • 4:25 PM • Subang Jaya, Selangor"
+                ? "Asar • 4:25 PTG • Subang Jaya, Selangor\(personalizedSuffix)"
+                : "Asr • 4:25 PM • Subang Jaya, Selangor\(personalizedSuffix)"
         }
+    }
+
+    private var personalizedTodayNotificationSuffix: String {
+        guard todayPrayerCheckInEnabled else { return "" }
+        let name = draftFirstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return "" }
+        return isMalayAppLanguage() ? " untuk \(name)" : ", \(name)"
     }
 
     private var prayerMessageStyleSection: some View {
@@ -712,6 +727,30 @@ struct NotificationView: View {
             Text(settings.prayerNotificationMessageStyle.summary)
                 .font(.caption)
                 .foregroundColor(.secondary)
+
+            Toggle(appLocalized("Prayer Check-in Cards"), isOn: $todayPrayerCheckInEnabled.animation(.easeInOut))
+                .font(.subheadline)
+                .tint(settings.accentColor.toggleTint)
+                .onChange(of: todayPrayerCheckInEnabled) { newValue in
+                    updateForYouProfile {
+                        $0.wantsPrayerTrackerCard = newValue
+                    }
+                }
+
+            HStack {
+                Text(isMalayAppLanguage() ? "Nama" : "Name")
+                    .font(.subheadline)
+                TextField(isMalayAppLanguage() ? "Nama anda" : "Your name", text: $draftFirstName)
+                    .font(.subheadline)
+                    .multilineTextAlignment(.trailing)
+                    .onChange(of: draftFirstName) { newValue in
+                        updateForYouProfile {
+                            $0.firstName = newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? nil
+                                : newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                    }
+            }
         }
     }
 
@@ -769,7 +808,7 @@ struct NotificationView: View {
         profile.consistencyLevel = profile.consistencyLevel ?? .beginner
         profile.primaryGoal = profile.primaryGoal ?? .preserveFajr
         profile.reminderStyle = profile.reminderStyle ?? forYouReminderStyle(for: settings.prayerNotificationMessageStyle)
-        profile.wantsPrayerTrackerCard = false
+        profile.wantsPrayerTrackerCard = profile.wantsPrayerTrackerCard ?? todayPrayerCheckInEnabled
         ForYouUserProfileService.save(profile)
     }
 
