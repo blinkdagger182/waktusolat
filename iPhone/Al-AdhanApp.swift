@@ -31,6 +31,7 @@ final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate
     static let shared = PhoneWatchSyncManager()
 
     static let snapshotPrayersDataKey = "watchSnapshot.prayersData"
+    static let snapshotPrayerDaysKey = "watchSnapshot.prayerDays"
     static let snapshotLocationDataKey = "watchSnapshot.locationData"
     static let snapshotPrayerCalculationKey = "watchSnapshot.prayerCalculation"
     static let snapshotAccentColorKey = "watchSnapshot.accentColor"
@@ -78,6 +79,20 @@ final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate
 
         if let prayersData = appGroupDefaults?.data(forKey: "prayersData") {
             context[Self.snapshotPrayersDataKey] = prayersData
+        }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date())
+        let city = Settings.shared.prayers?.city ?? ""
+        var prayerDays: [Prayers] = []
+        for offset in 0..<7 {
+            guard let date = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
+            guard let prayers = Settings.shared.getPrayerTimes(for: date), !prayers.isEmpty else { continue }
+            let fullPrayers = Settings.shared.getPrayerTimes(for: date, fullPrayers: true) ?? prayers
+            prayerDays.append(Prayers(day: date, city: city, prayers: prayers, fullPrayers: fullPrayers, setNotification: false))
+        }
+        if !prayerDays.isEmpty, let prayerDaysData = try? Settings.encoder.encode(prayerDays) {
+            context[Self.snapshotPrayerDaysKey] = prayerDaysData
         }
 
         if let locationData = appGroupDefaults?.data(forKey: "currentLocation") {

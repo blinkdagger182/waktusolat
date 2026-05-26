@@ -14,6 +14,7 @@ final class WatchConnectivitySyncManager: NSObject, ObservableObject, WCSessionD
         static let appLanguageCode = "watchSnapshot.appLanguageCode"
         static let currentPrayerData = "watchSnapshot.currentPrayerData"
         static let nextPrayerData = "watchSnapshot.nextPrayerData"
+        static let prayerDays = "watchSnapshot.prayerDays"
         static let monthCacheData = "watchSnapshot.monthCacheData"
         static let monthCacheKey = "watchSnapshot.monthCacheKey"
         static let requestSync = "watchSnapshot.requestSync"
@@ -45,6 +46,10 @@ final class WatchConnectivitySyncManager: NSObject, ObservableObject, WCSessionD
     private func applyContext(_ context: [String: Any]) {
         if let prayersData = context[Keys.prayersData] as? Data {
             defaults?.set(prayersData, forKey: "prayersData")
+        }
+
+        if let prayerDaysData = context[Keys.prayerDays] as? Data {
+            defaults?.set(prayerDaysData, forKey: "prayerDays")
         }
 
         if let locationData = context[Keys.locationData] as? Data {

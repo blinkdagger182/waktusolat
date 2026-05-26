@@ -33,27 +33,47 @@ struct WatchPrayerWidgetProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WatchPrayerWidgetEntry>) -> Void) {
         let now = Date()
+        let calendar = Calendar(identifier: .gregorian)
         let baseEntry = loadEntry(for: now) ?? previewEntry(date: now)
         var entries = [baseEntry]
+        var allTransitionDates: [Date] = []
 
-        let transitionDates = exactTransitionDates(after: now, prayers: baseEntry.prayers, countryCode: baseEntry.countryCode, storedDhuha: baseEntry.storedDhuha)
-        for transition in transitionDates {
+        let todayTransitions = exactTransitionDates(after: now, prayers: baseEntry.prayers, countryCode: baseEntry.countryCode, storedDhuha: baseEntry.storedDhuha)
+        allTransitionDates.append(contentsOf: todayTransitions)
+
+        for dayOffset in 1...6 {
+            guard let futureDay = calendar.date(byAdding: .day, value: dayOffset, to: now),
+                  let futureEntry = loadEntry(for: futureDay) else { break }
+            let futureTransitions = exactTransitionDates(after: now, prayers: futureEntry.prayers, countryCode: futureEntry.countryCode, storedDhuha: futureEntry.storedDhuha)
+            allTransitionDates.append(contentsOf: futureTransitions)
+        }
+
+        for transition in allTransitionDates {
             if let entry = loadEntry(for: transition) {
                 entries.append(entry)
             }
         }
 
-        let refresh = transitionDates.first ?? Calendar.current.date(byAdding: .minute, value: 30, to: now) ?? now.addingTimeInterval(1800)
+        let lastEntryDate = entries.map(\.date).max() ?? now
+        let refresh = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: lastEntryDate)) ?? now.addingTimeInterval(86400)
         completion(Timeline(entries: entries.sorted { $0.date < $1.date }, policy: .after(refresh)))
     }
 
-    private func loadEntry(for date: Date) -> WatchPrayerWidgetEntry? {
-        guard
-            let prayerData = defaults?.data(forKey: WatchWidgetSupport.prayersStorageKey),
-            let prayerDay = try? decoder.decode(WatchWidgetPrayerDay.self, from: prayerData)
-        else {
-            return nil
+    private func loadPrayerDay(for date: Date) -> WatchWidgetPrayerDay? {
+        let calendar = Calendar(identifier: .gregorian)
+        if let arrayData = defaults?.data(forKey: "prayerDays"),
+           let days = try? decoder.decode([WatchWidgetPrayerDay].self, from: arrayData),
+           let match = days.first(where: { calendar.isDate($0.day, inSameDayAs: date) }) {
+            return match
         }
+        guard let singleData = defaults?.data(forKey: WatchWidgetSupport.prayersStorageKey),
+              let day = try? decoder.decode(WatchWidgetPrayerDay.self, from: singleData)
+        else { return nil }
+        return day
+    }
+
+    private func loadEntry(for date: Date) -> WatchPrayerWidgetEntry? {
+        guard let prayerDay = loadPrayerDay(for: date) else { return nil }
 
         let locationData = defaults?.data(forKey: WatchWidgetSupport.locationStorageKey)
         let location = locationData.flatMap { try? decoder.decode(WatchWidgetLocation.self, from: $0) }
