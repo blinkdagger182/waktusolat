@@ -1580,21 +1580,7 @@ final class ForYouPlanGeneratorService {
     }
 
     private func todayZikirDisplayTitle(for selection: ZikirSelectionResult) -> String {
-        let helper = selection.helperTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !helper.isEmpty else { return appLocalized(selection.bucket.titleKey) }
-
-        let helperLower = helper.lowercased()
-        let englishOnlyTodayTitles: Set<String> = [
-            "a fuller selawat for friday",
-            "a return to allah",
-            "a quick blessing for this hour"
-        ]
-
-        if englishOnlyTodayTitles.contains(helperLower) {
-            return selection.phrase.textArabic
-        }
-
-        return helper
+        selection.phrase.textArabic
     }
 
     private func progressTarget(for bucket: ZikirTimeBucket) -> Int? {
