@@ -1587,7 +1587,7 @@ struct HomeWidgetPreviewGalleryView: View {
     }
 
     private var hasPremiumWidgetAccess: Bool {
-        premiumWidgetsUnlocked() || revenueCat.isActive
+        premiumWidgetsUnlocked() || revenueCat.hasPremiumWidgetsUnlocked
     }
 
     private var sortedAuraStyles: [AuraWidgetStyle] {
@@ -1673,6 +1673,7 @@ struct HomeWidgetPreviewGalleryView: View {
                             ) {
                                 HomeSimpleCountdownPreviewCard(accentColor: settings.accentColor.color)
                             }
+                            HomeWidgetComingSoonCard(family: .small)
                         }
                         .padding(.vertical, 4)
                     }
@@ -1692,6 +1693,7 @@ struct HomeWidgetPreviewGalleryView: View {
                             ) {
                                 HomeCountdownSmallPreviewCard(accentColor: settings.accentColor.color)
                             }
+                            HomeWidgetComingSoonCard(family: .small)
                         }
                         .padding(.vertical, 4)
                     }
@@ -1711,6 +1713,7 @@ struct HomeWidgetPreviewGalleryView: View {
                             ) {
                                 HomeCountdownMediumPreviewCard(accentColor: settings.accentColor.color)
                             }
+                            HomeWidgetComingSoonCard(family: .medium)
                         }
                         .padding(.vertical, 4)
                     }
@@ -1730,6 +1733,7 @@ struct HomeWidgetPreviewGalleryView: View {
                             ) {
                                 HomeCountdownLargePreviewCard(accentColor: settings.accentColor.color)
                             }
+                            HomeWidgetComingSoonCard(family: .large)
                         }
                         .padding(.vertical, 4)
                     }
@@ -1749,6 +1753,7 @@ struct HomeWidgetPreviewGalleryView: View {
                             ) {
                                 HomePrayerTimesMediumPreviewCard(accentColor: settings.accentColor.color)
                             }
+                            HomeWidgetComingSoonCard(family: .medium)
                         }
                         .padding(.vertical, 4)
                     }
@@ -1775,6 +1780,8 @@ struct HomeWidgetPreviewGalleryView: View {
                             ) {
                                 HomePrayerTimesLargePreviewCard(accentColor: settings.accentColor.color)
                             }
+
+                            HomeWidgetComingSoonCard(family: .medium)
                         }
                         .padding(.vertical, 4)
                     }
@@ -1794,6 +1801,7 @@ struct HomeWidgetPreviewGalleryView: View {
                             ) {
                                 HomeZikirPreviewCard(compact: true)
                             }
+                            HomeWidgetComingSoonCard(family: .small)
                         }
                         .padding(.vertical, 4)
                     }
@@ -1866,17 +1874,20 @@ private struct HomeWidgetShowcaseCard<Preview: View>: View {
     let title: String
     let family: HomeWidgetPreviewFamily
     let contentPadding: CGFloat
+    let isSelected: Bool
     let preview: Preview
 
     init(
         title: String,
         family: HomeWidgetPreviewFamily,
         contentPadding: CGFloat = 12,
+        isSelected: Bool = true,
         @ViewBuilder body: () -> Preview
     ) {
         self.title = title
         self.family = family
         self.contentPadding = contentPadding
+        self.isSelected = isSelected
         self.preview = body()
     }
 
@@ -1885,8 +1896,19 @@ private struct HomeWidgetShowcaseCard<Preview: View>: View {
     }
 
     var bodyView: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
             widgetCanvas(preview: AnyView(preview), family: family)
+
+            HStack(spacing: 6) {
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(settings.accentColor.color)
+                }
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isSelected ? settings.accentColor.color : .primary)
+            }
         }
     }
 
@@ -1913,12 +1935,85 @@ private struct HomeWidgetShowcaseCard<Preview: View>: View {
         .frame(width: size.width, height: size.height)
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                .strokeBorder(
+                    isSelected ? settings.accentColor.color : Color.black.opacity(0.08),
+                    lineWidth: isSelected ? 2.5 : 1
+                )
         )
         .shadow(color: Color.black.opacity(0.10), radius: 12, y: 6)
     }
 
     var body: some View { bodyView }
+}
+
+private struct HomeWidgetComingSoonCard: View {
+    @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
+
+    let family: HomeWidgetPreviewFamily
+
+    private var canvasSize: CGSize { family.canvasSize }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(colorScheme == .dark
+                          ? Color.white.opacity(0.04)
+                          : Color.black.opacity(0.03))
+
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                    .foregroundStyle(Color.primary.opacity(0.15))
+
+                VStack(spacing: 10) {
+                    Image(systemName: "sparkles")
+                        .font(.title2)
+                        .foregroundStyle(settings.accentColor.color.opacity(0.7))
+
+                    VStack(spacing: 3) {
+                        Text(isMalayAppLanguage() ? "Akan Datang" : "Coming Soon")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+
+                        Text(isMalayAppLanguage()
+                             ? "Gaya baru sedang dalam pembangunan"
+                             : "New styles in development")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Button {
+                        NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+                    } label: {
+                        Text(isMalayAppLanguage() ? "Sokong Pembangunan" : "Support Development")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(settings.accentColor.color)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(settings.accentColor.color.opacity(0.12))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(14)
+            }
+            .frame(width: canvasSize.width, height: canvasSize.height)
+
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(isMalayAppLanguage() ? "Akan Datang" : "Coming Soon")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: canvasSize.width)
+    }
 }
 
 private struct HomeAuraPreviewCard: View {
