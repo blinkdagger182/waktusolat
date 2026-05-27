@@ -1579,44 +1579,80 @@ struct WidgetPreviewGalleryView: View {
 struct HomeWidgetPreviewGalleryView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
+    @AppStorage(AuraWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var auraStyleRaw = AuraWidgetStyle.gradient.rawValue
+
+    private var selectedAuraStyle: AuraWidgetStyle {
+        AuraWidgetStyle(rawValue: auraStyleRaw) ?? .gradient
+    }
+
+    private var hasPremiumWidgetAccess: Bool {
+        premiumWidgetsUnlocked() || revenueCat.isActive
+    }
+
+    private var sortedAuraStyles: [AuraWidgetStyle] {
+        AuraWidgetStyle.allCases.filter { !$0.requiresPremiumWidgets }
+            + AuraWidgetStyle.allCases.filter { $0.requiresPremiumWidgets }
+    }
+
+    private func selectAuraStyle(_ style: AuraWidgetStyle) {
+        settings.hapticFeedback()
+        withAnimation(.easeInOut) { auraStyleRaw = style.rawValue }
+        if style.requiresPremiumWidgets && !hasPremiumWidgetAccess {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+            }
+        } else {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                previewSection(
-                    title: "Waktu Aura",
-                    subtitle: isMalayAppLanguage()
-                        ? "Widget sebenar `systemMedium` dengan latar visual untuk solat seterusnya."
-                        : "The actual `systemMedium` visual widget for the upcoming prayer."
-                ) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 16) {
-                            HomeWidgetShowcaseCard(
-                                title: "Waktu Aura",
-                                family: .medium,
-                                contentPadding: 0
-                            ) {
-                                HomeAuraPreviewCard(square: false)
-                            }
+                if !hasPremiumWidgetAccess {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isMalayAppLanguage() ? "Sokong Waktu 🤍" : "Support Waktu 🤍")
+                            .font(.headline)
+                        Text(isMalayAppLanguage()
+                             ? "Buka kunci widget premium & kekalkan apl tanpa iklan"
+                             : "Unlock premium widgets & keep the app ad-free")
+                            .font(.caption)
+                            .foregroundStyle(settings.accentColor.color)
+                        Button {
+                            settings.hapticFeedback()
+                            NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+                        } label: {
+                            Text(isMalayAppLanguage() ? "Sokong Sekali • Buka Semua Gaya" : "Support Once • Unlock All Styles")
+                                .font(.subheadline.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
                         }
-                        .padding(.vertical, 4)
+                        .buttonStyle(.borderedProminent)
+                        .tint(settings.accentColor.color)
+                        .padding(.top, 8)
                     }
                 }
 
                 previewSection(
-                    title: "Waktu Aura Mini",
+                    title: "Waktu Aura",
                     subtitle: isMalayAppLanguage()
-                        ? "Widget sebenar `systemSmall` untuk Aura."
-                        : "The actual `systemSmall` Aura widget."
+                        ? "Pilih gaya latar untuk widget Aura saiz sederhana dan kecil."
+                        : "Choose the background style for the Aura medium and small widgets."
                 ) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 16) {
-                            HomeWidgetShowcaseCard(
-                                title: "Waktu Aura Mini",
-                                family: .small,
-                                contentPadding: 0
-                            ) {
-                                HomeAuraPreviewCard(square: true)
+                            ForEach(sortedAuraStyles) { style in
+                                Button {
+                                    selectAuraStyle(style)
+                                } label: {
+                                    HomeAuraStyleCard(
+                                        style: style,
+                                        isSelected: selectedAuraStyle == style,
+                                        isLocked: style.requiresPremiumWidgets && !hasPremiumWidgetAccess
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.vertical, 4)
@@ -1932,6 +1968,114 @@ private struct HomeAuraPreviewCard: View {
             .padding(square ? 12 : 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
+    }
+}
+
+private struct HomeMidnightAuraPreviewCard: View {
+    let square: Bool
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Color(red: 0.05, green: 0.07, blue: 0.14)
+
+            RadialGradient(
+                colors: [Color(red: 0.25, green: 0.30, blue: 0.70).opacity(0.40), .clear],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: square ? 120 : 180
+            )
+
+            VStack(alignment: .leading, spacing: square ? 3 : 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "moon.stars.fill")
+                        .font(square ? .subheadline : .headline)
+                        .foregroundStyle(Color(red: 0.65, green: 0.72, blue: 1.0))
+                    Text(localizedPrayerName("Maghrib"))
+                        .font((square ? Font.title3 : Font.title2).weight(.bold))
+                        .foregroundStyle(.white)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("7:31")
+                        .font(.system(size: square ? 34 : 42, weight: .bold, design: .rounded))
+                    Text("PM")
+                        .font((square ? Font.title3 : Font.title2).weight(.semibold))
+                }
+                .foregroundStyle(.white)
+
+                HStack(spacing: 5) {
+                    Text(isMalayAppLanguage() ? "Dalam" : "In")
+                    Text("1h 14m")
+                        .monospacedDigit()
+                }
+                .font((square ? Font.subheadline : Font.title3).weight(.semibold))
+                .foregroundStyle(Color(red: 0.65, green: 0.72, blue: 1.0))
+            }
+            .padding(square ? 12 : 14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+}
+
+private struct HomeAuraStyleCard: View {
+    @EnvironmentObject var settings: Settings
+    @Environment(\.colorScheme) private var colorScheme
+
+    let style: AuraWidgetStyle
+    let isSelected: Bool
+    let isLocked: Bool
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color.black : Color(.systemBackground)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(cardBackground)
+                Group {
+                    switch style {
+                    case .gradient:
+                        HomeAuraPreviewCard(square: false)
+                    case .midnight:
+                        HomeMidnightAuraPreviewCard(square: false)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            }
+            .frame(width: 260, height: 130)
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(
+                        isSelected ? settings.accentColor.color : Color.primary.opacity(0.10),
+                        lineWidth: isSelected ? 2.5 : 1
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 8, y: 4)
+            .lockedWidgetCardStyle(isLocked: isLocked, isSelected: isSelected, accentColor: settings.accentColor.color, cornerRadius: 22)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(settings.accentColor.color)
+                    }
+                    Text(style.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isSelected ? settings.accentColor.color : .primary)
+                }
+                PremiumCardStatusText(
+                    isSelected: isSelected,
+                    isLocked: isLocked,
+                    summary: style.summary,
+                    selectedTint: settings.accentColor.color
+                )
+            }
+        }
+        .frame(width: 260)
     }
 }
 

@@ -740,6 +740,43 @@ enum DailyVerseWidgetStyle: String, CaseIterable, Identifiable {
     }
 }
 
+enum AuraWidgetStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "auraWidgetStyle"
+
+    case gradient
+    case midnight
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .gradient: return isMalayAppLanguage() ? "Gradien" : "Gradient"
+        case .midnight: return isMalayAppLanguage() ? "Tengah Malam" : "Midnight"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .gradient:
+            return isMalayAppLanguage()
+                ? "Latar visual yang bertukar mengikut waktu solat."
+                : "A visual background that shifts with each prayer time."
+        case .midnight:
+            return isMalayAppLanguage()
+                ? "Latar gelap dalam dengan kilauan biru lembut."
+                : "Deep dark background with a soft blue glow."
+        }
+    }
+
+    static var freeDefault: AuraWidgetStyle { .gradient }
+
+    var requiresPremiumWidgets: Bool { self == .midnight }
+
+    var resolvedForWidgetAccess: AuraWidgetStyle {
+        premiumWidgetsUnlocked() || !requiresPremiumWidgets ? self : Self.freeDefault
+    }
+}
+
 enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
     static let storageKey = "lockScreenPrayerCountdownStyle"
 

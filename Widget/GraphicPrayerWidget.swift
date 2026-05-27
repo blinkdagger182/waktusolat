@@ -106,6 +106,13 @@ private func auraDisplayPrayerName(_ name: String) -> String {
 private struct GraphicPrayerEntryView: View {
     var entry: PrayersProvider.Entry
 
+    @AppStorage(AuraWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var auraStyleRaw = AuraWidgetStyle.gradient.rawValue
+
+    private var auraStyle: AuraWidgetStyle {
+        (AuraWidgetStyle(rawValue: auraStyleRaw) ?? .gradient).resolvedForWidgetAccess
+    }
+
     private var displayPrayer: Prayer? {
         resolvedDisplayPrayer(for: entry)
     }
@@ -124,21 +131,33 @@ private struct GraphicPrayerEntryView: View {
 
     @ViewBuilder
     private func backgroundView(for prayer: Prayer?) -> some View {
-        #if os(iOS)
-        if let customBackground = customAuraBackgroundImage(for: prayer) {
-            Image(uiImage: customBackground)
-                .resizable()
-                .scaledToFill()
+        if auraStyle == .midnight {
+            ZStack {
+                Color(red: 0.05, green: 0.07, blue: 0.14)
+                RadialGradient(
+                    colors: [Color(red: 0.25, green: 0.30, blue: 0.70).opacity(0.40), .clear],
+                    center: .topTrailing,
+                    startRadius: 0,
+                    endRadius: 220
+                )
+            }
         } else {
+            #if os(iOS)
+            if let customBackground = customAuraBackgroundImage(for: prayer) {
+                Image(uiImage: customBackground)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(widgetBackgroundAssetName(for: prayer))
+                    .resizable()
+                    .scaledToFill()
+            }
+            #else
             Image(widgetBackgroundAssetName(for: prayer))
                 .resizable()
                 .scaledToFill()
+            #endif
         }
-        #else
-        Image(widgetBackgroundAssetName(for: prayer))
-            .resizable()
-            .scaledToFill()
-        #endif
     }
 
     var body: some View {
@@ -147,15 +166,20 @@ private struct GraphicPrayerEntryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
 
-            LinearGradient(
-                colors: [Color.black.opacity(0.12), Color.black.opacity(0.30)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            if auraStyle != .midnight {
+                LinearGradient(
+                    colors: [Color.black.opacity(0.12), Color.black.opacity(0.30)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
 
             if let prayer = displayPrayer {
                 let displayTime = widgetPrayerDisplayTime(prayer, in: entry)
                 let timeText = formattedTime(displayTime)
+                let countdownColor: Color = auraStyle == .midnight
+                    ? Color(red: 0.65, green: 0.72, blue: 1.0)
+                    : .white.opacity(0.95)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
@@ -179,7 +203,7 @@ private struct GraphicPrayerEntryView: View {
                         Text(displayTime, style: .timer)
                     }
                     .font(.title3.weight(.semibold))
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(countdownColor)
                     .monospacedDigit()
                 }
                 .lineLimit(1)
@@ -201,6 +225,13 @@ private struct GraphicPrayerEntryView: View {
 private struct GraphicPrayerSquareEntryView: View {
     var entry: GraphicPrayerSquareEntry
 
+    @AppStorage(AuraWidgetStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var auraStyleRaw = AuraWidgetStyle.gradient.rawValue
+
+    private var auraStyle: AuraWidgetStyle {
+        (AuraWidgetStyle(rawValue: auraStyleRaw) ?? .gradient).resolvedForWidgetAccess
+    }
+
     private func formattedTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -210,45 +241,64 @@ private struct GraphicPrayerSquareEntryView: View {
 
     var body: some View {
         ZStack {
-            #if os(iOS)
-            if let customBackground = customAuraBackgroundImage(for: auraPrayerBackgroundKey(forAssetName: entry.backgroundAsset)) {
-                Image(uiImage: customBackground)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
+            if auraStyle == .midnight {
+                ZStack {
+                    Color(red: 0.05, green: 0.07, blue: 0.14)
+                    RadialGradient(
+                        colors: [Color(red: 0.25, green: 0.30, blue: 0.70).opacity(0.40), .clear],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 160
+                    )
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                #if os(iOS)
+                if let customBackground = customAuraBackgroundImage(for: auraPrayerBackgroundKey(forAssetName: entry.backgroundAsset)) {
+                    Image(uiImage: customBackground)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                } else {
+                    Image(entry.backgroundAsset)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                }
+                #else
                 Image(entry.backgroundAsset)
                     .resizable()
                     .scaledToFill()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
-            }
-            #else
-            Image(entry.backgroundAsset)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-            #endif
+                #endif
 
-            LinearGradient(
-                colors: [Color.black.opacity(0.10), Color.black.opacity(0.32)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                LinearGradient(
+                    colors: [Color.black.opacity(0.10), Color.black.opacity(0.32)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
         }
         .overlay(alignment: .bottomLeading) {
+            let countdownColor: Color = auraStyle == .midnight
+                ? Color(red: 0.65, green: 0.72, blue: 1.0)
+                : .white
+
             VStack(alignment: .leading, spacing: 3) {
                 Text(auraDisplayPrayerName(entry.prayerName))
                     .font(.headline.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+                    .foregroundColor(.white)
 
                 Text(formattedTime(entry.prayerTime))
                     .font(.system(size: 24, weight: .bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                    .foregroundColor(.white)
 
                 HStack(spacing: 4) {
                     Text("In")
@@ -257,9 +307,9 @@ private struct GraphicPrayerSquareEntryView: View {
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
                 .monospacedDigit()
+                .foregroundColor(countdownColor)
             }
             .padding(12)
-            .foregroundColor(.white)
             .environment(\.redactionReasons, RedactionReasons())
             .unredacted()
         }

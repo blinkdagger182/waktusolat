@@ -358,7 +358,8 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             (PrayerListWidgetStyle.storageKey, PrayerListWidgetStyle.classic.rawValue),
             (LockScreenPrayerCountdownBarStyle.storageKey, LockScreenPrayerCountdownBarStyle.withLocation.rawValue),
             (WidgetZikirAlignment.storageKey, WidgetZikirAlignment.center.rawValue),
-            (DailyVerseWidgetStyle.storageKey, DailyVerseWidgetStyle.classic.rawValue)
+            (DailyVerseWidgetStyle.storageKey, DailyVerseWidgetStyle.classic.rawValue),
+            (AuraWidgetStyle.storageKey, AuraWidgetStyle.gradient.rawValue)
         ]
 
         var didSeed = false
