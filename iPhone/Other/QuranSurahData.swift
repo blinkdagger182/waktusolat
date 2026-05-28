@@ -210,8 +210,19 @@ enum DailyQuranArabicAPI {
             throw QuranSurahAPIError.badResponse
         }
         let decoded = try JSONDecoder().decode(DailyQuranArabicPayload.self, from: data)
-        return decoded.arabicText?
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return decoded.arabicText.map(normalizeArabicUthmani)
     }
+}
+
+private func normalizeArabicUthmani(_ text: String) -> String {
+    // Strip Quranic annotation marks (tajweed, pause, sajdah markers) that render
+    // as visible dots/circles when the font lacks glyphs for them.
+    // U+0610–U+061A: Arabic annotation signs. U+06D6–U+06ED: small high/low marks incl. end-of-ayah.
+    let stripped = text.unicodeScalars.filter { scalar in
+        let v = scalar.value
+        return !((v >= 0x0610 && v <= 0x061A) || (v >= 0x06D6 && v <= 0x06ED))
+    }
+    return String(String.UnicodeScalarView(stripped))
+        .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
 }
