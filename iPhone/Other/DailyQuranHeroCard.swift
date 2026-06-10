@@ -79,8 +79,20 @@ struct DailyQuranHeroCard: View {
         return localizedSurahName(number: surahNumber, englishName: quote.surahName)
     }
 
+    private var normalizedArabicText: String? {
+        arabicText.map { text in
+            let stripped = text.unicodeScalars.filter { scalar in
+                let v = scalar.value
+                return !((v >= 0x0610 && v <= 0x061A) || (v >= 0x06D6 && v <= 0x06ED))
+            }
+            return String(String.UnicodeScalarView(stripped))
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+    }
+
     private var arabicWords: [String] {
-        arabicText?.split(separator: " ").map(String.init) ?? []
+        normalizedArabicText?.split(separator: " ").map(String.init) ?? []
     }
 
     private var shouldRenderAnimatedArabic: Bool {
@@ -149,10 +161,10 @@ struct DailyQuranHeroCard: View {
             }
 
             VStack(alignment: .center, spacing: 10) {
-                if let arabicText, !arabicText.isEmpty {
+                if let normalizedArabicText, !normalizedArabicText.isEmpty {
                     if shouldRenderAnimatedArabic {
                         ZStack {
-                            Text(arabicText)
+                            Text(normalizedArabicText)
                                 .font(.custom(arabicFontName, size: 24))
                                 .lineSpacing(6)
                                 .multilineTextAlignment(.center)
@@ -175,7 +187,7 @@ struct DailyQuranHeroCard: View {
                                 .animation(.easeOut(duration: arabicRevealAnimationDuration * 0.75), value: highlightedArabicWordIndex)
                         }
                     } else {
-                        Text(arabicText)
+                        Text(normalizedArabicText)
                             .font(.custom(arabicFontName, size: 24))
                             .lineSpacing(6)
                             .multilineTextAlignment(.center)

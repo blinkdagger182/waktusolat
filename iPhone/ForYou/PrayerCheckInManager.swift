@@ -29,7 +29,7 @@ final class PrayerCheckInManager: ObservableObject {
     func configure(prayer: String) {
         let checkedIn = hasCheckedIn(prayer: prayer)
         displayState = PrayerCheckInDisplayState(
-            count: todayCheckInCount(),
+            count: cachedRemoteCount(prayer: prayer),
             lastCheckedInAt: checkedInAt(prayer: prayer),
             hasCurrentUserCheckedIn: checkedIn
         )
@@ -63,6 +63,7 @@ final class PrayerCheckInManager: ObservableObject {
         guard let (data, _) = try? await URLSession.shared.data(from: url),
               let remote = try? JSONDecoder().decode(RemoteStats.self, from: data) else { return }
         let checkedIn = hasCheckedIn(prayer: prayer)
+        cacheRemoteCount(remote.count, prayer: prayer)
         displayState = PrayerCheckInDisplayState(
             count: remote.count,
             lastCheckedInAt: checkedIn ? checkedInAt(prayer: prayer) : nil,
@@ -93,6 +94,18 @@ final class PrayerCheckInManager: ObservableObject {
     }
 
     // MARK: - Local helpers
+
+    private func cachedRemoteCount(prayer: String) -> Int {
+        defaults.integer(forKey: remoteCountKey(prayer: prayer))
+    }
+
+    private func cacheRemoteCount(_ count: Int, prayer: String) {
+        defaults.set(count, forKey: remoteCountKey(prayer: prayer))
+    }
+
+    private func remoteCountKey(prayer: String) -> String {
+        "prayer_checkin_remote_count_\(todayDateString())_\(normalizedPrayerKey(prayer))"
+    }
 
     private func todayCheckInCount() -> Int {
         let prefix = "prayer_checkin_\(todayDateString())_"

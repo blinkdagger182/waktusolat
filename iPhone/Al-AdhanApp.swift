@@ -2225,7 +2225,7 @@ private struct SupportPromoScheduleItem: Codable, Identifiable {
 
     static let monthlyPool = SupportPromoScheduleItem(
         triggerKey: "monthly_pool",
-        isEnabled: false,
+        isEnabled: true,
         audience: .production,
         title: nil,
         message: "This month's pool is open. Keep Waktu accurate.",

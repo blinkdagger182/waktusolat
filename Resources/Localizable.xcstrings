@@ -1199,7 +1199,6 @@
     },
     "Debug options" : {
       "comment" : "",
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1331,7 +1330,6 @@
     },
     "Donation Toast (Eid Pool)" : {
       "comment" : "",
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1343,7 +1341,6 @@
     },
     "Donation Toast (Generic)" : {
       "comment" : "",
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1355,7 +1352,6 @@
     },
     "Donation Toast (Launch 5)" : {
       "comment" : "",
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1367,7 +1363,6 @@
     },
     "Donation Toast (Launch 6)" : {
       "comment" : "",
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1379,7 +1374,6 @@
     },
     "Donation Toast (Monthly Pool)" : {
       "comment" : "",
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -1391,7 +1385,6 @@
     },
     "Donation Toast (Streak 7)" : {
       "comment" : "",
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -2184,6 +2177,9 @@
           }
         }
       }
+    },
+    "Live Activity Debug" : {
+
     },
     "Live Activity Options" : {
       "localizations" : {
@@ -3194,6 +3190,15 @@
     "Premium Widget Access" : {
 
     },
+    "Premium Widgets: Donated" : {
+
+    },
+    "Premium Widgets: Live" : {
+
+    },
+    "Premium Widgets: No Donate" : {
+
+    },
     "Prenotification" : {
       "localizations" : {
         "ms" : {
@@ -3406,6 +3411,9 @@
         }
       }
     },
+    "Region Override" : {
+
+    },
     "REMEMBRANCES OF ALLAH ﷻ‎" : {
 
     },
@@ -3431,6 +3439,9 @@
           }
         }
       }
+    },
+    "Reset For You Onboarding" : {
+
     },
     "Resolving Waktu Zone..." : {
       "localizations" : {
@@ -3697,7 +3708,6 @@
       }
     },
     "Show Daily Quran Intro" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ms" : {
           "stringUnit" : {
@@ -4733,6 +4743,9 @@
           }
         }
       }
+    },
+    "Widget Preview Debug" : {
+
     },
     "Widget Previews" : {
       "extractionState" : "stale",

@@ -400,15 +400,16 @@ private struct ForYouMiniProgressTracker: View {
         let rowLabel = descriptor.rowLabels.indices.contains(index) ? descriptor.rowLabels[index] : descriptor.title
         let cellContent = VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : (isCompact ? 4 : 6)) {
             if descriptor.requiresLongPress {
-                HStack(spacing: isCompact ? 6 : 8) {
+                HStack(alignment: .center, spacing: isCompact ? 6 : 8) {
                     Text(rowLabel)
                         .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                         .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.60)
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .trailing)
 
                     trackerSymbol(isCompleted: isCompleted, isHolding: isHolding, index: index, symbol: symbol)
+                        .alignmentGuide(.firstTextBaseline) { d in d[.top] }
                 }
             } else {
                 Text(rowLabel)
@@ -446,7 +447,7 @@ private struct ForYouMiniProgressTracker: View {
         }
         .padding(.horizontal, isCompact ? 6 : 8)
         .padding(.vertical, isCompact ? 6 : 8)
-        .frame(minHeight: descriptor.requiresLongPress ? (isCompact ? 40 : 44) : (isCompact ? 52 : 58))
+        .frame(minHeight: isCompact ? 40 : 44)
         .frame(maxWidth: .infinity)
         .background(
             ZStack(alignment: .leading) {
@@ -3106,6 +3107,10 @@ private struct ForYouCurrentPrayerHeroCard: View {
                             .font(.system(size: 14, weight: .medium, design: .rounded))
                             .foregroundStyle(heroSecondaryText)
                             .fixedSize(horizontal: false, vertical: true)
+
+                        if checkInManager.displayState.hasCurrentUserCheckedIn {
+                            checkInRow
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -3123,10 +3128,6 @@ private struct ForYouCurrentPrayerHeroCard: View {
                             .foregroundStyle(heroSecondaryText)
                     }
                     .layoutPriority(2)
-                }
-
-                if checkInManager.displayState.hasCurrentUserCheckedIn {
-                    checkInRow
                 }
             }
             .padding(20)
@@ -3281,18 +3282,23 @@ private struct ForYouCurrentPrayerHeroCard: View {
             Image(systemName: "person.2.fill")
                 .font(.caption2)
                 .foregroundStyle(heroSecondaryText)
-            Text(checkInDisplayText)
-                .font(.caption)
-                .foregroundStyle(heroSecondaryText)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 0) {
+                Text("\(checkInManager.displayState.count)")
+                    .modifier(NumericTextTransitionModifier(value: checkInManager.displayState.count))
+                Text(checkInTrailingText)
+            }
+            .font(.caption)
+            .foregroundStyle(heroSecondaryText)
+            .lineLimit(1)
+            .truncationMode(.tail)
         }
     }
 
-    private var checkInDisplayText: String {
+    private var checkInTrailingText: String {
         let state = checkInManager.displayState
         var text = isMalayAppLanguage()
-            ? "\(state.count) hadir untuk \(entry.title) hari ini"
-            : "\(state.count) checked in for \(entry.title) today"
+            ? " hadir untuk \(entry.title) hari ini"
+            : " checked in for \(entry.title) today"
         if let at = state.lastCheckedInAt {
             let timeStr = ForYouFormatters.shortTime.string(from: at)
             text += isMalayAppLanguage()
@@ -6419,6 +6425,20 @@ private struct ForYouConfettiBurstView: View {
 }
 
 // MARK: - Greeting Splash
+
+private struct NumericTextTransitionModifier: ViewModifier {
+    let value: Int
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
+        } else {
+            content
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
+        }
+    }
+}
 
 private struct ForYouGreetingSplashOverlay: View {
     let name: String?
