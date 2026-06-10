@@ -561,6 +561,14 @@ private struct AyahMinYPreferenceKey: PreferenceKey {
     }
 }
 
+private func stripQuranAnnotationMarks(_ text: String) -> String {
+    let stripped = text.unicodeScalars.filter { scalar in
+        let v = scalar.value
+        return !((v >= 0x0610 && v <= 0x061A) || (v >= 0x06D6 && v <= 0x06ED))
+    }
+    return String(String.UnicodeScalarView(stripped))
+}
+
 #if os(iOS)
 private struct InteractiveArabicAyahTextView: UIViewRepresentable {
     let words: [QuranSurahDetails.Word]
@@ -650,7 +658,7 @@ private final class InteractiveArabicTextView: UITextView {
         let baseFont = UIFont(name: fontName, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
 
         if words.isEmpty {
-            attributed.append(NSAttributedString(string: fallbackText, attributes: [
+            attributed.append(NSAttributedString(string: stripQuranAnnotationMarks(fallbackText), attributes: [
                 .font: baseFont,
                 .foregroundColor: fullyHighlighted ? accentColor : textColor,
             ]))
@@ -673,7 +681,7 @@ private final class InteractiveArabicTextView: UITextView {
                     attrs[.foregroundColor] = accentColor
                 }
 
-                attributed.append(NSAttributedString(string: word.textArabic, attributes: attrs))
+                attributed.append(NSAttributedString(string: stripQuranAnnotationMarks(word.textArabic), attributes: attrs))
             }
         }
 
@@ -750,7 +758,7 @@ private struct InteractiveArabicAyahTextView: View {
     let onTapWord: (Int) -> Void
 
     var body: some View {
-        Text(fallbackText)
+        Text(stripQuranAnnotationMarks(fallbackText))
             .font(.custom(fontName, size: fontSize))
             .foregroundStyle(fullyHighlighted ? accentColor : .primary)
             .frame(maxWidth: .infinity, alignment: .trailing)
