@@ -252,7 +252,7 @@ struct AlAdhanApp: App {
     @State private var isKeyboardVisible = false
     @State private var showUnsupportedRegionModal = false
     @State private var showPrayerTrackerPrompt = false
-    private let paywallOfferingIdentifier = "Waktu Plus Supporter"
+    private let paywallOfferingIdentifiers = ["waktu_pro", "Waktu Plus Supporter"]
 
     init() {
         RevenueCatManager.shared.configure()
@@ -829,27 +829,9 @@ struct AlAdhanApp: App {
 
     @ViewBuilder
     private var supportPaywallPage: some View {
-        #if canImport(RevenueCatUI)
-        if let selectedOffering = revenueCat.offerings?.all[paywallOfferingIdentifier] {
-            PaywallView(offering: selectedOffering, displayCloseButton: false)
-        } else {
-            VStack(spacing: 16) {
-                ProgressView()
-                    .tint(settings.accentColor.color)
-                Text(isMalayAppLanguage() ? "Memuatkan Plus..." : "Loading Plus...")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .task {
-                await revenueCat.refreshOfferings()
-            }
-        }
-        #else
-        Text("RevenueCatUI not installed.")
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        #endif
+        WaktuProPaywallView()
+            .environmentObject(settings)
+            .environmentObject(revenueCat)
     }
 
     private func presentPrayerTrackerPromptIfNeeded() {

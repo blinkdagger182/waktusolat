@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 #if os(iOS)
 import UIKit
 import PhotosUI
@@ -79,6 +80,7 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
         do {
             customerInfo = try await Purchases.shared.customerInfo()
             syncSharedPremiumWidgetAccess()
+            await migrateFoundingSupportersIfNeeded()
         } catch {
             lastErrorMessage = error.localizedDescription
         }
@@ -99,6 +101,47 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
 
     var hasBuyMeKopi: Bool {
         customerInfo?.entitlements[entitlementID]?.isActive == true
+    }
+
+    var hasPro: Bool {
+        customerInfo?.entitlements["Pro"]?.isActive == true || hasBuyMeKopi
+    }
+
+    private static let oldConsumableProductIDs: Set<String> = [
+        "app.riskcreatives.waktu.supporter",
+        "app.riskcreatives.waktu.backer",
+        "app.riskcreatives.waktu.sponsor",
+        "app.riskcreatives.waktu.bigsponsor",
+    ]
+
+    private static let migrationAttemptedKey = "proMigrationAttemptedV1"
+
+    func migrateFoundingSupportersIfNeeded() async {
+        guard !hasPro else { return }
+        guard !UserDefaults.standard.bool(forKey: Self.migrationAttemptedKey) else { return }
+
+        let purchased = Set(customerInfo?.allPurchasedProductIdentifiers ?? [])
+        guard !purchased.isDisjoint(with: Self.oldConsumableProductIDs) else { return }
+
+        let appUserID = Purchases.shared.appUserID
+        let url = URL(string: "https://api-waktusolat.vercel.app/api/pro/migrate")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 15
+        request.httpBody = try? JSONEncoder().encode(["app_user_id": appUserID])
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+            // Mark attempted only on a definitive server response (granted or not eligible)
+            // Network errors leave the flag unset so we retry next launch
+            UserDefaults.standard.set(true, forKey: Self.migrationAttemptedKey)
+            if json["granted"] as? Bool == true {
+                await refreshCustomerInfo()
+            }
+        } catch {}
     }
 
     func restorePurchases() {
@@ -122,7 +165,7 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
     private func syncSharedPremiumWidgetAccess() {
         guard let defaults = UserDefaults(suiteName: sharedAppGroupID) else { return }
         let purchasedProductIDs = Set(customerInfo?.allPurchasedProductIdentifiers ?? [])
-        let unlocked = hasBuyMeKopi || !purchasedProductIDs.isEmpty
+        let unlocked = hasPro || !purchasedProductIDs.isEmpty
 
         defaults.set(unlocked, forKey: premiumWidgetsUnlockedStorageKey)
         hasPremiumWidgetsUnlocked = unlocked
@@ -136,6 +179,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
     @Published var lastErrorMessage: String?
     let entitlementID = "buy_me_kopi"
     var hasBuyMeKopi: Bool { false }
+    var hasPro: Bool { false }
 
     func configure() {
         lastErrorMessage = "RevenueCat SDK not available in this build."
@@ -145,6 +189,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
     func refreshOfferings() async {}
     func restorePurchases() {}
     func clearLastError() { lastErrorMessage = nil }
+    func migrateFoundingSupportersIfNeeded() async {}
 }
 #endif
 
@@ -263,7 +308,7 @@ struct SettingsView: View {
     @State private var showDonationCelebration = false
     @State private var hasInitializedEntitlementState = false
     @State private var lastKnownDonationState = false
-    private let paywallOfferingIdentifier = "Waktu Plus Supporter"
+    private let paywallOfferingIdentifiers = ["waktu_pro", "Waktu Plus Supporter"]
 
     private func postUIHeartbeat() {
         NotificationCenter.default.post(name: .uiContentHeartbeat, object: nil)
@@ -353,8 +398,18 @@ struct SettingsView: View {
                         Button {
                             openDonationPaywall()
                         } label: {
-                            Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
+                            Label("Support Waktu", systemImage: "hands.sparkles.fill")
                                 .foregroundColor(settings.accentColor.color)
+                        }
+
+                        if !revenueCat.hasPro {
+                            Button {
+                                redeemOfferCode()
+                            } label: {
+                                Label("Claim founding Pro access", systemImage: "gift")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
                         }
 
                         if donationSuccessCount > 0 {
@@ -426,7 +481,7 @@ struct SettingsView: View {
             // Celebration is intentionally limited to fresh purchases only.
             lastKnownDonationState = newValue
         }
-        .sheet(isPresented: $showingPaywall, onDismiss: {
+        .fullScreenCover(isPresented: $showingPaywall, onDismiss: {
             NotificationCenter.default.post(name: .supportDonationPaywallDismissed, object: nil)
         }) {
             paywallSheet
@@ -526,17 +581,28 @@ struct SettingsView: View {
         #endif
     }
 
+    private var resolvedPaywallOffering: RevenueCat.Offering? {
+        paywallOfferingIdentifiers.compactMap { revenueCat.offerings?.all[$0] }.first
+    }
+
     private func openDonationPaywall() {
         settings.hapticFeedback()
         Task {
             await revenueCat.refreshOfferings()
-            if revenueCat.offerings?.all[paywallOfferingIdentifier] != nil {
+            if resolvedPaywallOffering != nil {
                 showingPaywall = true
             } else {
                 let available = revenueCat.offerings?.all.keys.sorted().joined(separator: ", ") ?? "none"
-                revenueCat.lastErrorMessage = "Offering '\(paywallOfferingIdentifier)' not found. Available offerings: \(available)"
+                revenueCat.lastErrorMessage = "No Pro offering found. Available: \(available)"
             }
         }
+    }
+
+    private func redeemOfferCode() {
+        settings.hapticFeedback()
+        #if os(iOS)
+        SKPaymentQueue.default().presentCodeRedemptionSheet()
+        #endif
     }
 
     private func loadSupportToastDebugOptions() async {
@@ -587,38 +653,12 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var paywallSheet: some View {
-        #if canImport(RevenueCatUI)
-        if let selectedOffering = revenueCat.offerings?.all[paywallOfferingIdentifier] {
-            PaywallView(offering: selectedOffering, displayCloseButton: true)
-                .onPurchaseCompleted { _ in
-                    DispatchQueue.main.async {
-                        handleDonationCompleted(countDonation: true)
-                    }
-                }
-                .onRestoreCompleted { _ in
-                    DispatchQueue.main.async {
-                        // Restore should not trigger celebration or increment counter.
-                        showingPaywall = false
-                    }
-                }
-        } else {
-            NavigationView {
-                Text("Offering '\(paywallOfferingIdentifier)' was not returned by RevenueCat.")
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .navigationTitle("Support")
-                    .navigationBarTitleDisplayMode(.inline)
-            }
-        }
-        #else
-        NavigationView {
-            Text("RevenueCatUI not installed.")
-                .foregroundColor(.secondary)
-                .navigationTitle("Support")
-                .navigationBarTitleDisplayMode(.inline)
-        }
-        #endif
+        WaktuProPaywallView(
+            onPurchaseCompleted: { handleDonationCompleted(countDonation: true) },
+            onDismiss: { showingPaywall = false }
+        )
+        .environmentObject(settings)
+        .environmentObject(revenueCat)
     }
 
 }
@@ -651,11 +691,11 @@ private struct DonationCelebrationOverlay: View {
                     .foregroundStyle(.yellow, .orange)
                     .scaleEffect(pulse ? 1.08 : 0.92)
 
-                Text("Donation Successful")
+                Text("Waktu Pro Unlocked")
                     .font(.system(size: 28, weight: .black, design: .rounded))
                     .foregroundStyle(.primary)
 
-                Text("JazakAllah Khair. Your support keeps this app alive.")
+                Text("JazakAllah Khair. Welcome to Waktu Pro.")
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)

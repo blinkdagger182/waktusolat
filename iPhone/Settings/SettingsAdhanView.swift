@@ -1341,15 +1341,15 @@ struct WidgetPreviewGalleryView: View {
             VStack(alignment: .leading, spacing: 18) {
                 if !hasPremiumWidgetAccess {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Support Waktu 🤍")
+                        Text("Waktu Pro")
                             .font(.headline)
                             .foregroundStyle(.primary)
 
-                        Text("Unlock premium widgets & keep the app ad-free")
+                        Text("All widget styles, themes, and more")
                             .font(.caption)
                             .foregroundStyle(settings.accentColor.color)
 
-                        Text("No ads, ever. Your support keeps Waktu running 🤍")
+                        Text("Prayer times and azan stay free, always.")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .padding(.top, 2)
@@ -1358,7 +1358,7 @@ struct WidgetPreviewGalleryView: View {
                             settings.hapticFeedback()
                             NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
                         } label: {
-                            Text("Support Once • Unlock All Styles")
+                            Text("Get Waktu Pro")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(unlockCTAForegroundColor)
                                 .frame(maxWidth: .infinity)
@@ -1612,18 +1612,24 @@ struct HomeWidgetPreviewGalleryView: View {
             VStack(alignment: .leading, spacing: 18) {
                 if !hasPremiumWidgetAccess {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(isMalayAppLanguage() ? "Sokong Waktu 🤍" : "Support Waktu 🤍")
+                        Text("Waktu Pro")
                             .font(.headline)
                         Text(isMalayAppLanguage()
-                             ? "Buka kunci widget premium & kekalkan apl tanpa iklan"
-                             : "Unlock premium widgets & keep the app ad-free")
+                             ? "Semua gaya widget, tema, dan lain-lain"
+                             : "All widget styles, themes, and more")
                             .font(.caption)
                             .foregroundStyle(settings.accentColor.color)
+                        Text(isMalayAppLanguage()
+                             ? "Waktu solat dan azan kekal percuma, selama-lamanya."
+                             : "Prayer times and azan stay free, always.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 2)
                         Button {
                             settings.hapticFeedback()
                             NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
                         } label: {
-                            Text(isMalayAppLanguage() ? "Sokong Sekali • Buka Semua Gaya" : "Support Once • Unlock All Styles")
+                            Text(isMalayAppLanguage() ? "Dapatkan Waktu Pro" : "Get Waktu Pro")
                                 .font(.subheadline.weight(.semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
