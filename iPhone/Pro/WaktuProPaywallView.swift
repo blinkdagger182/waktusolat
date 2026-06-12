@@ -4,24 +4,6 @@ import StoreKit
 import RevenueCat
 #endif
 
-// MARK: - Phone frame constants
-
-private let kPhoneW:       CGFloat = 174
-private let kPhoneH:       CGFloat = 358
-private let kScreenW:      CGFloat = 162
-private let kScreenH:      CGFloat = 346
-private let kCornerPhone:  CGFloat = 42
-private let kCornerScreen: CGFloat = 38
-private let kIslandW:      CGFloat = 78
-private let kIslandH:      CGFloat = 20
-private let kIslandY:      CGFloat = -(kScreenH / 2 - 13 - kIslandH / 2) // -150
-
-// MARK: - Slide transform constants
-
-private let kTiltDeg:      Double  = 28       // 3/4 perspective angle
-private let kTiltPersp:    CGFloat = 0.45
-private let kZoomScale:    CGFloat = 2.2
-private let kZoomOffsetY:  CGFloat = 210      // shifts phone so island is in view
 
 struct WaktuProPaywallView: View {
     @EnvironmentObject var settings: Settings
@@ -71,26 +53,33 @@ struct WaktuProPaywallView: View {
     }
     #endif
 
-    // MARK: - Per-slide phone transforms
+    // MARK: - Per-slide 3D phone angle (Y-axis degrees)
 
-    private var phoneRotationY: Double {
-        carouselPage == 1 ? kTiltDeg : 0
-    }
-    private var phoneScale: CGFloat {
+    private var slideAngle: Double {
         switch carouselPage {
-        case 1: return 0.93   // slight shrink during 3/4 tilt looks more natural
-        case 2: return kZoomScale
-        default: return 1.0
+        case 0: return -28   // left tilt — angled icon reference
+        case 1: return  2    // near-straight — widget front view
+        case 2: return  22   // right tilt — lock screen depth
+        default: return 0
         }
     }
-    private var phoneOffsetY: CGFloat {
-        carouselPage == 2 ? kZoomOffsetY : 0
+
+    private func screenImageForSlide(_ page: Int) -> UIImage? {
+        switch page {
+        case 0: return UIImage(named: "proCarousel1")
+        case 1: return UIImage(named: "proCarousel2")
+        case 2: return UIImage(named: "proCarousel3")
+        default: return nil
+        }
     }
-    private var phoneShadowX: CGFloat {
-        carouselPage == 1 ? 22 : 0
-    }
-    private var phoneShadowRadius: CGFloat {
-        carouselPage == 2 ? 0 : 24  // no shadow when zoomed (clipped anyway)
+
+    private var slideShadeX: CGFloat {
+        switch carouselPage {
+        case 0: return -14
+        case 1: return 0
+        case 2: return 12
+        default: return 0
+        }
     }
 
     // MARK: - Body
@@ -189,49 +178,27 @@ struct WaktuProPaywallView: View {
             }
             .padding(.horizontal, 24)
 
-            // The phone — same model across all slides, transforms driven by carouselPage
+            // Images already contain iPhone mockup — show raw, no extra phone container
             ZStack {
-                // Phone body
-                RoundedRectangle(cornerRadius: kCornerPhone, style: .continuous)
-                    .fill(Color(white: 0.09))
-                    .frame(width: kPhoneW, height: kPhoneH)
-                    .shadow(
-                        color: .black.opacity(0.28),
-                        radius: phoneShadowRadius,
-                        x: phoneShadowX, y: 10
-                    )
-
-                // Screen area — content cross-fades on carouselPage change
-                ZStack {
-                    screenSlide0
-                        .opacity(carouselPage == 0 ? 1 : 0)
-                    screenSlide1
-                        .opacity(carouselPage == 1 ? 1 : 0)
-                    screenSlide2
-                        .opacity(carouselPage == 2 ? 1 : 0)
+                ForEach(0..<3, id: \.self) { i in
+                    if let img = screenImageForSlide(i) {
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 270)
+                            .opacity(i == carouselPage ? 1 : 0)
+                            .animation(.easeInOut(duration: 0.28), value: carouselPage)
+                    }
                 }
-                .frame(width: kScreenW, height: kScreenH)
-                .clipShape(RoundedRectangle(cornerRadius: kCornerScreen, style: .continuous))
-
-                // Dynamic island — always on top
-                Capsule()
-                    .fill(Color(white: 0.09))
-                    .frame(width: kIslandW, height: kIslandH)
-                    .offset(y: kIslandY)
             }
-            // Animate the whole phone smoothly between slides
+            .shadow(color: .black.opacity(0.28), radius: 24, x: slideShadeX, y: 12)
             .rotation3DEffect(
-                .degrees(phoneRotationY),
+                .degrees(slideAngle),
                 axis: (x: 0, y: 1, z: 0),
-                perspective: kTiltPersp
+                perspective: 0.35
             )
-            .scaleEffect(phoneScale)
-            .offset(y: phoneOffsetY)
             .animation(.spring(response: 0.65, dampingFraction: 0.78), value: carouselPage)
-            // Clip overflow (needed for zoom slide to stay within frame)
-            .frame(width: kPhoneW, height: kPhoneH)
-            .clipShape(RoundedRectangle(cornerRadius: kCornerPhone, style: .continuous))
-            // Swipe to advance
+            .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 28, coordinateSpace: .local)
                     .onEnded { value in
@@ -271,91 +238,6 @@ struct WaktuProPaywallView: View {
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.25), value: carouselPage)
             .padding(.horizontal, 32)
-        }
-    }
-
-    // MARK: - Screen slide 0: App icon on dark home screen
-
-    private var screenSlide0: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color(white: 0.07), Color(white: 0.13)],
-                startPoint: .top, endPoint: .bottom
-            )
-            VStack(spacing: 9) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color.white)
-                        .frame(width: 74, height: 74)
-                        .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: 5)
-                    Image("proIconDark")
-                        .resizable().scaledToFit()
-                        .frame(width: 56, height: 56)
-                }
-                Text("Waktu")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
-            }
-        }
-    }
-
-    // MARK: - Screen slide 1: Widget screenshot (zoomed in via scaledToFill)
-
-    private var screenSlide1: some View {
-        Image("proCarousel2")
-            .resizable()
-            .scaledToFill()
-            .frame(width: kScreenW, height: kScreenH)
-            .clipped()
-    }
-
-    // MARK: - Screen slide 2: Lock screen with Live Activity near island
-
-    private var screenSlide2: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color(red: 0.05, green: 0.06, blue: 0.14),
-                         Color(red: 0.09, green: 0.10, blue: 0.24)],
-                startPoint: .top, endPoint: .bottom
-            )
-
-            VStack(spacing: 3) {
-                Text("4:30")
-                    .font(.system(size: 52, weight: .thin))
-                    .foregroundColor(.white)
-                Text("Tuesday, 10 June")
-                    .font(.system(size: 12))
-                    .foregroundColor(.white.opacity(0.55))
-            }
-            .offset(y: 24)
-
-            // Live activity pill — rendered just below the island overlay
-            ZStack {
-                Capsule()
-                    .fill(Color.black.opacity(0.88))
-                    .frame(width: kScreenW - 20, height: 40)
-                HStack(spacing: 8) {
-                    Image("proIconDark")
-                        .resizable().scaledToFit()
-                        .frame(width: 18, height: 18)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Asr")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.white)
-                        Text("In 15 mins")
-                            .font(.system(size: 9))
-                            .foregroundColor(.white.opacity(0.55))
-                    }
-                    Spacer()
-                    Text("4:30 PM")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal, 12)
-                .frame(width: kScreenW - 20, height: 40)
-            }
-            // Position just below the island (island bottom = kIslandY + kIslandH/2)
-            .offset(y: kIslandY + kIslandH / 2 + 28)
         }
     }
 

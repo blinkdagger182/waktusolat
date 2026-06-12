@@ -5,6 +5,87 @@ let premiumWidgetsUnlockedStorageKey = "premiumWidgetsUnlockedV1"
 let premiumWidgetEligibleProductIDsStorageKey = "premiumWidgetEligibleProductIDsV1"
 let premiumWidgetsDebugOverrideStorageKey = "premiumWidgetsDebugOverrideV1"
 
+enum LiveNotificationStyle: String, CaseIterable, Identifiable {
+    static let storageKey = "liveNotificationStyleRaw"
+
+    case current
+    case icon
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .current:
+            return "Default"
+        case .icon:
+            return "Icon"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .current:
+            return "The current Waktu live notification style."
+        case .icon:
+            return "Uses the Waktu live icon in compact areas."
+        }
+    }
+
+    var previewSystemImage: String {
+        switch self {
+        case .current:
+            return "moon.stars.fill"
+        case .icon:
+            return "app.badge"
+        }
+    }
+}
+
+enum WaktuAppIcon: String, CaseIterable, Identifiable {
+    static let storageKey = "selectedAppIconRaw"
+
+    case current
+    case orange
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .current:
+            return "Waktu Black & White"
+        case .orange:
+            return "Waktu Orange"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .current:
+            return "The current default Waktu app icon."
+        case .orange:
+            return "The new orange Waktu app icon."
+        }
+    }
+
+    var previewAssetName: String {
+        switch self {
+        case .current:
+            return "CurrentAppIcon"
+        case .orange:
+            return "WaktuOrangeAppIconPreview"
+        }
+    }
+
+    var alternateIconName: String? {
+        switch self {
+        case .current:
+            return nil
+        case .orange:
+            return "AppIconOrange"
+        }
+    }
+}
+
 enum PrayerTrackerPrayer: String, CaseIterable, Codable, Identifiable {
     case fajr
     case dhuhr

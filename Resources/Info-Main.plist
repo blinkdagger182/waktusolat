@@ -17,6 +17,34 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>AppIconOrange</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIconOrange</string>
+				</array>
+				<key>CFBundleIconName</key>
+				<string>AppIconOrange</string>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+		</dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon Phone60x60</string>
+			</array>
+			<key>CFBundleIconName</key>
+			<string>AppIcon Phone</string>
+			<key>UIPrerenderedIcon</key>
+			<false/>
+		</dict>
+	</dict>
 	<key>MarketingModalConfigURL</key>
 	<string>https://blinkdagger182.github.io/waktu-config/marketing-modal.json</string>
 	<key>PrayerCountrySupportConfigURL</key>

@@ -93,6 +93,11 @@
 		AA000001BRAND00000000001A /* WaktuBrandComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001BRAND00000000001B /* WaktuBrandComponents.swift */; };
 		AA000002PERM000000000001A /* WaktuPermissionOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */; };
 		AA000003PRO0000000000001A /* WaktuProPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003PRO0000000000001B /* WaktuProPaywallView.swift */; };
+		AA000003PRO0000000000002A /* ProPaywallPhoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003PRO0000000000002B /* ProPaywallPhoneView.swift */; };
+		AA000003PRO0000000000003A /* iPhone_17_Pro.usdz in Resources */ = {isa = PBXBuildFile; fileRef = AA000003PRO0000000000003B /* iPhone_17_Pro.usdz */; };
+		AA000003PRO0000000000004A /* SceneKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA000003PRO0000000000004B /* SceneKit.framework */; };
+		AA000003ICON0000000001A /* AppIconOrange@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000003ICON0000000001B /* AppIconOrange@2x.png */; };
+		AA000003ICON0000000002A /* AppIconOrange@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000003ICON0000000002B /* AppIconOrange@3x.png */; };
 		B10000012F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		B10000022F90000100ABCDEF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000002F90000100ABCDEF /* Localizable.xcstrings */; };
 		B21000012FA1000100ABCDEF /* ForYouModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B21000002FA1000100ABCDEF /* ForYouModels.swift */; };
@@ -256,6 +261,11 @@
 		AA000001BRAND00000000001B /* WaktuBrandComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuBrandComponents.swift; sourceTree = "<group>"; };
 		AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WaktuPermissionOnboarding.swift; sourceTree = "<group>"; };
 		AA000003PRO0000000000001B /* WaktuProPaywallView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WaktuProPaywallView.swift; path = Pro/WaktuProPaywallView.swift; sourceTree = "<group>"; };
+		AA000003PRO0000000000002B /* ProPaywallPhoneView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ProPaywallPhoneView.swift; path = Pro/ProPaywallPhoneView.swift; sourceTree = "<group>"; };
+		AA000003PRO0000000000003B /* iPhone_17_Pro.usdz */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.scenekit-asset"; path = iPhone_17_Pro.usdz; sourceTree = "<group>"; };
+		AA000003PRO0000000000004B /* SceneKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SceneKit.framework; path = System/Library/Frameworks/SceneKit.framework; sourceTree = SDKROOT; };
+		AA000003ICON0000000001B /* AppIconOrange@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "AppIcons/AppIconOrange@2x.png"; sourceTree = "<group>"; };
+		AA000003ICON0000000002B /* AppIconOrange@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "AppIcons/AppIconOrange@3x.png"; sourceTree = "<group>"; };
 		B10000002F90000100ABCDEF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B21000002FA1000100ABCDEF /* ForYouModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouModels.swift; sourceTree = "<group>"; };
 		B21000012FA1000100ABCDE0 /* ForYouServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouServices.swift; sourceTree = "<group>"; };
@@ -311,6 +321,7 @@
 				72C30E8D2BCC648400F54570 /* Adhan in Frameworks */,
 				FCB183192F4D506300249966 /* RevenueCatUI in Frameworks */,
 				FCB1831C2F5DE11500249966 /* Inject in Frameworks */,
+				AA000003PRO0000000000004A /* SceneKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -393,6 +404,7 @@
 				AA000001BRAND00000000001B /* WaktuBrandComponents.swift */,
 				AA000002PERM000000000001B /* WaktuPermissionOnboarding.swift */,
 				AA000003PRO0000000000001B /* WaktuProPaywallView.swift */,
+				AA000003PRO0000000000002B /* ProPaywallPhoneView.swift */,
 				72CCAE692D42CE4800871A6A /* Helpers */,
 				B21000042FA1000100ABCDE0 /* ForYou */,
 				72728CB72B3D1A5F00FAA3B3 /* Adhan */,
@@ -537,6 +549,9 @@
 				A300000E2FA0000100ABCDEF /* azan_track2_full.mp3 */,
 				A300000F2FA0000100ABCDEF /* azan_track2_takbir.mp3 */,
 				72BC6B2F2E2D787D00ACD832 /* Logo.jpg */,
+				AA000003ICON0000000001B /* AppIconOrange@2x.png */,
+				AA000003ICON0000000002B /* AppIconOrange@3x.png */,
+				AA000003PRO0000000000003B /* iPhone_17_Pro.usdz */,
 				72F1EA402D421CC7008F6FBE /* Fonts */,
 				72CCAE5E2D42213700871A6A /* JSONs */,
 				722A7F862D421F3E0040DC9C /* Packages */,
@@ -742,7 +757,10 @@
 				A10000012F70000100ABCDEF /* quotes.json in Resources */,
 				72728CAE2B3D198300FAA3B3 /* 99_Names_Of_Allah.json in Resources */,
 				72728CA42B3D191F00FAA3B3 /* Uthmani.otf in Resources */,
+				AA000003ICON0000000001A /* AppIconOrange@2x.png in Resources */,
+				AA000003ICON0000000002A /* AppIconOrange@3x.png in Resources */,
 				72728C9A2B3D18E600FAA3B3 /* Assets.xcassets in Resources */,
+				AA000003PRO0000000000003A /* iPhone_17_Pro.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -785,6 +803,7 @@
 				AA000001BRAND00000000001A /* WaktuBrandComponents.swift in Sources */,
 				AA000002PERM000000000001A /* WaktuPermissionOnboarding.swift in Sources */,
 				AA000003PRO0000000000001A /* WaktuProPaywallView.swift in Sources */,
+				AA000003PRO0000000000002A /* ProPaywallPhoneView.swift in Sources */,
 				728E2EEB2E6E048300F2C24C /* SettingsAdhan.swift in Sources */,
 				72574CCC2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */,
 				72728CB92B3D1A6E00FAA3B3 /* QiblaView.swift in Sources */,
@@ -1031,13 +1050,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon Phone";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIconOrange;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_ENABLE_CFBUNDLEICONS_MERGE = NO;
 				INFOPLIST_FILE = "Resources/Info-Main.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Waktu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -1072,13 +1094,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon Phone";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIconOrange;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8H5C9P92ZB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_ENABLE_CFBUNDLEICONS_MERGE = NO;
 				INFOPLIST_FILE = "Resources/Info-Main.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Waktu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";

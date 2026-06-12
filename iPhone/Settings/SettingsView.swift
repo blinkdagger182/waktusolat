@@ -370,6 +370,24 @@ struct SettingsView: View {
                         SettingsAppearanceView()
                     }
 
+                    Section(header: Text("CUSTOMIZATIONS")) {
+                        NavigationLink {
+                            LiveNotificationCustomizationView()
+                                .environmentObject(settings)
+                        } label: {
+                            Label("Live Notification", systemImage: "bolt.badge.clock")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+
+                        NavigationLink {
+                            AppIconCustomizationView()
+                                .environmentObject(settings)
+                        } label: {
+                            Label("App Icon", systemImage: "app")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+
                     Section(header: Text("CREDITS")) {
                         Text("Made by developers at Risk Creatives, powered by the Waktu Solat Project API.")
                             .font(.footnote)
@@ -968,6 +986,171 @@ struct SettingsAppearanceView: View {
                 .tint(settings.accentColor.toggleTint)
         }
         */
+    }
+}
+
+private struct LiveNotificationCustomizationView: View {
+    @EnvironmentObject var settings: Settings
+    @AppStorage(LiveNotificationStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var selectedStyleRaw = LiveNotificationStyle.current.rawValue
+
+    private var selectedStyle: LiveNotificationStyle {
+        LiveNotificationStyle(rawValue: selectedStyleRaw) ?? .current
+    }
+
+    var body: some View {
+        List {
+            Section(
+                header: Text("LIVE NOTIFICATION"),
+                footer: Text("Default keeps the current live notification style selected.")
+            ) {
+                ForEach(LiveNotificationStyle.allCases) { style in
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            selectedStyleRaw = style.rawValue
+                        }
+                    } label: {
+                        CustomizationSelectionRow(
+                            title: style.title,
+                            subtitle: style.subtitle,
+                            isSelected: selectedStyle == style,
+                            accentColor: settings.accentColor.color
+                        ) {
+                            Image(systemName: style.previewSystemImage)
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundColor(settings.accentColor.color)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(settings.accentColor.color.opacity(0.12))
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .navigationTitle("Live Notification")
+        .navigationBarTitleDisplayMode(.inline)
+        .applyConditionalListStyle(defaultView: true)
+    }
+}
+
+private struct AppIconCustomizationView: View {
+    @EnvironmentObject var settings: Settings
+    @AppStorage(WaktuAppIcon.storageKey) private var selectedIconRaw = WaktuAppIcon.current.rawValue
+    @State private var iconErrorMessage: String?
+
+    private var selectedIcon: WaktuAppIcon {
+        WaktuAppIcon(rawValue: selectedIconRaw) ?? .current
+    }
+
+    var body: some View {
+        List {
+            Section(
+                header: Text("APP ICON"),
+                footer: Text("Waktu Black & White is the current default app icon.")
+            ) {
+                ForEach(WaktuAppIcon.allCases) { icon in
+                    Button {
+                        select(icon)
+                    } label: {
+                        CustomizationSelectionRow(
+                            title: icon.title,
+                            subtitle: icon.subtitle,
+                            isSelected: selectedIcon == icon,
+                            accentColor: settings.accentColor.color
+                        ) {
+                            Image(icon.previewAssetName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 48, height: 48)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .navigationTitle("App Icon")
+        .navigationBarTitleDisplayMode(.inline)
+        .applyConditionalListStyle(defaultView: true)
+        .onAppear(perform: syncCurrentIcon)
+        .alert("App Icon Error", isPresented: Binding(
+            get: { iconErrorMessage != nil },
+            set: { if !$0 { iconErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {
+                iconErrorMessage = nil
+            }
+        } message: {
+            Text(iconErrorMessage ?? "Unable to change the app icon.")
+        }
+    }
+
+    private func syncCurrentIcon() {
+        #if os(iOS)
+        let currentAlternateName = UIApplication.shared.alternateIconName
+        let resolved = WaktuAppIcon.allCases.first { $0.alternateIconName == currentAlternateName } ?? .current
+        selectedIconRaw = resolved.rawValue
+        #endif
+    }
+
+    private func select(_ icon: WaktuAppIcon) {
+        settings.hapticFeedback()
+
+        #if os(iOS)
+        guard UIApplication.shared.supportsAlternateIcons else {
+            iconErrorMessage = "This device does not support alternate app icons."
+            return
+        }
+
+        UIApplication.shared.setAlternateIconName(icon.alternateIconName) { error in
+            DispatchQueue.main.async {
+                if let error {
+                    iconErrorMessage = error.localizedDescription
+                } else {
+                    withAnimation {
+                        selectedIconRaw = icon.rawValue
+                    }
+                }
+            }
+        }
+        #else
+        selectedIconRaw = icon.rawValue
+        #endif
+    }
+}
+
+private struct CustomizationSelectionRow<Preview: View>: View {
+    let title: String
+    let subtitle: String
+    let isSelected: Bool
+    let accentColor: Color
+    @ViewBuilder let preview: () -> Preview
+
+    var body: some View {
+        HStack(spacing: 14) {
+            preview()
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer(minLength: 12)
+
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(isSelected ? accentColor : .secondary.opacity(0.55))
+        }
+        .contentShape(Rectangle())
+        .padding(.vertical, 4)
     }
 }
 

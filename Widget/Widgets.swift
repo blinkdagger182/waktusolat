@@ -11,6 +11,11 @@ import ActivityKit
 private enum LiveActivityTheme {
     private static let appGroupSuite = "group.app.riskcreatives.waktu"
 
+    static func style() -> LiveNotificationStyle {
+        let raw = UserDefaults(suiteName: appGroupSuite)?.string(forKey: LiveNotificationStyle.storageKey)
+        return LiveNotificationStyle(rawValue: raw ?? "") ?? .current
+    }
+
     static func accentUIColor() -> UIColor {
         let raw = UserDefaults(suiteName: appGroupSuite)?.string(forKey: "accentColor") ?? "adaptive"
         switch raw {
@@ -91,6 +96,25 @@ private enum LiveActivityTheme {
     }
 }
 
+@available(iOSApplicationExtension 16.2, *)
+private struct LiveNotificationBrandIcon: View {
+    let color: Color
+    let size: CGFloat
+
+    var body: some View {
+        if LiveActivityTheme.style() == .icon {
+            Image("WaktuLiveIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+        } else {
+            Image(systemName: "moon.stars.fill")
+                .font(.system(size: size, weight: .bold))
+                .foregroundColor(color)
+        }
+    }
+}
+
 private extension UIColor {
     func blended(with other: UIColor, fraction: CGFloat) -> UIColor {
         let clamped = min(max(fraction, 0), 1)
@@ -160,8 +184,7 @@ struct NextPrayerLiveActivityWidgetWithCarPlay: Widget {
                     isStale: context.isStale
                 )
             } minimal: {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 10, weight: .bold))
+                LiveNotificationBrandIcon(color: .primary, size: 10)
             }
         }
         .supplementalActivityFamilies([.medium])
@@ -258,8 +281,7 @@ struct NextPrayerLiveActivityWidget: Widget {
                     isStale: context.isStale
                 )
             } minimal: {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 10, weight: .bold))
+                LiveNotificationBrandIcon(color: .primary, size: 10)
             }
         }
     }
@@ -330,9 +352,7 @@ private struct NextPrayerLiveActivityContentView: View {
                         .foregroundColor(palette.muted)
                     Spacer()
                     HStack(spacing: 4) {
-                        Image(systemName: "moon.stars.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(palette.muted)
+                        LiveNotificationBrandIcon(color: palette.muted, size: 12)
                         Text(appLocalized("Waktu"))
                             .font(.system(.caption, design: .rounded).weight(.semibold))
                             .foregroundColor(palette.muted)
