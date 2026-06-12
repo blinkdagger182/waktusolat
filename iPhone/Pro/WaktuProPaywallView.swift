@@ -25,6 +25,14 @@ struct WaktuProPaywallView: View {
         "Rich prayer insights right on your Home Screen.",
         "Real-time prayer countdowns on your Lock Screen.",
     ]
+    private let comparisonRows: [ProComparisonRow] = [
+        .init(title: "Background usage", basic: "Open app", pro: "Always ready"),
+        .init(title: "Apple Watch", basic: "Basic times", pro: "Full access"),
+        .init(title: "Jumuah khutbah summary", basic: "PDF only", pro: "Summary included"),
+        .init(title: "Premium widgets", basic: "Standard", pro: "All styles"),
+        .init(title: "Offline mode", basic: "Online", pro: "Available offline"),
+        .init(title: "Airplane mode", basic: "Limited", pro: "Works offline"),
+    ]
 
     // MARK: - RevenueCat
 
@@ -85,52 +93,181 @@ struct WaktuProPaywallView: View {
     // MARK: - Body
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Color(.systemBackground).ignoresSafeArea()
+        GeometryReader { proxy in
+            let contentWidth = proxy.size.width
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    heroSection
+            ZStack(alignment: .topTrailing) {
+                Color(.systemBackground).ignoresSafeArea()
 
-                    carouselSection
-                        .padding(.top, 16)
-                        .padding(.bottom, 170)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        heroSection
+
+                        carouselSection
+                            .padding(.top, 16)
+
+                        comparisonSection
+                            .padding(.top, 22)
+
+                        pricingOptionsSection(width: contentWidth)
+                            .padding(.top, 14)
+                            .padding(.bottom, 132)
+                    }
+                    .frame(width: contentWidth)
                 }
-                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .top)
             }
-            .ignoresSafeArea(edges: .top)
-        }
-        // Bottom panel overlaid — always gets full view width
-        .overlay(alignment: .bottom) {
-            bottomPanel
-        }
-        .overlay(alignment: .topTrailing) {
-            if onDismiss != nil {
-                Button { onDismiss?() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.primary)
-                        .frame(width: 28, height: 28)
-                        .background(Color(.systemGray5), in: Circle())
+            // Bottom panel overlaid — always gets full view width
+            .overlay(alignment: .bottom) {
+                bottomPanel(width: contentWidth)
+            }
+            .overlay(alignment: .topTrailing) {
+                if onDismiss != nil {
+                    Button { onDismiss?() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.primary)
+                            .frame(width: 28, height: 28)
+                            .background(Color(.systemGray5), in: Circle())
+                    }
+                    .padding(.top, 12)
+                    .padding(.trailing, 16)
                 }
-                .padding(.top, 12)
-                .padding(.trailing, 16)
+            }
+            .onReceive(autoScrollTimer) { _ in
+                withAnimation(.spring(response: 0.65, dampingFraction: 0.78)) {
+                    carouselPage = (carouselPage + 1) % 3
+                }
+            }
+            .task { await revenueCat.refreshOfferings() }
+            .alert("Error", isPresented: Binding(
+                get: { purchaseError != nil },
+                set: { if !$0 { purchaseError = nil } }
+            )) {
+                Button("OK") { purchaseError = nil }
+            } message: {
+                Text(purchaseError ?? "")
             }
         }
-        .onReceive(autoScrollTimer) { _ in
-            withAnimation(.spring(response: 0.65, dampingFraction: 0.78)) {
-                carouselPage = (carouselPage + 1) % 3
+    }
+
+    // MARK: - Comparison
+
+    private var comparisonSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Basic vs Pro")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.84)
+
+                    Text("See what stays free and what Pro unlocks.")
+                        .font(.system(size: 17, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(.secondaryLabel))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            VStack(spacing: 0) {
+                comparisonHeaderRow
+
+                ForEach(comparisonRows) { row in
+                    Divider()
+                        .overlay(Color(.separator).opacity(0.26))
+
+                    comparisonRow(row)
+                }
+            }
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color(.separator).opacity(0.16), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.035), radius: 8, x: 0, y: 3)
         }
-        .task { await revenueCat.refreshOfferings() }
-        .alert("Error", isPresented: Binding(
-            get: { purchaseError != nil },
-            set: { if !$0 { purchaseError = nil } }
-        )) {
-            Button("OK") { purchaseError = nil }
-        } message: {
-            Text(purchaseError ?? "")
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var comparisonHeaderRow: some View {
+        HStack(spacing: 0) {
+            Text("Feature")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(.secondaryLabel))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 10)
+
+            comparisonColumnDivider
+
+            Text("Basic")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(.secondaryLabel))
+                .frame(width: 78, alignment: .center)
+
+            comparisonColumnDivider
+
+            Text("Pro")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(.primary)
+                .frame(width: 78, alignment: .center)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+
+    private func comparisonRow(_ row: ProComparisonRow) -> some View {
+        HStack(alignment: .center, spacing: 0) {
+            Text(row.title)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 10)
+
+            comparisonColumnDivider
+
+            comparisonValue(text: row.basic, isPro: false)
+                .frame(width: 78)
+
+            comparisonColumnDivider
+
+            comparisonValue(text: row.pro, isPro: true)
+                .frame(width: 78)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground).opacity(0.001))
+    }
+
+    private var comparisonColumnDivider: some View {
+        Rectangle()
+            .fill(Color(.separator).opacity(0.26))
+            .frame(width: 1)
+            .padding(.vertical, -12)
+    }
+
+    private func comparisonValue(text: String, isPro: Bool) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: isPro ? "checkmark.circle.fill" : "minus.circle")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(isPro ? .green : Color(.tertiaryLabel))
+
+            Text(text)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(isPro ? .primary : Color(.secondaryLabel))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.72)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
     }
 
     // MARK: - Hero
@@ -214,28 +351,31 @@ struct WaktuProPaywallView: View {
                 Text(slideTitles[carouselPage])
                     .font(.system(size: 15, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.86)
                     .frame(maxWidth: .infinity)
                 Text(slideSubtitles[carouselPage])
                     .font(.footnote)
                     .foregroundColor(Color(.secondaryLabel))
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
             }
-            .id(carouselPage)
-            .transition(.opacity)
             .animation(.easeInOut(duration: 0.25), value: carouselPage)
             .padding(.horizontal, 32)
+            .frame(minHeight: 54)
         }
     }
 
 
-    // MARK: - Bottom panel (pricing + CTA + footer, always visible)
+    // MARK: - Pricing
 
-    private var bottomPanel: some View {
-        VStack(spacing: 12) {
-            #if canImport(RevenueCat)
+    private func pricingOptionsSection(width: CGFloat) -> some View {
+        #if canImport(RevenueCat)
+        Group {
             if !packages.isEmpty {
-                let cardW = (UIScreen.main.bounds.width - 52) / 2
+                let cardW = max(0, (width - 52) / 2)
                 HStack(spacing: 12) {
                     if let monthly = monthlyPackage {
                         priceCard(label: "Monthly",
@@ -254,14 +394,24 @@ struct WaktuProPaywallView: View {
                     }
                 }
                 .padding(.horizontal, 20)
+                .frame(width: width)
             }
-            #endif
-            ctaButton
+        }
+        #else
+        EmptyView()
+        #endif
+    }
+
+    // MARK: - Bottom panel (CTA + footer, always visible)
+
+    private func bottomPanel(width: CGFloat) -> some View {
+        VStack(spacing: 12) {
+            ctaButton(width: width)
                 .padding(.horizontal, 20)
             footerSection
                 .padding(.horizontal, 20)
         }
-        .frame(maxWidth: .infinity)
+        .frame(width: width)
         .padding(.top, 14)
         .padding(.bottom, 8)
         .background(
@@ -323,7 +473,7 @@ struct WaktuProPaywallView: View {
 
     // MARK: - CTA
 
-    private var ctaButton: some View {
+    private func ctaButton(width: CGFloat) -> some View {
         Button { purchase() } label: {
             ZStack {
                 if isPurchasing {
@@ -350,7 +500,7 @@ struct WaktuProPaywallView: View {
                     }
                 }
             }
-            .frame(width: UIScreen.main.bounds.width - 40, height: 56)
+            .frame(width: max(0, width - 40), height: 56)
         }
         .buttonStyle(.plain)
         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(.label)))
@@ -430,4 +580,11 @@ struct WaktuProPaywallView: View {
         }
         #endif
     }
+}
+
+private struct ProComparisonRow: Identifiable {
+    let id = UUID()
+    let title: String
+    let basic: String
+    let pro: String
 }
