@@ -174,7 +174,7 @@ enum TodayPracticeLibrary {
         ),
         .init(
             id: "midday-ad-duha",
-            arabicText: "وَٱلضُّحَىٰ ۝ وَٱلَّيْلِ إِذَا سَجَىٰ",
+            arabicText: "وَٱلضُّحَىٰ",
             titleEn: "Surah Ad-Duha",
             titleMy: "Surah Ad-Duha",
             descriptionEn: "A fitting midday reflection on reassurance and divine care.",
@@ -182,11 +182,11 @@ enum TodayPracticeLibrary {
             badge: .reflection,
             sourceTextEn: nil,
             sourceTextMy: nil,
-            sourceReference: nil,
+            sourceReference: "Surah Ad-Duha 93:1",
             noteEn: "Thematically aligned with Dhuha time, but not prescribed for this time in sahih hadith.",
             noteMy: "Selari dari segi tema dengan waktu Dhuha, tetapi tidak ditetapkan khusus pada waktu ini dalam hadis sahih.",
             surahNumber: 93,
-            ayahNumber: nil,
+            ayahNumber: 1,
             slots: [.midday]
         ),
         .init(
@@ -208,7 +208,7 @@ enum TodayPracticeLibrary {
         ),
         .init(
             id: "afternoon-dhikr",
-            arabicText: "سُبْحَانَ ٱللَّٰهِ 33 • ٱلْحَمْدُ لِلَّٰهِ 33 • ٱللَّٰهُ أَكْبَرُ 34",
+            arabicText: "سُبْحَانَ ٱللَّٰهِ • ٱلْحَمْدُ لِلَّٰهِ • ٱللَّٰهُ أَكْبَرُ",
             titleEn: "Tasbih, Tahmid, Takbir",
             titleMy: "Tasbih, Tahmid, Takbir",
             descriptionEn: "A compact dhikr set to renew remembrance as the day begins to close.",

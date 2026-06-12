@@ -102,7 +102,7 @@ private struct LiveNotificationBrandIcon: View {
     let size: CGFloat
 
     var body: some View {
-        if LiveActivityTheme.style() == .icon {
+        if LiveActivityTheme.style() == .timeline {
             Image("WaktuLiveIcon")
                 .resizable()
                 .scaledToFit()
@@ -293,6 +293,20 @@ private struct NextPrayerLiveActivityContentView: View {
     let context: ActivityViewContext<PrayerLiveActivityAttributes>
 
     var body: some View {
+        if LiveActivityTheme.style() == .timeline {
+            TimelineLiveActivityContentView(context: context)
+        } else {
+            DefaultLiveActivityContentView(context: context)
+        }
+    }
+}
+
+@available(iOSApplicationExtension 16.2, *)
+private struct DefaultLiveActivityContentView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let context: ActivityViewContext<PrayerLiveActivityAttributes>
+
+    var body: some View {
         let palette = LiveActivityTheme.palette(for: colorScheme)
         ZStack {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -364,6 +378,329 @@ private struct NextPrayerLiveActivityContentView: View {
         .activityBackgroundTint(palette.bg)
         .activitySystemActionForegroundColor(palette.fg)
     }
+}
+
+@available(iOSApplicationExtension 16.2, *)
+private struct TimelineLiveActivityContentView: View {
+    let context: ActivityViewContext<PrayerLiveActivityAttributes>
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 15)) { timeline in
+            let liveNow = timeline.date
+            let model = LiveActivityPrayerTimeline.make(
+                prayerName: context.state.prayerName,
+                prayerTime: context.state.prayerTime,
+                startedAt: context.state.startedAt,
+                city: context.state.city,
+                now: liveNow
+            )
+
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top) {
+                    Text(appLocalized("Waktu"))
+                        .font(.system(.title3, design: .serif).weight(.bold))
+                        .foregroundColor(.black)
+
+                    Spacer(minLength: 12)
+
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(model.targetTimeText)
+                            .font(.system(.title2, design: .rounded).weight(.bold))
+                            .monospacedDigit()
+                            .foregroundColor(.black)
+                        Text(model.city)
+                            .font(.system(.caption, design: .rounded))
+                            .foregroundColor(.black.opacity(0.58))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.78)
+                    }
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(model.remainingValueText)
+                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .foregroundColor(model.accent)
+                        .monospacedDigit()
+                    Text(model.remainingUnitText)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundColor(.black)
+                    Text(model.remainingSuffixText)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundColor(.black)
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+                Text(model.subtitle)
+                    .font(.system(.callout, design: .rounded))
+                    .foregroundColor(.black.opacity(0.58))
+                    .lineLimit(1)
+
+                PrayerTimelineProgressView(model: model)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color.white)
+            )
+        }
+        .activityBackgroundTint(.white)
+        .activitySystemActionForegroundColor(.black)
+    }
+}
+
+@available(iOSApplicationExtension 16.2, *)
+private struct PrayerTimelineProgressView: View {
+    let model: LiveActivityPrayerTimeline
+
+    var body: some View {
+        VStack(spacing: 8) {
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                let y = proxy.size.height / 2
+                let previousMarker = model.markers[max(model.activeIndex - 1, 0)]
+                let activeMarker = model.markers[model.activeIndex]
+                let activeX = width * (previousMarker.position + (activeMarker.position - previousMarker.position) * model.progress)
+
+                ZStack(alignment: .leading) {
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: width, y: y))
+                    }
+                    .stroke(Color.black.opacity(0.22), lineWidth: 2)
+
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: activeX, y: y))
+                    }
+                    .stroke(model.accent, lineWidth: 3)
+
+                    ForEach(model.markers.indices, id: \.self) { index in
+                        let marker = model.markers[index]
+                        Circle()
+                            .fill(marker.isActive ? model.accent : Color.white)
+                            .frame(width: marker.isActive ? 13 : 9, height: marker.isActive ? 13 : 9)
+                            .overlay(
+                                Circle()
+                                    .stroke(marker.isActive ? Color.white : Color.black.opacity(0.28), lineWidth: marker.isActive ? 2 : 2)
+                            )
+                            .shadow(color: marker.isActive ? model.accent.opacity(0.35) : .clear, radius: 4)
+                            .position(x: width * marker.position, y: y)
+                    }
+                }
+            }
+            .frame(height: 18)
+
+            HStack {
+                ForEach(model.markers) { marker in
+                    Text(marker.label)
+                        .font(.system(.caption2, design: .rounded))
+                        .foregroundColor(marker.isActive ? model.accent : .black.opacity(0.58))
+                        .fontWeight(marker.isActive ? .semibold : .regular)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+}
+
+private struct LiveActivityPrayerTimeline {
+    struct Marker: Identifiable {
+        let id: String
+        let label: String
+        let position: CGFloat
+        let isActive: Bool
+    }
+
+    let prayerName: String
+    let prayerTime: Date
+    let previousPrayerTime: Date
+    let city: String
+    let markers: [Marker]
+    let activeIndex: Int
+    let progress: CGFloat
+    let remainingValueText: String
+    let remainingUnitText: String
+    let remainingSuffixText: String
+    let subtitle: String
+    let targetTimeText: String
+    let accent: Color
+
+    static func make(
+        prayerName: String,
+        prayerTime: Date,
+        startedAt: Date,
+        city: String,
+        now: Date
+    ) -> Self {
+        let prayers = cachedPrayers()
+        let canonicalNext = canonicalKey(prayerName)
+        let sorted = prayers.sorted { $0.time < $1.time }
+        let matchedIndex = sorted.firstIndex { prayer in
+            canonicalKey(prayer.nameTransliteration) == canonicalNext
+                && abs(prayer.time.timeIntervalSince(prayerTime)) < 60 * 45
+        } ?? sorted.firstIndex { $0.time >= now } ?? sorted.firstIndex { canonicalKey($0.nameTransliteration) == canonicalNext }
+
+        let timelinePrayers: [(name: String, time: Date)]
+        let activeIndex: Int
+        let previousTime: Date
+
+        if let matchedIndex, !sorted.isEmpty {
+            timelinePrayers = buildTimelinePrayers(from: sorted, activeIndex: matchedIndex)
+            activeIndex = min(1, timelinePrayers.count - 1)
+            previousTime = timelinePrayers.first?.time ?? startedAt
+        } else {
+            let previous = startedAt < prayerTime ? startedAt : now.addingTimeInterval(-15 * 60)
+            timelinePrayers = [
+                (name: previousPrayerFallbackName(before: prayerName), time: previous),
+                (name: prayerName, time: prayerTime)
+            ]
+            activeIndex = 1
+            previousTime = previous
+        }
+
+        let denominator = max(prayerTime.timeIntervalSince(previousTime), 60)
+        let rawProgress = (now.timeIntervalSince(previousTime) / denominator)
+        let progress = CGFloat(min(max(rawProgress, 0), 1))
+
+        let markerCount = max(timelinePrayers.count, 2)
+        let markers = timelinePrayers.enumerated().map { index, item in
+            Marker(
+                id: "\(index)-\(item.name)-\(Int(item.time.timeIntervalSince1970))",
+                label: compactPrayerLabel(item.name),
+                position: CGFloat(index) / CGFloat(markerCount - 1),
+                isActive: index == activeIndex
+            )
+        }
+
+        let remaining = max(prayerTime.timeIntervalSince(now), 0)
+        let roundedMinutes = max(Int(ceil(remaining / 60)), 0)
+        let remainingValue: String
+        let remainingUnit: String
+        if roundedMinutes >= 60 {
+            let hours = roundedMinutes / 60
+            let minutes = roundedMinutes % 60
+            remainingValue = minutes == 0 ? "\(hours)" : "\(hours)h \(minutes)"
+            remainingUnit = minutes == 0 ? "hr" : "min"
+        } else {
+            remainingValue = "\(max(roundedMinutes, 1))"
+            remainingUnit = "min"
+        }
+
+        let resolvedCity = city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? cachedCityFallback()
+            : city
+        let targetName = localizedPrayerName(prayerName)
+
+        return LiveActivityPrayerTimeline(
+            prayerName: prayerName,
+            prayerTime: prayerTime,
+            previousPrayerTime: previousTime,
+            city: resolvedCity,
+            markers: markers,
+            activeIndex: activeIndex,
+            progress: progress,
+            remainingValueText: remainingValue,
+            remainingUnitText: remainingUnit,
+            remainingSuffixText: "until \(targetName)",
+            subtitle: "\(targetName) is approaching",
+            targetTimeText: targetTimeFormatter.string(from: prayerTime),
+            accent: Color(red: 0.05, green: 0.34, blue: 0.18)
+        )
+    }
+
+    private static func cachedPrayers() -> [Prayer] {
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        guard let data = defaults?.data(forKey: "prayersData"),
+              let cached = try? Settings.decoder.decode(Prayers.self, from: data) else {
+            return []
+        }
+        return cached.fullPrayers.isEmpty ? cached.prayers : cached.fullPrayers
+    }
+
+    private static func cachedCityFallback() -> String {
+        let defaults = UserDefaults(suiteName: "group.app.riskcreatives.waktu")
+        if let locationData = defaults?.data(forKey: "currentLocation"),
+           let location = try? Settings.decoder.decode(Location.self, from: locationData),
+           !location.city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return location.city
+        }
+        return appLocalized("Current Location")
+    }
+
+    private static func buildTimelinePrayers(from prayers: [Prayer], activeIndex: Int) -> [(name: String, time: Date)] {
+        let displayable = prayers.filter { !canonicalKey($0.nameTransliteration).isEmpty }
+        guard !displayable.isEmpty else { return [] }
+        let activePrayer = prayers[activeIndex]
+        let displayActiveIndex = displayable.firstIndex { $0.id == activePrayer.id }
+            ?? displayable.firstIndex { canonicalKey($0.nameTransliteration) == canonicalKey(activePrayer.nameTransliteration) }
+            ?? 0
+
+        var items: [(name: String, time: Date)] = []
+        let previousIndex = displayActiveIndex == 0 ? displayable.count - 1 : displayActiveIndex - 1
+        let previousPrayer = displayable[previousIndex]
+        let previousTime = displayActiveIndex == 0
+            ? Calendar.current.date(byAdding: .day, value: -1, to: previousPrayer.time) ?? previousPrayer.time
+            : previousPrayer.time
+        items.append((previousPrayer.nameTransliteration, previousTime))
+
+        for offset in 0..<min(displayable.count, 5) {
+            let index = (displayActiveIndex + offset) % displayable.count
+            let prayer = displayable[index]
+            let rollsToTomorrow = index < displayActiveIndex
+            let time = rollsToTomorrow
+                ? Calendar.current.date(byAdding: .day, value: 1, to: prayer.time) ?? prayer.time
+                : prayer.time
+            items.append((prayer.nameTransliteration, time))
+        }
+        return items
+    }
+
+    private static func previousPrayerFallbackName(before prayerName: String) -> String {
+        switch canonicalKey(prayerName) {
+        case "fajr": return "Isha"
+        case "dhuhr": return "Fajr"
+        case "asr": return "Dhuhr"
+        case "maghrib": return "Asr"
+        case "isha": return "Maghrib"
+        default: return "Isha"
+        }
+    }
+
+    private static func canonicalKey(_ name: String) -> String {
+        let normalized = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "subuh", "fajr": return "fajr"
+        case "syuruk", "shurooq", "sunrise": return "shurooq"
+        case "zuhur", "dhuhr", "jumuah": return "dhuhr"
+        case "asar", "asr": return "asr"
+        case "maghrib", "magrib": return "maghrib"
+        case "isyak", "isha", "isya": return "isha"
+        default: return normalized
+        }
+    }
+
+    private static func compactPrayerLabel(_ name: String) -> String {
+        switch canonicalKey(name) {
+        case "fajr": return localizedPrayerName("Fajr")
+        case "shurooq": return localizedPrayerName("Shurooq")
+        case "dhuhr": return localizedPrayerName("Dhuhr")
+        case "asr": return localizedPrayerName("Asr")
+        case "maghrib": return localizedPrayerName("Maghrib")
+        case "isha": return localizedPrayerName("Isha")
+        default: return localizedPrayerName(name)
+        }
+    }
+
+    private static let targetTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "h:mm a"
+        return formatter
+    }()
 }
 
 @available(iOSApplicationExtension 16.2, *)
@@ -454,6 +791,7 @@ struct Widgets: WidgetBundle {
         GraphicPrayerWidget()
         // GraphicPrayerSquareWidget() // Temporarily disabled for App Store submission
         CountdownWidget()
+        MinimalistWaktuWidget()
         Prayers2Widget()
         PrayersWidget()
         ZikirWidget()

@@ -9,7 +9,7 @@ enum LiveNotificationStyle: String, CaseIterable, Identifiable {
     static let storageKey = "liveNotificationStyleRaw"
 
     case current
-    case icon
+    case timeline
 
     var id: String { rawValue }
 
@@ -17,8 +17,8 @@ enum LiveNotificationStyle: String, CaseIterable, Identifiable {
         switch self {
         case .current:
             return "Default"
-        case .icon:
-            return "Icon"
+        case .timeline:
+            return "Timeline"
         }
     }
 
@@ -26,8 +26,8 @@ enum LiveNotificationStyle: String, CaseIterable, Identifiable {
         switch self {
         case .current:
             return "The current Waktu live notification style."
-        case .icon:
-            return "Uses the Waktu live icon in compact areas."
+        case .timeline:
+            return "A white card with remaining time, location, and prayer progress."
         }
     }
 
@@ -35,8 +35,8 @@ enum LiveNotificationStyle: String, CaseIterable, Identifiable {
         switch self {
         case .current:
             return "moon.stars.fill"
-        case .icon:
-            return "app.badge"
+        case .timeline:
+            return "point.topleft.down.curvedto.point.bottomright.up"
         }
     }
 }

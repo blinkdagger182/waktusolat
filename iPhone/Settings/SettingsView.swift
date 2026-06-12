@@ -453,9 +453,26 @@ struct SettingsView: View {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Menu {
                             Button {
+                                settings.hapticFeedback()
+                                settings.startDebugLiveNextPrayerActivity(
+                                    prayerName: "Fajr",
+                                    minutesUntilPrayer: 15
+                                )
+                            } label: {
+                                Label("Trigger Live Activity", systemImage: "play.circle")
+                            }
+
+                            Button {
                                 showingLiveActivityDebug = true
                             } label: {
                                 Label("Live Activity Debug", systemImage: "bolt.badge.clock")
+                            }
+
+                            Button(role: .destructive) {
+                                settings.hapticFeedback()
+                                settings.stopDebugLiveNextPrayerActivity()
+                            } label: {
+                                Label("Stop Live Activity", systemImage: "stop.circle")
                             }
 
                             Button {
@@ -1000,9 +1017,15 @@ private struct LiveNotificationCustomizationView: View {
 
     var body: some View {
         List {
+            Section(header: Text("PREVIEW")) {
+                LiveNotificationStylePreviewCard(style: selectedStyle)
+                    .environmentObject(settings)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            }
+
             Section(
                 header: Text("LIVE NOTIFICATION"),
-                footer: Text("Default keeps the current live notification style selected.")
+                footer: Text("The selected style is used by the real Live Activity. Timeline uses current prayer times, remaining time, and location when the activity is running.")
             ) {
                 ForEach(LiveNotificationStyle.allCases) { style in
                     Button {
@@ -1034,6 +1057,168 @@ private struct LiveNotificationCustomizationView: View {
         .navigationTitle("Live Notification")
         .navigationBarTitleDisplayMode(.inline)
         .applyConditionalListStyle(defaultView: true)
+    }
+}
+
+private struct LiveNotificationStylePreviewCard: View {
+    @EnvironmentObject var settings: Settings
+    let style: LiveNotificationStyle
+
+    var body: some View {
+        Group {
+            switch style {
+            case .current:
+                DefaultLiveNotificationPreviewCard(accentColor: settings.accentColor.color)
+            case .timeline:
+                TimelineLiveNotificationPreviewCard()
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(style.title) live notification preview")
+    }
+}
+
+private struct DefaultLiveNotificationPreviewCard: View {
+    let accentColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Fajr · 6.00")
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
+                Spacer()
+                Text("Subang Jaya")
+                    .font(.system(.subheadline, design: .rounded))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+
+            HStack(spacing: 6) {
+                Text("Next in")
+                    .font(.system(.title3, design: .rounded).weight(.bold))
+                Text("15:00")
+                    .font(.system(.title3, design: .rounded).weight(.black))
+                    .monospacedDigit()
+            }
+
+            ProgressView(value: 0.55)
+                .progressViewStyle(.linear)
+                .tint(accentColor)
+                .scaleEffect(x: 1, y: 1.8, anchor: .center)
+
+            HStack {
+                Text("24 Ramadan")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+                Spacer()
+                Label("Waktu", systemImage: "moon.stars.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(16)
+        .background(accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+private struct TimelineLiveNotificationPreviewCard: View {
+    private let markers = ["Isha", "Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+    private let activeIndex = 1
+    private let progress: CGFloat = 0.18
+    private let accent = Color(red: 0.05, green: 0.34, blue: 0.18)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                Text("Waktu")
+                    .font(.system(.title3, design: .serif).weight(.bold))
+                    .foregroundColor(.black)
+
+                Spacer(minLength: 12)
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("6:00 AM")
+                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .foregroundColor(.black)
+                    Text("Subang Jaya, Selangor")
+                        .font(.system(.caption, design: .rounded))
+                        .foregroundColor(.black.opacity(0.58))
+                        .lineLimit(1)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("15")
+                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .foregroundColor(accent)
+                    Text("min")
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundColor(.black)
+                    Text("until Fajr")
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundColor(.black)
+                }
+
+                Text("Subuh is approaching")
+                    .font(.system(.callout, design: .rounded))
+                    .foregroundColor(.black.opacity(0.58))
+            }
+
+            VStack(spacing: 8) {
+                GeometryReader { proxy in
+                    let width = proxy.size.width
+                    let y = proxy.size.height / 2
+                    let previousPosition = CGFloat(max(activeIndex - 1, 0)) / CGFloat(markers.count - 1)
+                    let activePosition = CGFloat(activeIndex) / CGFloat(markers.count - 1)
+                    let activeX = width * (previousPosition + (activePosition - previousPosition) * progress)
+
+                    ZStack(alignment: .leading) {
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: y))
+                            path.addLine(to: CGPoint(x: width, y: y))
+                        }
+                        .stroke(Color.black.opacity(0.22), lineWidth: 2)
+
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: y))
+                            path.addLine(to: CGPoint(x: activeX, y: y))
+                        }
+                        .stroke(accent, lineWidth: 3)
+
+                        ForEach(markers.indices, id: \.self) { index in
+                            Circle()
+                                .fill(index == activeIndex ? accent : Color.white)
+                                .frame(width: index == activeIndex ? 13 : 9, height: index == activeIndex ? 13 : 9)
+                                .overlay(
+                                    Circle()
+                                        .stroke(index == activeIndex ? Color.white : Color.black.opacity(0.28), lineWidth: 2)
+                                )
+                                .shadow(color: index == activeIndex ? accent.opacity(0.35) : .clear, radius: 4)
+                                .position(x: width * CGFloat(index) / CGFloat(markers.count - 1), y: y)
+                        }
+                    }
+                }
+                .frame(height: 18)
+
+                HStack {
+                    ForEach(markers.indices, id: \.self) { index in
+                        Text(markers[index])
+                            .font(.system(.caption2, design: .rounded))
+                            .foregroundColor(index == activeIndex ? accent : .black.opacity(0.58))
+                            .fontWeight(index == activeIndex ? .semibold : .regular)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
     }
 }
 

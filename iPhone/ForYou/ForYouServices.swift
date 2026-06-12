@@ -24,6 +24,44 @@ struct ForYouAppleWeatherDetails: Equatable {
     let fetchedAt: Date
 }
 
+struct ForYouKhutbahPDF: Identifiable, Equatable {
+    var id: URL { url }
+    let title: String
+    let url: URL
+}
+
+actor ForYouKhutbahPDFService {
+    static let shared = ForYouKhutbahPDFService()
+
+    private struct LatestKhutbahResponse: Decodable {
+        let title: String
+        let pdfUrl: String
+    }
+
+    private let latestURL = URL(string: "https://api-waktusolat.vercel.app/api/khutbah/jumaat/latest")!
+    private var cachedPDF: ForYouKhutbahPDF?
+
+    func latestJumuahPDF() async throws -> ForYouKhutbahPDF {
+        if let cachedPDF {
+            return cachedPDF
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: latestURL)
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let latest = try JSONDecoder().decode(LatestKhutbahResponse.self, from: data)
+        guard let pdfURL = URL(string: latest.pdfUrl) else {
+            throw URLError(.badURL)
+        }
+
+        let pdf = ForYouKhutbahPDF(title: latest.title, url: pdfURL)
+        cachedPDF = pdf
+        return pdf
+    }
+}
+
 actor ForYouWeatherService {
     static let shared = ForYouWeatherService()
 
@@ -489,7 +527,7 @@ enum ForYouContentRepository {
             type: .morning,
             titleEn: "Three Quls (3x)",
             titleMy: "Tiga Qul (3x)",
-            arabicText: "قُلْ هُوَ اللَّهُ أَحَدٌ اللَّهُ الصَّمَدُ لَمْ يَلِدْ وَلَمْ يُولَدْ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ مِن شَرِّ مَا خَلَقَ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ مَلِكِ النَّاسِ إِلَٰهِ النَّاسِ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ مِنَ الْجِنَّةِ وَالنَّاسِ",
+            arabicText: "قُلْ هُوَ اللَّهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ",
             shortDescriptionEn: "Recite Al-Ikhlas, Al-Falaq, and An-Nas three times each for protection through the day.",
             shortDescriptionMy: "Baca Al-Ikhlas, Al-Falaq, dan An-Nas tiga kali setiap satu untuk perlindungan sepanjang hari.",
             contentReference: "Sunan al-Tirmidhi 3575",
@@ -531,10 +569,10 @@ enum ForYouContentRepository {
             type: .dhuha,
             titleEn: "Surah Ad-Duha",
             titleMy: "Surah Ad-Duha",
-            arabicText: "مَا وَدَّعَكَ رَبُّكَ وَمَا قَلَىٰ",
+            arabicText: "وَالضُّحَىٰ",
             shortDescriptionEn: "A midday reassurance: your Lord has not left you. Read slowly, without urgency.",
             shortDescriptionMy: "Ketenangan tengah hari: Tuhanmu tidak meninggalkanmu. Baca dengan perlahan, tanpa tergesa-gesa.",
-            contentReference: "Surah Ad-Duha 93:3",
+            contentReference: "Surah Ad-Duha 93:1",
             durationMinutes: 5,
             ctaType: .none,
             goals: [.dailyQuran, .addDhuha],
@@ -573,7 +611,7 @@ enum ForYouContentRepository {
             type: .night,
             titleEn: "Ayat Kursi Before Sleep",
             titleMy: "Ayat Kursi Sebelum Tidur",
-            arabicText: "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ مَن ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلَّا بِإِذْنِهِ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ وَلَا يَئُودُهُ حِفْظُهُمَا وَهُوَ الْعَلِيُّ الْعَظِيمُ",
+            arabicText: "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ",
             shortDescriptionEn: "A protector from Allah remains with you until morning.",
             shortDescriptionMy: "Penjaga daripada Allah kekal bersamamu hingga pagi.",
             contentReference: "Sahih al-Bukhari 2311",
@@ -1547,7 +1585,13 @@ final class ForYouPlanGeneratorService {
     ) -> [ForYouTimelineEntry] {
         guard settings.zikirNotificationsEnabled, !prayers.isEmpty else { return [] }
 
-        return zikirNotificationAnchorDates(for: prayers).map { anchor in
+        return zikirNotificationAnchorDates(for: prayers)
+            .filter { anchor in
+                // Today tab keeps the midday zikir card only. Morning, evening, and night
+                // zikir cards remain available through notification/widget surfaces.
+                anchor.bucket == .midday
+            }
+            .map { anchor in
             let selection = ZikirSelector.select(
                 for: .init(
                     date: anchor.date,
@@ -1561,6 +1605,7 @@ final class ForYouPlanGeneratorService {
             let title = todayZikirDisplayTitle(for: selection)
             let subtitle = location.map { "\(selection.phrase.localizedTranslation()) • \($0)" } ?? selection.phrase.localizedTranslation()
             let moment = momentType(for: anchor.bucket)
+            let zikirRecommendation = recommendation(for: moment, profile: profile, date: date)
 
             return makeTimelineEntry(
                 id: "\(ISO8601DateFormatter().string(from: date))-zikir-\(anchor.bucket.rawValue)",
@@ -1572,9 +1617,9 @@ final class ForYouPlanGeneratorService {
                 icon: icon(for: moment),
                 arabicText: selection.phrase.textArabic,
                 reference: appLocalized(selection.bucket.titleKey),
-                recommendation: recommendation(for: moment, profile: profile, date: date),
-                progressTarget: progressTarget(for: anchor.bucket),
-                progressRequiresLongPress: anchor.bucket == .night
+                recommendation: zikirRecommendation,
+                progressTarget: nil,
+                progressRequiresLongPress: false
             )
         }
     }
@@ -1735,7 +1780,8 @@ final class ForYouPlanGeneratorService {
         profile: ForYouUserProfile,
         date: Date
     ) -> ForYouTimelineRecommendation? {
-        let template = ForYouContentRepository.templates(for: type)
+        let template = fixedRecommendationTemplate(for: type)
+            ?? ForYouContentRepository.templates(for: type)
             .max { lhs, rhs in
                 ForYouPlanScoringEngine.score(template: lhs, profile: profile, date: date)
                 < ForYouPlanScoringEngine.score(template: rhs, profile: profile, date: date)
@@ -1748,6 +1794,21 @@ final class ForYouPlanGeneratorService {
             reference: template.contentReference,
             shortDescription: isMalayAppLanguage() ? template.shortDescriptionMy : template.shortDescriptionEn
         )
+    }
+
+    private func fixedRecommendationTemplate(for type: ForYouMomentType) -> ForYouContentTemplate? {
+        let id: String
+        switch type {
+        case .morning:
+            id = "morning-protection"
+        case .dhuha:
+            id = "dhuha-reflection"
+        case .evening:
+            id = "evening-adhkar"
+        case .night:
+            id = "night-kursi"
+        }
+        return ForYouContentRepository.templates.first { $0.id == id }
     }
 
     private func preNotificationSubtitle(minutes: Int, prayerName: String, location: String?) -> String {

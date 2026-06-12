@@ -1666,6 +1666,32 @@ struct HomeWidgetPreviewGalleryView: View {
                 }
 
                 previewSection(
+                    title: "Waktu Minimalist",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget minimalis baru dengan warna berbeza mengikut waktu solat."
+                        : "New minimalist widgets with prayer-specific colors."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Minimalist Mini",
+                                family: .small
+                            ) {
+                                HomeMinimalistSmallPreviewCard()
+                            }
+
+                            HomeWidgetShowcaseCard(
+                                title: "Waktu Minimalist",
+                                family: .medium
+                            ) {
+                                HomeMinimalistMediumPreviewCard()
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
                     title: "Waktu Next Mini",
                     subtitle: isMalayAppLanguage()
                         ? "Widget sebenar `systemSmall` yang fokus pada kiraan detik seterusnya."
@@ -2219,6 +2245,206 @@ private struct HomeSimpleCountdownPreviewCard: View {
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
+    }
+}
+
+private enum HomeMinimalistPreviewTheme {
+    case subuh
+
+    var background: LinearGradient {
+        LinearGradient(colors: [
+            Color(red: 0.95, green: 0.94, blue: 0.90),
+            Color(red: 0.86, green: 0.84, blue: 0.78)
+        ], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    var blueTile: LinearGradient {
+        LinearGradient(colors: [
+            Color(red: 0.48, green: 0.82, blue: 0.91),
+            Color(red: 0.72, green: 0.92, blue: 0.96)
+        ], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    var darkTile: LinearGradient {
+        LinearGradient(colors: [
+            Color(red: 0.12, green: 0.25, blue: 0.28),
+            Color(red: 0.20, green: 0.34, blue: 0.26)
+        ], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+}
+
+private struct HomeMinimalistSmallPreviewCard: View {
+    private let theme = HomeMinimalistPreviewTheme.subuh
+
+    var body: some View {
+        ZStack {
+            theme.background
+
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.9), lineWidth: 3)
+                .padding(3)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    HomeMinimalistSunriseIcon(size: 34)
+                    Spacer(minLength: 8)
+                    Text("Subuh")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 8)
+
+                Text("5:48")
+                    .font(.system(size: 40, weight: .regular, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+
+                Text("Mon")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(.black)
+                    .lineLimit(1)
+                    .padding(.top, 2)
+
+                Text("Kuala Lumpur")
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .foregroundStyle(.black.opacity(0.86))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.62)
+                    .padding(.top, 4)
+            }
+            .padding(15)
+        }
+    }
+}
+
+private struct HomeMinimalistMediumPreviewCard: View {
+    private let theme = HomeMinimalistPreviewTheme.subuh
+
+    var body: some View {
+        ZStack {
+            Color.white
+
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.black, lineWidth: 3)
+                .padding(2)
+
+            HStack(spacing: 8) {
+                ZStack {
+                    theme.background
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Color.black.opacity(0.95), lineWidth: 2.5)
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .top) {
+                            HomeMinimalistSunriseIcon(size: 36)
+                            Spacer(minLength: 10)
+                            Text("Subuh")
+                                .font(.system(size: 25, weight: .bold, design: .rounded))
+                                .foregroundStyle(.black)
+                                .lineLimit(1)
+                        }
+
+                        Spacer(minLength: 8)
+
+                        Text("Mon")
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .foregroundStyle(.black)
+                            .lineLimit(1)
+
+                        Text("Kuala Lumpur")
+                            .font(.system(size: 17, weight: .regular, design: .rounded))
+                            .foregroundStyle(.black.opacity(0.88))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.65)
+                            .padding(.top, 5)
+                    }
+                    .padding(14)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                VStack(spacing: 8) {
+                    HomeMinimalistInfoPreviewTile(
+                        background: theme.blueTile,
+                        icon: "sun.max",
+                        time: "4:32",
+                        label: nil,
+                        foreground: .black
+                    )
+                    HomeMinimalistInfoPreviewTile(
+                        background: theme.darkTile,
+                        icon: nil,
+                        time: "7:24",
+                        label: "Next",
+                        foreground: .white
+                    )
+                }
+                .frame(width: 130)
+            }
+            .padding(9)
+        }
+    }
+}
+
+private struct HomeMinimalistInfoPreviewTile: View {
+    let background: LinearGradient
+    let icon: String?
+    let time: String
+    let label: String?
+    let foreground: Color
+
+    var body: some View {
+        ZStack {
+            background
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.95), lineWidth: 2.5)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 10) {
+                    if let icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 30, weight: .semibold))
+                    }
+                    Text(time)
+                        .font(.system(size: 31, weight: .regular, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.62)
+                }
+
+                if let label {
+                    Text(label)
+                        .font(.system(size: 16, weight: .regular, design: .rounded))
+                        .lineLimit(1)
+                        .padding(.top, 2)
+                }
+            }
+            .foregroundStyle(foreground)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct HomeMinimalistSunriseIcon: View {
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "sun.max")
+                .font(.system(size: size, weight: .semibold))
+            Image(systemName: "arrow.up")
+                .font(.system(size: size * 0.58, weight: .bold))
+                .offset(y: -size * 0.68)
+        }
+        .foregroundStyle(.black)
+        .frame(width: size * 1.35, height: size * 1.35)
     }
 }
 

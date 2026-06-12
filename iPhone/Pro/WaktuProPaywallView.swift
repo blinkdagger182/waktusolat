@@ -93,12 +93,8 @@ struct WaktuProPaywallView: View {
                     heroSection
 
                     carouselSection
-                        .padding(.top, 20)
-
-                    featuresSection
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 280)
+                        .padding(.top, 16)
+                        .padding(.bottom, 170)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -117,7 +113,7 @@ struct WaktuProPaywallView: View {
                         .frame(width: 28, height: 28)
                         .background(Color(.systemGray5), in: Circle())
                 }
-                .padding(.top, 8)
+                .padding(.top, 12)
                 .padding(.trailing, 16)
             }
         }
@@ -138,7 +134,6 @@ struct WaktuProPaywallView: View {
     }
 
     // MARK: - Hero
-    // Full-bleed, scrolls behind status bar. Bottom gradient only.
 
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
@@ -160,17 +155,15 @@ struct WaktuProPaywallView: View {
     }
 
     // MARK: - Carousel
-    // One iPhone model. Transforms animate on the outer ZStack.
-    // Screen content cross-fades independently inside the phone.
 
     private var carouselSection: some View {
-        VStack(spacing: 12) {
-            VStack(spacing: 4) {
-                Text("Choose your style")
-                    .font(.system(size: 20, weight: .bold))
+        VStack(spacing: 10) {
+            VStack(spacing: 5) {
+                Text("Make Waktu feel like yours")
+                    .font(.system(size: 22, weight: .bold))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-                Text("Unlock custom app icons crafted for Waktu Pro.")
+                Text("Unlock custom icons, premium widgets, and live prayer updates across your iPhone.")
                     .font(.subheadline)
                     .foregroundColor(Color(.secondaryLabel))
                     .multilineTextAlignment(.center)
@@ -178,31 +171,25 @@ struct WaktuProPaywallView: View {
             }
             .padding(.horizontal, 24)
 
-            // Images already contain iPhone mockup — show raw, no extra phone container
+            // Images have iPhone mockup built in — show at natural aspect ratio, no tilt
             ZStack {
                 ForEach(0..<3, id: \.self) { i in
                     if let img = screenImageForSlide(i) {
                         Image(uiImage: img)
                             .resizable()
                             .scaledToFit()
-                            .frame(maxWidth: 270)
+                            .frame(maxWidth: 260, maxHeight: 280)
                             .opacity(i == carouselPage ? 1 : 0)
                             .animation(.easeInOut(duration: 0.28), value: carouselPage)
                     }
                 }
             }
-            .shadow(color: .black.opacity(0.28), radius: 24, x: slideShadeX, y: 12)
-            .rotation3DEffect(
-                .degrees(slideAngle),
-                axis: (x: 0, y: 1, z: 0),
-                perspective: 0.35
-            )
-            .animation(.spring(response: 0.65, dampingFraction: 0.78), value: carouselPage)
+            .shadow(color: .black.opacity(0.14), radius: 14, x: 0, y: 6)
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 28, coordinateSpace: .local)
                     .onEnded { value in
-                        withAnimation(.spring(response: 0.65, dampingFraction: 0.78)) {
+                        withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
                             if value.translation.width < -28 {
                                 carouselPage = min(carouselPage + 1, 2)
                             } else if value.translation.width > 28 {
@@ -222,14 +209,14 @@ struct WaktuProPaywallView: View {
                 }
             }
 
-            // Slide label — cross-fades
-            VStack(spacing: 4) {
+            // Slide label
+            VStack(spacing: 3) {
                 Text(slideTitles[carouselPage])
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                 Text(slideSubtitles[carouselPage])
-                    .font(.subheadline)
+                    .font(.footnote)
                     .foregroundColor(Color(.secondaryLabel))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
@@ -241,59 +228,6 @@ struct WaktuProPaywallView: View {
         }
     }
 
-    // MARK: - Features
-
-    private var featuresSection: some View {
-        let sectionW = UIScreen.main.bounds.width - 40
-        return VStack(spacing: 0) {
-            featureRow(icon: "paintpalette.fill",
-                       title: "Custom Icons",
-                       subtitle: "Express your style with beautifully crafted app icons.",
-                       rowWidth: sectionW)
-            Divider().padding(.leading, 58)
-            featureRow(icon: "square.grid.2x2.fill",
-                       title: "Premium Widgets",
-                       subtitle: "Advanced widgets with more prayer insights at a glance.",
-                       rowWidth: sectionW)
-            Divider().padding(.leading, 58)
-            featureRow(icon: "dot.radiowaves.left.and.right",
-                       title: "Live Activities",
-                       subtitle: "Real-time prayer updates on your Lock Screen.",
-                       rowWidth: sectionW)
-        }
-        .frame(width: sectionW)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color(.systemGray5), lineWidth: 1)
-        )
-    }
-
-    private func featureRow(icon: String, title: String, subtitle: String, rowWidth: CGFloat) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color(.systemGray6))
-                    .frame(width: 32, height: 32)
-                Image(systemName: icon)
-                    .font(.system(size: 13))
-                    .foregroundColor(.primary)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.semibold))
-                Text(subtitle).font(.caption).foregroundColor(Color(.secondaryLabel))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(.tertiaryLabel))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(width: rowWidth)
-    }
 
     // MARK: - Bottom panel (pricing + CTA + footer, always visible)
 
@@ -395,19 +329,24 @@ struct WaktuProPaywallView: View {
                 if isPurchasing {
                     ProgressView().tint(.white)
                 } else {
-                    VStack(spacing: 2) {
-                        Text("Continue with Pro")
-                            .font(.system(size: 16, weight: .semibold))
+                    HStack(spacing: 8) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 14))
                             .foregroundColor(.white)
-                        #if canImport(RevenueCat)
-                        if let pkg = selectedPackage {
-                            Text(selectedIndex == 0
-                                 ? "\(pkg.storeProduct.localizedPriceString) / month"
-                                 : "\(pkg.storeProduct.localizedPriceString) / year · billed annually")
-                                .font(.system(size: 11, weight: .regular))
-                                .foregroundColor(.white.opacity(0.7))
+                        VStack(spacing: 1) {
+                            Text("Unlock Waktu Pro")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                            #if canImport(RevenueCat)
+                            if let pkg = selectedPackage {
+                                Text(selectedIndex == 0
+                                     ? "\(pkg.storeProduct.localizedPriceString) / month"
+                                     : "\(pkg.storeProduct.localizedPriceString) / year · billed annually")
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                            #endif
                         }
-                        #endif
                     }
                 }
             }

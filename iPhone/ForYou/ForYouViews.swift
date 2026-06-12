@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import UIKit
 import WidgetKit
+import SafariServices
 
 private enum ForYouPalette {
     static let canvas    = Color(uiColor: .systemGroupedBackground)
@@ -378,12 +379,12 @@ private struct ForYouMiniProgressTracker: View {
     private var isCompact: Bool { layoutStyle == .compact }
 
     var body: some View {
-        VStack(spacing: isCompact ? 6 : 8) {
+        VStack(spacing: isCompact ? 8 : 8) {
             ForEach(0..<descriptor.maximumCount, id: \.self) { index in
                 trackerCell(index: index)
             }
         }
-        .padding(isCompact ? 6 : 8)
+        .padding(isCompact ? 8 : 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white.opacity(0.92))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -398,14 +399,15 @@ private struct ForYouMiniProgressTracker: View {
         let isHolding = activeHoldIndex == index && !isCompleted
         let symbol = descriptor.maximumCount == 1 ? "moon.zzz.fill" : "sparkles"
         let rowLabel = descriptor.rowLabels.indices.contains(index) ? descriptor.rowLabels[index] : descriptor.title
-        let cellContent = VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : (isCompact ? 4 : 6)) {
+        let cellContent = VStack(alignment: .leading, spacing: descriptor.requiresLongPress ? 0 : (isCompact ? 6 : 6)) {
             if descriptor.requiresLongPress {
                 HStack(alignment: .center, spacing: isCompact ? 6 : 8) {
                     Text(rowLabel)
                         .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                         .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
                         .multilineTextAlignment(.trailing)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.62)
                         .frame(maxWidth: .infinity, alignment: .trailing)
 
                     trackerSymbol(isCompleted: isCompleted, isHolding: isHolding, index: index, symbol: symbol)
@@ -416,7 +418,7 @@ private struct ForYouMiniProgressTracker: View {
                     .font(.custom(preferredQuranArabicFontName(settings: settings, size: trackerArabicFontSize(for: rowLabel)), size: trackerArabicFontSize(for: rowLabel)))
                     .foregroundStyle(trackerRowTextColor(isCompleted: isCompleted, isHolding: isHolding))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.60)
+                    .minimumScaleFactor(0.62)
                     .frame(maxWidth: .infinity, alignment: .trailing)
 
                 HStack(spacing: isCompact ? 5 : 6) {
@@ -435,20 +437,24 @@ private struct ForYouMiniProgressTracker: View {
                             )
                     }
                     .frame(height: 8)
+                    .layoutPriority(1)
 
                     trackerSymbol(isCompleted: isCompleted, isHolding: isHolding, index: index, symbol: symbol)
+                        .frame(width: isCompact ? 24 : 26)
 
                     Text("\(min(currentCount, rowTarget))")
                         .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundStyle(isCompleted ? tint : trackerIdleTextColor)
                         .monospacedDigit()
+                        .frame(width: isCompact ? 18 : 20, alignment: .trailing)
                 }
             }
         }
         .padding(.horizontal, isCompact ? 6 : 8)
         .padding(.vertical, isCompact ? 6 : 8)
-        .frame(minHeight: isCompact ? 40 : 44)
+        .frame(minHeight: trackerCellMinHeight)
         .frame(maxWidth: .infinity)
+        .clipped()
         .background(
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -551,6 +557,13 @@ private struct ForYouMiniProgressTracker: View {
             return Color.black.opacity(0.86)
         }
         return Color.black.opacity(0.78)
+    }
+
+    private var trackerCellMinHeight: CGFloat {
+        if descriptor.requiresLongPress {
+            return isCompact ? 56 : 48
+        }
+        return isCompact ? 66 : 64
     }
 
     private func trackerArabicFontSize(for label: String) -> CGFloat {
@@ -699,6 +712,16 @@ private struct ForYouPremiumPreviewView: View {
                 )
         )
     }
+}
+
+private struct ForYouSafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
 
 private struct ForYouTimelineEntryView: View {
@@ -3081,6 +3104,10 @@ private struct ForYouCurrentPrayerHeroCard: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var presentedTab: ForYouPrayerTab?
     @State private var selectedFullSurah: FullSurahSelection?
+    @State private var selectedKhutbahPDF: ForYouKhutbahPDF?
+    @State private var khutbahPDF: ForYouKhutbahPDF?
+    @State private var isLoadingKhutbahPDF = false
+    @State private var isShowingCheckInTooltip = false
     @StateObject private var checkInManager = PrayerCheckInManager()
     @State private var autoCheckInTask: Task<Void, Never>?
 
@@ -3108,9 +3135,6 @@ private struct ForYouCurrentPrayerHeroCard: View {
                             .foregroundStyle(heroSecondaryText)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        if checkInManager.displayState.hasCurrentUserCheckedIn {
-                            checkInRow
-                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -3128,6 +3152,10 @@ private struct ForYouCurrentPrayerHeroCard: View {
                             .foregroundStyle(heroSecondaryText)
                     }
                     .layoutPriority(2)
+                }
+
+                if checkInManager.displayState.hasCurrentUserCheckedIn {
+                    checkInRow
                 }
             }
             .padding(20)
@@ -3178,6 +3206,46 @@ private struct ForYouCurrentPrayerHeroCard: View {
                     )
                 }
                 .buttonStyle(.plain)
+            }
+
+            if isJumuahHero {
+                Divider()
+                    .overlay(Color.black.opacity(0.08))
+
+                Button {
+                    if let khutbahPDF {
+                        selectedKhutbahPDF = khutbahPDF
+                    } else {
+                        Task { await loadKhutbahPDF(openWhenReady: true) }
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: isLoadingKhutbahPDF ? "arrow.triangle.2.circlepath" : "doc.richtext")
+                            .font(.system(size: 14, weight: .semibold))
+
+                        Text(khutbahButtonTitle)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+
+                        Spacer(minLength: 0)
+
+                        if let khutbahPDF {
+                            Text(khutbahPDF.title)
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(heroSecondaryText)
+                                .lineLimit(1)
+                        }
+                    }
+                    .foregroundStyle(heroPrimaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                            .fill(Color.white.opacity(colorScheme == .dark ? 0.03 : 0.16))
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoadingKhutbahPDF)
             }
 
             if let nextEntry {
@@ -3245,6 +3313,10 @@ private struct ForYouCurrentPrayerHeroCard: View {
             checkInManager.configure(prayer: entry.title)
             scheduleAutoCheckIn()
         }
+        .task(id: isJumuahHero) {
+            guard isJumuahHero else { return }
+            await loadKhutbahPDF(openWhenReady: false)
+        }
         .onDisappear {
             cancelAutoCheckIn()
         }
@@ -3275,37 +3347,117 @@ private struct ForYouCurrentPrayerHeroCard: View {
                 }
             }
         }
+        .sheet(item: $selectedKhutbahPDF) { pdf in
+            ForYouSafariView(url: pdf.url)
+                .ignoresSafeArea()
+        }
     }
 
     private var checkInRow: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "person.2.fill")
-                .font(.caption2)
-                .foregroundStyle(heroSecondaryText)
-            HStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Image(systemName: "person.2.fill")
+                    .font(.caption.weight(.semibold))
+
                 Text("\(checkInManager.displayState.count)")
                     .modifier(NumericTextTransitionModifier(value: checkInManager.displayState.count))
-                Text(checkInTrailingText)
+                    .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+
+                Text(checkInTitleText)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .allowsTightening(true)
+                    .layoutPriority(1)
+
+                Spacer(minLength: 4)
+
+                Button {
+                    withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
+                        isShowingCheckInTooltip.toggle()
+                    }
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 26, height: 26)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isMalayAppLanguage() ? "Maklumat check-in" : "Check-in info")
             }
-            .font(.caption)
-            .foregroundStyle(heroSecondaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .lineLimit(1)
-            .truncationMode(.tail)
+
+            if isShowingCheckInTooltip {
+                Text(checkInInfoText)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(heroPrimaryText)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(colorScheme == .dark ? 0.20 : 0.74))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color.black.opacity(colorScheme == .dark ? 0.12 : 0.08), lineWidth: 1)
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
+        .foregroundStyle(heroSecondaryText)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var checkInTrailingText: String {
-        let state = checkInManager.displayState
-        var text = isMalayAppLanguage()
-            ? " hadir untuk \(entry.title) hari ini"
-            : " checked in for \(entry.title) today"
-        if let at = state.lastCheckedInAt {
-            let timeStr = ForYouFormatters.shortTime.string(from: at)
-            text += isMalayAppLanguage()
-                ? " · Terakhir \(timeStr)"
-                : " · Last checked in \(timeStr)"
+    private var checkInTitleText: String {
+        isMalayAppLanguage()
+            ? "hadir untuk \(entry.title) hari ini"
+            : "checked in for \(entry.title) today"
+    }
+
+    private var lastCheckedInText: String? {
+        guard let at = checkInManager.displayState.lastCheckedInAt else { return nil }
+        let timeStr = ForYouFormatters.shortTime.string(from: at)
+        return isMalayAppLanguage()
+            ? "Terakhir \(timeStr)"
+            : "Last checked in \(timeStr)"
+    }
+
+    private var checkInInfoText: String {
+        isMalayAppLanguage()
+            ? "Dikira apabila Today aktif atau kamu buka wirid/doa."
+            : "Counts when Today is active or you open wirid/dua."
+    }
+
+    private var isJumuahHero: Bool {
+        heroPrayerThemeKey == "dhuhr"
+            && entry.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().contains("jum")
+    }
+
+    private var khutbahButtonTitle: String {
+        if isLoadingKhutbahPDF {
+            return isMalayAppLanguage() ? "Memuatkan khutbah..." : "Loading khutbah..."
         }
-        return text
+        return isMalayAppLanguage() ? "Baca Khutbah Jumaat" : "Read Jumuah Khutbah"
+    }
+
+    @MainActor
+    private func loadKhutbahPDF(openWhenReady: Bool) async {
+        guard khutbahPDF == nil, !isLoadingKhutbahPDF else {
+            if openWhenReady, let khutbahPDF {
+                selectedKhutbahPDF = khutbahPDF
+            }
+            return
+        }
+
+        isLoadingKhutbahPDF = true
+        defer { isLoadingKhutbahPDF = false }
+
+        guard let pdf = try? await ForYouKhutbahPDFService.shared.latestJumuahPDF() else { return }
+        khutbahPDF = pdf
+        if openWhenReady {
+            selectedKhutbahPDF = pdf
+        }
     }
 
     private var isActivePrayerWindow: Bool {

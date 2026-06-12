@@ -47,6 +47,7 @@
 		72728CFF2B3D51B300FAA3B3 /* Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 72728CF02B3D51B200FAA3B3 /* Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		72728D062B3D51F800FAA3B3 /* PrayersProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D052B3D51F800FAA3B3 /* PrayersProvider.swift */; };
 		72728D082B3D523700FAA3B3 /* CountdownWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D072B3D523700FAA3B3 /* CountdownWidget.swift */; };
+		AA000004MINWIDGET0001A /* MinimalistWaktuWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000004MINWIDGET0001B /* MinimalistWaktuWidget.swift */; };
 		72728D0A2B3D524600FAA3B3 /* LockScreen1Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D092B3D524600FAA3B3 /* LockScreen1Widget.swift */; };
 		72728D0C2B3D525300FAA3B3 /* LockScreen2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D0B2B3D525300FAA3B3 /* LockScreen2Widget.swift */; };
 		72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
@@ -218,6 +219,7 @@
 		72728CF82B3D51B200FAA3B3 /* PrayersWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayersWidget.swift; sourceTree = "<group>"; };
 		72728D052B3D51F800FAA3B3 /* PrayersProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayersProvider.swift; sourceTree = "<group>"; };
 		72728D072B3D523700FAA3B3 /* CountdownWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownWidget.swift; sourceTree = "<group>"; };
+		AA000004MINWIDGET0001B /* MinimalistWaktuWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalistWaktuWidget.swift; sourceTree = "<group>"; };
 		72728D092B3D524600FAA3B3 /* LockScreen1Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen1Widget.swift; sourceTree = "<group>"; };
 		72728D0B2B3D525300FAA3B3 /* LockScreen2Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen2Widget.swift; sourceTree = "<group>"; };
 		72728D2B2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphicPrayerWidget.swift; sourceTree = "<group>"; };
@@ -480,6 +482,7 @@
 				72728D052B3D51F800FAA3B3 /* PrayersProvider.swift */,
 				72C7DD772D79AA0C00FC6058 /* SimpleWidget.swift */,
 				72728D072B3D523700FAA3B3 /* CountdownWidget.swift */,
+				AA000004MINWIDGET0001B /* MinimalistWaktuWidget.swift */,
 				72728CF82B3D51B200FAA3B3 /* PrayersWidget.swift */,
 				72D0BCCA2D7AE99600B7E4F5 /* Prayers2Widget.swift */,
 				72D0BCCD2D7AE99700F7E4F5 /* ZikirWidget.swift */,
@@ -861,6 +864,7 @@
 				72574CCF2E49F26900BFF138 /* AdhanShortcuts.swift in Sources */,
 				72728CF72B3D51B200FAA3B3 /* Widgets.swift in Sources */,
 				72728D082B3D523700FAA3B3 /* CountdownWidget.swift in Sources */,
+				AA000004MINWIDGET0001A /* MinimalistWaktuWidget.swift in Sources */,
 				72728D2A2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift in Sources */,
 				72537C222F0434C500829F59 /* AdhanStructs.swift in Sources */,
 				72728D0A2B3D524600FAA3B3 /* LockScreen1Widget.swift in Sources */,
