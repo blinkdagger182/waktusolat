@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 let watchSharedAppGroupID = "group.app.riskcreatives.waktu"
+let watchProAccessUnlockedStorageKey = "waktuProAccessUnlockedV1"
 
 enum WatchAppLanguage: String {
     case english = "en"

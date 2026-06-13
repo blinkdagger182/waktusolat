@@ -19,6 +19,7 @@ extension Notification.Name {
     static let debugShowSupportPromoToast = Notification.Name("debugShowSupportPromoToast")
     static let debugShowSupportPromoToastVariant = Notification.Name("debugShowSupportPromoToastVariant")
     static let debugShowMalaysiaLocationToast = Notification.Name("debugShowMalaysiaLocationToast")
+    static let debugRequestJumuahKhutbahSummary = Notification.Name("debugRequestJumuahKhutbahSummary")
     static let openSupportSettingsSheet = Notification.Name("openSupportSettingsSheet")
     static let openSupportDonationPaywall = Notification.Name("openSupportDonationPaywall")
     static let supportDonationPaywallDismissed = Notification.Name("supportDonationPaywallDismissed")
@@ -41,6 +42,7 @@ final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate
     static let snapshotNextPrayerDataKey = "watchSnapshot.nextPrayerData"
     static let snapshotMonthCacheDataKey = "watchSnapshot.monthCacheData"
     static let snapshotMonthCacheKeyKey = "watchSnapshot.monthCacheKey"
+    static let snapshotProAccessUnlockedKey = "watchSnapshot.proAccessUnlocked"
     static let snapshotGeneratedAtKey = "watchSnapshot.generatedAt"
     static let requestSyncMessageKey = "watchSnapshot.requestSync"
 
@@ -75,7 +77,8 @@ final class PhoneWatchSyncManager: NSObject, ObservableObject, WCSessionDelegate
 
     private func buildSnapshotContext() -> [String: Any] {
         var context: [String: Any] = [
-            Self.snapshotGeneratedAtKey: Date().timeIntervalSince1970
+            Self.snapshotGeneratedAtKey: Date().timeIntervalSince1970,
+            Self.snapshotProAccessUnlockedKey: proAccessUnlocked(defaults: appGroupDefaults)
         ]
 
         if let prayersData = appGroupDefaults?.data(forKey: "prayersData") {
@@ -229,6 +232,7 @@ struct AlAdhanApp: App {
     
     @State private var isLaunching = true
     @State private var quranDeepLink: QuranDeepLinkPayload?
+    @State private var debugSelectedKhutbahPDF: ForYouKhutbahPDF?
     @State private var selectedTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
     @State private var showMalaysiaLocationToast = false
@@ -305,6 +309,9 @@ struct AlAdhanApp: App {
                 phoneWatchSync.syncNow()
             }
             .onChange(of: settings.currentLocation) { _ in
+                phoneWatchSync.syncNow()
+            }
+            .onChange(of: revenueCat.hasPro) { _ in
                 phoneWatchSync.syncNow()
             }
             .onChange(of: settings.prayerCalculation) { _ in
@@ -485,6 +492,15 @@ struct AlAdhanApp: App {
                 Task {
                     await presentDebugMalaysiaLocationToast()
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .debugRequestJumuahKhutbahSummary)) { _ in
+                guard !isLaunching else { return }
+                selectedTab = .today
+                openDebugJumuahKhutbahSummary()
+            }
+            .sheet(item: $debugSelectedKhutbahPDF) { pdf in
+                ForYouSafariView(url: pdf.url)
+                    .ignoresSafeArea()
             }
         }
         .onChange(of: settings.accentColor) { _ in
@@ -882,6 +898,15 @@ struct AlAdhanApp: App {
             .max(by: { $0.time < $1.time })
 
         return latestDuePrayer?.nameTransliteration ?? latestDuePrayer?.nameEnglish
+    }
+
+    private func openDebugJumuahKhutbahSummary() {
+        Task {
+            guard let pdf = try? await ForYouKhutbahPDFService.shared.latestJumuahPDF() else { return }
+            await MainActor.run {
+                debugSelectedKhutbahPDF = pdf
+            }
+        }
     }
 
     private static func configureLegacyTabBarAppearance() {

@@ -1,9 +1,20 @@
 import SwiftUI
 
 let sharedAppGroupID = "group.app.riskcreatives.waktu"
+let proAccessUnlockedStorageKey = "waktuProAccessUnlockedV1"
 let premiumWidgetsUnlockedStorageKey = "premiumWidgetsUnlockedV1"
 let premiumWidgetEligibleProductIDsStorageKey = "premiumWidgetEligibleProductIDsV1"
 let premiumWidgetsDebugOverrideStorageKey = "premiumWidgetsDebugOverrideV1"
+let proAccessDebugOverrideStorageKey = "proAccessDebugOverrideV1"
+
+enum WaktuProFeature {
+    case backgroundUsage
+    case appleWatch
+    case jumuahKhutbahSummary
+    case premiumWidgets
+    case offlineMode
+    case airplaneMode
+}
 
 enum LiveNotificationStyle: String, CaseIterable, Identifiable {
     static let storageKey = "liveNotificationStyleRaw"
@@ -215,6 +226,31 @@ func premiumWidgetsUnlocked(defaults: UserDefaults? = UserDefaults(suiteName: sh
     }
     #endif
     return defaults?.bool(forKey: premiumWidgetsUnlockedStorageKey) ?? false
+}
+
+func proAccessUnlocked(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> Bool {
+    #if DEBUG
+    if let override = defaults?.object(forKey: premiumWidgetsDebugOverrideStorageKey) as? Int {
+        switch override {
+        case 1:
+            return false
+        case 2:
+            return true
+        default:
+            break
+        }
+    }
+    #endif
+    return defaults?.bool(forKey: proAccessUnlockedStorageKey) ?? false
+}
+
+func hasAccess(to feature: WaktuProFeature, defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> Bool {
+    switch feature {
+    case .premiumWidgets:
+        return premiumWidgetsUnlocked(defaults: defaults)
+    case .backgroundUsage, .appleWatch, .jumuahKhutbahSummary, .offlineMode, .airplaneMode:
+        return proAccessUnlocked(defaults: defaults)
+    }
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable {

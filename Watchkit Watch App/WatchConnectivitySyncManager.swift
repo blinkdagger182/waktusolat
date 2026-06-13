@@ -17,6 +17,7 @@ final class WatchConnectivitySyncManager: NSObject, ObservableObject, WCSessionD
         static let prayerDays = "watchSnapshot.prayerDays"
         static let monthCacheData = "watchSnapshot.monthCacheData"
         static let monthCacheKey = "watchSnapshot.monthCacheKey"
+        static let proAccessUnlocked = "watchSnapshot.proAccessUnlocked"
         static let requestSync = "watchSnapshot.requestSync"
     }
 
@@ -66,6 +67,10 @@ final class WatchConnectivitySyncManager: NSObject, ObservableObject, WCSessionD
 
         if let appLanguageCode = context[Keys.appLanguageCode] as? String {
             defaults?.set(appLanguageCode, forKey: "appLanguageCode")
+        }
+
+        if let proAccessUnlocked = context[Keys.proAccessUnlocked] as? Bool {
+            defaults?.set(proAccessUnlocked, forKey: watchProAccessUnlockedStorageKey)
         }
 
         if let currentPrayerData = context[Keys.currentPrayerData] as? Data {

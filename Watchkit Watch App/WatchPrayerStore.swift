@@ -10,6 +10,7 @@ final class WatchPrayerStore: ObservableObject {
     @Published private(set) var language: WatchAppLanguage = .english
     @Published private(set) var prayerCalculation: String = "Auto (By Location)"
     @Published private(set) var lastRefreshAt: Date?
+    @Published private(set) var hasProAccess = false
 
     private let defaults = UserDefaults(suiteName: watchSharedAppGroupID)
     private let decoder: JSONDecoder = {
@@ -45,6 +46,7 @@ final class WatchPrayerStore: ObservableObject {
         accentColor = WatchAccentColor.fromStoredValue(defaults?.string(forKey: WatchPrayerPresentation.accentColorStorageKey))
         language = WatchAppLanguage(storedCode: defaults?.string(forKey: WatchPrayerPresentation.appLanguageStorageKey))
         prayerCalculation = defaults?.string(forKey: WatchPrayerPresentation.prayerCalculationStorageKey) ?? "Auto (By Location)"
+        hasProAccess = defaults?.bool(forKey: watchProAccessUnlockedStorageKey) ?? false
         lastRefreshAt = Date()
 
         WidgetCenter.shared.reloadAllTimelines()
@@ -132,5 +134,11 @@ final class WatchPrayerStore: ObservableObject {
         language.isMalay
             ? "Buka app iPhone untuk segarkan waktu solat dan hantar data ke Apple Watch."
             : "Open the iPhone app to refresh prayer times and sync them to Apple Watch."
+    }
+
+    var proRequiredMessage: String {
+        language.isMalay
+            ? "Apple Watch memerlukan Waktu Pro. Naik taraf di app iPhone untuk akses penuh."
+            : "Apple Watch requires Waktu Pro. Upgrade in the iPhone app for full access."
     }
 }

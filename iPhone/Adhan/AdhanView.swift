@@ -16,6 +16,8 @@ struct AdhanView: View {
     #if DEBUG
     @AppStorage(premiumWidgetsDebugOverrideStorageKey, store: UserDefaults(suiteName: sharedAppGroupID))
     private var premiumWidgetsDebugOverrideRaw = 0
+    @AppStorage(proAccessDebugOverrideStorageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var proAccessDebugOverrideRaw = 0
     #endif
     
     @State private var showingSettingsSheet = false
@@ -413,6 +415,35 @@ struct AdhanView: View {
                             ForYouDebugStore.resetAll()
                         } label: {
                             Label("Reset For You Onboarding", systemImage: "arrow.counterclockwise")
+                        }
+
+                        Divider()
+
+                        Button {
+                            proAccessDebugOverrideRaw = 0
+                            RevenueCatManager.shared.setDebugProOverride(0)
+                        } label: {
+                            Label("Pro Access: Live", systemImage: proAccessDebugOverrideRaw == 0 ? "checkmark.circle.fill" : "circle")
+                        }
+
+                        Button {
+                            proAccessDebugOverrideRaw = 1
+                            RevenueCatManager.shared.setDebugProOverride(1)
+                        } label: {
+                            Label("Pro Access: Force Non-Pro", systemImage: proAccessDebugOverrideRaw == 1 ? "checkmark.circle.fill" : "circle")
+                        }
+
+                        Button {
+                            proAccessDebugOverrideRaw = 2
+                            RevenueCatManager.shared.setDebugProOverride(2)
+                        } label: {
+                            Label("Pro Access: Force Pro", systemImage: proAccessDebugOverrideRaw == 2 ? "checkmark.circle.fill" : "circle")
+                        }
+
+                        Button {
+                            NotificationCenter.default.post(name: .debugRequestJumuahKhutbahSummary, object: nil)
+                        } label: {
+                            Label("Open Jumuah Summary", systemImage: "doc.text.magnifyingglass")
                         }
 
                         Divider()

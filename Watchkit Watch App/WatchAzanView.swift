@@ -6,9 +6,13 @@ struct WatchAzanView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                timelineCard
-                prayerList
-                footerLabel
+                if store.hasProAccess {
+                    timelineCard
+                    prayerList
+                    footerLabel
+                } else {
+                    proLockedCard
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -16,6 +20,25 @@ struct WatchAzanView: View {
         .task {
             store.reload()
         }
+    }
+
+    private var proLockedCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: "applewatch")
+                .font(.title3)
+                .foregroundStyle(store.accentColor.color)
+
+            Text(store.language.isMalay ? "Waktu Pro" : "Waktu Pro")
+                .font(.system(.headline, design: .rounded).weight(.bold))
+
+            Text(store.proRequiredMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var footerLabel: some View {

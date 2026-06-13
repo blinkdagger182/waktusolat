@@ -714,7 +714,7 @@ private struct ForYouPremiumPreviewView: View {
     }
 }
 
-private struct ForYouSafariView: UIViewControllerRepresentable {
+struct ForYouSafariView: UIViewControllerRepresentable {
     let url: URL
 
     func makeUIViewController(context: Context) -> SFSafariViewController {
@@ -3101,6 +3101,7 @@ private struct ForYouCurrentPrayerHeroCard: View {
     let onScrollToTimeline: () -> Void
 
     @EnvironmentObject private var settings: Settings
+    @EnvironmentObject private var revenueCat: RevenueCatManager
     @Environment(\.colorScheme) private var colorScheme
     @State private var presentedTab: ForYouPrayerTab?
     @State private var selectedFullSurah: FullSurahSelection?
@@ -3246,6 +3247,41 @@ private struct ForYouCurrentPrayerHeroCard: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isLoadingKhutbahPDF)
+
+                Divider()
+                    .overlay(Color.black.opacity(0.08))
+
+                Button {
+                    openJumuahKhutbahSummary()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: revenueCat.hasPro ? "sparkles" : "lock.fill")
+                            .font(.system(size: 14, weight: .semibold))
+
+                        Text(isMalayAppLanguage() ? "Ringkasan Khutbah Jumaat" : "Jumuah Khutbah Summary")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+
+                        Spacer(minLength: 0)
+
+                        if !revenueCat.hasPro {
+                            Text("Pro")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule(style: .continuous).fill(ForYouPalette.darkTile))
+                        }
+                    }
+                    .foregroundStyle(heroPrimaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                            .fill(Color.white.opacity(colorScheme == .dark ? 0.03 : 0.16))
+                    )
+                }
+                .buttonStyle(.plain)
             }
 
             if let nextEntry {
@@ -3425,8 +3461,8 @@ private struct ForYouCurrentPrayerHeroCard: View {
 
     private var checkInInfoText: String {
         isMalayAppLanguage()
-            ? "Dikira apabila Today aktif atau kamu buka wirid/doa."
-            : "Counts when Today is active or you open wirid/dua."
+            ? "Dikira secara automatik dan disegar pada setiap waktu solat."
+            : "Check-ins are counted automatically and refresh at each prayer time."
     }
 
     private var isJumuahHero: Bool {
@@ -3457,6 +3493,21 @@ private struct ForYouCurrentPrayerHeroCard: View {
         khutbahPDF = pdf
         if openWhenReady {
             selectedKhutbahPDF = pdf
+        }
+    }
+
+    private func openJumuahKhutbahSummary() {
+        if revenueCat.hasPro {
+            if let khutbahPDF {
+                selectedKhutbahPDF = khutbahPDF
+            } else {
+                Task { await loadKhutbahPDF(openWhenReady: true) }
+            }
+        } else {
+            NotificationCenter.default.post(name: .openSupportSettingsSheet, object: nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+            }
         }
     }
 
@@ -4708,7 +4759,9 @@ private struct ForYouDayView: View {
         if let special = IslamicCalendarGreetings.specialDay(for: viewModel.plan.date, hijriOffset: settings.hijriOffset) {
             return isMalayAppLanguage() ? special.greetingBM : special.greetingEN
         }
-        return greetingVariants(for: greetingPrayerWindowKey)[rotatingGreetingIndex]
+        let variants = greetingVariants(for: greetingPrayerWindowKey)
+        guard !variants.isEmpty else { return "Good morning" }
+        return variants[rotatingGreetingIndex % variants.count]
     }
 
     private var greetingPrayerWindowKey: String {
@@ -4731,7 +4784,7 @@ private struct ForYouDayView: View {
         case "dhuhr":
             return ["Pause for Dhuhr", "Reset at midday", "A steady noon"]
         case "asr":
-            return ["Stay present at Asr", "Protect the afternoon"]
+            return ["Stay present at Asr", "Protect the afternoon", "A steady afternoon"]
         case "maghrib":
             return ["Ease into Maghrib", "A calm sunset", "Let evening settle"]
         case "isha":

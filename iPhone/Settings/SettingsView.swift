@@ -104,8 +104,28 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
     }
 
     var hasPro: Bool {
-        customerInfo?.entitlements["Pro"]?.isActive == true || hasBuyMeKopi
+        #if DEBUG
+        if let override = UserDefaults(suiteName: sharedAppGroupID)?.object(forKey: proAccessDebugOverrideStorageKey) as? Int {
+            switch override {
+            case 1:
+                return false
+            case 2:
+                return true
+            default:
+                break
+            }
+        }
+        #endif
+        return customerInfo?.entitlements["Pro"]?.isActive == true || hasBuyMeKopi
     }
+
+    #if DEBUG
+    func setDebugProOverride(_ value: Int) {
+        UserDefaults(suiteName: sharedAppGroupID)?.set(value, forKey: proAccessDebugOverrideStorageKey)
+        syncSharedPremiumWidgetAccess()
+        objectWillChange.send()
+    }
+    #endif
 
     private static let oldConsumableProductIDs: Set<String> = [
         "app.riskcreatives.waktu.supporter",
@@ -165,8 +185,10 @@ final class RevenueCatManager: NSObject, ObservableObject, PurchasesDelegate {
     private func syncSharedPremiumWidgetAccess() {
         guard let defaults = UserDefaults(suiteName: sharedAppGroupID) else { return }
         let purchasedProductIDs = Set(customerInfo?.allPurchasedProductIdentifiers ?? [])
-        let unlocked = hasPro || !purchasedProductIDs.isEmpty
+        let proUnlocked = hasPro
+        let unlocked = proUnlocked || !purchasedProductIDs.isEmpty
 
+        defaults.set(proUnlocked, forKey: proAccessUnlockedStorageKey)
         defaults.set(unlocked, forKey: premiumWidgetsUnlockedStorageKey)
         hasPremiumWidgetsUnlocked = unlocked
     }
