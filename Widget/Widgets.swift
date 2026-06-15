@@ -859,6 +859,18 @@ struct Widgets: WidgetBundle {
         ProIndexWidget()
         ProArcWidget()
         ProZikirWidget()
+        // Metro tier
+        MetroSmallWidget()
+        MetroMediumWidget()
+        MetroLargeWidget()
+        // Neo tier
+        NeoSmallWidget()
+        NeoMediumWidget()
+        NeoLargeWidget()
+        // Sketch tier
+        SketchSmallWidget()
+        SketchMediumWidget()
+        SketchLargeWidget()
         // Free tier
         SimpleWidget()
         GraphicPrayerWidget()

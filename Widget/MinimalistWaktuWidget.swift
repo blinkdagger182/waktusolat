@@ -63,83 +63,30 @@ private enum MinimalistPrayerTheme {
         }
     }
 
-    var nextTileUsesDarkInk: Bool {
-        switch self {
-        case .isha:
-            return true
-        default:
-            return false
-        }
-    }
+    var nextTileUsesDarkInk: Bool { false } // bottom tile is always dark charcoal → white text
+
+    // Flat light gray for all daytime prayers; soft blue for Maghrib; dark for Isha
+    static let flatGray  = Color(red: 0.902, green: 0.902, blue: 0.918)   // #E6E6EA
+    static let flatBlue  = Color(red: 0.647, green: 0.773, blue: 0.882)   // #A5C5E1
+    static let flatDark  = Color(red: 0.157, green: 0.176, blue: 0.208)   // #282D35
 
     var background: LinearGradient {
         switch self {
-        case .subuh:
-            return LinearGradient(colors: [
-                Color(red: 0.95, green: 0.94, blue: 0.90),
-                Color(red: 0.86, green: 0.84, blue: 0.78)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .dhuhr:
-            return LinearGradient(colors: [
-                Color(red: 0.74, green: 0.88, blue: 0.82),
-                Color(red: 0.62, green: 0.80, blue: 0.72)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .asr:
-            return LinearGradient(colors: [
-                Color(red: 0.82, green: 0.83, blue: 0.74),
-                Color(red: 0.66, green: 0.72, blue: 0.56)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .maghrib:
-            return LinearGradient(colors: [
-                Color(red: 0.95, green: 0.94, blue: 0.90),
-                Color(red: 0.82, green: 0.80, blue: 0.74)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [Self.flatBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .isha:
-            return LinearGradient(colors: [
-                Color(red: 0.02, green: 0.17, blue: 0.31),
-                Color(red: 0.01, green: 0.08, blue: 0.17)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .fallback:
-            return LinearGradient(colors: [
-                Color(red: 0.93, green: 0.93, blue: 0.90),
-                Color(red: 0.84, green: 0.84, blue: 0.80)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [Self.flatDark], startPoint: .topLeading, endPoint: .bottomTrailing)
+        default:
+            return LinearGradient(colors: [Self.flatGray], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
 
     var topTileBackground: LinearGradient {
-        switch self {
-        case .asr:
-            return LinearGradient(colors: [
-                Color(red: 0.62, green: 0.70, blue: 0.52),
-                Color(red: 0.74, green: 0.78, blue: 0.64)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .dhuhr:
-            return LinearGradient(colors: [
-                Color(red: 0.78, green: 0.91, blue: 0.86),
-                Color(red: 0.69, green: 0.84, blue: 0.78)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        default:
-            return LinearGradient(colors: [
-                Color(red: 0.48, green: 0.82, blue: 0.91),
-                Color(red: 0.72, green: 0.92, blue: 0.96)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        }
+        LinearGradient(colors: [Self.flatBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
     var bottomTileBackground: LinearGradient {
-        switch self {
-        case .isha:
-            return LinearGradient(colors: [
-                Color(red: 1.0, green: 0.86, blue: 0.05),
-                Color(red: 1.0, green: 0.73, blue: 0.02)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        default:
-            return LinearGradient(colors: [
-                Color(red: 0.12, green: 0.25, blue: 0.28),
-                Color(red: 0.20, green: 0.34, blue: 0.26)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-        }
+        LinearGradient(colors: [Self.flatDark], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 
@@ -235,7 +182,7 @@ struct MinimalistWaktuEntryView: View {
 
     private var mediumBody: some View {
         ZStack {
-            Color.white
+            MinimalistPrayerTheme.flatGray
 
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .strokeBorder(Color.black, lineWidth: 3)
