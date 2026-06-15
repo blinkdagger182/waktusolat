@@ -142,7 +142,7 @@ private struct SketchDonut: View {
 // MARK: - SMALL — dark bg + orange wave
 // ═══════════════════════════════════════════════════════
 
-private struct SketchSmallView: View {
+struct SketchSmallView: View {
     let entry: PrayersEntry
 
     private var current: Prayer? { entry.currentPrayer ?? entry.prayers.first }
@@ -211,6 +211,7 @@ struct SketchSmallWidget: Widget {
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Sketch")
         .description("Next prayer on a dark canvas with an orange wave.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -218,7 +219,7 @@ struct SketchSmallWidget: Widget {
 // MARK: - MEDIUM — prayer progress + bar
 // ═══════════════════════════════════════════════════════
 
-private struct SketchMediumView: View {
+struct SketchMediumView: View {
     let entry: PrayersEntry
 
     private var prog: SketchPrayerData { skProgress(from: entry) }
@@ -304,6 +305,7 @@ struct SketchMediumWidget: Widget {
         .supportedFamilies([.systemMedium])
         .configurationDisplayName("Sketch Progress")
         .description("Daily prayer progress as a percentage and progress bar.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -356,7 +358,7 @@ private struct SketchDotGrid: View {
     }
 }
 
-private struct SketchLargeView: View {
+struct SketchLargeView: View {
     let entry: PrayersEntry
 
     private var prog: SketchPrayerData { skProgress(from: entry) }
@@ -386,8 +388,10 @@ private struct SketchLargeView: View {
                     }
                     .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 14)
 
+                    Spacer(minLength: 0)
+
                     // Dot grid + donut row
-                    HStack(spacing: 16) {
+                    HStack(spacing: 18) {
                         SketchDotGrid(
                             filledCount: Int(round(prog.fraction * Double(dotTotal))),
                             total: dotTotal
@@ -399,19 +403,19 @@ private struct SketchLargeView: View {
                             done: prog.done,
                             total: prog.total
                         )
-                        .frame(width: 90, height: 90)
+                        .frame(width: 106, height: 106)
                     }
                     .padding(.horizontal, 16)
-                    .frame(height: 110)
+                    .frame(height: 178)
 
-                    Spacer(minLength: 12)
+                    Spacer(minLength: 0)
 
                     // Prayer row
                     HStack(spacing: 0) {
                         ForEach(prog.items, id: \.short) { item in
-                            VStack(spacing: 5) {
+                            VStack(spacing: 7) {
                                 Text(item.short)
-                                    .font(.system(size: 11, weight: item.isDone ? .semibold : .regular))
+                                    .font(.system(size: 12, weight: item.isDone ? .semibold : .regular))
                                     .foregroundStyle(item.isDone ? skBlack : skGray)
                                     .lineLimit(1).minimumScaleFactor(0.7)
                                 ZStack {
@@ -427,7 +431,7 @@ private struct SketchLargeView: View {
                                             .clipShape(Circle())
                                     }
                                 }
-                                .frame(width: 22, height: 22)
+                                .frame(width: 26, height: 26)
                             }
                             .frame(maxWidth: .infinity)
                         }
@@ -453,5 +457,6 @@ struct SketchLargeWidget: Widget {
         .supportedFamilies([.systemLarge])
         .configurationDisplayName("Sketch Max")
         .description("Prayer completion grid with donut chart and prayer status row.")
+        .contentMarginsDisabled()
     }
 }

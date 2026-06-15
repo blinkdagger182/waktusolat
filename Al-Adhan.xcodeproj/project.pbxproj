@@ -72,6 +72,7 @@
 		73AB00012F8B3C4D5E6A7B8C /* MetroWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AB00022F8B3C4D5E6A7B8C /* MetroWidget.swift */; };
 		73AC00012F8B3C4D5E6A7B8C /* NeoWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AC00022F8B3C4D5E6A7B8C /* NeoWidget.swift */; };
 		73AD00012F8B3C4D5E6A7B8C /* SketchWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AD00022F8B3C4D5E6A7B8C /* SketchWidget.swift */; };
+		73AE00012F8B3C4D5E6A7B8C /* ConfigurableHomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AE00022F8B3C4D5E6A7B8C /* ConfigurableHomeWidget.swift */; };
 		72F4D8E42F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */; };
 		A10000012F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
 		A10000022F70000100ABCDEF /* quotes.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000002F70000100ABCDEF /* quotes.json */; };
@@ -246,6 +247,7 @@
 		73AB00022F8B3C4D5E6A7B8C /* MetroWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetroWidget.swift; sourceTree = "<group>"; };
 		73AC00022F8B3C4D5E6A7B8C /* NeoWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeoWidget.swift; sourceTree = "<group>"; };
 		73AD00022F8B3C4D5E6A7B8C /* SketchWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SketchWidget.swift; sourceTree = "<group>"; };
+		73AE00022F8B3C4D5E6A7B8C /* ConfigurableHomeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurableHomeWidget.swift; sourceTree = "<group>"; };
 		72F4D8E32F4D9B6400A1B2C3 /* Versioning/AppVersionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Versioning/AppVersionGate.swift; sourceTree = "<group>"; };
 		A10000002F70000100ABCDEF /* quotes.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = quotes.json; sourceTree = "<group>"; };
 		A20000002F80000100ABCDEF /* IMG_9643.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = IMG_9643.jpg; sourceTree = "<group>"; };
@@ -498,6 +500,7 @@
 				73AB00022F8B3C4D5E6A7B8C /* MetroWidget.swift */,
 				73AC00022F8B3C4D5E6A7B8C /* NeoWidget.swift */,
 				73AD00022F8B3C4D5E6A7B8C /* SketchWidget.swift */,
+				73AE00022F8B3C4D5E6A7B8C /* ConfigurableHomeWidget.swift */,
 				72728D2B2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift */,
 				72728D092B3D524600FAA3B3 /* LockScreen1Widget.swift */,
 				72728D0B2B3D525300FAA3B3 /* LockScreen2Widget.swift */,
@@ -889,6 +892,7 @@
 				73AB00012F8B3C4D5E6A7B8C /* MetroWidget.swift in Sources */,
 				73AC00012F8B3C4D5E6A7B8C /* NeoWidget.swift in Sources */,
 				73AD00012F8B3C4D5E6A7B8C /* SketchWidget.swift in Sources */,
+				73AE00012F8B3C4D5E6A7B8C /* ConfigurableHomeWidget.swift in Sources */,
 				72728D062B3D51F800FAA3B3 /* PrayersProvider.swift in Sources */,
 				728E2EEC2E6E048300F2C24C /* SettingsAdhan.swift in Sources */,
 				7205C1F02D797535001D4979 /* LockScreen3Widget.swift in Sources */,

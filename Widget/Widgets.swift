@@ -854,6 +854,10 @@ private struct LiveActivityCompactTimerText: View {
 @main
 struct Widgets: WidgetBundle {
     var body: some Widget {
+        if #available(iOS 17.0, *) {
+            ConfigurableHomeWidget()
+        }
+
         // Pro tier — listed first so they appear at the top of the picker
         ProNextWidget()
         ProIndexWidget()

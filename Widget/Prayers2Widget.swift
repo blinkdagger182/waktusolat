@@ -151,6 +151,7 @@ struct Prayers2Widget: Widget {
         StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
             if #available(iOS 17.0, *) {
                 Prayers2EntryView(entry: entry)
+                    .padding(14)
                     .containerBackground(for: .widget) { Color.clear }
             } else {
                 Prayers2EntryView(entry: entry)
@@ -160,5 +161,6 @@ struct Prayers2Widget: Widget {
         .supportedFamilies([.systemMedium])
         .configurationDisplayName("Prayer Times")
         .description("This widget displays the prayer times")
+        .contentMarginsDisabled()
     }
 }

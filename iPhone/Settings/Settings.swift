@@ -279,6 +279,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     private override init() {
         let seededLegacyWidgetStyles = Self.seedLegacyWidgetStyleDefaultsIfNeeded(defaults: appGroupUserDefaults)
+        HomeWidgetPresetStore.seedDefaultsIfNeeded(defaults: appGroupUserDefaults)
         self.accentColor = AccentColor.fromStoredValue(appGroupUserDefaults?.string(forKey: "accentColor"))
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false

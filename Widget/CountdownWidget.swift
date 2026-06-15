@@ -276,6 +276,7 @@ struct CountdownWidget: Widget {
         StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
             if #available(iOS 17.0, *) {
                 CountdownEntryView(entry: entry)
+                    .padding(14)
                     .containerBackground(for: .widget) { Color.clear }
             } else {
                 CountdownEntryView(entry: entry)
@@ -285,5 +286,6 @@ struct CountdownWidget: Widget {
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .configurationDisplayName("Prayer Countdown")
         .description("This widget displays the upcoming prayer time")
+        .contentMarginsDisabled()
     }
 }

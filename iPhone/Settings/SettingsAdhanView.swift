@@ -57,47 +57,6 @@ struct SettingsAdhanView: View {
                         Label(appLocalized("Notification Settings"), systemImage: "bell.badge")
                     }
                     
-                    #if os(iOS)
-                    Toggle(appLocalized("Live Next Prayer Activity"), isOn: $settings.liveNextPrayerEnabled.animation(.easeInOut))
-                        .font(.subheadline)
-                        .tint(settings.accentColor.toggleTint)
-
-                    if settings.liveNextPrayerEnabled {
-                        HStack {
-                            Text(appLocalized("Show Before Prayer"))
-                                .font(.subheadline)
-                            Spacer()
-                            Text("\(max(0, settings.liveActivityLeadMinutes)) \(appLocalized("minutes"))")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-
-                        Text("Live Activity appears \(max(0, settings.liveActivityLeadMinutes)) minutes before prayer time. This timing is fixed for now.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    } else {
-                        Text("Shows a live countdown to the next prayer on the Lock Screen when that prayer notification is enabled.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
-
-                    /*
-                    #if DEBUG
-                    if #available(iOS 16.2, *) {
-                        Button {
-                            settings.hapticFeedback()
-                            settings.startDebugLiveNextPrayerActivity(prayerName: "Test Prayer", minutesUntilPrayer: 2)
-                        } label: {
-                            Label("Start Test Live Activity (2 min)", systemImage: "timer")
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                        .font(.subheadline)
-                    }
-                    #endif
-                    */
-                    #endif
                 }
             }
             #endif
@@ -1576,6 +1535,641 @@ struct WidgetPreviewGalleryView: View {
     }
 }
 
+enum WidgetsTabSegment: String, CaseIterable, Identifiable {
+    case home
+    case lock
+    case live
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .home:
+            return isMalayAppLanguage() ? "Skrin Utama" : "Home Screen"
+        case .lock:
+            return isMalayAppLanguage() ? "Skrin Kunci" : "Lock Screen"
+        case .live:
+            return isMalayAppLanguage() ? "Aktiviti Langsung" : "Live Activity"
+        }
+    }
+}
+
+struct WidgetsTabView: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
+    @State private var selectedSegment: WidgetsTabSegment = .home
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                Picker("", selection: $selectedSegment) {
+                    ForEach(WidgetsTabSegment.allCases) { segment in
+                        Text(segment.title).tag(segment)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+                Group {
+                    switch selectedSegment {
+                    case .home:
+                        HomeWidgetPresetManagerView()
+                            .environmentObject(settings)
+                            .environmentObject(revenueCat)
+                    case .lock:
+                        WidgetPreviewGalleryView()
+                            .environmentObject(settings)
+                            .environmentObject(revenueCat)
+                    case .live:
+                        LiveActivityWidgetSettingsView()
+                            .environmentObject(settings)
+                    }
+                }
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle(appLocalized("Widgets"))
+            .navigationBarTitleDisplayMode(.large)
+        }
+        .navigationViewStyle(.stack)
+    }
+}
+
+private struct HomeWidgetPresetManagerView: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
+    @State private var selectedSlot: HomeWidgetPresetSlot?
+    @State private var refreshID = UUID()
+
+    private var hasPremiumWidgetAccess: Bool {
+        premiumWidgetsUnlocked() || revenueCat.hasPremiumWidgetsUnlocked
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                Text(isMalayAppLanguage()
+                     ? "Pilih gaya untuk preset widget yang akan digunakan oleh widget Waktu di Skrin Utama."
+                     : "Choose the style for each saved Home Screen widget preset.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+
+                presetSection(size: .small)
+                presetSection(size: .medium)
+                presetSection(size: .large)
+
+                Text(isMalayAppLanguage()
+                     ? "Tambah widget Waktu pada Skrin Utama, kemudian pilih preset ini daripada editor widget iOS."
+                     : "Add the Waktu widget to your Home Screen, then choose one of these presets in the iOS widget editor.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 30)
+            }
+            .id(refreshID)
+        }
+        .background(Color(.systemGroupedBackground))
+        .onAppear {
+            HomeWidgetPresetStore.seedDefaultsIfNeeded()
+        }
+        .sheet(item: $selectedSlot) { slot in
+            HomeWidgetStyleSelectorSheet(
+                slot: slot,
+                hasPremiumWidgetAccess: hasPremiumWidgetAccess,
+                onChange: {
+                    refreshID = UUID()
+                }
+            )
+            .environmentObject(settings)
+        }
+    }
+
+    @ViewBuilder
+    private func presetSection(size: HomeWidgetPresetSize) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(sectionTitle(for: size))
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 16)
+
+            VStack(spacing: 0) {
+                ForEach(HomeWidgetPresetSlot.slots(for: size)) { slot in
+                    Button {
+                        settings.hapticFeedback()
+                        selectedSlot = slot
+                    } label: {
+                        HomeWidgetPresetRow(
+                            slot: slot,
+                            style: HomeWidgetPresetStore.style(for: slot),
+                            isLocked: HomeWidgetPresetStore.style(for: slot).requiresPremiumWidgets && !hasPremiumWidgetAccess
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    if slot != HomeWidgetPresetSlot.slots(for: size).last {
+                        Divider()
+                            .padding(.leading, 132)
+                    }
+                }
+            }
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(.horizontal, 16)
+        }
+    }
+
+    private func sectionTitle(for size: HomeWidgetPresetSize) -> String {
+        switch size {
+        case .small:
+            return isMalayAppLanguage() ? "Widget Kecil" : "Small Widgets"
+        case .medium:
+            return isMalayAppLanguage() ? "Widget Sederhana" : "Medium Widgets"
+        case .large:
+            return isMalayAppLanguage() ? "Widget Besar" : "Large Widgets"
+        }
+    }
+}
+
+private struct HomeWidgetPresetRow: View {
+    @EnvironmentObject var settings: Settings
+
+    let slot: HomeWidgetPresetSlot
+    let style: HomeWidgetStyle
+    let isLocked: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(slot.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Text(isMalayAppLanguage() ? "Ketik untuk edit" : "Tap to edit")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: 96, alignment: .leading)
+
+            HomeWidgetPreviewCanvas(style: style, size: slot.size, displaySize: previewSize)
+                .overlay {
+                    if isLocked {
+                        RoundedRectangle(cornerRadius: HomeWidgetCanvasMetrics.cornerRadius(for: slot.size, displaySize: previewSize), style: .continuous)
+                            .fill(.regularMaterial)
+                        Image(systemName: "lock.fill")
+                            .font(.headline)
+                            .foregroundStyle(settings.accentColor.color)
+                    }
+                }
+
+            Spacer(minLength: 4)
+
+            Image(systemName: "chevron.right")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
+    }
+
+    private var previewSize: CGSize {
+        switch slot.size {
+        case .small:
+            return CGSize(width: 86, height: 86)
+        case .medium:
+            return HomeWidgetCanvasMetrics.thumbnailSize(for: .medium, width: 142)
+        case .large:
+            return HomeWidgetCanvasMetrics.thumbnailSize(for: .large, width: 96)
+        }
+    }
+}
+
+private struct HomeWidgetStyleSelectorSheet: View {
+    @EnvironmentObject var settings: Settings
+    @Environment(\.dismiss) private var dismiss
+
+    let slot: HomeWidgetPresetSlot
+    let hasPremiumWidgetAccess: Bool
+    let onChange: () -> Void
+
+    @State private var selectedStyle: HomeWidgetStyle
+
+    init(slot: HomeWidgetPresetSlot, hasPremiumWidgetAccess: Bool, onChange: @escaping () -> Void) {
+        self.slot = slot
+        self.hasPremiumWidgetAccess = hasPremiumWidgetAccess
+        self.onChange = onChange
+        _selectedStyle = State(initialValue: HomeWidgetPresetStore.style(for: slot))
+    }
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HomeWidgetHeroPreview(style: selectedStyle, size: slot.size)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+
+                    VStack(spacing: 0) {
+                        ForEach(HomeWidgetStyle.styles(for: slot.size)) { style in
+                            Button {
+                                settings.hapticFeedback()
+                                selectedStyle = style
+                                guard !style.requiresPremiumWidgets || hasPremiumWidgetAccess else {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+                                    }
+                                    return
+                                }
+                                HomeWidgetPresetStore.setStyle(style, for: slot)
+                                WidgetCenter.shared.reloadAllTimelines()
+                                onChange()
+                            } label: {
+                                HStack(spacing: 14) {
+                                    HomeWidgetPreviewCanvas(
+                                        style: style,
+                                        size: slot.size,
+                                        displaySize: HomeWidgetCanvasMetrics.thumbnailSize(for: slot.size, width: 74)
+                                    )
+
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        HStack(spacing: 6) {
+                                            Text(style.title)
+                                                .font(.headline)
+                                                .foregroundStyle(.primary)
+                                            if style.requiresPremiumWidgets {
+                                                PremiumWidgetBadge()
+                                            }
+                                        }
+                                        Text(style.subtitle)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2)
+                                    }
+
+                                    Spacer()
+
+                                    if selectedStyle == style {
+                                        Image(systemName: "checkmark")
+                                            .font(.title3.weight(.bold))
+                                            .foregroundStyle(settings.accentColor.color)
+                                    } else if style.requiresPremiumWidgets && !hasPremiumWidgetAccess {
+                                        Image(systemName: "lock.fill")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(14)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+
+                            if style != HomeWidgetStyle.styles(for: slot.size).last {
+                                Divider()
+                                    .padding(.leading, 102)
+                            }
+                        }
+                    }
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
+                }
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle(slot.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(appLocalized("Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(appLocalized("Save")) {
+                        if !selectedStyle.requiresPremiumWidgets || hasPremiumWidgetAccess {
+                            HomeWidgetPresetStore.setStyle(selectedStyle, for: slot)
+                            WidgetCenter.shared.reloadAllTimelines()
+                            onChange()
+                        }
+                        dismiss()
+                    }
+                    .font(.body.weight(.semibold))
+                }
+            }
+        }
+        .navigationViewStyle(.stack)
+    }
+}
+
+private enum HomeWidgetCanvasMetrics {
+    static func designSize(for size: HomeWidgetPresetSize) -> CGSize {
+        switch size {
+        case .small:
+            return CGSize(width: 170, height: 170)
+        case .medium:
+            return CGSize(width: 364, height: 170)
+        case .large:
+            return CGSize(width: 364, height: 382)
+        }
+    }
+
+    static func thumbnailSize(for size: HomeWidgetPresetSize, width: CGFloat) -> CGSize {
+        let design = designSize(for: size)
+        return CGSize(width: width, height: width * design.height / design.width)
+    }
+
+    static func cornerRadius(for size: HomeWidgetPresetSize, displaySize: CGSize) -> CGFloat {
+        let base = designSize(for: size)
+        let scale = min(displaySize.width / base.width, displaySize.height / base.height)
+        return max(12, 32 * scale)
+    }
+}
+
+private struct HomeWidgetHeroPreview: View {
+    let style: HomeWidgetStyle
+    let size: HomeWidgetPresetSize
+
+    var body: some View {
+        GeometryReader { proxy in
+            let horizontalInset = heroHorizontalInset
+            let availableWidth = max(1, proxy.size.width - horizontalInset)
+            let design = HomeWidgetCanvasMetrics.designSize(for: size)
+            let displayWidth = min(availableWidth, design.width)
+            let displaySize = CGSize(width: displayWidth, height: displayWidth * design.height / design.width)
+
+            HomeWidgetPreviewCanvas(style: style, size: size, displaySize: displaySize)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+        .frame(height: heroHeight)
+    }
+
+    private var heroHeight: CGFloat {
+        switch size {
+        case .small:
+            return 250
+        case .medium:
+            return 190
+        case .large:
+            return 410
+        }
+    }
+
+    private var heroHorizontalInset: CGFloat {
+        if size == .small {
+            return 54
+        }
+        if size == .large && style == .metro {
+            return 48
+        }
+        return 0
+    }
+}
+
+private struct HomeWidgetPreviewCanvas: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let style: HomeWidgetStyle
+    let size: HomeWidgetPresetSize
+    let displaySize: CGSize
+
+    var body: some View {
+        let designSize = HomeWidgetCanvasMetrics.designSize(for: size)
+        let scale = min(displaySize.width / designSize.width, displaySize.height / designSize.height)
+        let cornerRadius = HomeWidgetCanvasMetrics.cornerRadius(for: size, displaySize: displaySize)
+
+        ZStack {
+            widgetBackground
+
+            HomeWidgetStylePreviewContent(style: style, size: size)
+                .frame(width: designSize.width, height: designSize.height)
+                .scaleEffect(scale, anchor: .center)
+                .frame(width: displaySize.width, height: displaySize.height)
+        }
+        .frame(width: displaySize.width, height: displaySize.height)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(Color.primary.opacity(colorScheme == .dark ? 0.16 : 0.10), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+    }
+
+    private var widgetBackground: Color {
+        colorScheme == .dark ? Color.black : Color(.systemBackground)
+    }
+}
+
+private struct HomeWidgetStylePreviewContent: View {
+    @EnvironmentObject var settings: Settings
+
+    let style: HomeWidgetStyle
+    let size: HomeWidgetPresetSize
+
+    var body: some View {
+        Group {
+            switch style {
+            case .simpleCountdown:
+                HomeSimpleCountdownPreviewCard(accentColor: settings.accentColor.color)
+            case .countdown:
+                HomeCountdownSmallPreviewCard(accentColor: settings.accentColor.color)
+            case .countdownMedium:
+                HomeCountdownMediumPreviewCard(accentColor: settings.accentColor.color)
+            case .countdownLarge:
+                HomeCountdownLargePreviewCard(accentColor: settings.accentColor.color)
+            case .prayerTimesCompact:
+                HomePrayerTimesMediumPreviewCard(accentColor: settings.accentColor.color)
+            case .prayerTimesGrid:
+                HomePrayerTimesMediumGridPreviewCard(accentColor: settings.accentColor.color)
+            case .prayerTimesLarge:
+                HomePrayerTimesLargePreviewCard(accentColor: settings.accentColor.color)
+            case .minimalist:
+                if size == .small {
+                    HomeMinimalistSmallPreviewCard()
+                } else {
+                    HomeMinimalistMediumPreviewCard()
+                }
+            case .metro:
+                switch size {
+                case .small:
+                    HomeMetroSmallPreviewCard()
+                case .medium:
+                    HomeMetroMediumPreviewCard()
+                case .large:
+                    HomeMetroLargePreviewCard()
+                }
+            case .neo:
+                switch size {
+                case .small:
+                    HomeNeoSmallPreviewCard()
+                case .medium:
+                    HomeNeoMediumPreviewCard()
+                case .large:
+                    HomeNeoLargePreviewCard()
+                }
+            case .sketch:
+                switch size {
+                case .small:
+                    HomeSketchSmallPreviewCard()
+                case .medium:
+                    HomeSketchMediumPreviewCard()
+                case .large:
+                    HomeSketchLargePreviewCard()
+                }
+            case .proNext:
+                HomeProNextPreviewCard()
+            case .proIndex:
+                HomeProIndexPreviewCard()
+            case .proArc:
+                HomeProArcPreviewCard()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+    }
+}
+
+private struct LiveActivityWidgetSettingsView: View {
+    @EnvironmentObject var settings: Settings
+    @AppStorage(LiveNotificationStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var selectedStyleRaw = LiveNotificationStyle.current.rawValue
+
+    private var selectedStyle: LiveNotificationStyle {
+        LiveNotificationStyle(rawValue: selectedStyleRaw) ?? .current
+    }
+
+    var body: some View {
+        List {
+            Section {
+                Toggle(appLocalized("Live Next Prayer Activity"), isOn: $settings.liveNextPrayerEnabled.animation(.easeInOut))
+                    .font(.subheadline)
+                    .tint(settings.accentColor.toggleTint)
+
+                Text(settings.liveNextPrayerEnabled
+                     ? "Live Activity appears \(max(0, settings.liveActivityLeadMinutes)) minutes before prayer time. This timing is fixed for now."
+                     : "Shows a live countdown to the next prayer on the Lock Screen when that prayer notification is enabled.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } header: {
+                Text(isMalayAppLanguage() ? "Aktiviti Langsung" : "Live Activity")
+            }
+
+            Section {
+                ForEach(LiveNotificationStyle.allCases) { style in
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            selectedStyleRaw = style.rawValue
+                        }
+                        WidgetCenter.shared.reloadAllTimelines()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: style.previewSystemImage)
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(settings.accentColor.color)
+                                .frame(width: 42, height: 42)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(settings.accentColor.color.opacity(0.12))
+                                )
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(style.title)
+                                    .font(.subheadline.weight(.semibold))
+                                Text(style.subtitle)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+
+                            if selectedStyle == style {
+                                Image(systemName: "checkmark")
+                                    .font(.headline.weight(.bold))
+                                    .foregroundColor(settings.accentColor.color)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            } header: {
+                Text(isMalayAppLanguage() ? "Gaya" : "Style")
+            } footer: {
+                Text("The selected style is used by the real Live Activity.")
+            }
+        }
+        .applyConditionalListStyle(defaultView: true)
+    }
+}
+
+#if DEBUG
+struct WidgetPreviewVerificationView: View {
+    @EnvironmentObject var settings: Settings
+
+    private let requestedSize: HomeWidgetPresetSize
+    private let requestedStyle: HomeWidgetStyle
+
+    init(arguments: [String] = ProcessInfo.processInfo.arguments) {
+        let parsedSize = Self.value(after: "--widget-preview-size", in: arguments)
+            .flatMap(HomeWidgetPresetSize.init(rawValue:)) ?? .small
+        let parsedStyle = Self.value(after: "--widget-preview-style", in: arguments)
+            .flatMap(HomeWidgetStyle.init(rawValue:)) ?? HomeWidgetStyle.styles(for: parsedSize).first ?? .simpleCountdown
+        requestedSize = parsedSize
+        requestedStyle = parsedStyle.supports(parsedSize) ? parsedStyle : (HomeWidgetStyle.styles(for: parsedSize).first ?? .simpleCountdown)
+    }
+
+    var body: some View {
+        ZStack {
+            Color(.systemGroupedBackground)
+                .ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                VStack(spacing: 4) {
+                    Text("Widget Preview Verification")
+                        .font(.system(size: 18, weight: .semibold))
+                    Text("\(requestedSize.rawValue) / \(requestedStyle.rawValue)")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityIdentifier("widget-verification-header")
+
+                HomeWidgetPreviewCanvas(
+                    style: requestedStyle,
+                    size: requestedSize,
+                    displaySize: displaySize
+                )
+                .accessibilityIdentifier("widget-verification-canvas")
+
+                Text("Design canvas \(Int(HomeWidgetCanvasMetrics.designSize(for: requestedSize).width))x\(Int(HomeWidgetCanvasMetrics.designSize(for: requestedSize).height))")
+                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(24)
+        }
+        .preferredColorScheme(.light)
+        .onAppear {
+            HomeWidgetPresetStore.seedDefaultsIfNeeded()
+        }
+    }
+
+    private var displaySize: CGSize {
+        let design = HomeWidgetCanvasMetrics.designSize(for: requestedSize)
+        let maxWidth: CGFloat = requestedSize == .small ? 220 : 340
+        let width = min(maxWidth, design.width)
+        return CGSize(width: width, height: width * design.height / design.width)
+    }
+
+    private static func value(after flag: String, in arguments: [String]) -> String? {
+        guard let index = arguments.firstIndex(of: flag) else { return nil }
+        let valueIndex = arguments.index(after: index)
+        guard arguments.indices.contains(valueIndex) else { return nil }
+        return arguments[valueIndex]
+    }
+}
+#endif
+
 struct HomeWidgetPreviewGalleryView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
@@ -2352,7 +2946,7 @@ private struct HomeSimpleCountdownPreviewCard: View {
     let accentColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 3) {
                 Text(appLocalized("Time left:"))
                     .font(.caption2)
@@ -2363,7 +2957,7 @@ private struct HomeSimpleCountdownPreviewCard: View {
 
             Spacer()
 
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 Image(systemName: "sunset.fill")
                     .font(.title2)
                 Text(localizedPrayerName("Maghrib"))
@@ -2387,6 +2981,8 @@ private struct HomeSimpleCountdownPreviewCard: View {
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }
 
@@ -2617,8 +3213,11 @@ private struct HomeCountdownMediumPreviewCard: View {
             .font(.caption2)
             .foregroundStyle(.secondary)
 
-            Spacer(minLength: 0)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }
 
@@ -2626,48 +3225,56 @@ private struct HomeCountdownSmallPreviewCard: View {
     let accentColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack {
-                Spacer()
                 Text("24 Ramadan")
                     .foregroundStyle(accentColor)
                     .font(.caption2)
-                Spacer()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer(minLength: 0)
             }
 
-            HStack {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(localizedPrayerName("Maghrib"))
-                    .font(.headline)
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
                     .foregroundStyle(accentColor)
                     .lineLimit(1)
-                Spacer()
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: 4)
                 Text("1:14:22")
-                    .font(.caption.monospacedDigit())
+                    .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
                     .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
 
-            HStack {
+            HStack(spacing: 5) {
                 Text("Next \(localizedPrayerName("Isha"))")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
                 Spacer()
                 Text("20:38")
                     .monospacedDigit()
+                    .lineLimit(1)
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
 
-            if true {
-                HStack {
-                    Image(systemName: "location.fill")
-                        .font(.caption2)
-                        .foregroundStyle(accentColor)
-                    Text("Subang Jaya")
-                        .font(.caption2)
-                        .lineLimit(1)
-                }
+            HStack(spacing: 4) {
+                Image(systemName: "location.fill")
+                    .font(.caption2)
+                    .foregroundStyle(accentColor)
+                Text("Subang Jaya")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
 
-            Spacer(minLength: 0)
         }
+        .lineLimit(1)
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }
 
@@ -2748,36 +3355,38 @@ private struct HomePrayerTimesMediumPreviewCard: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "sunset.fill")
                     .foregroundStyle(accentColor)
                 Text(localizedPrayerName("Maghrib"))
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(accentColor)
+                    .lineLimit(1)
                 Spacer()
                 Text("1:14:22")
                     .font(.subheadline.monospacedDigit())
+                    .lineLimit(1)
             }
 
-            VStack(spacing: 6) {
+            VStack(spacing: 5) {
                 ForEach(Array(visiblePrayers.enumerated()), id: \.offset) { index, prayer in
                     HStack {
                         Image(systemName: prayer.2)
                             .frame(width: 12)
                         Text(prayer.0)
                             .fontWeight(.bold)
+                            .lineLimit(1)
                         Spacer()
                         Text(prayer.1)
                             .fontWeight(.bold)
                             .monospacedDigit()
+                            .lineLimit(1)
                     }
                     .font(.caption)
                     .foregroundStyle(index == 0 ? accentColor : (index == 1 ? .secondary : .primary))
                 }
             }
-
-            Spacer()
 
             HStack {
                 Label("Subang Jaya, Selangor", systemImage: "location.fill")
@@ -2791,6 +3400,10 @@ private struct HomePrayerTimesMediumPreviewCard: View {
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }
 
@@ -2834,6 +3447,10 @@ private struct HomePrayerTimesMediumGridPreviewCard: View {
 
             Spacer(minLength: 0)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.82)
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -2854,6 +3471,7 @@ private struct HomePrayerTimesLargePreviewCard: View {
             Text("24 Ramadan 1447")
                 .font(.caption)
                 .foregroundStyle(accentColor)
+                .lineLimit(1)
 
             Spacer(minLength: 0)
 
@@ -2894,6 +3512,8 @@ private struct HomePrayerTimesLargePreviewCard: View {
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }
 
@@ -5803,18 +6423,16 @@ private struct HomeNeoMediumPreviewCard: View {
                 }
                 .padding(.horizontal, 10).padding(.top, 8).padding(.bottom, 4)
 
-                Text("MAGHRIB")
-                    .font(.system(size: 22, weight: .bold, design: .monospaced))
-                    .foregroundStyle(pvNeoLime)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                    .padding(.horizontal, 10)
-
-                Spacer(minLength: 3)
-
-                HStack(alignment: .bottom) {
-                    Text("01:28")
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white)
+                HStack(alignment: .center, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("MAGHRIB")
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .foregroundStyle(pvNeoLime)
+                            .lineLimit(1).minimumScaleFactor(0.6)
+                        Text("01:28")
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                    }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 1) {
                         Text("TODAY").font(.system(size: 6, weight: .semibold, design: .monospaced)).foregroundStyle(pvNeoSubtle)
@@ -5822,7 +6440,9 @@ private struct HomeNeoMediumPreviewCard: View {
                         Text("18:42").font(.system(size: 8, design: .monospaced)).foregroundStyle(pvNeoSubtle)
                     }
                 }
-                .padding(.horizontal, 10).padding(.bottom, 8)
+                .padding(.horizontal, 10)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .padding(.bottom, 8)
             }
         }
     }
@@ -5859,27 +6479,36 @@ private struct HomeNeoLargePreviewCard: View {
                 }
                 .frame(height: 8).padding(.horizontal, 10).padding(.bottom, 10)
 
-                HStack(spacing: 0) {
-                    ForEach(prayers, id: \.0) { name, done in
-                        VStack(spacing: 3) {
-                            Text(name).font(.system(size: 7, weight: done ? .semibold : .regular))
-                                .foregroundStyle(done ? .white : pvNeoSubtle).lineLimit(1).minimumScaleFactor(0.7)
-                            Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 14))
-                                .foregroundStyle(done ? pvNeoLime : pvNeoSubtle)
+                VStack(spacing: 10) {
+                    HStack(spacing: 0) {
+                        ForEach(Array(prayers.enumerated()), id: \.element.0) { index, item in
+                            let name = item.0
+                            let done = item.1
+                            VStack(spacing: 4) {
+                                Text(name).font(.system(size: 7, weight: done ? .semibold : .regular))
+                                    .foregroundStyle(done ? .white : pvNeoSubtle).lineLimit(1).minimumScaleFactor(0.7)
+                                Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 17))
+                                    .foregroundStyle(done ? pvNeoLime : pvNeoSubtle)
+                                Text(["05:52", "13:23", "16:46", "19:31", "20:38"][index])
+                                    .font(.system(size: 6, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(done ? pvNeoGray : pvNeoSubtle)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
                     }
-                }
-                .padding(.horizontal, 6)
 
-                Spacer()
-
-                HStack {
                     HStack(spacing: 4) {
                         Image(systemName: "clock").font(.system(size: 8)).foregroundStyle(pvNeoGray)
-                        Text("Isha remaining ~2h 15m").font(.system(size: 8)).foregroundStyle(pvNeoGray)
+                        Text("Isha remaining ~2h 15m").font(.system(size: 8, weight: .medium)).foregroundStyle(pvNeoGray)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 10)
+                .frame(maxHeight: .infinity, alignment: .center)
+
+                HStack {
+                    Text("4 complete").font(.system(size: 8)).foregroundStyle(pvNeoGray)
                     Spacer()
                     Text("On track")
                         .font(.system(size: 8, weight: .semibold)).foregroundStyle(pvNeoBlack)
@@ -6020,10 +6649,12 @@ private struct HomeSketchLargePreviewCard: View {
                 }
                 .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 8)
 
+                Spacer(minLength: 0)
+
                 HStack(spacing: 10) {
-                    // 5×4 dot mini-grid
+                    // 5x5 dot mini-grid
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 5), spacing: 3) {
-                        ForEach(0..<20) { i in
+                        ForEach(0..<25) { i in
                             Circle().fill(i < 16 ? pvSkOrange : pvSkDim.opacity(0.4)).frame(width: 8, height: 8)
                         }
                     }
@@ -6037,11 +6668,13 @@ private struct HomeSketchLargePreviewCard: View {
                             .rotationEffect(.degrees(-90))
                         Text("4/5").font(.system(size: 10, weight: .bold)).foregroundStyle(pvSkBlack)
                     }
-                    .frame(width: 52, height: 52)
+                    .frame(width: 64, height: 64)
                 }
-                .padding(.horizontal, 10).padding(.bottom, 8)
+                .padding(.horizontal, 10)
+                .frame(height: 88)
+                .padding(.bottom, 6)
 
-                Spacer()
+                Spacer(minLength: 0)
 
                 HStack(spacing: 0) {
                     ForEach(prayers, id: \.0) { name, done in
@@ -6057,7 +6690,7 @@ private struct HomeSketchLargePreviewCard: View {
                                     PvSketchHatch().clipShape(Circle())
                                 }
                             }
-                            .frame(width: 14, height: 14)
+                            .frame(width: 16, height: 16)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -6076,6 +6709,7 @@ private let pvMtroRed   = Color(red: 0.91, green: 0.17, blue: 0.17)
 private let pvMtroLight = Color(red: 0.95, green: 0.95, blue: 0.96)
 private let pvMtroBlue  = Color(red: 0.17, green: 0.43, blue: 0.78)
 private let pvTileR: CGFloat = 8
+private let pvSmallTileR: CGFloat = 16
 
 private struct PvMetroClock: View {
     let dark: Bool
@@ -6129,7 +6763,7 @@ private struct HomeMetroSmallPreviewCard: View {
                     PvMetroClock(dark: true).frame(width: 32, height: 32).padding(5)
                 }
                 .background(pvMtroBlack)
-                .clipShape(RoundedRectangle(cornerRadius: pvTileR, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: pvSmallTileR, style: .continuous))
 
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 1) {
@@ -6149,7 +6783,7 @@ private struct HomeMetroSmallPreviewCard: View {
                     PvMetroClock(dark: false).frame(width: 32, height: 32).padding(5)
                 }
                 .background(pvMtroRed)
-                .clipShape(RoundedRectangle(cornerRadius: pvTileR, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: pvSmallTileR, style: .continuous))
             }
             .padding(4)
         }

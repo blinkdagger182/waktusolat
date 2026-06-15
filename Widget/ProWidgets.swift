@@ -66,7 +66,7 @@ private func resolvedPair(in entry: PrayersEntry) -> (current: Prayer, next: Pra
 // MARK: - 01 · Next  (systemSmall)
 // ─────────────────────────────────────────────────────────────
 
-private struct ProNextEntryView: View {
+struct ProNextEntryView: View {
     let entry: PrayersEntry
 
     var body: some View {
@@ -150,6 +150,7 @@ struct ProNextWidget: Widget {
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Next — Pro")
         .description("Current prayer, countdown, and what follows.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -159,7 +160,7 @@ struct ProNextWidget: Widget {
 
 private enum ProSlotState { case past, current, future }
 
-private struct ProIndexEntryView: View {
+struct ProIndexEntryView: View {
     let entry: PrayersEntry
 
     private var displayPrayers: [Prayer] {
@@ -262,6 +263,7 @@ struct ProIndexWidget: Widget {
         .supportedFamilies([.systemMedium])
         .configurationDisplayName("Index — Pro")
         .description("All six prayer times as a typographic table.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -342,7 +344,7 @@ private struct SunArcView: View {
     }
 }
 
-private struct ProArcEntryView: View {
+struct ProArcEntryView: View {
     let entry: PrayersEntry
 
     private var sortedPrayers: [Prayer] {
@@ -473,6 +475,7 @@ struct ProArcWidget: Widget {
         .supportedFamilies([.systemLarge])
         .configurationDisplayName("Arc — Pro")
         .description("Sun arc with labelled horizon and live countdown.")
+        .contentMarginsDisabled()
     }
 }
 

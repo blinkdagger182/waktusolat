@@ -344,5 +344,6 @@ struct MinimalistWaktuWidget: Widget {
         .supportedFamilies([.systemSmall, .systemMedium])
         .configurationDisplayName("Waktu Minimalist")
         .description("Minimalist prayer time widgets with per-prayer colors.")
+        .contentMarginsDisabled()
     }
 }

@@ -10,6 +10,7 @@ private let mtroLight = Color(red: 0.95, green: 0.95, blue: 0.96)   // light til
 private let mtroBlue  = Color(red: 0.17, green: 0.43, blue: 0.78)   // blue tile
 private let mtroWhite = Color.white
 private let tileRadius: CGFloat = 11
+private let smallTileRadius: CGFloat = 24
 
 // MARK: - Helpers
 
@@ -158,7 +159,7 @@ private struct MetroLockedView: View {
 // MARK: - SMALL (systemSmall) — two stacked tiles
 // ═══════════════════════════════════════════════════════
 
-private struct MetroSmallView: View {
+struct MetroSmallView: View {
     let entry: PrayersEntry
 
     private var current: Prayer? { entry.currentPrayer ?? entry.prayers.first }
@@ -196,7 +197,7 @@ private struct MetroSmallView: View {
                             .padding(6)
                     }
                     .background(mtroBlack)
-                    .clipShape(RoundedRectangle(cornerRadius: tileRadius, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: smallTileRadius, style: .continuous))
 
                     // ── Bottom tile (red) ──
                     HStack(spacing: 0) {
@@ -222,7 +223,7 @@ private struct MetroSmallView: View {
                             .padding(6)
                     }
                     .background(mtroRed)
-                    .clipShape(RoundedRectangle(cornerRadius: tileRadius, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: smallTileRadius, style: .continuous))
                 }
                 .padding(6)
             }
@@ -244,6 +245,7 @@ struct MetroSmallWidget: Widget {
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Metro Mini")
         .description("Current and next prayer in a transit-board tile layout.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -251,7 +253,7 @@ struct MetroSmallWidget: Widget {
 // MARK: - MEDIUM (systemMedium) — 2 × 2 grid
 // ═══════════════════════════════════════════════════════
 
-private struct MetroMediumView: View {
+struct MetroMediumView: View {
     let entry: PrayersEntry
 
     private var current: Prayer? { entry.currentPrayer ?? entry.prayers.first }
@@ -410,6 +412,7 @@ struct MetroMediumWidget: Widget {
         .supportedFamilies([.systemMedium])
         .configurationDisplayName("Metro")
         .description("Prayer countdown, date, and sun times in a transit-board tile layout.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -417,7 +420,7 @@ struct MetroMediumWidget: Widget {
 // MARK: - LARGE (systemLarge) — dashboard
 // ═══════════════════════════════════════════════════════
 
-private struct MetroLargeView: View {
+struct MetroLargeView: View {
     let entry: PrayersEntry
 
     private var current: Prayer? { entry.currentPrayer ?? entry.prayers.first }
@@ -644,5 +647,6 @@ struct MetroLargeWidget: Widget {
         .supportedFamilies([.systemLarge])
         .configurationDisplayName("Metro Max")
         .description("Full prayer dashboard with countdown, prayer strip, and sun times.")
+        .contentMarginsDisabled()
     }
 }

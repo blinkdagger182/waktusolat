@@ -84,7 +84,7 @@ private struct NeoLockedView: View {
 // MARK: - SMALL — prose sentence
 // ═══════════════════════════════════════════════════════
 
-private struct NeoSmallView: View {
+struct NeoSmallView: View {
     let entry: PrayersEntry
 
     private var current: Prayer? { entry.currentPrayer ?? entry.prayers.first }
@@ -139,6 +139,7 @@ struct NeoSmallWidget: Widget {
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Neo")
         .description("A prose sentence describing your current and next prayer.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -146,7 +147,7 @@ struct NeoSmallWidget: Widget {
 // MARK: - MEDIUM — departure board
 // ═══════════════════════════════════════════════════════
 
-private struct NeoMediumView: View {
+struct NeoMediumView: View {
     let entry: PrayersEntry
 
     private var current: Prayer? { entry.currentPrayer ?? entry.prayers.first }
@@ -183,22 +184,19 @@ private struct NeoMediumView: View {
                     }
                     .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
 
-                    // Big prayer name — dot-matrix style
-                    Text((current?.nameTransliteration.uppercased() ?? "------"))
-                        .font(.system(size: 38, weight: .bold, design: .monospaced))
-                        .foregroundStyle(neoLime)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .padding(.horizontal, 16)
+                    HStack(alignment: .center, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text((current?.nameTransliteration.uppercased() ?? "------"))
+                                .font(.system(size: 34, weight: .bold, design: .monospaced))
+                                .foregroundStyle(neoLime)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
 
-                    Spacer(minLength: 6)
-
-                    // Bottom row: countdown + time
-                    HStack(alignment: .bottom) {
-                        Text(next.map { countdown(to: $0.time, from: entry.date) } ?? "--:--")
-                            .font(.system(size: 36, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
+                            Text(next.map { countdown(to: $0.time, from: entry.date) } ?? "--:--")
+                                .font(.system(size: 34, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                        }
 
                         Spacer()
 
@@ -215,6 +213,7 @@ private struct NeoMediumView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    .frame(maxHeight: .infinity, alignment: .center)
                     .padding(.bottom, 14)
                 }
             }
@@ -235,6 +234,7 @@ struct NeoMediumWidget: Widget {
         .supportedFamilies([.systemMedium])
         .configurationDisplayName("Neo Board")
         .description("Departure-board countdown to the next prayer.")
+        .contentMarginsDisabled()
     }
 }
 
@@ -242,7 +242,7 @@ struct NeoMediumWidget: Widget {
 // MARK: - LARGE — prayer progress tracker
 // ═══════════════════════════════════════════════════════
 
-private struct NeoLargeView: View {
+struct NeoLargeView: View {
     let entry: PrayersEntry
 
     private var progress: NeoPrayerData { neoProgress(from: entry) }
@@ -299,40 +299,46 @@ private struct NeoLargeView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 20)
 
-                    // Prayer checkmark row
-                    HStack(spacing: 0) {
-                        ForEach(progress.items, id: \.short) { item in
-                            VStack(spacing: 6) {
-                                Text(item.short)
-                                    .font(.system(size: 12, weight: item.isDone ? .semibold : .regular))
-                                    .foregroundStyle(item.isDone ? .white : neoSubtle)
-                                    .lineLimit(1).minimumScaleFactor(0.7)
-                                Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
-                                    .font(.system(size: 22))
-                                    .foregroundStyle(item.isDone ? neoLime : neoSubtle)
+                    VStack(spacing: 18) {
+                        HStack(spacing: 0) {
+                            ForEach(progress.items, id: \.short) { item in
+                                VStack(spacing: 8) {
+                                    Text(item.short)
+                                        .font(.system(size: 13, weight: item.isDone ? .semibold : .regular))
+                                        .foregroundStyle(item.isDone ? .white : neoSubtle)
+                                        .lineLimit(1).minimumScaleFactor(0.7)
+                                    Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 28))
+                                        .foregroundStyle(item.isDone ? neoLime : neoSubtle)
+                                    Text(neoTimeFmt.string(from: item.time))
+                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(item.isDone ? neoGray : neoSubtle)
+                                }
+                                .frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
+                        }
+
+                        if let next = progress.nextRemaining {
+                            HStack(spacing: 8) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("\(next.name) remaining")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text(progress.remainingLabel(from: entry.date) ?? "")
+                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            }
+                            .foregroundStyle(neoGray)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-                    .padding(.horizontal, 12)
-
-                    Spacer()
+                    .padding(.horizontal, 16)
+                    .frame(maxHeight: .infinity, alignment: .center)
 
                     // Footer
                     HStack {
-                        if let next = progress.nextRemaining {
-                            HStack(spacing: 6) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(neoGray)
-                                Text("\(next.name) remaining")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(neoGray)
-                                Text(progress.remainingLabel(from: entry.date) ?? "")
-                                    .font(.system(size: 13, design: .monospaced))
-                                    .foregroundStyle(neoSubtle)
-                            }
-                        }
+                        Text("\(progress.done) complete")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(neoGray)
                         Spacer()
                         Text(progress.isOnTrack(now: entry.date) ? "On track" : "Keep going")
                             .font(.system(size: 12, weight: .semibold))
@@ -361,5 +367,6 @@ struct NeoLargeWidget: Widget {
         .supportedFamilies([.systemLarge])
         .configurationDisplayName("Neo Progress")
         .description("Daily prayer progress tracker with completion status.")
+        .contentMarginsDisabled()
     }
 }

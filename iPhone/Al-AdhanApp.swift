@@ -192,6 +192,7 @@ struct AlAdhanApp: App {
     private enum AppTab: Hashable {
         case adhan
         case today
+        case widgets
         case library
         case plus
 
@@ -201,6 +202,8 @@ struct AlAdhanApp: App {
                 return "adhan-tab-scroll"
             case .today:
                 return "today-tab-scroll"
+            case .widgets:
+                return "widgets-tab-scroll"
             case .library:
                 return "library-tab-scroll"
             case .plus:
@@ -258,6 +261,9 @@ struct AlAdhanApp: App {
     @State private var showUnsupportedRegionModal = false
     @State private var showPrayerTrackerPrompt = false
     private let paywallOfferingIdentifiers = ["waktu_pro", "Waktu Plus Supporter"]
+    #if DEBUG
+    private let widgetPreviewVerificationLaunch = ProcessInfo.processInfo.arguments.contains("--verify-widget-previews")
+    #endif
 
     init() {
         RevenueCatManager.shared.configure()
@@ -277,15 +283,7 @@ struct AlAdhanApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if isLaunching {
-                    LaunchScreen(isLaunching: $isLaunching)
-                } else if settings.firstLaunch {
-                    SplashScreen()
-                } else {
-                    mainTabView
-                }
-            }
+            rootContent
             .id(rootRefreshToken)
             //.statusBarHidden(true)
             .environmentObject(settings)
@@ -575,6 +573,29 @@ struct AlAdhanApp: App {
         }
     }
 
+    @ViewBuilder
+    private var rootContent: some View {
+        #if DEBUG
+        if widgetPreviewVerificationLaunch {
+            WidgetPreviewVerificationView()
+        } else if isLaunching {
+            LaunchScreen(isLaunching: $isLaunching)
+        } else if settings.firstLaunch {
+            SplashScreen()
+        } else {
+            mainTabView
+        }
+        #else
+        if isLaunching {
+            LaunchScreen(isLaunching: $isLaunching)
+        } else if settings.firstLaunch {
+            SplashScreen()
+        } else {
+            mainTabView
+        }
+        #endif
+    }
+
     private var mainTabView: some View {
         Group {
             // Temporarily disable the custom legacy tab bar and use the system tab bar
@@ -641,6 +662,14 @@ struct AlAdhanApp: App {
                 }
                 .tag(AppTab.today)
 
+            WidgetsTabView()
+                .environmentObject(settings)
+                .environmentObject(revenueCat)
+                .tabItem {
+                    Label(appLocalized("Widgets"), systemImage: "square.grid.2x2.fill")
+                }
+                .tag(AppTab.widgets)
+
             OtherView(isActive: selectedTab == .library) { _ in }
                 .tabItem {
                     Label(isMalayAppLanguage() ? "Pustaka" : "Library", systemImage: "books.vertical")
@@ -664,6 +693,12 @@ struct AlAdhanApp: App {
             .opacity(selectedTab == .today ? 1 : 0)
             .allowsHitTesting(selectedTab == .today)
 
+            WidgetsTabView()
+                .environmentObject(settings)
+                .environmentObject(revenueCat)
+                .opacity(selectedTab == .widgets ? 1 : 0)
+                .allowsHitTesting(selectedTab == .widgets)
+
             OtherView(isActive: selectedTab == .library) { offset in
                 bottomBarVisibility.handleScroll(offset: offset, source: AppTab.library.scrollSourceID)
             }
@@ -677,6 +712,7 @@ struct AlAdhanApp: App {
             HStack(spacing: 10) {
                 bottomTabBarButton(for: .adhan, systemImage: "safari", title: "Azan")
                 bottomTabBarButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
+                bottomTabBarButton(for: .widgets, systemImage: "square.grid.2x2.fill", title: appLocalized("Widgets"))
                 bottomTabBarButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
             }
             .padding(.horizontal, 6)
@@ -826,14 +862,14 @@ struct AlAdhanApp: App {
             return Color(red: 0.98, green: 0.39, blue: 0.37)
         case .plus:
             return settings.accentColor.color
-        case .adhan, .library:
+        case .adhan, .widgets, .library:
             return isDarkMode ? Color.white : Color.black.opacity(0.84)
         }
     }
 
     private func tabHidesOnScroll(_ tab: AppTab) -> Bool {
         switch tab {
-        case .adhan, .today, .library, .plus:
+        case .adhan, .today, .widgets, .library, .plus:
             return false
         }
     }

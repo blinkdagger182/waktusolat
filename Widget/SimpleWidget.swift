@@ -96,6 +96,7 @@ struct SimpleWidget: Widget {
         StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
             if #available(iOS 17.0, *) {
                 SimpleEntryView(entry: entry)
+                    .padding(14)
                     .containerBackground(for: .widget) { Color.clear }
             } else {
                 SimpleEntryView(entry: entry)
@@ -105,5 +106,6 @@ struct SimpleWidget: Widget {
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Simple Prayer Countdown")
         .description("This widget displays the upcoming prayer time in a simple way")
+        .contentMarginsDisabled()
     }
 }
