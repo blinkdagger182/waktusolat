@@ -125,6 +125,8 @@ struct MinimalistWaktuEntryView: View {
                 switch widgetFamily {
                 case .systemMedium:
                     mediumBody
+                case .systemLarge:
+                    largeBody
                 default:
                     smallBody
                 }
@@ -136,10 +138,6 @@ struct MinimalistWaktuEntryView: View {
     private var smallBody: some View {
         ZStack {
             theme.background
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(foreground.opacity(0.88), lineWidth: 3)
-                .padding(3)
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
@@ -184,10 +182,6 @@ struct MinimalistWaktuEntryView: View {
         ZStack {
             MinimalistPrayerTheme.flatGray
 
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Color.black, lineWidth: 3)
-                .padding(2)
-
             HStack(spacing: 8) {
                 mainMediumTile
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -222,9 +216,6 @@ struct MinimalistWaktuEntryView: View {
     private var mainMediumTile: some View {
         ZStack {
             theme.background
-
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(foreground.opacity(0.95), lineWidth: 2.5)
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
@@ -266,9 +257,6 @@ struct MinimalistWaktuEntryView: View {
         ZStack {
             background
 
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.95), lineWidth: 2.5)
-
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 10) {
                     if let icon {
@@ -296,6 +284,122 @@ struct MinimalistWaktuEntryView: View {
             .padding(.vertical, 9)
         }
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var largeBody: some View {
+        ZStack {
+            MinimalistPrayerTheme.flatGray
+
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    mainLargeTile
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    VStack(spacing: 10) {
+                        if let current = displayPrayer {
+                            infoTile(
+                                background: theme.topTileBackground,
+                                icon: theme.primarySymbol,
+                                time: widgetPrayerDisplayTime(current, in: entry),
+                                foreground: .black,
+                                label: widgetPrayerDisplayName(current, in: entry)
+                            )
+                        }
+
+                        if let next = nextPrayer {
+                            infoTile(
+                                background: theme.bottomTileBackground,
+                                icon: nil,
+                                time: widgetPrayerDisplayTime(next, in: entry),
+                                foreground: .white,
+                                label: appLocalized("Next")
+                            )
+                        }
+                    }
+                    .frame(width: 142)
+                }
+
+                HStack(spacing: 10) {
+                    summaryTile(title: weekdayText, subtitle: entry.currentCity.isEmpty ? appLocalized("Current Location") : entry.currentCity)
+
+                    let remaining = remainingText(until: nextPrayer?.time ?? displayPrayer?.time ?? entry.date, from: entry.date)
+                    summaryTile(title: remaining, subtitle: appLocalized("Remaining"))
+                }
+                .frame(height: 74)
+            }
+            .padding(12)
+        }
+    }
+
+    private var mainLargeTile: some View {
+        ZStack {
+            theme.background
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    MinimalistPrayerIcon(theme: theme, color: foreground, size: 48)
+                    Spacer(minLength: 12)
+                    Text(displayPrayer.map { widgetPrayerDisplayName($0, in: entry) } ?? theme.title)
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundStyle(foreground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+
+                Spacer(minLength: 10)
+
+                if let prayer = displayPrayer {
+                    Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
+                        .font(.system(size: 54, weight: .regular, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(foreground)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+
+                Text(entry.currentCity.isEmpty ? appLocalized("Current Location") : entry.currentCity)
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .foregroundStyle(foreground.opacity(0.86))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
+                    .padding(.top, 8)
+            }
+            .padding(18)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    private func summaryTile(title: String, subtitle: String) -> some View {
+        ZStack {
+            Color.white.opacity(0.72)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
+
+                Text(subtitle)
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundStyle(.black.opacity(0.62))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private func remainingText(until target: Date, from now: Date) -> String {
+        let totalMinutes = max(Int(target.timeIntervalSince(now) / 60), 0)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        return "\(max(minutes, 1))m"
     }
 
     private var weekdayText: String {
@@ -341,7 +445,7 @@ struct MinimalistWaktuWidget: Widget {
                     .padding(0)
             }
         }
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .configurationDisplayName("Waktu Minimalist")
         .description("Minimalist prayer time widgets with per-prayer colors.")
         .contentMarginsDisabled()

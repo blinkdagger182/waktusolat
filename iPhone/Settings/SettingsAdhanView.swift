@@ -1988,8 +1988,10 @@ private struct HomeWidgetStylePreviewContent: View {
             case .minimalist:
                 if size == .small {
                     HomeMinimalistSmallPreviewCard()
-                } else {
+                } else if size == .medium {
                     HomeMinimalistMediumPreviewCard()
+                } else {
+                    HomeMinimalistLargePreviewCard()
                 }
             case .metro:
                 switch size {
@@ -2455,6 +2457,10 @@ struct HomeWidgetPreviewGalleryView: View {
                                 title: isMalayAppLanguage() ? "Minimalist" : "Minimalist",
                                 family: .medium
                             ) { HomeMinimalistMediumPreviewCard() }
+                            HomeWidgetShowcaseCard(
+                                title: isMalayAppLanguage() ? "Minimalist Max" : "Minimalist Max",
+                                family: .large
+                            ) { HomeMinimalistLargePreviewCard() }
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 4)
@@ -3013,10 +3019,6 @@ private struct HomeMinimalistSmallPreviewCard: View {
         ZStack {
             theme.background
 
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.9), lineWidth: 3)
-                .padding(3)
-
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     HomeMinimalistSunriseIcon(size: 34)
@@ -3061,15 +3063,9 @@ private struct HomeMinimalistMediumPreviewCard: View {
         ZStack {
             HomeMinimalistPreviewTheme.flatGray
 
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Color.black, lineWidth: 3)
-                .padding(2)
-
             HStack(spacing: 8) {
                 ZStack {
                     theme.background
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .strokeBorder(Color.black.opacity(0.95), lineWidth: 2.5)
 
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .top) {
@@ -3133,8 +3129,6 @@ private struct HomeMinimalistInfoPreviewTile: View {
     var body: some View {
         ZStack {
             background
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.95), lineWidth: 2.5)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 10) {
@@ -3162,6 +3156,105 @@ private struct HomeMinimalistInfoPreviewTile: View {
             .padding(.vertical, 9)
         }
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct HomeMinimalistLargePreviewCard: View {
+    private let theme = HomeMinimalistPreviewTheme.subuh
+
+    var body: some View {
+        ZStack {
+            HomeMinimalistPreviewTheme.flatGray
+
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        theme.background
+
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(alignment: .top) {
+                                HomeMinimalistSunriseIcon(size: 48)
+                                Spacer(minLength: 12)
+                                Text("Subuh")
+                                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.black)
+                                    .lineLimit(1)
+                            }
+
+                            Spacer(minLength: 10)
+
+                            Text("5:48")
+                                .font(.system(size: 54, weight: .regular, design: .rounded))
+                                .monospacedDigit()
+                                .foregroundStyle(.black)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+
+                            Text("Kuala Lumpur")
+                                .font(.system(size: 18, weight: .regular, design: .rounded))
+                                .foregroundStyle(.black.opacity(0.86))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.65)
+                                .padding(.top, 8)
+                        }
+                        .padding(18)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    VStack(spacing: 10) {
+                        HomeMinimalistInfoPreviewTile(
+                            background: theme.blueTile,
+                            icon: "sun.max",
+                            time: "4:32",
+                            label: "Subuh",
+                            foreground: .black
+                        )
+                        HomeMinimalistInfoPreviewTile(
+                            background: theme.darkTile,
+                            icon: nil,
+                            time: "7:24",
+                            label: "Next",
+                            foreground: .white
+                        )
+                    }
+                    .frame(width: 142)
+                }
+
+                HStack(spacing: 10) {
+                    HomeMinimalistSummaryPreviewTile(title: "Mon", subtitle: "Kuala Lumpur")
+                    HomeMinimalistSummaryPreviewTile(title: "1h 18m", subtitle: "Remaining")
+                }
+                .frame(height: 74)
+            }
+            .padding(12)
+        }
+    }
+}
+
+private struct HomeMinimalistSummaryPreviewTile: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        ZStack {
+            Color.white.opacity(0.72)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(.black)
+                    .lineLimit(1)
+                Text(subtitle)
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundStyle(.black.opacity(0.62))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 

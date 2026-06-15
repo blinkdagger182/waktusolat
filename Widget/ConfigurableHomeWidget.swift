@@ -10,52 +10,6 @@ struct ConfigurableHomeWidgetEntry: TimelineEntry {
 }
 
 @available(iOS 17.0, *)
-struct ConfigurableHomeWidgetProvider<Configuration: HomeWidgetPresetConfigurationIntent>: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> ConfigurableHomeWidgetEntry {
-        ConfigurableHomeWidgetEntry(
-            date: Date(),
-            prayersEntry: PrayersProvider().placeholder(in: context),
-            configuredSlot: Configuration().preset?.slot
-        )
-    }
-
-    func snapshot(
-        for configuration: Configuration,
-        in context: Context
-    ) async -> ConfigurableHomeWidgetEntry {
-        let entry = await prayersSnapshot(in: context)
-        return ConfigurableHomeWidgetEntry(date: entry.date, prayersEntry: entry, configuredSlot: configuration.preset?.slot)
-    }
-
-    func timeline(
-        for configuration: Configuration,
-        in context: Context
-    ) async -> Timeline<ConfigurableHomeWidgetEntry> {
-        let timeline = await prayersTimeline(in: context)
-        let entries = timeline.entries.map {
-            ConfigurableHomeWidgetEntry(date: $0.date, prayersEntry: $0, configuredSlot: configuration.preset?.slot)
-        }
-        return Timeline(entries: entries, policy: timeline.policy)
-    }
-
-    private func prayersSnapshot(in context: Context) async -> PrayersEntry {
-        await withCheckedContinuation { continuation in
-            PrayersProvider().getSnapshot(in: context) { entry in
-                continuation.resume(returning: entry)
-            }
-        }
-    }
-
-    private func prayersTimeline(in context: Context) async -> Timeline<PrayersEntry> {
-        await withCheckedContinuation { continuation in
-            PrayersProvider().getTimeline(in: context) { timeline in
-                continuation.resume(returning: timeline)
-            }
-        }
-    }
-}
-
-@available(iOS 17.0, *)
 struct ConfigurableHomeWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
 
@@ -195,137 +149,113 @@ struct FixedHomeWidgetProvider: TimelineProvider {
 }
 
 @available(iOS 17.0, *)
-private struct FixedHomePresetConfiguration {
-    let slot: HomeWidgetPresetSlot
+struct SmallPresetOneWidget: Widget {
+    let kind = "HomeWidgetPresetSmall1"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "HomeWidgetPreset.\(slot.rawValue)", provider: FixedHomeWidgetProvider(slot: slot)) { entry in
+        StaticConfiguration(kind: kind, provider: FixedHomeWidgetProvider(slot: .small1)) { entry in
             ConfigurableHomeWidgetEntryView(entry: entry)
                 .containerBackground(for: .widget) { Color.clear }
         }
-        .supportedFamilies([widgetFamily])
-        .configurationDisplayName("Waktu \(slot.title)")
-        .description("Uses the \(slot.title) style selected in the Waktu app.")
+        .supportedFamilies([.systemSmall])
+        .configurationDisplayName("Waktu Small #1")
+        .description("Uses the Small #1 style selected in the Waktu app.")
         .contentMarginsDisabled()
-    }
-
-    private var widgetFamily: WidgetFamily {
-        switch slot.size {
-        case .small:
-            return .systemSmall
-        case .medium:
-            return .systemMedium
-        case .large:
-            return .systemLarge
-        }
-    }
-}
-
-@available(iOS 17.0, *)
-struct SmallPresetOneWidget: Widget {
-    var body: some WidgetConfiguration {
-        FixedHomePresetConfiguration(slot: .small1).body
     }
 }
 
 @available(iOS 17.0, *)
 struct SmallPresetTwoWidget: Widget {
+    let kind = "HomeWidgetPresetSmall2"
+
     var body: some WidgetConfiguration {
-        FixedHomePresetConfiguration(slot: .small2).body
+        StaticConfiguration(kind: kind, provider: FixedHomeWidgetProvider(slot: .small2)) { entry in
+            ConfigurableHomeWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) { Color.clear }
+        }
+        .supportedFamilies([.systemSmall])
+        .configurationDisplayName("Waktu Small #2")
+        .description("Uses the Small #2 style selected in the Waktu app.")
+        .contentMarginsDisabled()
     }
 }
 
 @available(iOS 17.0, *)
 struct MediumPresetOneWidget: Widget {
+    let kind = "HomeWidgetPresetMedium1"
+
     var body: some WidgetConfiguration {
-        FixedHomePresetConfiguration(slot: .medium1).body
+        StaticConfiguration(kind: kind, provider: FixedHomeWidgetProvider(slot: .medium1)) { entry in
+            ConfigurableHomeWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) { Color.clear }
+        }
+        .supportedFamilies([.systemMedium])
+        .configurationDisplayName("Waktu Medium #1")
+        .description("Uses the Medium #1 style selected in the Waktu app.")
+        .contentMarginsDisabled()
     }
 }
 
 @available(iOS 17.0, *)
 struct MediumPresetTwoWidget: Widget {
+    let kind = "HomeWidgetPresetMedium2"
+
     var body: some WidgetConfiguration {
-        FixedHomePresetConfiguration(slot: .medium2).body
+        StaticConfiguration(kind: kind, provider: FixedHomeWidgetProvider(slot: .medium2)) { entry in
+            ConfigurableHomeWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) { Color.clear }
+        }
+        .supportedFamilies([.systemMedium])
+        .configurationDisplayName("Waktu Medium #2")
+        .description("Uses the Medium #2 style selected in the Waktu app.")
+        .contentMarginsDisabled()
     }
 }
 
 @available(iOS 17.0, *)
 struct MediumPresetThreeWidget: Widget {
+    let kind = "HomeWidgetPresetMedium3"
+
     var body: some WidgetConfiguration {
-        FixedHomePresetConfiguration(slot: .medium3).body
+        StaticConfiguration(kind: kind, provider: FixedHomeWidgetProvider(slot: .medium3)) { entry in
+            ConfigurableHomeWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) { Color.clear }
+        }
+        .supportedFamilies([.systemMedium])
+        .configurationDisplayName("Waktu Medium #3")
+        .description("Uses the Medium #3 style selected in the Waktu app.")
+        .contentMarginsDisabled()
     }
 }
 
 @available(iOS 17.0, *)
 struct LargePresetOneWidget: Widget {
+    let kind = "HomeWidgetPresetLarge1"
+
     var body: some WidgetConfiguration {
-        FixedHomePresetConfiguration(slot: .large1).body
+        StaticConfiguration(kind: kind, provider: FixedHomeWidgetProvider(slot: .large1)) { entry in
+            ConfigurableHomeWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) { Color.clear }
+        }
+        .supportedFamilies([.systemLarge])
+        .configurationDisplayName("Waktu Large #1")
+        .description("Uses the Large #1 style selected in the Waktu app.")
+        .contentMarginsDisabled()
     }
 }
 
 @available(iOS 17.0, *)
 struct LargePresetTwoWidget: Widget {
-    var body: some WidgetConfiguration {
-        FixedHomePresetConfiguration(slot: .large2).body
-    }
-}
-
-@available(iOS 17.0, *)
-struct SmallConfigurableHomeWidget: Widget {
-    let kind = "SmallConfigurableHomeWidget"
+    let kind = "HomeWidgetPresetLarge2"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
-            kind: kind,
-            intent: SmallHomeWidgetConfigurationIntent.self,
-            provider: ConfigurableHomeWidgetProvider<SmallHomeWidgetConfigurationIntent>()
-        ) { entry in
-            ConfigurableHomeWidgetEntryView(entry: entry)
-                .containerBackground(for: .widget) { Color.clear }
-        }
-        .supportedFamilies([.systemSmall])
-        .configurationDisplayName("Waktu Small")
-        .description("Choose a saved small Waktu widget preset and customize it in the app.")
-        .contentMarginsDisabled()
-    }
-}
-
-@available(iOS 17.0, *)
-struct MediumConfigurableHomeWidget: Widget {
-    let kind = "MediumConfigurableHomeWidget"
-
-    var body: some WidgetConfiguration {
-        AppIntentConfiguration(
-            kind: kind,
-            intent: MediumHomeWidgetConfigurationIntent.self,
-            provider: ConfigurableHomeWidgetProvider<MediumHomeWidgetConfigurationIntent>()
-        ) { entry in
-            ConfigurableHomeWidgetEntryView(entry: entry)
-                .containerBackground(for: .widget) { Color.clear }
-        }
-        .supportedFamilies([.systemMedium])
-        .configurationDisplayName("Waktu Medium")
-        .description("Choose a saved medium Waktu widget preset and customize it in the app.")
-        .contentMarginsDisabled()
-    }
-}
-
-@available(iOS 17.0, *)
-struct LargeConfigurableHomeWidget: Widget {
-    let kind = "LargeConfigurableHomeWidget"
-
-    var body: some WidgetConfiguration {
-        AppIntentConfiguration(
-            kind: kind,
-            intent: LargeHomeWidgetConfigurationIntent.self,
-            provider: ConfigurableHomeWidgetProvider<LargeHomeWidgetConfigurationIntent>()
-        ) { entry in
+        StaticConfiguration(kind: kind, provider: FixedHomeWidgetProvider(slot: .large2)) { entry in
             ConfigurableHomeWidgetEntryView(entry: entry)
                 .containerBackground(for: .widget) { Color.clear }
         }
         .supportedFamilies([.systemLarge])
-        .configurationDisplayName("Waktu Large")
-        .description("Choose a saved large Waktu widget preset and customize it in the app.")
+        .configurationDisplayName("Waktu Large #2")
+        .description("Uses the Large #2 style selected in the Waktu app.")
         .contentMarginsDisabled()
     }
 }

@@ -63,13 +63,13 @@ xcrun simctl install "$DEVICE_ID" "$APP_PATH"
 styles_for_size() {
   case "$1" in
     small)
-      echo "simpleCountdown countdown metro neo sketch proNext"
+      echo "simpleCountdown countdown minimalist metro neo sketch proNext"
       ;;
     medium)
       echo "countdownMedium prayerTimesCompact prayerTimesGrid minimalist metro neo sketch proIndex"
       ;;
     large)
-      echo "countdownLarge prayerTimesLarge metro neo sketch proArc"
+      echo "countdownLarge prayerTimesLarge minimalist metro neo sketch proArc"
       ;;
     *)
       echo ""

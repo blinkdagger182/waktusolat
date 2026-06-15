@@ -239,10 +239,12 @@ enum HomeWidgetStyle: String, CaseIterable, Identifiable {
         switch self {
         case .simpleCountdown, .countdown, .proNext:
             return [.small]
-        case .countdownMedium, .prayerTimesCompact, .prayerTimesGrid, .minimalist, .proIndex:
+        case .countdownMedium, .prayerTimesCompact, .prayerTimesGrid, .proIndex:
             return [.medium]
         case .countdownLarge, .prayerTimesLarge, .proArc:
             return [.large]
+        case .minimalist:
+            return [.small, .medium, .large]
         case .metro, .neo, .sketch:
             return [.small, .medium, .large]
         }
