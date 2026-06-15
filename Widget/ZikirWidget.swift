@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
 #if os(iOS)
@@ -417,6 +418,228 @@ struct ZikirWidget: Widget {
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Zikir & Selawat")
         .description("Short Arabic adhkar that rotate gently through the day.")
+    }
+}
+
+@available(iOS 17.0, *)
+private struct TasbihCounterEntry: TimelineEntry {
+    let date: Date
+    let counts: [String: Int]
+
+    var activeItem: TasbihCounterItem {
+        TasbihCounterStore.items.first { count(for: $0) < $0.target } ?? TasbihCounterStore.items.last!
+    }
+
+    func count(for item: TasbihCounterItem) -> Int {
+        min(max(counts[item.id] ?? 0, 0), item.target)
+    }
+}
+
+@available(iOS 17.0, *)
+private struct TasbihCounterProvider: TimelineProvider {
+    func placeholder(in context: Context) -> TasbihCounterEntry {
+        TasbihCounterEntry(
+            date: Date(),
+            counts: [
+                "subhanAllah": 17,
+                "alhamdulillah": 0,
+                "allahuAkbar": 0,
+            ]
+        )
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (TasbihCounterEntry) -> Void) {
+        completion(context.isPreview ? placeholder(in: context) : makeEntry())
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<TasbihCounterEntry>) -> Void) {
+        completion(Timeline(entries: [makeEntry()], policy: .never))
+    }
+
+    private func makeEntry() -> TasbihCounterEntry {
+        TasbihCounterEntry(date: Date(), counts: TasbihCounterStore.counts())
+    }
+}
+
+@available(iOS 17.0, *)
+private struct TasbihCounterEntryView: View {
+    @Environment(\.widgetFamily) private var family
+
+    let entry: TasbihCounterEntry
+
+    var body: some View {
+        Group {
+            switch family {
+            case .systemMedium:
+                mediumLayout
+            default:
+                smallLayout
+            }
+        }
+        .containerBackground(for: .widget) {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.06, green: 0.07, blue: 0.06),
+                    Color(red: 0.10, green: 0.12, blue: 0.10),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+        .widgetAccentable(false)
+    }
+
+    private var smallLayout: some View {
+        let item = entry.activeItem
+        let count = entry.count(for: item)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title)
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.76)
+
+                Text("\(count) / \(item.target)")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+
+            ProgressView(value: Double(count), total: Double(item.target))
+                .tint(Color(red: 0.83, green: 0.72, blue: 0.42))
+                .scaleEffect(x: 1, y: 1.4, anchor: .center)
+
+            Spacer(minLength: 0)
+
+            Button(intent: IncrementTasbihCounterIntent()) {
+                Text("+1")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .frame(maxWidth: .infinity, minHeight: 34)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color(red: 0.83, green: 0.72, blue: 0.42))
+            .foregroundStyle(.black)
+        }
+        .padding(16)
+    }
+
+    private var mediumLayout: some View {
+        HStack(alignment: .center, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Morning Dhikr")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("Tasbih, Tahmid, Takbir")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.58))
+                        .lineLimit(1)
+                }
+
+                VStack(spacing: 6) {
+                    ForEach(TasbihCounterStore.items) { item in
+                        TasbihCounterRow(
+                            title: item.title,
+                            count: entry.count(for: item),
+                            target: item.target,
+                            active: item.id == entry.activeItem.id
+                        )
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+
+            VStack(spacing: 8) {
+                Text(totalProgressText)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.83, green: 0.72, blue: 0.42))
+                    .monospacedDigit()
+                    .lineLimit(1)
+
+                Button(intent: IncrementTasbihCounterIntent()) {
+                    Text("+1")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .frame(width: 74, height: 46)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color(red: 0.83, green: 0.72, blue: 0.42))
+                .foregroundStyle(.black)
+
+                Button(intent: ResetTasbihCounterIntent()) {
+                    Text("Reset")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .frame(width: 74, height: 32)
+                }
+                .buttonStyle(.bordered)
+                .tint(.white.opacity(0.82))
+            }
+            .frame(minWidth: 82, idealWidth: 82, maxWidth: 82, maxHeight: .infinity)
+        }
+        .padding(16)
+    }
+
+    private var totalProgressText: String {
+        let completed = TasbihCounterStore.items.reduce(0) { $0 + entry.count(for: $1) }
+        let total = TasbihCounterStore.items.reduce(0) { $0 + $1.target }
+        return "\(completed)/\(total)"
+    }
+}
+
+@available(iOS 17.0, *)
+private struct TasbihCounterRow: View {
+    let title: String
+    let count: Int
+    let target: Int
+    let active: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Capsule()
+                .fill(active ? Color(red: 0.83, green: 0.72, blue: 0.42) : .white.opacity(0.16))
+                .frame(width: 4)
+
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 13, weight: active ? .semibold : .medium, design: .rounded))
+                    .foregroundStyle(active ? .white : .white.opacity(0.68))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+
+                Spacer(minLength: 8)
+
+                Text("\(count)/\(target)")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(active ? Color(red: 0.83, green: 0.72, blue: 0.42) : .white.opacity(0.62))
+                    .monospacedDigit()
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(active ? .white.opacity(0.10) : .white.opacity(0.045))
+        )
+    }
+}
+
+@available(iOS 17.0, *)
+struct TasbihCounterWidget: Widget {
+    let kind = TasbihCounterStore.widgetKind
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: TasbihCounterProvider()) { entry in
+            TasbihCounterEntryView(entry: entry)
+        }
+        .supportedFamilies([.systemSmall, .systemMedium])
+        .configurationDisplayName("Tasbih Counter")
+        .description("Count morning dhikr directly from the widget.")
+        .contentMarginsDisabled()
     }
 }
 

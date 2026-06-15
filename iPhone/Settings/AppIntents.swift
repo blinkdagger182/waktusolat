@@ -1,6 +1,80 @@
 import AppIntents
 import WidgetKit
 
+struct TasbihCounterItem: Identifiable {
+    let id: String
+    let title: String
+    let target: Int
+}
+
+enum TasbihCounterStore {
+    static let widgetKind = "TasbihCounterWidget"
+    static let items: [TasbihCounterItem] = [
+        TasbihCounterItem(id: "subhanAllah", title: "SubhanAllah", target: 33),
+        TasbihCounterItem(id: "alhamdulillah", title: "Alhamdulillah", target: 33),
+        TasbihCounterItem(id: "allahuAkbar", title: "Allahu Akbar", target: 34),
+    ]
+
+    private static let keyPrefix = "tasbihCounterWidget"
+
+    static func count(for item: TasbihCounterItem, defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> Int {
+        guard let defaults else { return 0 }
+        return min(max(defaults.integer(forKey: storageKey(for: item)), 0), item.target)
+    }
+
+    static func counts(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> [String: Int] {
+        Dictionary(uniqueKeysWithValues: items.map { ($0.id, count(for: $0, defaults: defaults)) })
+    }
+
+    static func activeItem(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> TasbihCounterItem {
+        items.first { count(for: $0, defaults: defaults) < $0.target } ?? items.last ?? TasbihCounterItem(id: "subhanAllah", title: "SubhanAllah", target: 33)
+    }
+
+    static func increment(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) {
+        guard let defaults else { return }
+        let item = activeItem(defaults: defaults)
+        let nextCount = min(count(for: item, defaults: defaults) + 1, item.target)
+        defaults.set(nextCount, forKey: storageKey(for: item))
+    }
+
+    static func reset(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) {
+        guard let defaults else { return }
+        for item in items {
+            defaults.set(0, forKey: storageKey(for: item))
+        }
+    }
+
+    private static func storageKey(for item: TasbihCounterItem) -> String {
+        "\(keyPrefix).\(item.id).count"
+    }
+}
+
+@available(iOS 17.0, *)
+struct IncrementTasbihCounterIntent: AppIntent {
+    static var title: LocalizedStringResource = "Add Tasbih Count"
+    static var description = IntentDescription("Adds one count to the active tasbih phrase.")
+    static var openAppWhenRun = false
+
+    func perform() async throws -> some IntentResult {
+        TasbihCounterStore.increment()
+        WidgetCenter.shared.reloadTimelines(ofKind: TasbihCounterStore.widgetKind)
+        return .result()
+    }
+}
+
+@available(iOS 17.0, *)
+struct ResetTasbihCounterIntent: AppIntent {
+    static var title: LocalizedStringResource = "Reset Tasbih Counter"
+    static var description = IntentDescription("Resets the tasbih counter widget.")
+    static var openAppWhenRun = false
+
+    func perform() async throws -> some IntentResult {
+        TasbihCounterStore.reset()
+        WidgetCenter.shared.reloadTimelines(ofKind: TasbihCounterStore.widgetKind)
+        return .result()
+    }
+}
+
 enum HomeWidgetPresetSize: String, CaseIterable, Identifiable {
     case small
     case medium
@@ -218,53 +292,128 @@ enum HomeWidgetPresetStore {
 }
 
 @available(iOS 17.0, *)
-enum HomeWidgetPresetIntentOption: String, AppEnum {
-    case small1
-    case small2
-    case medium1
-    case medium2
-    case medium3
-    case large1
-    case large2
+struct HomeWidgetPresetEntity: AppEntity {
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Widget Preset"
+    static var defaultQuery = HomeWidgetPresetEntityQuery()
 
-    static var typeDisplayRepresentation: TypeDisplayRepresentation {
-        "Widget Preset"
-    }
-
-    static var caseDisplayRepresentations: [HomeWidgetPresetIntentOption: DisplayRepresentation] {
-        [
-            .small1: "Small #1",
-            .small2: "Small #2",
-            .medium1: "Medium #1",
-            .medium2: "Medium #2",
-            .medium3: "Medium #3",
-            .large1: "Large #1",
-            .large2: "Large #2",
-        ]
-    }
+    let id: String
 
     var slot: HomeWidgetPresetSlot {
-        HomeWidgetPresetSlot(rawValue: rawValue) ?? .small1
+        HomeWidgetPresetSlot(rawValue: id) ?? .small1
     }
 
-    static func option(for slot: HomeWidgetPresetSlot) -> HomeWidgetPresetIntentOption {
-        HomeWidgetPresetIntentOption(rawValue: slot.rawValue) ?? .small1
+    var displayRepresentation: DisplayRepresentation {
+        let style = HomeWidgetPresetStore.style(for: slot)
+        return DisplayRepresentation(
+            title: "\(slot.title)",
+            subtitle: "\(style.title)"
+        )
+    }
+
+    static func entity(for slot: HomeWidgetPresetSlot) -> HomeWidgetPresetEntity {
+        HomeWidgetPresetEntity(id: slot.rawValue)
     }
 }
 
 @available(iOS 17.0, *)
-struct HomeWidgetConfigurationIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "Waktu Widget Preset"
-    static var description = IntentDescription("Choose which saved Waktu widget preset this widget should use.")
-
-    @Parameter(title: "Preset", default: .small1)
-    var preset: HomeWidgetPresetIntentOption
-
-    init() {
-        self.preset = .small1
+struct HomeWidgetPresetEntityQuery: EntityQuery {
+    func entities(for identifiers: [HomeWidgetPresetEntity.ID]) async throws -> [HomeWidgetPresetEntity] {
+        identifiers.compactMap { identifier in
+            guard let slot = HomeWidgetPresetSlot(rawValue: identifier) else { return nil }
+            return HomeWidgetPresetEntity.entity(for: slot)
+        }
     }
 
-    init(preset: HomeWidgetPresetIntentOption) {
+    func suggestedEntities() async throws -> [HomeWidgetPresetEntity] {
+        HomeWidgetPresetSlot.allCases.map(HomeWidgetPresetEntity.entity)
+    }
+
+    func defaultResult() async -> HomeWidgetPresetEntity? {
+        HomeWidgetPresetEntity.entity(for: .small1)
+    }
+}
+
+@available(iOS 17.0, *)
+struct HomeWidgetPresetOptionsProvider: DynamicOptionsProvider {
+    func results() async throws -> [HomeWidgetPresetEntity] {
+        HomeWidgetPresetSlot.allCases.map(HomeWidgetPresetEntity.entity)
+    }
+}
+
+@available(iOS 17.0, *)
+struct SmallHomeWidgetPresetOptionsProvider: DynamicOptionsProvider {
+    func results() async throws -> [HomeWidgetPresetEntity] {
+        HomeWidgetPresetSlot.slots(for: .small).map(HomeWidgetPresetEntity.entity)
+    }
+}
+
+@available(iOS 17.0, *)
+struct MediumHomeWidgetPresetOptionsProvider: DynamicOptionsProvider {
+    func results() async throws -> [HomeWidgetPresetEntity] {
+        HomeWidgetPresetSlot.slots(for: .medium).map(HomeWidgetPresetEntity.entity)
+    }
+}
+
+@available(iOS 17.0, *)
+struct LargeHomeWidgetPresetOptionsProvider: DynamicOptionsProvider {
+    func results() async throws -> [HomeWidgetPresetEntity] {
+        HomeWidgetPresetSlot.slots(for: .large).map(HomeWidgetPresetEntity.entity)
+    }
+}
+
+@available(iOS 17.0, *)
+protocol HomeWidgetPresetConfigurationIntent: WidgetConfigurationIntent {
+    var preset: HomeWidgetPresetEntity? { get set }
+    init()
+}
+
+@available(iOS 17.0, *)
+struct SmallHomeWidgetConfigurationIntent: HomeWidgetPresetConfigurationIntent {
+    static var title: LocalizedStringResource = "Small Waktu Widget"
+    static var description = IntentDescription("Choose which saved small Waktu widget preset this widget should use.")
+
+    @Parameter(title: "Preset", optionsProvider: SmallHomeWidgetPresetOptionsProvider())
+    var preset: HomeWidgetPresetEntity?
+
+    init() {
+        self.preset = HomeWidgetPresetEntity.entity(for: .small1)
+    }
+
+    init(preset: HomeWidgetPresetEntity?) {
+        self.preset = preset
+    }
+}
+
+@available(iOS 17.0, *)
+struct MediumHomeWidgetConfigurationIntent: HomeWidgetPresetConfigurationIntent {
+    static var title: LocalizedStringResource = "Medium Waktu Widget"
+    static var description = IntentDescription("Choose which saved medium Waktu widget preset this widget should use.")
+
+    @Parameter(title: "Preset", optionsProvider: MediumHomeWidgetPresetOptionsProvider())
+    var preset: HomeWidgetPresetEntity?
+
+    init() {
+        self.preset = HomeWidgetPresetEntity.entity(for: .medium1)
+    }
+
+    init(preset: HomeWidgetPresetEntity?) {
+        self.preset = preset
+    }
+}
+
+@available(iOS 17.0, *)
+struct LargeHomeWidgetConfigurationIntent: HomeWidgetPresetConfigurationIntent {
+    static var title: LocalizedStringResource = "Large Waktu Widget"
+    static var description = IntentDescription("Choose which saved large Waktu widget preset this widget should use.")
+
+    @Parameter(title: "Preset", optionsProvider: LargeHomeWidgetPresetOptionsProvider())
+    var preset: HomeWidgetPresetEntity?
+
+    init() {
+        self.preset = HomeWidgetPresetEntity.entity(for: .large1)
+    }
+
+    init(preset: HomeWidgetPresetEntity?) {
         self.preset = preset
     }
 }

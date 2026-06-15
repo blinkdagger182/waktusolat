@@ -855,35 +855,20 @@ private struct LiveActivityCompactTimerText: View {
 struct Widgets: WidgetBundle {
     var body: some Widget {
         if #available(iOS 17.0, *) {
-            ConfigurableHomeWidget()
+            SmallPresetOneWidget()
+            SmallPresetTwoWidget()
+            MediumPresetOneWidget()
+            MediumPresetTwoWidget()
+            MediumPresetThreeWidget()
+            LargePresetOneWidget()
+            LargePresetTwoWidget()
         }
 
-        // Pro tier — listed first so they appear at the top of the picker
-        ProNextWidget()
-        ProIndexWidget()
-        ProArcWidget()
-        ProZikirWidget()
-        // Metro tier
-        MetroSmallWidget()
-        MetroMediumWidget()
-        MetroLargeWidget()
-        // Neo tier
-        NeoSmallWidget()
-        NeoMediumWidget()
-        NeoLargeWidget()
-        // Sketch tier
-        SketchSmallWidget()
-        SketchMediumWidget()
-        SketchLargeWidget()
-        // Free tier
-        SimpleWidget()
-        GraphicPrayerWidget()
-        // GraphicPrayerSquareWidget() // Temporarily disabled for App Store submission
-        CountdownWidget()
-        MinimalistWaktuWidget()
-        Prayers2Widget()
-        PrayersWidget()
-        ZikirWidget()
+        // Standalone interactive widgets stay visible in the picker.
+        if #available(iOS 17.0, *) {
+            TasbihCounterWidget()
+        }
+
         #if os(iOS)
         if #available(iOS 16.1, *) {
             ProLockWidget()
