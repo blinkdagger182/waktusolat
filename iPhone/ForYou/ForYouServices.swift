@@ -30,35 +30,173 @@ struct ForYouKhutbahPDF: Identifiable, Equatable {
     let url: URL
 }
 
+struct ForYouKhutbahSummary: Identifiable, Equatable {
+    var id: URL { pdf.url }
+    let title: String
+    let publishedDateText: String?
+    let theme: String
+    let summary: String
+    let keyPoints: [String]
+    let actionItems: [String]
+    let pdf: ForYouKhutbahPDF
+}
+
 actor ForYouKhutbahPDFService {
     static let shared = ForYouKhutbahPDFService()
 
     private struct LatestKhutbahResponse: Decodable {
         let title: String
         let pdfUrl: String
+        let publishedDate: String?
+        let summary: String?
+        let keyPoints: [String]?
+        let actionItems: [String]?
     }
 
     private let latestURL = URL(string: "https://api-waktusolat.vercel.app/api/khutbah/jumaat/latest")!
+    private let fallbackPDF = ForYouKhutbahPDF(
+        title: "KHUTBAH JUMAAT 12 JUN 2026 - ILMU PEMANGKIN PERPADUAN DAN KEHARMONIAN UMMAH",
+        url: URL(string: "https://www.islam.gov.my/images/KHUTBAH_JUMAAT_12_JUN_2026_-_ILMU_PEMANGKIN_PERPADUAN_DAN_KEHARMONIAN_UMMAH.pdf")!
+    )
     private var cachedPDF: ForYouKhutbahPDF?
+    private var cachedSummary: ForYouKhutbahSummary?
 
     func latestJumuahPDF() async throws -> ForYouKhutbahPDF {
         if let cachedPDF {
             return cachedPDF
         }
 
-        let (data, response) = try await URLSession.shared.data(from: latestURL)
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
+        do {
+            let (data, response) = try await URLSession.shared.data(from: latestURL)
+            guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
+
+            let latest = try JSONDecoder().decode(LatestKhutbahResponse.self, from: data)
+            guard let pdfURL = URL(string: latest.pdfUrl) else {
+                throw URLError(.badURL)
+            }
+
+            let pdf = ForYouKhutbahPDF(title: latest.title, url: pdfURL)
+            cachedPDF = pdf
+            return pdf
+        } catch {
+            cachedPDF = fallbackPDF
+            return fallbackPDF
+        }
+    }
+
+    func latestJumuahSummary() async throws -> ForYouKhutbahSummary {
+        if let cachedSummary {
+            return cachedSummary
         }
 
-        let latest = try JSONDecoder().decode(LatestKhutbahResponse.self, from: data)
-        guard let pdfURL = URL(string: latest.pdfUrl) else {
-            throw URLError(.badURL)
-        }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: latestURL)
+            guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
 
-        let pdf = ForYouKhutbahPDF(title: latest.title, url: pdfURL)
-        cachedPDF = pdf
-        return pdf
+            let latest = try JSONDecoder().decode(LatestKhutbahResponse.self, from: data)
+            guard let pdfURL = URL(string: latest.pdfUrl) else {
+                throw URLError(.badURL)
+            }
+
+            let pdf = ForYouKhutbahPDF(title: latest.title, url: pdfURL)
+            let summary = makeSummary(
+                title: latest.title,
+                publishedDate: latest.publishedDate,
+                pdf: pdf,
+                summary: latest.summary,
+                keyPoints: latest.keyPoints,
+                actionItems: latest.actionItems
+            )
+            cachedPDF = pdf
+            cachedSummary = summary
+            return summary
+        } catch {
+            let summary = makeSummary(
+                title: fallbackPDF.title,
+                publishedDate: "2026-06-12",
+                pdf: fallbackPDF,
+                summary: nil,
+                keyPoints: nil,
+                actionItems: nil
+            )
+            cachedPDF = fallbackPDF
+            cachedSummary = summary
+            return summary
+        }
+    }
+
+    private func makeSummary(
+        title: String,
+        publishedDate: String?,
+        pdf: ForYouKhutbahPDF,
+        summary: String?,
+        keyPoints: [String]?,
+        actionItems: [String]?
+    ) -> ForYouKhutbahSummary {
+        let theme = khutbahTheme(from: title)
+        return ForYouKhutbahSummary(
+            title: title,
+            publishedDateText: formattedPublishedDate(publishedDate),
+            theme: theme,
+            summary: sanitized(summary) ?? "A concise reading brief for the latest official JAKIM Jumuah khutbah. Use it to understand the weekly theme before opening the full PDF.",
+            keyPoints: sanitizedList(keyPoints).ifEmpty([
+                "Focus on the khutbah theme: \(theme).",
+                "Read the core reminder slowly, then connect it to one practical action this week.",
+                "Use the official PDF when you need the exact khutbah wording."
+            ]),
+            actionItems: sanitizedList(actionItems).ifEmpty([
+                "Take one lesson from the khutbah into family, work, or community life.",
+                "Share the key reminder with someone who could benefit from it.",
+                "Open the official PDF for the complete text before quoting it."
+            ]),
+            pdf: pdf
+        )
+    }
+
+    private func khutbahTheme(from title: String) -> String {
+        let separators = [" - ", " – ", " — "]
+        for separator in separators {
+            if let range = title.range(of: separator, options: .backwards) {
+                return String(title[range.upperBound...])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .capitalized
+            }
+        }
+        return title.trimmingCharacters(in: .whitespacesAndNewlines).capitalized
+    }
+
+    private func formattedPublishedDate(_ value: String?) -> String? {
+        guard let value, !value.isEmpty else { return nil }
+        let input = DateFormatter()
+        input.locale = Locale(identifier: "en_US_POSIX")
+        input.dateFormat = "yyyy-MM-dd"
+        guard let date = input.date(from: value) else { return value }
+
+        let output = DateFormatter()
+        output.locale = Locale(identifier: isMalayAppLanguage() ? "ms_MY" : "en_US_POSIX")
+        output.dateFormat = "d MMM yyyy"
+        return output.string(from: date)
+    }
+
+    private func sanitized(_ value: String?) -> String? {
+        let text = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return text.isEmpty ? nil : text
+    }
+
+    private func sanitizedList(_ value: [String]?) -> [String] {
+        (value ?? [])
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+}
+
+private extension Array {
+    func ifEmpty(_ fallback: [Element]) -> [Element] {
+        isEmpty ? fallback : self
     }
 }
 

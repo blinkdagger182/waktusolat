@@ -1641,6 +1641,59 @@ struct HomeWidgetPreviewGalleryView: View {
                 }
 
                 previewSection(
+                    title: isMalayAppLanguage() ? "Waktu Pro" : "Waktu Pro",
+                    subtitle: isMalayAppLanguage()
+                        ? "Widget eksklusif Pro dengan reka bentuk gelap dan aksen emas."
+                        : "Exclusive Pro widgets with dark design and gold accents."
+                ) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 16) {
+                            HomeWidgetShowcaseCard(
+                                title: isMalayAppLanguage() ? "Pro Seterusnya" : "Next — Pro",
+                                family: .small,
+                                contentPadding: 0,
+                                isSelected: hasPremiumWidgetAccess
+                            ) {
+                                HomeProNextPreviewCard()
+                            }
+                            HomeWidgetShowcaseCard(
+                                title: isMalayAppLanguage() ? "Pro Indeks" : "Index — Pro",
+                                family: .medium,
+                                contentPadding: 0,
+                                isSelected: hasPremiumWidgetAccess
+                            ) {
+                                HomeProIndexPreviewCard()
+                            }
+                            HomeWidgetShowcaseCard(
+                                title: isMalayAppLanguage() ? "Pro Lengkok" : "Arc — Pro",
+                                family: .medium,
+                                contentPadding: 0,
+                                isSelected: hasPremiumWidgetAccess
+                            ) {
+                                HomeProArcPreviewCard()
+                            }
+                            HomeWidgetShowcaseCard(
+                                title: isMalayAppLanguage() ? "Pro Zikir" : "Zikir — Pro",
+                                family: .medium,
+                                contentPadding: 0,
+                                isSelected: hasPremiumWidgetAccess
+                            ) {
+                                HomeProZikirPreviewCard()
+                            }
+                            HomeWidgetShowcaseCard(
+                                title: isMalayAppLanguage() ? "Pro Skrin Kunci" : "Lock — Pro",
+                                family: .small,
+                                contentPadding: 0,
+                                isSelected: hasPremiumWidgetAccess
+                            ) {
+                                HomeProLockPreviewCard()
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                previewSection(
                     title: "Waktu Aura",
                     subtitle: isMalayAppLanguage()
                         ? "Pilih gaya latar untuk widget Aura saiz sederhana dan kecil."
@@ -5119,6 +5172,217 @@ struct NotificationSettingsSection: View {
     }
 }
 
+
+// MARK: - Pro Widget Preview Cards
+
+private let pvGold      = Color(red: 201 / 255, green: 162 / 255, blue: 75 / 255)
+private let pvInk       = Color(red: 10 / 255,  green: 10 / 255,  blue: 11 / 255)
+private let pvTextMain  = Color(red: 242 / 255, green: 241 / 255, blue: 238 / 255)
+private let pvTextDim   = Color(red: 140 / 255, green: 140 / 255, blue: 146 / 255)
+private let pvTextFaint = Color(red: 90 / 255,  green: 90 / 255,  blue: 96 / 255)
+
+private struct HomeProNextPreviewCard: View {
+    var body: some View {
+        ZStack {
+            pvInk
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    Text("10 JUMADA I")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(pvTextFaint)
+                    Spacer()
+                    Circle().fill(pvGold).frame(width: 5, height: 5)
+                }
+                Spacer()
+                Text(localizedPrayerName("Maghrib").uppercased())
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(pvGold)
+                Text("1:14")
+                    .font(.system(size: 36, weight: .light, design: .serif))
+                    .foregroundStyle(pvTextMain)
+                    .minimumScaleFactor(0.7)
+                Spacer()
+                HStack {
+                    Text(localizedPrayerName("Isha").uppercased())
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(pvTextFaint)
+                    Spacer()
+                    Text("20:38")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(pvTextFaint)
+                }
+            }
+            .padding(14)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+}
+
+private struct HomeProIndexPreviewCard: View {
+    private let prayers: [(String, String, Bool)] = [
+        ("Fajr",    "5:52",  false),
+        ("Dhuhr",   "13:10", false),
+        ("Asr",     "16:28", false),
+        ("Maghrib", "19:24", true),
+        ("Isha",    "20:38", false),
+    ]
+
+    var body: some View {
+        ZStack {
+            pvInk
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("10 JUMADA I")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(pvTextFaint)
+                    Spacer()
+                    Circle().fill(pvGold).frame(width: 5, height: 5)
+                }
+                Spacer(minLength: 8)
+                VStack(spacing: 4) {
+                    ForEach(prayers, id: \.0) { name, time, active in
+                        HStack {
+                            Text(localizedPrayerName(name).uppercased())
+                                .font(.system(size: 10, weight: active ? .semibold : .regular, design: .monospaced))
+                                .foregroundStyle(active ? pvGold : pvTextDim)
+                            Spacer()
+                            Text(time)
+                                .font(.system(size: 10, weight: active ? .semibold : .regular, design: .monospaced))
+                                .foregroundStyle(active ? pvGold : pvTextDim)
+                        }
+                        if active {
+                            Divider().overlay(pvGold.opacity(0.3))
+                        }
+                    }
+                }
+            }
+            .padding(14)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+}
+
+private struct HomeProArcPreviewCard: View {
+    var body: some View {
+        ZStack {
+            pvInk
+            VStack(alignment: .leading, spacing: 0) {
+                GeometryReader { geo in
+                    ZStack {
+                        Path { path in
+                            let w = geo.size.width; let h = geo.size.height
+                            path.move(to: CGPoint(x: w * 0.04, y: h * 0.9))
+                            path.addQuadCurve(
+                                to: CGPoint(x: w * 0.96, y: h * 0.9),
+                                control: CGPoint(x: w * 0.5, y: -h * 0.1)
+                            )
+                        }
+                        .stroke(pvTextFaint.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+
+                        Path { path in
+                            let w = geo.size.width; let h = geo.size.height
+                            path.move(to: CGPoint(x: w * 0.04, y: h * 0.9))
+                            path.addQuadCurve(
+                                to: CGPoint(x: w * 0.62, y: h * 0.28),
+                                control: CGPoint(x: w * 0.5, y: -h * 0.1)
+                            )
+                        }
+                        .stroke(pvGold, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+
+                        Circle()
+                            .fill(pvInk)
+                            .frame(width: 9, height: 9)
+                            .overlay(Circle().stroke(pvGold, lineWidth: 1.5))
+                            .position(x: geo.size.width * 0.62, y: geo.size.height * 0.28)
+                    }
+                }
+                .frame(height: 65)
+
+                Spacer(minLength: 4)
+                Text(localizedPrayerName("Maghrib").uppercased())
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(pvGold)
+                Text("19:24")
+                    .font(.system(size: 22, weight: .light, design: .serif))
+                    .foregroundStyle(pvTextMain)
+                HStack {
+                    Text("NEXT · \(localizedPrayerName("Isha").uppercased())")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(pvTextFaint)
+                    Spacer()
+                    Text("20:38")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(pvTextFaint)
+                }
+            }
+            .padding(14)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+}
+
+private struct HomeProZikirPreviewCard: View {
+    var body: some View {
+        ZStack {
+            pvInk
+            VStack(alignment: .leading, spacing: 0) {
+                Text(isMalayAppLanguage() ? "ZIKIR MALAM".uppercased() : "NIGHT ZIKIR")
+                    .font(.system(size: 9, weight: .regular, design: .monospaced))
+                    .foregroundStyle(pvTextFaint)
+                Spacer(minLength: 6)
+                Text("أَسْتَغْفِرُ ٱللَّٰهَ")
+                    .font(.system(size: 26, weight: .regular, design: .serif))
+                    .foregroundStyle(pvTextMain)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.6)
+                Spacer(minLength: 6)
+                Text(isMalayAppLanguage() ? "Aku memohon ampun kepada Allah." : "I seek forgiveness from Allah.")
+                    .font(.system(size: 11, weight: .regular, design: .default).italic())
+                    .foregroundStyle(pvTextDim)
+                    .lineLimit(2)
+            }
+            .padding(14)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+}
+
+private struct HomeProLockPreviewCard: View {
+    var body: some View {
+        ZStack {
+            Color(red: 0.12, green: 0.12, blue: 0.14)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(localizedPrayerName("Maghrib").uppercased())
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(pvGold)
+                    Spacer()
+                    Text("19:24")
+                        .font(.system(size: 12, weight: .regular, design: .monospaced))
+                        .foregroundStyle(pvTextMain)
+                }
+                Text("1 HR 14 MIN")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(pvTextDim)
+                Rectangle()
+                    .fill(pvTextFaint.opacity(0.3))
+                    .frame(height: 1)
+                    .overlay(alignment: .leading) {
+                        Rectangle()
+                            .fill(pvGold)
+                            .frame(width: 80, height: 1)
+                    }
+                Text("LOCK SCREEN WIDGET")
+                    .font(.system(size: 8, design: .monospaced))
+                    .foregroundStyle(pvTextFaint)
+            }
+            .padding(14)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+}
 
 #Preview {
     SettingsAdhanView(showNotifications: true)

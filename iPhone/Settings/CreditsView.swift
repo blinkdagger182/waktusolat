@@ -13,8 +13,8 @@ struct CreditsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .padding(.vertical, 6)
 
-                    Text("Made by developers at Risk Creatives.")
-                        .font(.headline)
+//                    Text("Made by developers at Risk Creatives.")
+//                        .font(.headline)
                     if let url = URL(string: "https://api-waktusolat.vercel.app/") {
                         Link("Powered by the Waktu Solat Project API", destination: url)
                             .foregroundColor(settings.accentColor.color)
@@ -32,7 +32,8 @@ struct CreditsView: View {
                 
                 Section {
                     VersionNumber()
-                        .font(.caption)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
             }
             .listStyle(.plain)

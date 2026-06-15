@@ -60,12 +60,12 @@ enum WaktuAppIcon: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    func title(isMY: Bool) -> String {
         switch self {
         case .current:
-            return "Waktu Black & White"
+            return isMY ? "Waktu Malam" : "Waktu Evening"
         case .orange:
-            return "Waktu Orange"
+            return isMY ? "Waktu Pagi" : "Waktu Morning"
         }
     }
 

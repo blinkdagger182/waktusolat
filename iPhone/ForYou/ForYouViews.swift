@@ -3106,8 +3106,11 @@ private struct ForYouCurrentPrayerHeroCard: View {
     @State private var presentedTab: ForYouPrayerTab?
     @State private var selectedFullSurah: FullSurahSelection?
     @State private var selectedKhutbahPDF: ForYouKhutbahPDF?
+    @State private var selectedKhutbahSummary: ForYouKhutbahSummary?
     @State private var khutbahPDF: ForYouKhutbahPDF?
+    @State private var khutbahSummary: ForYouKhutbahSummary?
     @State private var isLoadingKhutbahPDF = false
+    @State private var isLoadingKhutbahSummary = false
     @State private var isShowingCheckInTooltip = false
     @StateObject private var checkInManager = PrayerCheckInManager()
     @State private var autoCheckInTask: Task<Void, Never>?
@@ -3255,10 +3258,10 @@ private struct ForYouCurrentPrayerHeroCard: View {
                     openJumuahKhutbahSummary()
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: revenueCat.hasPro ? "sparkles" : "lock.fill")
+                        Image(systemName: isLoadingKhutbahSummary ? "arrow.triangle.2.circlepath" : (revenueCat.hasPro ? "sparkles" : "lock.fill"))
                             .font(.system(size: 14, weight: .semibold))
 
-                        Text(isMalayAppLanguage() ? "Ringkasan Khutbah Jumaat" : "Jumuah Khutbah Summary")
+                        Text(khutbahSummaryButtonTitle)
                             .font(.system(size: 14, weight: .bold, design: .rounded))
 
                         Spacer(minLength: 0)
@@ -3282,6 +3285,7 @@ private struct ForYouCurrentPrayerHeroCard: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .disabled(isLoadingKhutbahSummary)
             }
 
             if let nextEntry {
@@ -3387,6 +3391,9 @@ private struct ForYouCurrentPrayerHeroCard: View {
             ForYouSafariView(url: pdf.url)
                 .ignoresSafeArea()
         }
+        .sheet(item: $selectedKhutbahSummary) { summary in
+            KhutbahSummarySheet(summary: summary)
+        }
     }
 
     private var checkInRow: some View {
@@ -3477,6 +3484,13 @@ private struct ForYouCurrentPrayerHeroCard: View {
         return isMalayAppLanguage() ? "Baca Khutbah Jumaat" : "Read Jumuah Khutbah"
     }
 
+    private var khutbahSummaryButtonTitle: String {
+        if isLoadingKhutbahSummary {
+            return isMalayAppLanguage() ? "Memuatkan ringkasan..." : "Loading summary..."
+        }
+        return isMalayAppLanguage() ? "Ringkasan Khutbah Jumaat" : "Jumuah Khutbah Summary"
+    }
+
     @MainActor
     private func loadKhutbahPDF(openWhenReady: Bool) async {
         guard khutbahPDF == nil, !isLoadingKhutbahPDF else {
@@ -3496,12 +3510,31 @@ private struct ForYouCurrentPrayerHeroCard: View {
         }
     }
 
+    @MainActor
+    private func loadKhutbahSummary(openWhenReady: Bool) async {
+        guard khutbahSummary == nil, !isLoadingKhutbahSummary else {
+            if openWhenReady, let khutbahSummary {
+                selectedKhutbahSummary = khutbahSummary
+            }
+            return
+        }
+
+        isLoadingKhutbahSummary = true
+        defer { isLoadingKhutbahSummary = false }
+
+        guard let summary = try? await ForYouKhutbahPDFService.shared.latestJumuahSummary() else { return }
+        khutbahSummary = summary
+        if openWhenReady {
+            selectedKhutbahSummary = summary
+        }
+    }
+
     private func openJumuahKhutbahSummary() {
         if revenueCat.hasPro {
-            if let khutbahPDF {
-                selectedKhutbahPDF = khutbahPDF
+            if let khutbahSummary {
+                selectedKhutbahSummary = khutbahSummary
             } else {
-                Task { await loadKhutbahPDF(openWhenReady: true) }
+                Task { await loadKhutbahSummary(openWhenReady: true) }
             }
         } else {
             NotificationCenter.default.post(name: .openSupportSettingsSheet, object: nil)
@@ -3531,6 +3564,161 @@ private struct ForYouCurrentPrayerHeroCard: View {
     private func cancelAutoCheckIn() {
         autoCheckInTask?.cancel()
         autoCheckInTask = nil
+    }
+
+    private struct KhutbahSummarySheet: View {
+        let summary: ForYouKhutbahSummary
+        @Environment(\.dismiss) private var dismiss
+        @Environment(\.colorScheme) private var colorScheme
+
+        var body: some View {
+            NavigationView {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        header
+
+                        summaryBlock(title: isMalayAppLanguage() ? "Tema" : "Theme", systemImage: "sparkles") {
+                            Text(summary.theme)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(primaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        summaryBlock(title: isMalayAppLanguage() ? "Ringkasan" : "Brief", systemImage: "text.alignleft") {
+                            Text(summary.summary)
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                                .foregroundStyle(secondaryText)
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        bulletBlock(
+                            title: isMalayAppLanguage() ? "Isi penting" : "Key reminders",
+                            systemImage: "checkmark.seal",
+                            items: summary.keyPoints
+                        )
+
+                        bulletBlock(
+                            title: isMalayAppLanguage() ? "Amalan minggu ini" : "This week",
+                            systemImage: "figure.walk",
+                            items: summary.actionItems
+                        )
+
+                        Link(destination: summary.pdf.url) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "doc.richtext")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text(isMalayAppLanguage() ? "Buka PDF rasmi" : "Open official PDF")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 13, weight: .bold))
+                            }
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 15)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color.black)
+                            )
+                        }
+                    }
+                    .padding(20)
+                }
+                .background(Color(.systemGroupedBackground).ignoresSafeArea())
+                .navigationTitle(isMalayAppLanguage() ? "Ringkasan Khutbah" : "Khutbah Summary")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(isMalayAppLanguage() ? "Selesai" : "Done") {
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .navigationViewStyle(.stack)
+        }
+
+        private var header: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text("Pro")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.white)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Capsule(style: .continuous).fill(Color.green))
+
+                    if let publishedDateText = summary.publishedDateText {
+                        Text(publishedDateText)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(secondaryText)
+                    }
+                }
+
+                Text(summary.title)
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .foregroundStyle(primaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(isMalayAppLanguage()
+                     ? "Paparan ringkas untuk bacaan mudah. Rujuk PDF rasmi untuk teks penuh."
+                     : "A readable brief for quick review. Refer to the official PDF for the full text.")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+
+        private func summaryBlock<Content: View>(
+            title: String,
+            systemImage: String,
+            @ViewBuilder content: () -> Content
+        ) -> some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(title, systemImage: systemImage)
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(secondaryText)
+                    .textCase(.uppercase)
+
+                content()
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(cardBackground)
+        }
+
+        private func bulletBlock(title: String, systemImage: String, items: [String]) -> some View {
+            summaryBlock(title: title, systemImage: systemImage) {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color.green)
+                                .padding(.top, 2)
+
+                            Text(item)
+                                .font(.system(size: 15, weight: .medium, design: .rounded))
+                                .foregroundStyle(primaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        }
+
+        private var cardBackground: some View {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color(.separator).opacity(colorScheme == .dark ? 0.22 : 0.12), lineWidth: 1)
+                )
+        }
+
+        private var primaryText: Color { Color(.label) }
+        private var secondaryText: Color { Color(.secondaryLabel) }
     }
 
     private var statusBadge: some View {

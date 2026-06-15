@@ -233,6 +233,7 @@ struct AlAdhanApp: App {
     @State private var isLaunching = true
     @State private var quranDeepLink: QuranDeepLinkPayload?
     @State private var debugSelectedKhutbahPDF: ForYouKhutbahPDF?
+    @State private var debugSelectedKhutbahSummary: ForYouKhutbahSummary?
     @State private var selectedTab: AppTab = .adhan
     @State private var showSupportPromoToast = false
     @State private var showMalaysiaLocationToast = false
@@ -495,12 +496,14 @@ struct AlAdhanApp: App {
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugRequestJumuahKhutbahSummary)) { _ in
                 guard !isLaunching else { return }
-                selectedTab = .today
                 openDebugJumuahKhutbahSummary()
             }
             .sheet(item: $debugSelectedKhutbahPDF) { pdf in
                 ForYouSafariView(url: pdf.url)
                     .ignoresSafeArea()
+            }
+            .sheet(item: $debugSelectedKhutbahSummary) { summary in
+                DebugKhutbahSummarySheet(summary: summary)
             }
         }
         .onChange(of: settings.accentColor) { _ in
@@ -902,9 +905,137 @@ struct AlAdhanApp: App {
 
     private func openDebugJumuahKhutbahSummary() {
         Task {
-            guard let pdf = try? await ForYouKhutbahPDFService.shared.latestJumuahPDF() else { return }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard let summary = try? await ForYouKhutbahPDFService.shared.latestJumuahSummary() else { return }
             await MainActor.run {
-                debugSelectedKhutbahPDF = pdf
+                selectedTab = .today
+                debugSelectedKhutbahSummary = summary
+            }
+        }
+    }
+
+    private struct DebugKhutbahSummarySheet: View {
+        let summary: ForYouKhutbahSummary
+        @Environment(\.dismiss) private var dismiss
+
+        var body: some View {
+            NavigationView {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Text("Pro")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Color.white)
+                                    .padding(.horizontal, 9)
+                                    .padding(.vertical, 5)
+                                    .background(Capsule(style: .continuous).fill(Color.green))
+
+                                if let publishedDateText = summary.publishedDateText {
+                                    Text(publishedDateText)
+                                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(Color(.secondaryLabel))
+                                }
+                            }
+
+                            Text(summary.title)
+                                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Color(.label))
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            Text(isMalayAppLanguage()
+                                 ? "Paparan ringkas untuk bacaan mudah. Rujuk PDF rasmi untuk teks penuh."
+                                 : "A readable brief for quick review. Refer to the official PDF for the full text.")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(Color(.secondaryLabel))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        summarySection(title: isMalayAppLanguage() ? "Tema" : "Theme", systemImage: "sparkles") {
+                            Text(summary.theme)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(.label))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        summarySection(title: isMalayAppLanguage() ? "Ringkasan" : "Brief", systemImage: "text.alignleft") {
+                            Text(summary.summary)
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                                .foregroundStyle(Color(.secondaryLabel))
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        bulletSection(title: isMalayAppLanguage() ? "Isi penting" : "Key reminders", items: summary.keyPoints)
+                        bulletSection(title: isMalayAppLanguage() ? "Amalan minggu ini" : "This week", items: summary.actionItems)
+
+                        Link(destination: summary.pdf.url) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "doc.richtext")
+                                Text(isMalayAppLanguage() ? "Buka PDF rasmi" : "Open official PDF")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 13, weight: .bold))
+                            }
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 15)
+                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.black))
+                        }
+                    }
+                    .padding(20)
+                }
+                .background(Color(.systemGroupedBackground).ignoresSafeArea())
+                .navigationTitle(isMalayAppLanguage() ? "Ringkasan Khutbah" : "Khutbah Summary")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(isMalayAppLanguage() ? "Selesai" : "Done") {
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .navigationViewStyle(.stack)
+        }
+
+        private func summarySection<Content: View>(
+            title: String,
+            systemImage: String,
+            @ViewBuilder content: () -> Content
+        ) -> some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(title, systemImage: systemImage)
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(.secondaryLabel))
+                    .textCase(.uppercase)
+                content()
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
+        }
+
+        private func bulletSection(title: String, items: [String]) -> some View {
+            summarySection(title: title, systemImage: "checkmark.seal") {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color.green)
+                                .padding(.top, 2)
+                            Text(item)
+                                .font(.system(size: 15, weight: .medium, design: .rounded))
+                                .foregroundStyle(Color(.label))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
             }
         }
     }

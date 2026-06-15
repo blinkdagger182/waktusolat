@@ -438,3 +438,103 @@ struct LockScreenZikirWidget: Widget {
         .description("Short Arabic adhkar for your Lock Screen.")
     }
 }
+
+// ─────────────────────────────────────────────────────────────
+// MARK: - 04 · Zikir Pro  (systemMedium)
+// ─────────────────────────────────────────────────────────────
+
+private let pzGold      = Color(red: 201 / 255, green: 162 / 255, blue: 75 / 255)
+private let pzInk       = Color(red: 10 / 255,  green: 10 / 255,  blue: 11 / 255)
+private let pzTextMain  = Color(red: 242 / 255, green: 241 / 255, blue: 238 / 255)
+private let pzTextDim   = Color(red: 140 / 255, green: 140 / 255, blue: 146 / 255)
+private let pzTextFaint = Color(red: 90 / 255,  green: 90 / 255,  blue: 96 / 255)
+
+private struct ProZikirLockedView: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "lock.fill")
+                .font(.title3)
+                .foregroundStyle(pzGold)
+            Text("Waktu Pro")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(pzGold)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct ProZikirEntryView: View {
+    let entry: ZikirEntry
+
+    private func arabicFont(size: CGFloat) -> Font {
+        #if os(iOS)
+        let candidates = [
+            "KFGQPCUthmanicScriptHAFS",
+            "UthmanicHafs1 Ver09",
+            "AmiriQuran-Regular",
+            "Amiri-Regular",
+        ]
+        for name in candidates {
+            if UIFont(name: name, size: size) != nil {
+                return .custom(name, size: size)
+            }
+        }
+        #endif
+        return .system(size: size, weight: .light, design: .serif)
+    }
+
+    var body: some View {
+        ZStack {
+            pzInk
+            if !premiumWidgetsUnlocked() {
+                ProZikirLockedView()
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(entry.helperTitle.uppercased())
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundStyle(pzTextFaint)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+
+                    Spacer(minLength: 6)
+
+                    Text(entry.phraseArabic)
+                        .font(arabicFont(size: 28))
+                        .foregroundStyle(pzTextMain)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.6)
+                        .environment(\.layoutDirection, .rightToLeft)
+
+                    Spacer(minLength: 6)
+
+                    Text(entry.translation)
+                        .font(.system(size: 12, weight: .regular, design: .default).italic())
+                        .foregroundStyle(pzTextDim)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.75)
+                }
+                .padding(20)
+            }
+        }
+    }
+}
+
+struct ProZikirWidget: Widget {
+    let kind = "ProZikirWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ZikirProvider()) { entry in
+            if #available(iOS 17.0, *) {
+                ProZikirEntryView(entry: entry)
+                    .containerBackground(for: .widget) { Color.clear }
+            } else {
+                ProZikirEntryView(entry: entry)
+            }
+        }
+        .supportedFamilies([.systemMedium])
+        .configurationDisplayName("Zikir — Pro")
+        .description("Arabic adhkar with translation, medium canvas.")
+    }
+}

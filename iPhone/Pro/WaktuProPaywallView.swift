@@ -503,7 +503,14 @@ struct WaktuProPaywallView: View {
             .frame(width: max(0, width - 40), height: 56)
         }
         .buttonStyle(.plain)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(.label)))
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.black)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
         .disabled(isPurchasing || isRestoring)
         .opacity((isPurchasing || isRestoring) ? 0.6 : 1)
     }

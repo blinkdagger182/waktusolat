@@ -320,6 +320,9 @@ struct SettingsView: View {
     @AppStorage("donationSuccessCount") private var donationSuccessCount: Int = 0
     @AppStorage("appLaunchCountV1") private var appLaunchCount: Int = 0
     @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
+    @State private var draftName: String = {
+        ForYouUserProfileService.load().firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }()
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
@@ -377,19 +380,34 @@ struct SettingsView: View {
 
                     }
 
-                    /*
                     Section(header: Text("PROFILE")) {
-                        NavigationLink {
-                            SettingsProfileView()
-                        } label: {
-                            Label("Profile", systemImage: "person.crop.circle")
-                                .foregroundColor(settings.accentColor.color)
+                        HStack {
+                            Text(isMalayAppLanguage() ? "Nama" : "Name")
+                                .font(.subheadline)
+                            Spacer()
+                            TextField(isMalayAppLanguage() ? "Nama anda" : "Your name", text: $draftName)
+                                .font(.subheadline)
+                                .multilineTextAlignment(.trailing)
+                                .foregroundColor(.secondary)
+                                .onChange(of: draftName) { newValue in
+                                    var profile = ForYouUserProfileService.load()
+                                    let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    profile.firstName = trimmed.isEmpty ? nil : trimmed
+                                    ForYouUserProfileService.save(profile)
+                                }
                         }
+
+                        Picker("App Language", selection: $appLanguageCode.animation(.easeInOut)) {
+                            ForEach(AppLanguage.allCases) { language in
+                                Text(language.displayName).tag(language.rawValue)
+                            }
+                        }
+                        .pickerStyle(.menu)
                     }
-                    */
 
                     Section(header: Text("APPEARANCE")) {
                         SettingsAppearanceView()
+                            .environmentObject(settings)
                     }
 
                     Section(header: Text("CUSTOMIZATIONS")) {
@@ -404,6 +422,7 @@ struct SettingsView: View {
                         NavigationLink {
                             AppIconCustomizationView()
                                 .environmentObject(settings)
+                                .environmentObject(revenueCat)
                         } label: {
                             Label("App Icon", systemImage: "app")
                                 .foregroundColor(settings.accentColor.color)
@@ -411,9 +430,27 @@ struct SettingsView: View {
                     }
 
                     Section(header: Text("CREDITS")) {
-                        Text("Made by developers at Risk Creatives, powered by the Waktu Solat Project API.")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
+//                        Text("Made by developers at Risk Creatives, powered by the Waktu Solat Project API.")
+//                            .font(.footnote)
+//                            .foregroundColor(.secondary)
+
+                        NavigationLink {
+                            SettingsFeedbackSubmissionView(kind: .featureRequest)
+                                .environmentObject(settings)
+                        } label: {
+                            Label("Feature Request", systemImage: "lightbulb")
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor.color)
+                        }
+
+                        NavigationLink {
+                            SettingsFeedbackSubmissionView(kind: .issueReport)
+                                .environmentObject(settings)
+                        } label: {
+                            Label("Report Issue", systemImage: "exclamationmark.bubble")
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor.color)
+                        }
                         
                         #if !os(watchOS)
                         Button(action: {
@@ -431,7 +468,8 @@ struct SettingsView: View {
                         #endif
                         
                         VersionNumber()
-                            .font(.subheadline)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
 
                     Section(header: Text("SUPPORT")) {
@@ -805,40 +843,36 @@ private struct ConfettiBurstView: View {
 
 private struct SettingsProfileView: View {
     @EnvironmentObject var settings: Settings
-    private let cannyRequestURL = URL(string: "https://risk-creatives-enterprise.canny.io/feature-requests")
+    @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
+    @State private var draftName: String = {
+        ForYouUserProfileService.load().firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }()
 
     var body: some View {
         List {
             Section(header: Text("PROFILE")) {
-                NavigationLink {
-                    SettingsWebContainerView(
-                        title: "Request a Feature",
-                        url: cannyRequestURL
-                    )
-                } label: {
-                    Label("Request a feature", systemImage: "lightbulb")
-                        .foregroundColor(settings.accentColor.color)
+                HStack {
+                    Text(isMalayAppLanguage() ? "Nama" : "Name")
+                        .font(.subheadline)
+                    Spacer()
+                    TextField(isMalayAppLanguage() ? "Nama anda" : "Your name", text: $draftName)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(.secondary)
+                        .onChange(of: draftName) { newValue in
+                            var profile = ForYouUserProfileService.load()
+                            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                            profile.firstName = trimmed.isEmpty ? nil : trimmed
+                            ForYouUserProfileService.save(profile)
+                        }
                 }
 
-                NavigationLink {
-                    SettingsComingSoonView(
-                        title: "Roadmap",
-                        message: "Roadmap is coming soon."
-                    )
-                } label: {
-                    Label("Roadmap", systemImage: "map")
-                        .foregroundColor(settings.accentColor.color)
+                Picker("App Language", selection: $appLanguageCode.animation(.easeInOut)) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language.rawValue)
+                    }
                 }
-
-                NavigationLink {
-                    SettingsComingSoonView(
-                        title: "What's New",
-                        message: "What's new updates are coming soon."
-                    )
-                } label: {
-                    Label("What's new", systemImage: "sparkles")
-                        .foregroundColor(settings.accentColor.color)
-                }
+                .pickerStyle(.menu)
             }
         }
         .navigationTitle("Profile")
@@ -924,46 +958,612 @@ private struct CannyWebView: View {
 }
 #endif
 
+private enum SettingsFeedbackSubmissionKind: String {
+    case featureRequest = "feature_request"
+    case issueReport = "issue_report"
+
+    var title: String {
+        switch self {
+        case .featureRequest:
+            return isMalayAppLanguage() ? "Cadangan Ciri" : "Feature Request"
+        case .issueReport:
+            return isMalayAppLanguage() ? "Lapor Isu" : "Report Issue"
+        }
+    }
+
+    var prompt: String {
+        switch self {
+        case .featureRequest:
+            return isMalayAppLanguage()
+                ? "Apa yang anda mahu Waktu tambah atau perbaiki?"
+                : "What should Waktu add or improve?"
+        case .issueReport:
+            return isMalayAppLanguage()
+                ? "Apa yang rosak? Sertakan langkah untuk ulang isu jika boleh."
+                : "What broke? Include steps to reproduce if you can."
+        }
+    }
+
+    var placeholder: String {
+        switch self {
+        case .featureRequest:
+            return isMalayAppLanguage()
+                ? "Contoh: Tambah widget kompak untuk..."
+                : "Example: Add a compact widget for..."
+        case .issueReport:
+            return isMalayAppLanguage()
+                ? "Contoh: Bila saya buka Today tab..."
+                : "Example: When I open the Today tab..."
+        }
+    }
+
+    var submitTitle: String {
+        switch self {
+        case .featureRequest:
+            return isMalayAppLanguage() ? "Hantar Cadangan" : "Submit Request"
+        case .issueReport:
+            return isMalayAppLanguage() ? "Hantar Laporan" : "Submit Report"
+        }
+    }
+
+    var successMessage: String {
+        switch self {
+        case .featureRequest:
+            return isMalayAppLanguage() ? "Cadangan diterima." : "Feature request submitted."
+        case .issueReport:
+            return isMalayAppLanguage() ? "Laporan diterima." : "Issue report submitted."
+        }
+    }
+}
+
+private struct SettingsFeedbackSubmissionView: View {
+    @EnvironmentObject var settings: Settings
+    @StateObject private var featureBoard = SettingsFeatureRequestBoardViewModel()
+    @State private var message = ""
+    @State private var requestTitle = ""
+    @State private var contact = ""
+    @State private var isSubmitting = false
+    @State private var resultMessage: String?
+    @State private var resultIsError = false
+    @State private var expandedIds: Set<String> = []
+
+    let kind: SettingsFeedbackSubmissionKind
+
+    private let titleLimit = 46
+
+    private var canSubmit: Bool {
+        let hasTitle = !requestTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasBody = !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard kind == .featureRequest else { return hasTitle && hasBody && !isSubmitting }
+        return hasBody
+            && hasTitle
+            && featureBoard.currentUserRequestId == nil
+            && !featureBoard.isSubmitting
+    }
+
+    var body: some View {
+        List {
+            if kind == .featureRequest {
+                featureRequestComposer
+                featureRequestBoard
+            } else {
+                issueReportForm
+            }
+        }
+        .navigationTitle(kind.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .applyConditionalListStyle(defaultView: true)
+        .task {
+            guard kind == .featureRequest else { return }
+            await featureBoard.load()
+        }
+        .refreshable {
+            guard kind == .featureRequest else { return }
+            expandedIds = []
+            featureBoard.resetPagination()
+            await featureBoard.load()
+        }
+        .onChange(of: requestTitle) { newValue in
+            if newValue.count > titleLimit {
+                requestTitle = String(newValue.prefix(titleLimit))
+            }
+        }
+    }
+
+    private var issueReportForm: some View {
+        Group {
+            Section {
+                TextField(kind.placeholder, text: $requestTitle)
+                    .onChange(of: requestTitle) { newValue in
+                        if newValue.count > titleLimit {
+                            requestTitle = String(newValue.prefix(titleLimit))
+                        }
+                    }
+            } header: {
+                Text(isMalayAppLanguage() ? "Tajuk" : "Title")
+            } footer: {
+                Text("\(requestTitle.count)/\(titleLimit)")
+            }
+
+            Section(footer: Text(kind.prompt)) {
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $message)
+                        .frame(minHeight: 160)
+                        .font(.body)
+
+                    if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text(kind.placeholder)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                            .padding(.leading, 5)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+
+            Section(footer: Text(isMalayAppLanguage() ? "Pilihan. Letak email jika anda mahu kami balas." : "Optional. Add an email if you want us to follow up.")) {
+                TextField("Email", text: $contact)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+
+            Section {
+                Button {
+                    submit()
+                } label: {
+                    HStack {
+                        if isSubmitting {
+                            ProgressView()
+                        }
+                        Text(isSubmitting ? (isMalayAppLanguage() ? "Menghantar..." : "Submitting...") : kind.submitTitle)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .disabled(!canSubmit)
+            }
+
+            if let resultMessage {
+                Section {
+                    Text(resultMessage)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundColor(resultIsError ? .red : .green)
+                }
+            }
+        }
+    }
+
+    private var featureRequestComposer: some View {
+        Section {
+            if let currentId = featureBoard.currentUserRequestId {
+                Text(isMalayAppLanguage()
+                     ? "Anda sudah ada satu cadangan aktif. Padam cadangan itu untuk hantar yang baharu."
+                     : "You already have one active request. Delete it before posting another.")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let item = featureBoard.items.first(where: { $0.id == currentId }) {
+                    SettingsFeatureRequestRow(
+                        item: item,
+                        isExpanded: expandedIds.contains(item.id),
+                        onExpand: { expandedIds.insert(item.id) },
+                        onVote: { vote in Task { await featureBoard.vote(item: item, vote: vote) } },
+                        onDelete: { Task { await featureBoard.delete(item: item) } }
+                    )
+                }
+            } else {
+                TextField(isMalayAppLanguage() ? "Tajuk pendek" : "Short title", text: $requestTitle)
+                    .font(.headline)
+
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $message)
+                        .frame(minHeight: 120)
+                        .font(.body)
+
+                    if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text(kind.placeholder)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                            .padding(.leading, 5)
+                            .allowsHitTesting(false)
+                    }
+                }
+
+                Button {
+                    Task {
+                        settings.hapticFeedback()
+                        await featureBoard.create(title: requestTitle, body: message)
+                        if featureBoard.errorMessage == nil {
+                            requestTitle = ""
+                            message = ""
+                            settings.hapticFeedback()
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if featureBoard.isSubmitting { ProgressView() }
+                        Text(featureBoard.isSubmitting ? (isMalayAppLanguage() ? "Menghantar..." : "Posting...") : (isMalayAppLanguage() ? "Hantar Cadangan" : "Create Request"))
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .disabled(!canSubmit)
+            }
+
+            if let error = featureBoard.errorMessage {
+                Text(error)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundColor(.red)
+            }
+        } header: {
+            Text(isMalayAppLanguage() ? "CADANGAN ANDA" : "YOUR REQUEST")
+        } footer: {
+            Text(isMalayAppLanguage()
+                 ? "Tajuk dihadkan \(titleLimit) aksara supaya kekal satu baris. Penerangan boleh lebih panjang."
+                 : "Title is limited to \(titleLimit) characters so it stays one line. Description can be longer.")
+        }
+    }
+
+    private var featureRequestBoard: some View {
+        Section {
+            if featureBoard.isLoading && featureBoard.allItems.isEmpty {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                }
+            } else {
+                ForEach(Array(featureBoard.items.enumerated()), id: \.element.id) { index, item in
+                    SettingsFeatureRequestRow(
+                        item: item,
+                        isExpanded: expandedIds.contains(item.id),
+                        onExpand: { expandedIds.insert(item.id) },
+                        onVote: { vote in Task { await featureBoard.vote(item: item, vote: vote) } },
+                        onDelete: { Task { await featureBoard.delete(item: item) } }
+                    )
+                    .onAppear {
+                        if index >= featureBoard.items.count - 4 {
+                            featureBoard.revealMore()
+                        }
+                    }
+                }
+                if featureBoard.hasMore {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                }
+            }
+        } header: {
+            Text(isMalayAppLanguage() ? "CADANGAN KOMUNITI" : "COMMUNITY REQUESTS")
+        }
+    }
+
+    private func submit() {
+        settings.hapticFeedback()
+        isSubmitting = true
+        resultMessage = nil
+
+        Task {
+            do {
+                try await SettingsFeedbackSubmissionService.submit(
+                    kind: kind,
+                    title: requestTitle,
+                    message: message,
+                    contact: contact
+                )
+                await MainActor.run {
+                    requestTitle = ""
+                    message = ""
+                    contact = ""
+                    resultIsError = false
+                    resultMessage = kind.successMessage
+                    isSubmitting = false
+                    settings.hapticFeedback()
+                }
+            } catch {
+                await MainActor.run {
+                    resultIsError = true
+                    resultMessage = isMalayAppLanguage()
+                        ? "Gagal dihantar. Cuba lagi sebentar."
+                        : "Could not submit. Try again in a moment."
+                    isSubmitting = false
+                }
+            }
+        }
+    }
+}
+
+private enum SettingsFeedbackSubmissionService {
+    private static let endpoint = URL(string: "https://api-waktusolat.vercel.app/api/app-submissions")!
+
+    static func submit(kind: SettingsFeedbackSubmissionKind, title: String, message: String, contact: String) async throws {
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        #if os(iOS)
+        let device = "\(UIDevice.current.model) \(UIDevice.current.systemName) \(UIDevice.current.systemVersion)"
+        #else
+        let device = "unknown"
+        #endif
+
+        let body: [String: String] = [
+            "type": kind.rawValue,
+            "title": title.trimmingCharacters(in: .whitespacesAndNewlines),
+            "message": [title, message]
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n\n"),
+            "contact": contact.trimmingCharacters(in: .whitespacesAndNewlines),
+            "appVersion": appVersion,
+            "device": device,
+            "language": isMalayAppLanguage() ? "ms" : "en"
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+}
+
+private struct SettingsFeatureRequestItem: Identifiable, Codable {
+    let id: String
+    let title: String
+    let body: String
+    let status: String
+    let score: Int
+    let userVote: Int
+    let isMine: Bool
+
+    var statusTitle: String {
+        switch status {
+        case "approved": return isMalayAppLanguage() ? "Diluluskan" : "Approved"
+        case "implemented": return isMalayAppLanguage() ? "Siap" : "Implemented"
+        default: return isMalayAppLanguage() ? "Terbuka" : "Open"
+        }
+    }
+}
+
+private struct SettingsFeatureRequestBoardResponse: Decodable {
+    let items: [SettingsFeatureRequestItem]
+    let currentUserRequestId: String?
+}
+
+@MainActor
+private final class SettingsFeatureRequestBoardViewModel: ObservableObject {
+    @Published private(set) var allItems: [SettingsFeatureRequestItem] = []
+    @Published private(set) var visibleCount: Int = 15
+    @Published var currentUserRequestId: String?
+    @Published var isLoading = false
+    @Published var isSubmitting = false
+    @Published var errorMessage: String?
+
+    private static let endpoint = URL(string: "https://api-waktusolat.vercel.app/api/feature-requests")!
+    private static let cacheKey = "feature_requests_cache_v1"
+    private static let pageSize = 15
+    private let defaults = UserDefaults.standard
+
+    var items: [SettingsFeatureRequestItem] { Array(allItems.prefix(visibleCount)) }
+    var hasMore: Bool { visibleCount < allItems.count }
+
+    private struct Cache: Codable {
+        let items: [SettingsFeatureRequestItem]
+        let currentUserRequestId: String?
+    }
+
+    private var deviceId: String {
+        if let id = defaults.string(forKey: "waktu_feedback_device_id") { return id }
+        let id = defaults.string(forKey: "prayer_checkin_device_id") ?? UUID().uuidString
+        defaults.set(id, forKey: "waktu_feedback_device_id")
+        return id
+    }
+
+    func revealMore() {
+        guard hasMore else { return }
+        visibleCount = min(visibleCount + Self.pageSize, allItems.count)
+    }
+
+    func resetPagination() {
+        visibleCount = Self.pageSize
+    }
+
+    func load() async {
+        if let cached = loadCache(), !cached.items.isEmpty, allItems.isEmpty {
+            allItems = cached.items
+            currentUserRequestId = cached.currentUserRequestId
+        }
+
+        isLoading = allItems.isEmpty
+        errorMessage = nil
+        defer { isLoading = false }
+
+        guard var components = URLComponents(url: Self.endpoint, resolvingAgainstBaseURL: false) else { return }
+        components.queryItems = [URLQueryItem(name: "deviceId", value: deviceId)]
+        guard let url = components.url else { return }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            try apply(data: data, response: response)
+        } catch {
+            if allItems.isEmpty {
+                errorMessage = isMalayAppLanguage()
+                    ? "Gagal memuatkan cadangan."
+                    : "Could not load requests."
+            }
+        }
+    }
+
+    func create(title: String, body: String) async {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+
+        await post(body: [
+            "action": "create",
+            "deviceId": deviceId,
+            "title": title.trimmingCharacters(in: .whitespacesAndNewlines),
+            "body": body.trimmingCharacters(in: .whitespacesAndNewlines),
+            "language": isMalayAppLanguage() ? "ms" : "en"
+        ])
+    }
+
+    func vote(item: SettingsFeatureRequestItem, vote: Int) async {
+        await post(body: [
+            "action": "vote",
+            "deviceId": deviceId,
+            "requestId": item.id,
+            "vote": String(vote)
+        ])
+    }
+
+    func delete(item: SettingsFeatureRequestItem) async {
+        await post(body: [
+            "action": "delete",
+            "deviceId": deviceId,
+            "requestId": item.id
+        ])
+    }
+
+    private func post(body: [String: String]) async {
+        var request = URLRequest(url: Self.endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            try apply(data: data, response: response)
+        } catch {
+            errorMessage = isMalayAppLanguage()
+                ? "Tindakan gagal. Cuba lagi sebentar."
+                : "Action failed. Try again in a moment."
+        }
+    }
+
+    private func apply(data: Data, response: URLResponse) throws {
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        let decoded = try JSONDecoder().decode(SettingsFeatureRequestBoardResponse.self, from: data)
+        allItems = decoded.items
+        currentUserRequestId = decoded.currentUserRequestId
+        saveCache(decoded)
+    }
+
+    private func loadCache() -> Cache? {
+        guard let data = defaults.data(forKey: Self.cacheKey) else { return nil }
+        return try? JSONDecoder().decode(Cache.self, from: data)
+    }
+
+    private func saveCache(_ response: SettingsFeatureRequestBoardResponse) {
+        let cache = Cache(items: response.items, currentUserRequestId: response.currentUserRequestId)
+        defaults.set(try? JSONEncoder().encode(cache), forKey: Self.cacheKey)
+    }
+}
+
+private struct SettingsFeatureRequestRow: View {
+    let item: SettingsFeatureRequestItem
+    let isExpanded: Bool
+    let onExpand: () -> Void
+    let onVote: (Int) -> Void
+    let onDelete: () -> Void
+
+    private var bodyIsTruncatable: Bool { item.body.count > 80 }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(spacing: 4) {
+                Button { onVote(1) } label: {
+                    Image(systemName: "arrowtriangle.up.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(item.userVote == 1 ? .red : .secondary)
+                }
+                .buttonStyle(.plain)
+
+                Text("\(item.score)")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+
+                Button { onVote(-1) } label: {
+                    Image(systemName: "arrowtriangle.down.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(item.userVote == -1 ? .blue : .secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 6) {
+                    Text(item.title)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                        .lineLimit(isExpanded ? nil : 1)
+                        .truncationMode(.tail)
+
+                    if item.status != "open" {
+                        Text(item.statusTitle)
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Capsule(style: .continuous).fill(item.status == "implemented" ? Color.green : Color.orange))
+                    }
+                }
+
+                Text(item.body)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(.secondary)
+                    .lineLimit(isExpanded ? nil : 2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .animation(.easeInOut(duration: 0.2), value: isExpanded)
+
+                if bodyIsTruncatable && !isExpanded {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { onExpand() }
+                    } label: {
+                        Text(isMalayAppLanguage() ? "Baca lagi" : "Read more")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 1)
+                }
+
+                if item.isMine {
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Text(isMalayAppLanguage() ? "Padam cadangan saya" : "Delete my request")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
+                }
+            }
+        }
+        .padding(.vertical, 5)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard !isExpanded else { return }
+            withAnimation(.easeInOut(duration: 0.2)) { onExpand() }
+        }
+    }
+}
+
 struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings
-    @AppStorage(AppLanguage.storageKey) private var appLanguageCode = AppLanguage.system.rawValue
-    @State private var draftName: String = {
-        ForYouUserProfileService.load().firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    }()
 
     var body: some View {
         #if !os(watchOS)
-        HStack {
-            Text(isMalayAppLanguage() ? "Nama" : "Name")
-                .font(.subheadline)
-            Spacer()
-            TextField(isMalayAppLanguage() ? "Nama anda" : "Your name", text: $draftName)
-                .font(.subheadline)
-                .multilineTextAlignment(.trailing)
-                .foregroundColor(.secondary)
-                .onChange(of: draftName) { newValue in
-                    var profile = ForYouUserProfileService.load()
-                    let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                    profile.firstName = trimmed.isEmpty ? nil : trimmed
-                    ForYouUserProfileService.save(profile)
-                }
-        }
-        #endif
-
-        #if !os(watchOS)
-        VStack(alignment: .leading, spacing: 10) {
-            Picker("App Language", selection: $appLanguageCode.animation(.easeInOut)) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(language.displayName).tag(language.rawValue)
-                }
-            }
-            .pickerStyle(.menu)
-
-            Text("Choose how the app interface is displayed.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-
         Picker("Color Theme", selection: $settings.colorSchemeString.animation(.easeInOut)) {
             Text("System").tag("system")
             Text("Light").tag("light")
@@ -1145,48 +1745,53 @@ private struct DefaultLiveNotificationPreviewCard: View {
 }
 
 private struct TimelineLiveNotificationPreviewCard: View {
-    private let markers = ["Isha", "Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+    private let markers = ["Isha", "Fajr", "Shurooq", "Dhuhr", "Asr", "Maghrib"]
     private let activeIndex = 1
     private let progress: CGFloat = 0.18
-    private let accent = Color(red: 0.05, green: 0.34, blue: 0.18)
+    private let accent = Color(red: 0.47, green: 0.82, blue: 0.58)
+    private let background = Color(red: 0.035, green: 0.047, blue: 0.062)
+    private let primary = Color.white
+    private let secondary = Color.white.opacity(0.62)
+    private let track = Color.white.opacity(0.22)
+    private let inactiveDotStroke = Color.white.opacity(0.36)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                Text("Waktu")
-                    .font(.system(.title3, design: .serif).weight(.bold))
-                    .foregroundColor(.black)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Fajr")
+                    .font(.system(.title3, design: .rounded).weight(.bold))
+                    .foregroundColor(primary)
+                    .lineLimit(1)
 
                 Spacer(minLength: 12)
 
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("6:00 AM")
-                        .font(.system(.title2, design: .rounded).weight(.bold))
-                        .foregroundColor(.black)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .monospacedDigit()
+                        .foregroundColor(primary)
                     Text("Subang Jaya, Selangor")
                         .font(.system(.caption, design: .rounded))
-                        .foregroundColor(.black.opacity(0.58))
+                        .foregroundColor(secondary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.78)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("15")
-                        .font(.system(.title2, design: .rounded).weight(.bold))
-                        .foregroundColor(accent)
-                    Text("min")
-                        .font(.system(.title3, design: .rounded).weight(.bold))
-                        .foregroundColor(.black)
-                    Text("until Fajr")
-                        .font(.system(.title3, design: .rounded).weight(.bold))
-                        .foregroundColor(.black)
-                }
-
-                Text("Subuh is approaching")
-                    .font(.system(.callout, design: .rounded))
-                    .foregroundColor(.black.opacity(0.58))
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("15")
+                    .font(.system(.title3, design: .rounded).weight(.bold))
+                    .foregroundColor(accent)
+                    .monospacedDigit()
+                Text("min")
+                    .font(.system(.callout, design: .rounded).weight(.bold))
+                    .foregroundColor(primary)
+                Text("until Fajr")
+                    .font(.system(.callout, design: .rounded).weight(.bold))
+                    .foregroundColor(primary)
             }
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
 
             VStack(spacing: 8) {
                 GeometryReader { proxy in
@@ -1201,7 +1806,7 @@ private struct TimelineLiveNotificationPreviewCard: View {
                             path.move(to: CGPoint(x: 0, y: y))
                             path.addLine(to: CGPoint(x: width, y: y))
                         }
-                        .stroke(Color.black.opacity(0.22), lineWidth: 2)
+                        .stroke(track, lineWidth: 2)
 
                         Path { path in
                             path.move(to: CGPoint(x: 0, y: y))
@@ -1209,13 +1814,13 @@ private struct TimelineLiveNotificationPreviewCard: View {
                         }
                         .stroke(accent, lineWidth: 3)
 
-                        ForEach(markers.indices, id: \.self) { index in
-                            Circle()
-                                .fill(index == activeIndex ? accent : Color.white)
+                    ForEach(markers.indices, id: \.self) { index in
+                        Circle()
+                                .fill(index == activeIndex ? accent : background)
                                 .frame(width: index == activeIndex ? 13 : 9, height: index == activeIndex ? 13 : 9)
                                 .overlay(
                                     Circle()
-                                        .stroke(index == activeIndex ? Color.white : Color.black.opacity(0.28), lineWidth: 2)
+                                        .stroke(index == activeIndex ? background : inactiveDotStroke, lineWidth: 2)
                                 )
                                 .shadow(color: index == activeIndex ? accent.opacity(0.35) : .clear, radius: 4)
                                 .position(x: width * CGFloat(index) / CGFloat(markers.count - 1), y: y)
@@ -1228,7 +1833,7 @@ private struct TimelineLiveNotificationPreviewCard: View {
                     ForEach(markers.indices, id: \.self) { index in
                         Text(markers[index])
                             .font(.system(.caption2, design: .rounded))
-                            .foregroundColor(index == activeIndex ? accent : .black.opacity(0.58))
+                            .foregroundColor(index == activeIndex ? accent : secondary)
                             .fontWeight(index == activeIndex ? .semibold : .regular)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
@@ -1238,14 +1843,16 @@ private struct TimelineLiveNotificationPreviewCard: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(.top, 14)
+        .padding(.bottom, 18)
+        .background(background, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
     }
 }
 
 private struct AppIconCustomizationView: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
     @AppStorage(WaktuAppIcon.storageKey) private var selectedIconRaw = WaktuAppIcon.current.rawValue
     @State private var iconErrorMessage: String?
 
@@ -1253,20 +1860,25 @@ private struct AppIconCustomizationView: View {
         WaktuAppIcon(rawValue: selectedIconRaw) ?? .current
     }
 
+    private var isMY: Bool {
+        settings.currentLocation?.countryCode?.uppercased() == "MY"
+    }
+
     var body: some View {
         List {
             Section(
                 header: Text("APP ICON"),
-                footer: Text("Waktu Black & White is the current default app icon.")
+                footer: Text(isMY ? "Waktu Malam is the current default app icon." : "Waktu Evening is the current default app icon.")
             ) {
                 ForEach(WaktuAppIcon.allCases) { icon in
                     Button {
                         select(icon)
                     } label: {
                         CustomizationSelectionRow(
-                            title: icon.title,
+                            title: icon.title(isMY: isMY),
                             subtitle: icon.subtitle,
                             isSelected: selectedIcon == icon,
+                            isPro: icon == .orange,
                             accentColor: settings.accentColor.color
                         ) {
                             Image(icon.previewAssetName)
@@ -1334,6 +1946,7 @@ private struct CustomizationSelectionRow<Preview: View>: View {
     let title: String
     let subtitle: String
     let isSelected: Bool
+    var isPro: Bool = false
     let accentColor: Color
     @ViewBuilder let preview: () -> Preview
 
@@ -1342,9 +1955,19 @@ private struct CustomizationSelectionRow<Preview: View>: View {
             preview()
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.primary)
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.primary)
+                    if isPro {
+                        Text("PRO")
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Capsule(style: .continuous).fill(Color.purple))
+                    }
+                }
                 Text(subtitle)
                     .font(.caption)
                     .foregroundColor(.secondary)

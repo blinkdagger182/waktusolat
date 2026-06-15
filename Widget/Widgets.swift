@@ -381,6 +381,27 @@ private struct DefaultLiveActivityContentView: View {
 }
 
 @available(iOSApplicationExtension 16.2, *)
+private struct TimelineLiveActivityPalette {
+    let background: Color
+    let primary: Color
+    let secondary: Color
+    let track: Color
+    let inactiveDotFill: Color
+    let inactiveDotStroke: Color
+    let accent: Color
+
+    init(isNight: Bool, accent: Color) {
+        self.accent = isNight ? Color(red: 0.47, green: 0.82, blue: 0.58) : accent
+        background = isNight ? Color(red: 0.035, green: 0.047, blue: 0.062) : .white
+        primary = isNight ? .white : .black
+        secondary = isNight ? Color.white.opacity(0.62) : Color.black.opacity(0.58)
+        track = isNight ? Color.white.opacity(0.22) : Color.black.opacity(0.22)
+        inactiveDotFill = isNight ? Color(red: 0.035, green: 0.047, blue: 0.062) : .white
+        inactiveDotStroke = isNight ? Color.white.opacity(0.36) : Color.black.opacity(0.28)
+    }
+}
+
+@available(iOSApplicationExtension 16.2, *)
 private struct TimelineLiveActivityContentView: View {
     let context: ActivityViewContext<PrayerLiveActivityAttributes>
 
@@ -394,23 +415,25 @@ private struct TimelineLiveActivityContentView: View {
                 city: context.state.city,
                 now: liveNow
             )
+            let palette = TimelineLiveActivityPalette(isNight: model.isNightMode, accent: model.accent)
 
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .top) {
-                    Text(appLocalized("Waktu"))
-                        .font(.system(.title3, design: .serif).weight(.bold))
-                        .foregroundColor(.black)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(localizedPrayerName(context.state.prayerName))
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundColor(palette.primary)
+                        .lineLimit(1)
 
                     Spacer(minLength: 12)
 
                     VStack(alignment: .trailing, spacing: 4) {
                         Text(model.targetTimeText)
-                            .font(.system(.title2, design: .rounded).weight(.bold))
+                            .font(.system(.title3, design: .rounded).weight(.bold))
                             .monospacedDigit()
-                            .foregroundColor(.black)
+                            .foregroundColor(palette.primary)
                         Text(model.city)
                             .font(.system(.caption, design: .rounded))
-                            .foregroundColor(.black.opacity(0.58))
+                            .foregroundColor(palette.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.78)
                     }
@@ -418,34 +441,30 @@ private struct TimelineLiveActivityContentView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(model.remainingValueText)
-                        .font(.system(.title2, design: .rounded).weight(.bold))
-                        .foregroundColor(model.accent)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundColor(palette.accent)
                         .monospacedDigit()
                     Text(model.remainingUnitText)
-                        .font(.system(.title3, design: .rounded).weight(.bold))
-                        .foregroundColor(.black)
+                        .font(.system(.callout, design: .rounded).weight(.bold))
+                        .foregroundColor(palette.primary)
                     Text(model.remainingSuffixText)
-                        .font(.system(.title3, design: .rounded).weight(.bold))
-                        .foregroundColor(.black)
+                        .font(.system(.callout, design: .rounded).weight(.bold))
+                        .foregroundColor(palette.primary)
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
-                Text(model.subtitle)
-                    .font(.system(.callout, design: .rounded))
-                    .foregroundColor(.black.opacity(0.58))
-                    .lineLimit(1)
-
                 PrayerTimelineProgressView(model: model)
             }
             .padding(.horizontal, 18)
-            .padding(.vertical, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 18)
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.white)
+                    .fill(palette.background)
             )
         }
-        .activityBackgroundTint(.white)
+        .activityBackgroundTint(.clear)
         .activitySystemActionForegroundColor(.black)
     }
 }
@@ -455,12 +474,15 @@ private struct PrayerTimelineProgressView: View {
     let model: LiveActivityPrayerTimeline
 
     var body: some View {
+        let palette = TimelineLiveActivityPalette(isNight: model.isNightMode, accent: model.accent)
+
         VStack(spacing: 8) {
             GeometryReader { proxy in
                 let width = proxy.size.width
                 let y = proxy.size.height / 2
-                let previousMarker = model.markers[max(model.activeIndex - 1, 0)]
-                let activeMarker = model.markers[model.activeIndex]
+                let safeActiveIndex = min(max(model.activeIndex, 0), model.markers.count - 1)
+                let previousMarker = model.markers[max(safeActiveIndex - 1, 0)]
+                let activeMarker = model.markers[safeActiveIndex]
                 let activeX = width * (previousMarker.position + (activeMarker.position - previousMarker.position) * model.progress)
 
                 ZStack(alignment: .leading) {
@@ -468,24 +490,24 @@ private struct PrayerTimelineProgressView: View {
                         path.move(to: CGPoint(x: 0, y: y))
                         path.addLine(to: CGPoint(x: width, y: y))
                     }
-                    .stroke(Color.black.opacity(0.22), lineWidth: 2)
+                    .stroke(palette.track, lineWidth: 2)
 
                     Path { path in
                         path.move(to: CGPoint(x: 0, y: y))
                         path.addLine(to: CGPoint(x: activeX, y: y))
                     }
-                    .stroke(model.accent, lineWidth: 3)
+                    .stroke(palette.accent, lineWidth: 3)
 
                     ForEach(model.markers.indices, id: \.self) { index in
                         let marker = model.markers[index]
                         Circle()
-                            .fill(marker.isActive ? model.accent : Color.white)
+                            .fill(marker.isActive ? palette.accent : palette.inactiveDotFill)
                             .frame(width: marker.isActive ? 13 : 9, height: marker.isActive ? 13 : 9)
                             .overlay(
                                 Circle()
-                                    .stroke(marker.isActive ? Color.white : Color.black.opacity(0.28), lineWidth: marker.isActive ? 2 : 2)
+                                    .stroke(marker.isActive ? palette.background : palette.inactiveDotStroke, lineWidth: 2)
                             )
-                            .shadow(color: marker.isActive ? model.accent.opacity(0.35) : .clear, radius: 4)
+                            .shadow(color: marker.isActive ? palette.accent.opacity(0.35) : .clear, radius: 4)
                             .position(x: width * marker.position, y: y)
                     }
                 }
@@ -496,7 +518,7 @@ private struct PrayerTimelineProgressView: View {
                 ForEach(model.markers) { marker in
                     Text(marker.label)
                         .font(.system(.caption2, design: .rounded))
-                        .foregroundColor(marker.isActive ? model.accent : .black.opacity(0.58))
+                        .foregroundColor(marker.isActive ? palette.accent : palette.secondary)
                         .fontWeight(marker.isActive ? .semibold : .regular)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
@@ -528,6 +550,7 @@ private struct LiveActivityPrayerTimeline {
     let subtitle: String
     let targetTimeText: String
     let accent: Color
+    let isNightMode: Bool
 
     static func make(
         prayerName: String,
@@ -541,17 +564,31 @@ private struct LiveActivityPrayerTimeline {
         let sorted = prayers.sorted { $0.time < $1.time }
         let matchedIndex = sorted.firstIndex { prayer in
             canonicalKey(prayer.nameTransliteration) == canonicalNext
-                && abs(prayer.time.timeIntervalSince(prayerTime)) < 60 * 45
-        } ?? sorted.firstIndex { $0.time >= now } ?? sorted.firstIndex { canonicalKey($0.nameTransliteration) == canonicalNext }
+        } ?? sorted.firstIndex { $0.time >= now }
 
         let timelinePrayers: [(name: String, time: Date)]
         let activeIndex: Int
         let previousTime: Date
 
         if let matchedIndex, !sorted.isEmpty {
-            timelinePrayers = buildTimelinePrayers(from: sorted, activeIndex: matchedIndex)
-            activeIndex = min(1, timelinePrayers.count - 1)
-            previousTime = timelinePrayers.first?.time ?? startedAt
+            let builtTimelinePrayers = buildTimelinePrayers(
+                from: sorted,
+                activeIndex: matchedIndex,
+                activeTime: prayerTime
+            )
+            if builtTimelinePrayers.count >= 2 {
+                timelinePrayers = builtTimelinePrayers
+                activeIndex = min(1, builtTimelinePrayers.count - 1)
+                previousTime = builtTimelinePrayers.first?.time ?? startedAt
+            } else {
+                let previous = startedAt < prayerTime ? startedAt : now.addingTimeInterval(-15 * 60)
+                timelinePrayers = [
+                    (name: previousPrayerFallbackName(before: prayerName), time: previous),
+                    (name: prayerName, time: prayerTime)
+                ]
+                activeIndex = 1
+                previousTime = previous
+            }
         } else {
             let previous = startedAt < prayerTime ? startedAt : now.addingTimeInterval(-15 * 60)
             timelinePrayers = [
@@ -594,6 +631,7 @@ private struct LiveActivityPrayerTimeline {
             ? cachedCityFallback()
             : city
         let targetName = localizedPrayerName(prayerName)
+        let isNightMode = canonicalNext == "fajr" || canonicalKey(timelinePrayers.first?.name ?? "") == "isha"
 
         return LiveActivityPrayerTimeline(
             prayerName: prayerName,
@@ -608,7 +646,8 @@ private struct LiveActivityPrayerTimeline {
             remainingSuffixText: "until \(targetName)",
             subtitle: "\(targetName) is approaching",
             targetTimeText: targetTimeFormatter.string(from: prayerTime),
-            accent: Color(red: 0.05, green: 0.34, blue: 0.18)
+            accent: Color(red: 0.05, green: 0.34, blue: 0.18),
+            isNightMode: isNightMode
         )
     }
 
@@ -631,7 +670,11 @@ private struct LiveActivityPrayerTimeline {
         return appLocalized("Current Location")
     }
 
-    private static func buildTimelinePrayers(from prayers: [Prayer], activeIndex: Int) -> [(name: String, time: Date)] {
+    private static func buildTimelinePrayers(
+        from prayers: [Prayer],
+        activeIndex: Int,
+        activeTime: Date
+    ) -> [(name: String, time: Date)] {
         let displayable = prayers.filter { !canonicalKey($0.nameTransliteration).isEmpty }
         guard !displayable.isEmpty else { return [] }
         let activePrayer = prayers[activeIndex]
@@ -642,21 +685,45 @@ private struct LiveActivityPrayerTimeline {
         var items: [(name: String, time: Date)] = []
         let previousIndex = displayActiveIndex == 0 ? displayable.count - 1 : displayActiveIndex - 1
         let previousPrayer = displayable[previousIndex]
-        let previousTime = displayActiveIndex == 0
-            ? Calendar.current.date(byAdding: .day, value: -1, to: previousPrayer.time) ?? previousPrayer.time
-            : previousPrayer.time
+        let previousTime = latestOccurrence(of: previousPrayer.time, before: activeTime)
         items.append((previousPrayer.nameTransliteration, previousTime))
 
-        for offset in 0..<min(displayable.count, 5) {
+        items.append((activePrayer.nameTransliteration, activeTime))
+
+        var lastTime = activeTime
+        let nextCount = min(displayable.count - 1, 4)
+        guard nextCount > 0 else { return items }
+
+        for offset in 1...nextCount {
             let index = (displayActiveIndex + offset) % displayable.count
             let prayer = displayable[index]
-            let rollsToTomorrow = index < displayActiveIndex
-            let time = rollsToTomorrow
-                ? Calendar.current.date(byAdding: .day, value: 1, to: prayer.time) ?? prayer.time
-                : prayer.time
+            let time = earliestOccurrence(of: prayer.time, after: lastTime)
             items.append((prayer.nameTransliteration, time))
+            lastTime = time
         }
         return items
+    }
+
+    private static func latestOccurrence(of time: Date, before reference: Date) -> Date {
+        var candidate = time
+        while candidate >= reference {
+            candidate = Calendar.current.date(byAdding: .day, value: -1, to: candidate)
+                ?? candidate.addingTimeInterval(-86_400)
+        }
+        while let next = Calendar.current.date(byAdding: .day, value: 1, to: candidate),
+              next < reference {
+            candidate = next
+        }
+        return candidate
+    }
+
+    private static func earliestOccurrence(of time: Date, after reference: Date) -> Date {
+        var candidate = time
+        while candidate <= reference {
+            candidate = Calendar.current.date(byAdding: .day, value: 1, to: candidate)
+                ?? candidate.addingTimeInterval(86_400)
+        }
+        return candidate
     }
 
     private static func previousPrayerFallbackName(before prayerName: String) -> String {
@@ -787,6 +854,12 @@ private struct LiveActivityCompactTimerText: View {
 @main
 struct Widgets: WidgetBundle {
     var body: some Widget {
+        // Pro tier — listed first so they appear at the top of the picker
+        ProNextWidget()
+        ProIndexWidget()
+        ProArcWidget()
+        ProZikirWidget()
+        // Free tier
         SimpleWidget()
         GraphicPrayerWidget()
         // GraphicPrayerSquareWidget() // Temporarily disabled for App Store submission
@@ -797,6 +870,7 @@ struct Widgets: WidgetBundle {
         ZikirWidget()
         #if os(iOS)
         if #available(iOS 16.1, *) {
+            ProLockWidget()
             LockScreen1Widget()
             LockScreen2Widget()
             LockScreen3Widget()
