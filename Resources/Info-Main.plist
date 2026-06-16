@@ -58,6 +58,10 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Uthmani.otf</string>
+		<string>Newsreader.ttf</string>
+		<string>IBMPlexMono-Regular.ttf</string>
+		<string>IBMPlexMono-Medium.ttf</string>
+		<string>Inter.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

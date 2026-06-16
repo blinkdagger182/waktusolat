@@ -11,15 +11,42 @@ private extension View {
             self
         }
     }
+
+    @ViewBuilder func proKerning(_ value: CGFloat) -> some View {
+        if #available(iOS 16.0, *) {
+            self.kerning(value)
+        } else {
+            self
+        }
+    }
 }
 
 // MARK: - Design Tokens
 
 private let proGold      = Color(red: 201 / 255, green: 162 / 255, blue: 75 / 255)
 private let proInk       = Color(red: 10 / 255,  green: 10 / 255,  blue: 11 / 255)
+private let proPanel     = Color(red: 18 / 255,  green: 18 / 255,  blue: 20 / 255)
 private let proTextMain  = Color(red: 242 / 255, green: 241 / 255, blue: 238 / 255)
 private let proTextDim   = Color(red: 140 / 255, green: 140 / 255, blue: 146 / 255)
 private let proTextFaint = Color(red: 90 / 255,  green: 90 / 255,  blue: 96 / 255)
+
+private enum ProFont {
+    static func serif(_ size: CGFloat) -> Font {
+        .custom("Newsreader16pt-Regular", fixedSize: size)
+    }
+
+    static func mono(_ size: CGFloat) -> Font {
+        .custom("IBMPlexMono-Regular", fixedSize: size)
+    }
+
+    static func monoMedium(_ size: CGFloat) -> Font {
+        .custom("IBMPlexMono-Medium", fixedSize: size)
+    }
+
+    static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .custom("Inter-Regular", fixedSize: size).weight(weight)
+    }
+}
 
 // MARK: - Shared Helpers
 
@@ -30,7 +57,7 @@ private struct ProLockedView: View {
                 .font(.title3)
                 .foregroundStyle(proGold)
             Text("Waktu Pro")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(ProFont.monoMedium(11))
                 .foregroundStyle(proGold)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -71,7 +98,7 @@ struct ProNextEntryView: View {
 
     var body: some View {
         ZStack {
-            proInk
+            proPanel
             if !premiumWidgetsUnlocked() {
                 ProLockedView()
             } else if entry.prayers.isEmpty {
@@ -90,7 +117,8 @@ struct ProNextEntryView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
                 Text(proHijriLabel(for: entry))
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(ProFont.mono(10))
+                    .proKerning(1.2)
                     .foregroundStyle(proTextFaint)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -105,7 +133,8 @@ struct ProNextEntryView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(widgetPrayerDisplayName(current, in: entry))
-                    .font(.system(size: 34, weight: .light, design: .serif))
+                    .font(ProFont.serif(34))
+                    .proKerning(-0.68)
                     .foregroundStyle(proTextMain)
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
@@ -117,7 +146,8 @@ struct ProNextEntryView: View {
                     Text(" left")
                         .foregroundStyle(proTextDim)
                 }
-                .font(.system(size: 13, design: .monospaced))
+                .font(ProFont.mono(13))
+                .proKerning(0)
 
                 HStack(spacing: 3) {
                     Text("Then")
@@ -125,13 +155,18 @@ struct ProNextEntryView: View {
                     Text("·")
                     Text(widgetPrayerDisplayTime(next, in: entry), style: .time)
                 }
-                .font(.system(size: 11))
+                .font(ProFont.sans(11))
                 .foregroundStyle(proTextFaint)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             }
         }
-        .padding(18)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
+        .overlay {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        }
     }
 }
 
@@ -177,7 +212,7 @@ struct ProIndexEntryView: View {
 
     var body: some View {
         ZStack {
-            proInk
+            proPanel
             if !premiumWidgetsUnlocked() {
                 ProLockedView()
             } else if entry.prayers.isEmpty {
@@ -196,12 +231,13 @@ struct ProIndexEntryView: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text(entry.currentCity)
-                    .font(.system(size: 11))
+                    .font(ProFont.sans(11))
                     .foregroundStyle(proTextFaint)
                     .lineLimit(1)
                 Spacer()
                 Text(proHijriLabel(for: entry))
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(ProFont.mono(10))
+                    .proKerning(1.0)
                     .foregroundStyle(proTextFaint)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -217,10 +253,12 @@ struct ProIndexEntryView: View {
                     let state = slotState(for: prayer, in: prayers)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(widgetPrayerDisplayName(prayer, in: entry))
-                            .font(.system(size: 11))
+                            .font(ProFont.sans(11))
+                            .proKerning(0.44)
                             .foregroundStyle(indexLabelColor(state))
                         Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
-                            .font(.system(size: 17, design: .monospaced))
+                            .font(ProFont.mono(17))
+                            .proKerning(-0.17)
                             .monospacedDigit()
                             .foregroundStyle(indexTimeColor(state))
                     }
@@ -371,7 +409,7 @@ struct ProArcEntryView: View {
 
     var body: some View {
         ZStack {
-            proInk
+            proPanel
             if !premiumWidgetsUnlocked() {
                 ProLockedView()
             } else if entry.prayers.isEmpty {
@@ -393,7 +431,8 @@ struct ProArcEntryView: View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(pair.map { widgetPrayerDisplayName($0.current, in: entry) } ?? "—")
-                        .font(.system(size: 26, weight: .light, design: .serif))
+                        .font(ProFont.serif(26))
+                        .proKerning(-0.26)
                         .foregroundStyle(proTextMain)
                         .lineLimit(1)
 
@@ -405,7 +444,7 @@ struct ProArcEntryView: View {
                             Text(" remaining")
                                 .foregroundStyle(proTextDim)
                         }
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(ProFont.mono(13))
                     }
                 }
 
@@ -414,13 +453,13 @@ struct ProArcEntryView: View {
                 if let next = pair?.next {
                     VStack(alignment: .trailing, spacing: 1) {
                         Text("Next")
-                            .font(.system(size: 11))
+                            .font(ProFont.sans(11))
                             .foregroundStyle(proTextFaint)
                         HStack(spacing: 3) {
                             Text(widgetPrayerDisplayName(next, in: entry))
                             Text(widgetPrayerDisplayTime(next, in: entry), style: .time)
                         }
-                        .font(.system(size: 13))
+                        .font(ProFont.sans(13))
                         .foregroundStyle(proTextDim)
                     }
                 }
@@ -453,7 +492,7 @@ struct ProArcEntryView: View {
                     }
                 }
             }
-            .font(.system(size: 11))
+            .font(ProFont.sans(11))
             .foregroundStyle(proTextFaint)
         }
         .padding(22)
@@ -489,7 +528,7 @@ private struct ProLockEntryView: View {
     var body: some View {
         if !premiumWidgetsUnlocked() {
             Label("Waktu Pro", systemImage: "lock.fill")
-                .font(.system(size: 11, design: .monospaced))
+                .font(ProFont.mono(11))
                 .proAccentable()
         } else if entry.prayers.isEmpty {
             Text("Open app")
@@ -508,7 +547,7 @@ private struct ProLockEntryView: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(widgetPrayerDisplayName(current, in: entry))
-                    .font(.system(size: 17, weight: .light, design: .serif))
+                    .font(ProFont.serif(17))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 HStack(spacing: 2) {
@@ -517,7 +556,7 @@ private struct ProLockEntryView: View {
                     Text("·")
                     Text(widgetPrayerDisplayTime(next, in: entry), style: .time)
                 }
-                .font(.system(size: 10))
+                .font(ProFont.sans(10))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -526,7 +565,7 @@ private struct ProLockEntryView: View {
             Spacer(minLength: 4)
 
             Text(widgetPrayerDisplayTime(next, in: entry), style: .timer) // home-widget-audit: allow-live-timer-lock-screen
-                .font(.system(size: 18, design: .monospaced))
+                .font(ProFont.mono(18))
                 .monospacedDigit()
                 .proAccentable()
                 .lineLimit(1)

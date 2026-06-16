@@ -32,6 +32,10 @@
 		72728C962B3D18E500FAA3B3 /* Al-AdhanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728C952B3D18E500FAA3B3 /* Al-AdhanApp.swift */; };
 		72728C9A2B3D18E600FAA3B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72728C992B3D18E600FAA3B3 /* Assets.xcassets */; };
 		72728CA42B3D191F00FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
+		72A0F0012F00000100ABCDEF /* Newsreader.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0002F00000100ABCDEF /* Newsreader.ttf */; };
+		72A0F0042F00000100ABCDEF /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0032F00000100ABCDEF /* IBMPlexMono-Regular.ttf */; };
+		72A0F0072F00000100ABCDEF /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0062F00000100ABCDEF /* IBMPlexMono-Medium.ttf */; };
+		72A0F00A2F00000100ABCDEF /* Inter.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0092F00000100ABCDEF /* Inter.ttf */; };
 		72728CAD2B3D198300FAA3B3 /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CAA2B3D198300FAA3B3 /* ToolsView.swift */; };
 		72728CAE2B3D198300FAA3B3 /* 99_Names_Of_Allah.json in Resources */ = {isa = PBXBuildFile; fileRef = 72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */; };
 		72728CB12B3D19CF00FAA3B3 /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */; };
@@ -51,6 +55,10 @@
 		72728D0A2B3D524600FAA3B3 /* LockScreen1Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D092B3D524600FAA3B3 /* LockScreen1Widget.swift */; };
 		72728D0C2B3D525300FAA3B3 /* LockScreen2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D0B2B3D525300FAA3B3 /* LockScreen2Widget.swift */; };
 		72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72728CA32B3D191F00FAA3B3 /* Uthmani.otf */; };
+		72A0F0022F00000100ABCDEF /* Newsreader.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0002F00000100ABCDEF /* Newsreader.ttf */; };
+		72A0F0052F00000100ABCDEF /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0032F00000100ABCDEF /* IBMPlexMono-Regular.ttf */; };
+		72A0F0082F00000100ABCDEF /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0062F00000100ABCDEF /* IBMPlexMono-Medium.ttf */; };
+		72A0F00B2F00000100ABCDEF /* Inter.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 72A0F0092F00000100ABCDEF /* Inter.ttf */; };
 		72728D262B3D52BE00FAA3B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72728C992B3D18E600FAA3B3 /* Assets.xcassets */; };
 		72728D282B3D52C400FAA3B3 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728CC12B3D1AA300FAA3B3 /* Settings.swift */; };
 		72728D2A2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72728D2B2B3D52C500FAA3B3 /* GraphicPrayerWidget.swift */; };
@@ -205,6 +213,10 @@
 		72728C952B3D18E500FAA3B3 /* Al-AdhanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Al-AdhanApp.swift"; sourceTree = "<group>"; };
 		72728C992B3D18E600FAA3B3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		72728CA32B3D191F00FAA3B3 /* Uthmani.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Uthmani.otf; sourceTree = "<group>"; };
+		72A0F0002F00000100ABCDEF /* Newsreader.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Newsreader.ttf; sourceTree = "<group>"; };
+		72A0F0032F00000100ABCDEF /* IBMPlexMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexMono-Regular.ttf"; sourceTree = "<group>"; };
+		72A0F0062F00000100ABCDEF /* IBMPlexMono-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexMono-Medium.ttf"; sourceTree = "<group>"; };
+		72A0F0092F00000100ABCDEF /* Inter.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Inter.ttf; sourceTree = "<group>"; };
 		72728CAA2B3D198300FAA3B3 /* ToolsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ToolsView.swift; sourceTree = "<group>"; };
 		72728CAB2B3D198300FAA3B3 /* 99_Names_Of_Allah.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = 99_Names_Of_Allah.json; sourceTree = "<group>"; };
 		72728CAF2B3D19CF00FAA3B3 /* SplashScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
@@ -581,6 +593,10 @@
 			isa = PBXGroup;
 			children = (
 				72728CA32B3D191F00FAA3B3 /* Uthmani.otf */,
+				72A0F0002F00000100ABCDEF /* Newsreader.ttf */,
+				72A0F0032F00000100ABCDEF /* IBMPlexMono-Regular.ttf */,
+				72A0F0062F00000100ABCDEF /* IBMPlexMono-Medium.ttf */,
+				72A0F0092F00000100ABCDEF /* Inter.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -775,6 +791,10 @@
 				A10000012F70000100ABCDEF /* quotes.json in Resources */,
 				72728CAE2B3D198300FAA3B3 /* 99_Names_Of_Allah.json in Resources */,
 				72728CA42B3D191F00FAA3B3 /* Uthmani.otf in Resources */,
+				72A0F0012F00000100ABCDEF /* Newsreader.ttf in Resources */,
+				72A0F0042F00000100ABCDEF /* IBMPlexMono-Regular.ttf in Resources */,
+				72A0F0072F00000100ABCDEF /* IBMPlexMono-Medium.ttf in Resources */,
+				72A0F00A2F00000100ABCDEF /* Inter.ttf in Resources */,
 				AA000003ICON0000000001A /* AppIconOrange@2x.png in Resources */,
 				AA000003ICON0000000002A /* AppIconOrange@3x.png in Resources */,
 				72728C9A2B3D18E600FAA3B3 /* Assets.xcassets in Resources */,
@@ -789,6 +809,10 @@
 				B10000022F90000100ABCDEF /* Localizable.xcstrings in Resources */,
 				A10000022F70000100ABCDEF /* quotes.json in Resources */,
 				72728D232B3D52B900FAA3B3 /* Uthmani.otf in Resources */,
+				72A0F0022F00000100ABCDEF /* Newsreader.ttf in Resources */,
+				72A0F0052F00000100ABCDEF /* IBMPlexMono-Regular.ttf in Resources */,
+				72A0F0082F00000100ABCDEF /* IBMPlexMono-Medium.ttf in Resources */,
+				72A0F00B2F00000100ABCDEF /* Inter.ttf in Resources */,
 				72728D262B3D52BE00FAA3B3 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

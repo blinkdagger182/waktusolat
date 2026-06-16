@@ -3943,17 +3943,18 @@ private struct HomePrayerTimesMediumGridPreviewCard: View {
                                 .font(.subheadline.weight(.bold))
                         }
                         .foregroundStyle(index == 4 ? accentColor : .primary)
+                        .frame(maxWidth: .infinity, alignment: .center)
 
                         Text(row.1)
                             .font(.subheadline)
                             .foregroundStyle(index == 4 ? accentColor : .secondary)
                             .monospacedDigit()
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .padding(4)
-
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
         .lineLimit(1)
         .minimumScaleFactor(0.82)
@@ -6389,9 +6390,38 @@ struct NotificationSettingsSection: View {
 
 private let pvGold      = Color(red: 201 / 255, green: 162 / 255, blue: 75 / 255)
 private let pvInk       = Color(red: 10 / 255,  green: 10 / 255,  blue: 11 / 255)
+private let pvPanel     = Color(red: 18 / 255,  green: 18 / 255,  blue: 20 / 255)
 private let pvTextMain  = Color(red: 242 / 255, green: 241 / 255, blue: 238 / 255)
 private let pvTextDim   = Color(red: 140 / 255, green: 140 / 255, blue: 146 / 255)
 private let pvTextFaint = Color(red: 90 / 255,  green: 90 / 255,  blue: 96 / 255)
+
+private enum PreviewProFont {
+    static func serif(_ size: CGFloat) -> Font {
+        .custom("Newsreader16pt-Regular", fixedSize: size)
+    }
+
+    static func mono(_ size: CGFloat) -> Font {
+        .custom("IBMPlexMono-Regular", fixedSize: size)
+    }
+
+    static func monoMedium(_ size: CGFloat) -> Font {
+        .custom("IBMPlexMono-Medium", fixedSize: size)
+    }
+
+    static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .custom("Inter-Regular", fixedSize: size).weight(weight)
+    }
+}
+
+private extension View {
+    @ViewBuilder func proKerning(_ value: CGFloat) -> some View {
+        if #available(iOS 16.0, *) {
+            self.kerning(value)
+        } else {
+            self
+        }
+    }
+}
 
 // Widget 1 · Next (systemSmall)
 // HTML: lede-hijri top-left (mono 10px faint) + gold dot top-right
@@ -6401,11 +6431,12 @@ private let pvTextFaint = Color(red: 90 / 255,  green: 90 / 255,  blue: 96 / 255
 private struct HomeProNextPreviewCard: View {
     var body: some View {
         ZStack {
-            pvInk
+            pvPanel
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     Text("24 RAMADAN")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(PreviewProFont.mono(10))
+                        .proKerning(1.2)
                         .foregroundStyle(pvTextFaint)
                     Spacer()
                     Circle()
@@ -6415,7 +6446,8 @@ private struct HomeProNextPreviewCard: View {
                 }
                 Spacer()
                 Text(localizedPrayerName("Maghrib"))
-                    .font(.system(size: 34, weight: .light, design: .serif))
+                    .font(PreviewProFont.serif(34))
+                    .proKerning(-0.68)
                     .foregroundStyle(pvTextMain)
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
@@ -6425,14 +6457,19 @@ private struct HomeProNextPreviewCard: View {
                     Text(" left")
                         .foregroundStyle(pvTextDim)
                 }
-                .font(.system(size: 13, design: .monospaced))
+                .font(PreviewProFont.mono(13))
                 .padding(.top, 4)
                 Text("Then \(localizedPrayerName("Isha")) · 20:38")
-                    .font(.system(size: 11))
+                    .font(PreviewProFont.sans(11))
                     .foregroundStyle(pvTextFaint)
                     .padding(.top, 2)
             }
-            .padding(18)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
@@ -6467,15 +6504,16 @@ private struct HomeProIndexPreviewCard: View {
 
     var body: some View {
         ZStack {
-            pvInk
+            pvPanel
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text(isMalayAppLanguage() ? "Subang Jaya, Selangor" : "Subang Jaya, Selangor")
-                        .font(.system(size: 11))
+                        .font(PreviewProFont.sans(11))
                         .foregroundStyle(pvTextFaint)
                     Spacer()
                     Text("24 RAMADAN 1447")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(PreviewProFont.mono(10))
+                        .proKerning(1.0)
                         .foregroundStyle(pvTextFaint)
                 }
                 .padding(.bottom, 13)
@@ -6485,11 +6523,13 @@ private struct HomeProIndexPreviewCard: View {
                     ForEach(cells, id: \.key) { cell in
                         VStack(alignment: .leading, spacing: 1) {
                             Text(localizedPrayerName(cell.key))
-                                .font(.system(size: 11))
+                                .font(PreviewProFont.sans(11))
+                                .proKerning(0.44)
                                 .foregroundStyle(labelColor(cell.state))
                                 .opacity(opacity(cell.state))
                             Text(cell.time)
-                                .font(.system(size: 17, design: .monospaced))
+                                .font(PreviewProFont.mono(17))
+                                .proKerning(-0.17)
                                 .foregroundStyle(timeColor(cell.state))
                                 .opacity(opacity(cell.state))
                         }
@@ -6509,20 +6549,21 @@ private struct HomeProIndexPreviewCard: View {
 private struct HomeProArcPreviewCard: View {
     var body: some View {
         ZStack {
-            pvInk
+            pvPanel
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(localizedPrayerName("Maghrib"))
-                            .font(.system(size: 26, weight: .light, design: .serif))
+                            .font(PreviewProFont.serif(26))
+                            .proKerning(-0.26)
                             .foregroundStyle(pvTextMain)
                         Text("1:14:22 remaining")
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(PreviewProFont.mono(13))
                             .foregroundStyle(pvGold)
                     }
                     Spacer()
                     Text("Next · \(localizedPrayerName("Isha")) 20:38")
-                        .font(.system(size: 13))
+                        .font(PreviewProFont.sans(13))
                         .foregroundStyle(pvTextDim)
                         .multilineTextAlignment(.trailing)
                 }
@@ -6575,11 +6616,11 @@ private struct HomeProArcPreviewCard: View {
 
                 HStack {
                     Text("◔ Subang Jaya, Selangor")
-                        .font(.system(size: 11))
+                        .font(PreviewProFont.sans(11))
                         .foregroundStyle(pvTextFaint)
                     Spacer()
                     Text("Sunset 19:31")
-                        .font(.system(size: 11))
+                        .font(PreviewProFont.sans(11))
                         .foregroundStyle(pvTextFaint)
                 }
                 .padding(.top, 12)
@@ -6602,14 +6643,14 @@ private struct HomeProArcPreviewCard: View {
 private struct HomeProZikirPreviewCard: View {
     var body: some View {
         ZStack {
-            pvInk
+            pvPanel
             VStack(alignment: .leading, spacing: 0) {
                 Text(isMalayAppLanguage() ? "MALAM · ISTIGHFAR" : "NIGHT · ISTIGHFAR")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(PreviewProFont.mono(10))
                     .foregroundStyle(pvTextFaint)
                 Spacer()
                 Text("أَسْتَغْفِرُ ٱللَّٰه")
-                    .font(.system(size: 30, weight: .light, design: .serif))
+                    .font(PreviewProFont.serif(30))
                     .foregroundStyle(pvTextMain)
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -6618,7 +6659,7 @@ private struct HomeProZikirPreviewCard: View {
                     .environment(\.layoutDirection, .rightToLeft)
                 Spacer()
                 Text(isMalayAppLanguage() ? "Aku memohon ampun kepada Allah." : "I seek forgiveness from Allah.")
-                    .font(.system(size: 13).italic())
+                    .font(PreviewProFont.sans(13).italic())
                     .foregroundStyle(pvTextDim)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
@@ -6644,17 +6685,17 @@ private struct HomeProLockPreviewCard: View {
                         .stroke(Color.white.opacity(0.10), lineWidth: 1)
                         .frame(width: 36, height: 36)
                     Text("☾")
-                        .font(.system(size: 15))
+                        .font(PreviewProFont.sans(15))
                         .foregroundStyle(pvGold)
                 }
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(localizedPrayerName("Maghrib"))
-                        .font(.system(size: 16, weight: .light, design: .serif))
+                        .font(PreviewProFont.serif(16))
                         .foregroundStyle(pvTextMain)
                         .lineLimit(1)
                     Text("Then \(localizedPrayerName("Isha")) · 20:38")
-                        .font(.system(size: 9))
+                        .font(PreviewProFont.sans(9))
                         .foregroundStyle(pvTextFaint)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -6663,7 +6704,7 @@ private struct HomeProLockPreviewCard: View {
                 Spacer()
 
                 Text("1:14:22")
-                    .font(.system(size: 16, design: .monospaced))
+                    .font(PreviewProFont.mono(16))
                     .foregroundStyle(pvTextMain)
                     .lineLimit(1)
             }
@@ -6672,7 +6713,7 @@ private struct HomeProLockPreviewCard: View {
             VStack {
                 Spacer()
                 Text("LOCK SCREEN · RECTANGULAR")
-                    .font(.system(size: 7, design: .monospaced))
+                    .font(PreviewProFont.mono(7))
                     .foregroundStyle(pvTextFaint.opacity(0.6))
                     .padding(.bottom, 8)
             }

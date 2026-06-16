@@ -69,7 +69,7 @@ struct PrayersEntryView: View {
                         .padding(.vertical, 2)
                 }
                 
-                Spacer()
+                Spacer(minLength: 0)
                 
                 if entry.prayers.count == 6 {
                     LazyVGrid(columns: [
@@ -90,14 +90,17 @@ struct PrayersEntryView: View {
                                         .fontWeight(.bold)
                                         .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                                 }
+                                .frame(maxWidth: .infinity, alignment: .center)
                                 
                                 Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                                     .font(.subheadline)
                                     .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                             }
+                            .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
                     .padding(4)
+                    .frame(maxWidth: .infinity, maxHeight: widgetFamily == .systemMedium ? .infinity : nil, alignment: .center)
                 } else {
                     LazyVGrid(columns: [
                         GridItem(.flexible(), spacing: 12),
@@ -116,17 +119,20 @@ struct PrayersEntryView: View {
                                         .fontWeight(.bold)
                                         .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                                 }
+                                .frame(maxWidth: .infinity, alignment: .center)
                                 
                                 Text(widgetPrayerDisplayTime(prayer, in: entry), style: .time)
                                     .font(.subheadline)
                                     .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                             }
+                            .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
                     .padding(4)
+                    .frame(maxWidth: .infinity, maxHeight: widgetFamily == .systemMedium ? .infinity : nil, alignment: .center)
                 }
                 
-                Spacer()
+                Spacer(minLength: 0)
                 
                 if widgetFamily == .systemLarge {
                     Divider()
