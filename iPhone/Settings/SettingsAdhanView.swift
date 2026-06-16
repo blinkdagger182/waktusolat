@@ -2492,11 +2492,28 @@ private struct LiveActivityWidgetSettingsView: View {
 }
 
 #if DEBUG
+private enum WidgetPreviewVerificationProfile: String {
+    case standard
+    case hostRisk
+}
+
+private struct WidgetPreviewVerificationProfileKey: EnvironmentKey {
+    static let defaultValue: WidgetPreviewVerificationProfile = .standard
+}
+
+private extension EnvironmentValues {
+    var widgetPreviewVerificationProfile: WidgetPreviewVerificationProfile {
+        get { self[WidgetPreviewVerificationProfileKey.self] }
+        set { self[WidgetPreviewVerificationProfileKey.self] = newValue }
+    }
+}
+
 struct WidgetPreviewVerificationView: View {
     @EnvironmentObject var settings: Settings
 
     private let requestedSize: HomeWidgetPresetSize
     private let requestedStyle: HomeWidgetStyle
+    private let profile: WidgetPreviewVerificationProfile
 
     init(arguments: [String] = ProcessInfo.processInfo.arguments) {
         let parsedSize = Self.value(after: "--widget-preview-size", in: arguments)
@@ -2505,6 +2522,8 @@ struct WidgetPreviewVerificationView: View {
             .flatMap(HomeWidgetStyle.init(rawValue:)) ?? HomeWidgetStyle.styles(for: parsedSize).first ?? .simpleCountdown
         requestedSize = parsedSize
         requestedStyle = parsedStyle.supports(parsedSize) ? parsedStyle : (HomeWidgetStyle.styles(for: parsedSize).first ?? .simpleCountdown)
+        profile = Self.value(after: "--widget-preview-profile", in: arguments)
+            .flatMap(WidgetPreviewVerificationProfile.init(rawValue:)) ?? .standard
     }
 
     var body: some View {
@@ -2519,6 +2538,11 @@ struct WidgetPreviewVerificationView: View {
                     Text("\(requestedSize.rawValue) / \(requestedStyle.rawValue)")
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(.secondary)
+                    if profile == .hostRisk {
+                        Text("host risk")
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.red.opacity(0.82))
+                    }
                 }
                 .accessibilityIdentifier("widget-verification-header")
 
@@ -2527,6 +2551,7 @@ struct WidgetPreviewVerificationView: View {
                     size: requestedSize,
                     displaySize: displaySize
                 )
+                .environment(\.widgetPreviewVerificationProfile, profile)
                 .accessibilityIdentifier("widget-verification-canvas")
 
                 Text("Design canvas \(Int(HomeWidgetCanvasMetrics.designSize(for: requestedSize).width))x\(Int(HomeWidgetCanvasMetrics.designSize(for: requestedSize).height))")
@@ -2543,7 +2568,12 @@ struct WidgetPreviewVerificationView: View {
 
     private var displaySize: CGSize {
         let design = HomeWidgetCanvasMetrics.designSize(for: requestedSize)
-        let maxWidth: CGFloat = requestedSize == .small ? 220 : 340
+        let maxWidth: CGFloat
+        if profile == .hostRisk {
+            maxWidth = requestedSize == .small ? 158 : 326
+        } else {
+            maxWidth = requestedSize == .small ? 220 : 340
+        }
         let width = min(maxWidth, design.width)
         return CGSize(width: width, height: width * design.height / design.width)
     }
@@ -6885,11 +6915,21 @@ private struct HomeNeoSmallPreviewCard: View {
 }
 
 private struct HomeNeoTransitSmallPreviewCard: View {
+    @Environment(\.widgetPreviewVerificationProfile) private var verificationProfile
+
+    private var city: String {
+        verificationProfile == .hostRisk ? "Subang Jaya, Selangor" : "Kuala Lumpur"
+    }
+
+    private var matrixRows: [String] {
+        verificationProfile == .hostRisk ? ["MAGHRIB", "12H 59M", "20:35"] : ["ASAR", "1H 42M", "16:15"]
+    }
+
     var body: some View {
         ZStack {
             pvNeoBlack
             GeometryReader { geo in
-                let rows = ["ASAR", "1H 42M", "16:15"]
+                let rows = matrixRows
                 let dotSize = PreviewNeoDotMatrixText.dotSize(for: rows, availableWidth: geo.size.width - 20)
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -6898,7 +6938,7 @@ private struct HomeNeoTransitSmallPreviewCard: View {
                             .font(.system(size: 16, weight: .heavy, design: .rounded))
                             .foregroundStyle(.white.opacity(0.94))
                             .lineLimit(1)
-                        Text("Kuala Lumpur")
+                        Text(city)
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
                             .foregroundStyle(pvNeoGray)
                             .lineLimit(1)

@@ -10,10 +10,23 @@ SNAPSHOT_DIR="$ROOT_DIR/Snapshots/Widgets"
 CURRENT_DIR="$SNAPSHOT_DIR/current"
 BASELINE_DIR="$SNAPSHOT_DIR/baseline"
 UPDATE_BASELINES=0
+HOST_RISK_ONLY=0
 
-if [[ "${1:-}" == "--update-baselines" ]]; then
-  UPDATE_BASELINES=1
-fi
+for arg in "$@"; do
+  case "$arg" in
+    --update-baselines)
+      UPDATE_BASELINES=1
+      ;;
+    --host-risk)
+      HOST_RISK_ONLY=1
+      ;;
+    *)
+      echo "Unknown argument: $arg"
+      echo "Usage: $0 [--update-baselines] [--host-risk]"
+      exit 2
+      ;;
+  esac
+done
 
 mkdir -p "$CURRENT_DIR" "$BASELINE_DIR" "$DERIVED_DATA"
 
@@ -317,9 +330,29 @@ capture_verified_screenshot() {
   return 1
 }
 
+profiles_for_run() {
+  if [[ "$HOST_RISK_ONLY" == "1" ]]; then
+    echo "hostRisk"
+  else
+    echo "standard"
+  fi
+}
+
+baseline_name() {
+  local profile="$1"
+  local size="$2"
+  local style="$3"
+  if [[ "$profile" == "hostRisk" ]]; then
+    echo "host-risk-${size}-${style}.png"
+  else
+    echo "${size}-${style}.png"
+  fi
+}
+
+for profile in $(profiles_for_run); do
 for size in small medium large; do
   for style in $(styles_for_size "$size"); do
-    name="${size}-${style}.png"
+    name="$(baseline_name "$profile" "$size" "$style")"
     current="$CURRENT_DIR/$name"
     baseline="$BASELINE_DIR/$name"
 
@@ -327,7 +360,8 @@ for size in small medium large; do
     xcrun simctl launch "$DEVICE_ID" "$BUNDLE_ID" \
       --verify-widget-previews \
       --widget-preview-size "$size" \
-      --widget-preview-style "$style" >/dev/null
+      --widget-preview-style "$style" \
+      --widget-preview-profile "$profile" >/dev/null
     sleep 2.0
     capture_verified_screenshot "$current"
 
@@ -346,11 +380,16 @@ for size in small medium large; do
     fi
   done
 done
+done
 
 xcrun simctl terminate "$DEVICE_ID" "$BUNDLE_ID" >/dev/null 2>&1 || true
 
 if [[ "$UPDATE_BASELINES" == "1" ]]; then
-  echo "Baselines updated in $BASELINE_DIR"
+  if [[ "$HOST_RISK_ONLY" == "1" ]]; then
+    echo "Host-risk baselines updated in $BASELINE_DIR"
+  else
+    echo "Baselines updated in $BASELINE_DIR"
+  fi
   exit 0
 fi
 
