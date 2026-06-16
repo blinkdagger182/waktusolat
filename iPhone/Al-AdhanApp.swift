@@ -260,6 +260,7 @@ struct AlAdhanApp: App {
     @State private var isKeyboardVisible = false
     @State private var showUnsupportedRegionModal = false
     @State private var showPrayerTrackerPrompt = false
+    @State private var showingRootSupportPaywall = false
     private let paywallOfferingIdentifiers = ["waktu_pro", "Waktu Plus Supporter"]
     #if DEBUG
     private let widgetPreviewVerificationLaunch = ProcessInfo.processInfo.arguments.contains("--verify-widget-previews")
@@ -334,6 +335,27 @@ struct AlAdhanApp: App {
                 QuranVerseDetailsModal(reference: payload.reference)
                     .environmentObject(settings)
                     .preferredColorScheme(settings.colorScheme)
+            }
+            .fullScreenCover(isPresented: $showingRootSupportPaywall, onDismiss: {
+                NotificationCenter.default.post(name: .supportDonationPaywallDismissed, object: nil)
+            }) {
+                WaktuProPaywallView(
+                    onPurchaseCompleted: {
+                        showingRootSupportPaywall = false
+                    },
+                    onDismiss: {
+                        showingRootSupportPaywall = false
+                    }
+                )
+                .environmentObject(settings)
+                .environmentObject(revenueCat)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openSupportDonationPaywall)) { _ in
+                settings.hapticFeedback()
+                Task {
+                    await revenueCat.refreshOfferings()
+                    showingRootSupportPaywall = true
+                }
             }
             .overlay {
                 if showMarketingModal {

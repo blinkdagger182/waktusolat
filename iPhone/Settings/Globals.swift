@@ -50,6 +50,10 @@ enum LiveNotificationStyle: String, CaseIterable, Identifiable {
             return "point.topleft.down.curvedto.point.bottomright.up"
         }
     }
+
+    var requiresPremiumWidgets: Bool {
+        self == .timeline
+    }
 }
 
 enum WaktuAppIcon: String, CaseIterable, Identifiable {

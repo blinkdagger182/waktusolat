@@ -462,6 +462,14 @@ struct SettingsView: View {
                                 .foregroundColor(settings.accentColor.color)
                         }
 
+                        Button {
+                            openDonationPaywall()
+                        } label: {
+                            Text("Buy me a coffee")
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor.color)
+                        }
+
                         if !revenueCat.hasPro {
                             Button {
                                 redeemOfferCode()
@@ -595,9 +603,6 @@ struct SettingsView: View {
             }
         } message: {
             Text(revenueCat.lastErrorMessage ?? "Unknown error")
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openSupportDonationPaywall)) { _ in
-            openDonationPaywall()
         }
         .onAppear {
             postUIHeartbeat()

@@ -1594,6 +1594,7 @@ struct WidgetsTabView: View {
                     case .live:
                         LiveActivityWidgetSettingsView()
                             .environmentObject(settings)
+                            .environmentObject(revenueCat)
                     }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -1659,6 +1660,7 @@ private struct HomeWidgetPresetManagerView: View {
                 }
             )
             .environmentObject(settings)
+            .environmentObject(revenueCat)
         }
         .sheet(isPresented: $showingTasbihCustomization) {
             TasbihCounterCustomizationSheet {
@@ -2144,6 +2146,7 @@ private struct HomeTasbihCounterPreviewRow: View {
 
 private struct HomeWidgetStyleSelectorSheet: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
     @Environment(\.dismiss) private var dismiss
 
     let slot: HomeWidgetPresetSlot
@@ -2151,12 +2154,20 @@ private struct HomeWidgetStyleSelectorSheet: View {
     let onChange: () -> Void
 
     @State private var selectedStyle: HomeWidgetStyle
+    @State private var originalStyle: HomeWidgetStyle
+    @State private var pendingPaywallStyle: HomeWidgetStyle?
+
+    private var hasCurrentPremiumWidgetAccess: Bool {
+        hasPremiumWidgetAccess || revenueCat.hasPremiumWidgetsUnlocked || premiumWidgetsUnlocked()
+    }
 
     init(slot: HomeWidgetPresetSlot, hasPremiumWidgetAccess: Bool, onChange: @escaping () -> Void) {
         self.slot = slot
         self.hasPremiumWidgetAccess = hasPremiumWidgetAccess
         self.onChange = onChange
-        _selectedStyle = State(initialValue: HomeWidgetPresetStore.style(for: slot))
+        let storedStyle = HomeWidgetPresetStore.style(for: slot)
+        _selectedStyle = State(initialValue: storedStyle)
+        _originalStyle = State(initialValue: storedStyle)
     }
 
     var body: some View {
@@ -2172,15 +2183,6 @@ private struct HomeWidgetStyleSelectorSheet: View {
                             Button {
                                 settings.hapticFeedback()
                                 selectedStyle = style
-                                guard !style.requiresPremiumWidgets || hasPremiumWidgetAccess else {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                        NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
-                                    }
-                                    return
-                                }
-                                HomeWidgetPresetStore.setStyle(style, for: slot)
-                                WidgetCenter.shared.reloadAllTimelines()
-                                onChange()
                             } label: {
                                 HStack(spacing: 14) {
                                     HomeWidgetPreviewCanvas(
@@ -2210,7 +2212,7 @@ private struct HomeWidgetStyleSelectorSheet: View {
                                         Image(systemName: "checkmark")
                                             .font(.title3.weight(.bold))
                                             .foregroundStyle(settings.accentColor.color)
-                                    } else if style.requiresPremiumWidgets && !hasPremiumWidgetAccess {
+                                    } else if style.requiresPremiumWidgets && !hasCurrentPremiumWidgetAccess {
                                         Image(systemName: "lock.fill")
                                             .font(.subheadline.weight(.semibold))
                                             .foregroundStyle(.secondary)
@@ -2244,18 +2246,42 @@ private struct HomeWidgetStyleSelectorSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(appLocalized("Save")) {
-                        if !selectedStyle.requiresPremiumWidgets || hasPremiumWidgetAccess {
-                            HomeWidgetPresetStore.setStyle(selectedStyle, for: slot)
-                            WidgetCenter.shared.reloadAllTimelines()
-                            onChange()
+                        guard !selectedStyle.requiresPremiumWidgets || hasCurrentPremiumWidgetAccess else {
+                            pendingPaywallStyle = selectedStyle
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+                            }
+                            return
                         }
-                        dismiss()
+                        saveSelectedStyleAndDismiss()
                     }
                     .font(.body.weight(.semibold))
                 }
             }
         }
         .navigationViewStyle(.stack)
+        .onReceive(NotificationCenter.default.publisher(for: .supportDonationPaywallDismissed)) { _ in
+            guard pendingPaywallStyle != nil else { return }
+            if hasCurrentPremiumWidgetAccess {
+                saveSelectedStyleAndDismiss()
+            } else {
+                selectedStyle = originalStyle
+                pendingPaywallStyle = nil
+            }
+        }
+        .onChange(of: revenueCat.hasPremiumWidgetsUnlocked) { unlocked in
+            guard unlocked, pendingPaywallStyle != nil else { return }
+            saveSelectedStyleAndDismiss()
+        }
+    }
+
+    private func saveSelectedStyleAndDismiss() {
+        HomeWidgetPresetStore.setStyle(selectedStyle, for: slot)
+        originalStyle = selectedStyle
+        pendingPaywallStyle = nil
+        WidgetCenter.shared.reloadAllTimelines()
+        onChange()
+        dismiss()
     }
 }
 
@@ -2432,17 +2458,28 @@ private struct HomeWidgetStylePreviewContent: View {
 
 private struct LiveActivityWidgetSettingsView: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var revenueCat: RevenueCatManager
     @AppStorage(LiveNotificationStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
-    private var selectedStyleRaw = LiveNotificationStyle.current.rawValue
+    private var savedStyleRaw = LiveNotificationStyle.current.rawValue
+    @State private var draftStyleRaw = LiveNotificationStyle.current.rawValue
+    @State private var pendingPaywallStyleRaw: String?
 
-    private var selectedStyle: LiveNotificationStyle {
-        LiveNotificationStyle(rawValue: selectedStyleRaw) ?? .current
+    private var draftStyle: LiveNotificationStyle {
+        LiveNotificationStyle(rawValue: draftStyleRaw) ?? .current
+    }
+
+    private var hasPremiumWidgetAccess: Bool {
+        revenueCat.hasPremiumWidgetsUnlocked || premiumWidgetsUnlocked()
+    }
+
+    private var hasUnsavedChanges: Bool {
+        draftStyleRaw != savedStyleRaw
     }
 
     var body: some View {
         List {
             Section {
-                AccurateLiveNotificationPreviewCard(style: selectedStyle)
+                AccurateLiveNotificationPreviewCard(style: draftStyle)
                     .environmentObject(settings)
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             } header: {
@@ -2468,9 +2505,8 @@ private struct LiveActivityWidgetSettingsView: View {
                     Button {
                         settings.hapticFeedback()
                         withAnimation {
-                            selectedStyleRaw = style.rawValue
+                            draftStyleRaw = style.rawValue
                         }
-                        WidgetCenter.shared.reloadAllTimelines()
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: style.previewSystemImage)
@@ -2483,8 +2519,13 @@ private struct LiveActivityWidgetSettingsView: View {
                                 )
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(style.title)
-                                    .font(.subheadline.weight(.semibold))
+                                HStack(spacing: 6) {
+                                    Text(style.title)
+                                        .font(.subheadline.weight(.semibold))
+                                    if style.requiresPremiumWidgets {
+                                        PremiumWidgetBadge()
+                                    }
+                                }
                                 Text(style.subtitle)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -2492,10 +2533,14 @@ private struct LiveActivityWidgetSettingsView: View {
 
                             Spacer()
 
-                            if selectedStyle == style {
+                            if draftStyle == style {
                                 Image(systemName: "checkmark")
                                     .font(.headline.weight(.bold))
                                     .foregroundColor(settings.accentColor.color)
+                            } else if style.requiresPremiumWidgets && !hasPremiumWidgetAccess {
+                                Image(systemName: "lock.fill")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -2504,10 +2549,62 @@ private struct LiveActivityWidgetSettingsView: View {
             } header: {
                 Text(isMalayAppLanguage() ? "Gaya" : "Style")
             } footer: {
-                Text("The selected style is used by the real Live Activity.")
+                Text("The selected style is used by the real Live Activity after you save.")
+            }
+
+            Section {
+                Button {
+                    settings.hapticFeedback()
+                    saveLiveNotificationStyle()
+                } label: {
+                    Text(appLocalized("Save"))
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+                .disabled(!hasUnsavedChanges)
+            } footer: {
+                if draftStyle.requiresPremiumWidgets && !hasPremiumWidgetAccess {
+                    Text("Timeline is included with Waktu Pro.")
+                }
             }
         }
         .applyConditionalListStyle(defaultView: true)
+        .onAppear {
+            if pendingPaywallStyleRaw == nil {
+                draftStyleRaw = savedStyleRaw
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .supportDonationPaywallDismissed)) { _ in
+            guard pendingPaywallStyleRaw != nil else { return }
+            if hasPremiumWidgetAccess {
+                commitLiveNotificationStyle()
+            } else {
+                draftStyleRaw = savedStyleRaw
+                pendingPaywallStyleRaw = nil
+            }
+        }
+        .onChange(of: revenueCat.hasPremiumWidgetsUnlocked) { unlocked in
+            guard unlocked, pendingPaywallStyleRaw != nil else { return }
+            commitLiveNotificationStyle()
+        }
+    }
+
+    private func saveLiveNotificationStyle() {
+        guard !draftStyle.requiresPremiumWidgets || hasPremiumWidgetAccess else {
+            pendingPaywallStyleRaw = draftStyleRaw
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+            }
+            return
+        }
+
+        commitLiveNotificationStyle()
+    }
+
+    private func commitLiveNotificationStyle() {
+        savedStyleRaw = draftStyleRaw
+        pendingPaywallStyleRaw = nil
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 
