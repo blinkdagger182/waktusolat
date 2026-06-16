@@ -329,6 +329,14 @@ struct AdhanView: View {
                     PrayerList()
                 }
                 #endif
+
+                #if !os(watchOS)
+                Color.clear
+                    .frame(height: 72)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                #endif
             }
             .refreshable {
                 prayerTimeRefresh(force: true)

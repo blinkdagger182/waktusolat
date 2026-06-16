@@ -263,6 +263,7 @@ struct AlAdhanApp: App {
     private let paywallOfferingIdentifiers = ["waktu_pro", "Waktu Plus Supporter"]
     #if DEBUG
     private let widgetPreviewVerificationLaunch = ProcessInfo.processInfo.arguments.contains("--verify-widget-previews")
+    private let liveNotificationPreviewVerificationLaunch = ProcessInfo.processInfo.arguments.contains("--verify-live-notification-preview")
     #endif
 
     init() {
@@ -576,7 +577,9 @@ struct AlAdhanApp: App {
     @ViewBuilder
     private var rootContent: some View {
         #if DEBUG
-        if widgetPreviewVerificationLaunch {
+        if liveNotificationPreviewVerificationLaunch {
+            LiveNotificationPreviewVerificationView()
+        } else if widgetPreviewVerificationLaunch {
             WidgetPreviewVerificationView()
         } else if isLaunching {
             LaunchScreen(isLaunching: $isLaunching)
@@ -598,9 +601,11 @@ struct AlAdhanApp: App {
 
     private var mainTabView: some View {
         Group {
-            // Temporarily disable the custom legacy tab bar and use the system tab bar
-            // on older iOS versions until the non-iOS 26 safe-area behavior is fixed.
-            systemTabView
+            if #available(iOS 26, *) {
+                nativeTabView26
+            } else {
+                legacyGlassTabView
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             guard !isKeyboardVisible else { return }
@@ -648,50 +653,52 @@ struct AlAdhanApp: App {
         }
     }
 
-    private var systemTabView: some View {
-        TabView(selection: $selectedTab) {
-            AdhanView { _ in }
-                .tabItem {
-                    Label("Azan", systemImage: "safari")
+    // MARK: - Native iOS 26 Tab Bar
+    // ZStack for content switching. overlay() puts tab bar above content in z-order so it
+    // always wins tap priority even when content backgrounds use ignoresSafeArea.
+    // contentShape(Rectangle()) on the bar absorbs taps in gaps so nothing falls through.
+    @available(iOS 26, *)
+    private var nativeTabView26: some View {
+        GeometryReader { proxy in
+            glassTabContent
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear.frame(height: isKeyboardVisible ? 0 : tabBarReservedHeight(bottomInset: proxy.safeAreaInsets.bottom))
                 }
-                .tag(AppTab.adhan)
-
-            TodayView { _ in }
-                .tabItem {
-                    Label(isMalayAppLanguage() ? "Hari Ini" : "Today", systemImage: "sun.max")
+                .overlay {
+                    VStack {
+                        Spacer(minLength: 0)
+                        if !isKeyboardVisible {
+                            glassTabBar
+                                .padding(.bottom, tabBarBottomPadding(bottomInset: proxy.safeAreaInsets.bottom))
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                    }
+                    .ignoresSafeArea(.container, edges: .bottom)
                 }
-                .tag(AppTab.today)
-
-            WidgetsTabView()
-                .environmentObject(settings)
-                .environmentObject(revenueCat)
-                .tabItem {
-                    Label(appLocalized("Widgets"), systemImage: "square.grid.2x2.fill")
-                }
-                .tag(AppTab.widgets)
-
-            OtherView(isActive: selectedTab == .library) { _ in }
-                .tabItem {
-                    Label(isMalayAppLanguage() ? "Pustaka" : "Library", systemImage: "books.vertical")
-                }
-                .tag(AppTab.library)
+                .animation(.spring(response: 0.32, dampingFraction: 0.88), value: selectedTab)
+                .animation(.easeInOut(duration: 0.18), value: isKeyboardVisible)
         }
     }
 
-    @ViewBuilder
-    private var currentTabContent: some View {
-        ZStack {
-            AdhanView { offset in
-                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.adhan.scrollSourceID)
-            }
-            .opacity(selectedTab == .adhan ? 1 : 0)
-            .allowsHitTesting(selectedTab == .adhan)
+    private func tabBarBottomPadding(bottomInset: CGFloat) -> CGFloat {
+        bottomInset > 0 ? max(18, bottomInset - 8) : 8
+    }
 
-            TodayView { offset in
-                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.today.scrollSourceID)
-            }
-            .opacity(selectedTab == .today ? 1 : 0)
-            .allowsHitTesting(selectedTab == .today)
+    private func tabBarReservedHeight(bottomInset: CGFloat) -> CGFloat {
+        54 + 8 + max(bottomInset, tabBarBottomPadding(bottomInset: bottomInset))
+    }
+
+    @available(iOS 26, *)
+    @ViewBuilder
+    private var glassTabContent: some View {
+        ZStack {
+            AdhanView { _ in }
+                .opacity(selectedTab == .adhan ? 1 : 0)
+                .allowsHitTesting(selectedTab == .adhan)
+
+            TodayView { _ in }
+                .opacity(selectedTab == .today ? 1 : 0)
+                .allowsHitTesting(selectedTab == .today)
 
             WidgetsTabView()
                 .environmentObject(settings)
@@ -699,125 +706,194 @@ struct AlAdhanApp: App {
                 .opacity(selectedTab == .widgets ? 1 : 0)
                 .allowsHitTesting(selectedTab == .widgets)
 
-            OtherView(isActive: selectedTab == .library) { offset in
-                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.library.scrollSourceID)
-            }
-            .opacity(selectedTab == .library ? 1 : 0)
-            .allowsHitTesting(selectedTab == .library)
+            OtherView(isActive: selectedTab == .library) { _ in }
+                .opacity(selectedTab == .library ? 1 : 0)
+                .allowsHitTesting(selectedTab == .library)
         }
     }
 
-    private func customBottomTabBar(bottomSafeAreaInset: CGFloat) -> some View {
-        HStack(spacing: 20) {
-            HStack(spacing: 10) {
-                bottomTabBarButton(for: .adhan, systemImage: "safari", title: "Azan")
-                bottomTabBarButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
-                bottomTabBarButton(for: .widgets, systemImage: "square.grid.2x2.fill", title: appLocalized("Widgets"))
-                bottomTabBarButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
-            }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 6)
-            .frame(maxWidth: 254)
-            .background(
-                ZStack {
-                    Capsule(style: .continuous)
-                        .fill(tabBarShellColor)
-
-                    Capsule(style: .continuous)
-                        .fill(.ultraThinMaterial)
-                        .opacity(isDarkMode ? 0.28 : 0.72)
-
-                    Capsule(style: .continuous)
-                        .strokeBorder(tabBarBorderColor, lineWidth: 1)
-
-                    Capsule(style: .continuous)
-                        .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
-                        .blur(radius: 0.2)
+    @available(iOS 26, *)
+    private var glassTabBar: some View {
+        HStack(spacing: 14) {
+            // Left: Azan · Today · Library in one glass capsule
+            ZStack(alignment: .leading) {
+                if let offset = mainTabSelectionOffset {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(tabBarSelectedBackground)
+                        .frame(width: selectedTabPlateWidth, height: selectedTabPlateHeight)
+                        .offset(x: tabBarContainerInset + offset)
                 }
-            )
+
+                HStack(spacing: 0) {
+                    glassTabButton(for: .adhan, systemImage: "safari", title: "Azan")
+                    glassTabButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
+                    glassTabButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
+                }
+            }
+            .padding(tabBarContainerInset)
+            .glassEffect(.regular, in: Capsule())
+
+            // Right: Widgets — separate glass pill
+            glassTabButton(for: .widgets, systemImage: "square.grid.2x2.fill", title: appLocalized("Widgets"))
+                .padding(tabBarContainerInset)
+                .glassEffect(.regular, in: Capsule())
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .contentShape(Rectangle())
+    }
+
+    @available(iOS 26, *)
+    private func glassTabButton(for tab: AppTab, systemImage: String, title: String) -> some View {
+        let isSelected = selectedTab == tab
+        return Button {
+            settings.hapticFeedback()
+            selectedTab = tab
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 19, weight: .semibold))
+                    .symbolEffect(.bounce, value: isSelected)
+                    .foregroundStyle(isSelected ? tabBarSelectedTint : tabBarUnselectedTint)
+                    .frame(width: 24, height: 22)
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .foregroundStyle(isSelected ? tabBarSelectedTint : tabBarUnselectedTint)
+            }
+            .frame(width: tab == .widgets ? widgetsTabItemWidth : mainTabItemWidth, height: tabBarItemHeight)
+            .background {
+                if isSelected && tab == .widgets {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(tabBarSelectedBackground)
+                        .frame(width: selectedWidgetsPlateWidth, height: selectedTabPlateHeight)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+    }
+
+    private var legacyGlassTabView: some View {
+        GeometryReader { proxy in
+            currentTabContent
+                .hidesSystemTabBar()
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear.frame(height: isKeyboardVisible ? 0 : tabBarReservedHeight(bottomInset: proxy.safeAreaInsets.bottom))
+                }
+                .overlay {
+                    VStack {
+                        Spacer(minLength: 0)
+                        if !isKeyboardVisible {
+                            legacyGlassTabBar
+                                .padding(.bottom, tabBarBottomPadding(bottomInset: proxy.safeAreaInsets.bottom))
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                    }
+                    .ignoresSafeArea(.container, edges: .bottom)
+                }
+                .animation(.spring(response: 0.32, dampingFraction: 0.88), value: selectedTab)
+                .animation(.easeInOut(duration: 0.18), value: isKeyboardVisible)
+        }
+    }
+
+    @ViewBuilder
+    private var currentTabContent: some View {
+        ZStack {
+            AdhanView { _ in }
+                .opacity(selectedTab == .adhan ? 1 : 0)
+                .allowsHitTesting(selectedTab == .adhan)
+
+            TodayView { _ in }
+                .opacity(selectedTab == .today ? 1 : 0)
+                .allowsHitTesting(selectedTab == .today)
+
+            WidgetsTabView()
+                .environmentObject(settings)
+                .environmentObject(revenueCat)
+                .opacity(selectedTab == .widgets ? 1 : 0)
+                .allowsHitTesting(selectedTab == .widgets)
+
+            OtherView(isActive: selectedTab == .library) { _ in }
+                .opacity(selectedTab == .library ? 1 : 0)
+                .allowsHitTesting(selectedTab == .library)
+        }
+    }
+
+    private var legacyGlassTabBar: some View {
+        HStack(spacing: 14) {
+            ZStack(alignment: .leading) {
+                if let offset = mainTabSelectionOffset {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(tabBarSelectedBackground)
+                        .frame(width: selectedTabPlateWidth, height: selectedTabPlateHeight)
+                        .offset(x: tabBarContainerInset + offset)
+                }
+
+                HStack(spacing: 0) {
+                    legacyTabButton(for: .adhan, systemImage: "safari", title: "Azan")
+                    legacyTabButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
+                    legacyTabButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
+                }
+            }
+            .padding(tabBarContainerInset)
+            .background(tabBarCapsuleBackground)
             .clipShape(Capsule(style: .continuous))
+
+            legacyTabButton(for: .widgets, systemImage: "square.grid.2x2.fill", title: appLocalized("Widgets"))
+                .padding(tabBarContainerInset)
+                .background(tabBarCapsuleBackground)
+                .clipShape(Capsule(style: .continuous))
         }
         .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.10), radius: 18, x: 0, y: 10)
         .padding(.horizontal, 16)
         .padding(.top, 8)
-        .padding(.bottom, max(bottomSafeAreaInset, 10))
+        .contentShape(Rectangle())
     }
 
-    private func bottomTabBarButton(for tab: AppTab, systemImage: String, title: String) -> some View {
+    private var tabBarCapsuleBackground: some View {
+        ZStack {
+            Capsule(style: .continuous)
+                .fill(tabBarShellColor)
+
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .opacity(isDarkMode ? 0.28 : 0.72)
+
+            Capsule(style: .continuous)
+                .strokeBorder(tabBarBorderColor, lineWidth: 1)
+
+            Capsule(style: .continuous)
+                .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
+                .blur(radius: 0.2)
+        }
+    }
+
+    private func legacyTabButton(for tab: AppTab, systemImage: String, title: String) -> some View {
         let isSelected = selectedTab == tab
 
         return Button {
             settings.hapticFeedback()
             selectedTab = tab
-            if tab == .plus {
-                Task {
-                    await revenueCat.refreshOfferings()
-                }
-            }
         } label: {
             VStack(spacing: 3) {
                 Image(systemName: systemImage)
-                    .font(.system(size: tab == .plus ? 20 : 18, weight: .semibold))
-
-                if tab != .plus {
-                    Text(title)
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .lineLimit(1)
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(isSelected ? tabBarSelectedTint : tabBarUnselectedTint)
+                    .frame(width: 24, height: 22)
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .foregroundStyle(isSelected ? tabBarSelectedTint : tabBarUnselectedTint)
+            }
+            .frame(width: tab == .widgets ? widgetsTabItemWidth : mainTabItemWidth, height: tabBarItemHeight)
+            .background {
+                if isSelected && tab == .widgets {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(tabBarSelectedBackground)
+                        .frame(width: selectedWidgetsPlateWidth, height: selectedTabPlateHeight)
                 }
             }
-            .foregroundStyle(isSelected ? selectedTabColor(for: tab) : unselectedTabColor)
-            .frame(maxWidth: tab == .plus ? nil : .infinity)
-            .frame(width: tab == .plus ? 66 : nil, height: tab == .plus ? 66 : nil)
-            .padding(.vertical, tab == .plus ? 0 : 10)
-            .padding(.horizontal, tab == .plus ? 0 : 10)
-            .background(
-                ZStack {
-                    if tab == .plus {
-                        Circle()
-                            .fill(tabBarShellColor)
-
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .opacity(isDarkMode ? 0.28 : 0.72)
-
-                        Circle()
-                            .strokeBorder(tabBarBorderColor, lineWidth: 1)
-
-                        Circle()
-                            .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
-                            .blur(radius: 0.2)
-
-                        if isSelected {
-                            Circle()
-                                .fill(selectedTabBackgroundColor.opacity(isDarkMode ? 0.55 : 0.85))
-                        }
-                    } else if isSelected {
-                        Capsule(style: .continuous)
-                            .fill(selectedTabBackgroundColor)
-
-                        Capsule(style: .continuous)
-                            .fill(.ultraThinMaterial)
-                            .opacity(isDarkMode ? 0.14 : 0.42)
-                    }
-                }
-            )
-            .overlay(
-                Group {
-                    if tab == .plus {
-                        Circle()
-                            .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
-                    } else {
-                        Capsule(style: .continuous)
-                            .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
-                    }
-                }
-            )
-            .shadow(
-                color: isSelected ? Color.black.opacity(isDarkMode ? 0.16 : 0.05) : Color.clear,
-                radius: 8,
-                x: 0,
-                y: 4
-            )
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
@@ -846,33 +922,294 @@ struct AlAdhanApp: App {
             : Color.white.opacity(0.50)
     }
 
-    private var selectedTabBorderColor: Color {
-        isDarkMode
-            ? Color.white.opacity(0.10)
-            : Color.white.opacity(0.92)
-    }
+    private var mainTabItemWidth: CGFloat { 84 }
 
-    private var unselectedTabColor: Color {
-        isDarkMode ? Color.white.opacity(0.92) : Color.black.opacity(0.62)
-    }
+    private var widgetsTabItemWidth: CGFloat { 82 }
 
-    private func selectedTabColor(for tab: AppTab) -> Color {
-        switch tab {
+    private var tabBarItemHeight: CGFloat { 58 }
+
+    private var tabBarContainerInset: CGFloat { 5 }
+
+    private var selectedTabPlateWidth: CGFloat { mainTabItemWidth - 10 }
+
+    private var selectedWidgetsPlateWidth: CGFloat { widgetsTabItemWidth - 10 }
+
+    private var selectedTabPlateHeight: CGFloat { tabBarItemHeight - 10 }
+
+    private var mainTabSelectionOffset: CGFloat? {
+        switch selectedTab {
+        case .adhan:
+            return 0
         case .today:
-            return Color(red: 0.98, green: 0.39, blue: 0.37)
-        case .plus:
-            return settings.accentColor.color
-        case .adhan, .widgets, .library:
-            return isDarkMode ? Color.white : Color.black.opacity(0.84)
+            return mainTabItemWidth
+        case .library:
+            return mainTabItemWidth * 2
+        case .widgets, .plus:
+            return nil
         }
     }
 
-    private func tabHidesOnScroll(_ tab: AppTab) -> Bool {
-        switch tab {
-        case .adhan, .today, .widgets, .library, .plus:
-            return false
+    private var tabBarSelectedTint: Color {
+        Color(red: 0.05, green: 0.36, blue: 0.88)
+    }
+
+    private var tabBarUnselectedTint: Color {
+        isDarkMode ? Color.white.opacity(0.92) : Color.black.opacity(0.86)
+    }
+
+    private var tabBarSelectedBackground: Color {
+        isDarkMode
+            ? Color.white.opacity(0.22)
+            : Color(red: 0.83, green: 0.87, blue: 0.94).opacity(0.95)
+    }
+
+    // MARK: - Custom Glass Tab Bar (commented out, replaced by nativeTabView26 on iOS 26)
+//    @available(iOS 26, *)
+//    private var customGlassTabView: some View {
+//        currentTabContent
+//            .hidesSystemTabBar()
+//            .safeAreaInset(edge: .bottom, spacing: 0) {
+//                if !isKeyboardVisible {
+//                    customBottomTabBar(bottomSafeAreaInset: 0)
+//                        .transition(.move(edge: .bottom).combined(with: .opacity))
+//                }
+//            }
+//            .animation(.spring(response: 0.32, dampingFraction: 0.88), value: selectedTab)
+//            .animation(.easeInOut(duration: 0.18), value: isKeyboardVisible)
+//    }
+
+    private var systemTabView: some View {
+        TabView(selection: $selectedTab) {
+            AdhanView { _ in }
+                .tabItem {
+                    Label("Azan", systemImage: "safari")
+                }
+                .tag(AppTab.adhan)
+
+            TodayView { _ in }
+                .tabItem {
+                    Label(isMalayAppLanguage() ? "Hari Ini" : "Today", systemImage: "sun.max")
+                }
+                .tag(AppTab.today)
+
+            OtherView(isActive: selectedTab == .library) { _ in }
+                .tabItem {
+                    Label(isMalayAppLanguage() ? "Pustaka" : "Library", systemImage: "books.vertical")
+                }
+                .tag(AppTab.library)
+
+            WidgetsTabView()
+                .environmentObject(settings)
+                .environmentObject(revenueCat)
+                .tabItem {
+                    Label(appLocalized("Widgets"), systemImage: "square.grid.2x2.fill")
+                }
+                .tag(AppTab.widgets)
         }
     }
+
+    // MARK: - Custom Tab Bar Helpers (commented out — replaced by nativeTabView26)
+//    @ViewBuilder
+//    private var currentTabContent: some View {
+//        ZStack {
+//            AdhanView { offset in
+//                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.adhan.scrollSourceID)
+//            }
+//            .opacity(selectedTab == .adhan ? 1 : 0)
+//            .allowsHitTesting(selectedTab == .adhan)
+//
+//            TodayView { offset in
+//                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.today.scrollSourceID)
+//            }
+//            .opacity(selectedTab == .today ? 1 : 0)
+//            .allowsHitTesting(selectedTab == .today)
+//
+//            WidgetsTabView()
+//                .environmentObject(settings)
+//                .environmentObject(revenueCat)
+//                .opacity(selectedTab == .widgets ? 1 : 0)
+//                .allowsHitTesting(selectedTab == .widgets)
+//
+//            OtherView(isActive: selectedTab == .library) { offset in
+//                bottomBarVisibility.handleScroll(offset: offset, source: AppTab.library.scrollSourceID)
+//            }
+//            .opacity(selectedTab == .library ? 1 : 0)
+//            .allowsHitTesting(selectedTab == .library)
+//        }
+//    }
+//
+//    private func customBottomTabBar(bottomSafeAreaInset: CGFloat) -> some View {
+//        HStack(alignment: .center, spacing: 14) {
+//            HStack(spacing: 8) {
+//                bottomTabBarButton(for: .adhan, systemImage: "safari", title: "Azan")
+//                bottomTabBarButton(for: .today, systemImage: "sun.max", title: isMalayAppLanguage() ? "Hari Ini" : "Today")
+//                bottomTabBarButton(for: .library, systemImage: "books.vertical", title: isMalayAppLanguage() ? "Pustaka" : "Library")
+//            }
+//            .padding(.horizontal, 6)
+//            .padding(.vertical, 6)
+//            .frame(maxWidth: 270)
+//            .background(tabBarCapsuleBackground)
+//            .clipShape(Capsule(style: .continuous))
+//
+//            bottomTabBarButton(for: .widgets, systemImage: "square.grid.2x2.fill", title: appLocalized("Widgets"))
+//                .frame(width: 76)
+//                .background(tabBarCapsuleBackground)
+//                .clipShape(Capsule(style: .continuous))
+//        }
+//        .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.10), radius: 18, x: 0, y: 10)
+//        .padding(.horizontal, 16)
+//        .padding(.top, 8)
+//        .padding(.bottom, max(bottomSafeAreaInset, 10))
+//    }
+//
+//    private var tabBarCapsuleBackground: some View {
+//        ZStack {
+//            Capsule(style: .continuous)
+//                .fill(tabBarShellColor)
+//
+//            Capsule(style: .continuous)
+//                .fill(.ultraThinMaterial)
+//                .opacity(isDarkMode ? 0.28 : 0.72)
+//
+//            Capsule(style: .continuous)
+//                .strokeBorder(tabBarBorderColor, lineWidth: 1)
+//
+//            Capsule(style: .continuous)
+//                .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
+//                .blur(radius: 0.2)
+//        }
+//    }
+//
+//    private func bottomTabBarButton(for tab: AppTab, systemImage: String, title: String) -> some View {
+//        let isSelected = selectedTab == tab
+//
+//        return Button {
+//            settings.hapticFeedback()
+//            selectedTab = tab
+//            if tab == .plus {
+//                Task {
+//                    await revenueCat.refreshOfferings()
+//                }
+//            }
+//        } label: {
+//            VStack(spacing: 3) {
+//                Image(systemName: systemImage)
+//                    .font(.system(size: tab == .plus ? 20 : 18, weight: .semibold))
+//
+//                if tab != .plus {
+//                    Text(title)
+//                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+//                        .lineLimit(1)
+//                }
+//            }
+//            .foregroundStyle(isSelected ? selectedTabColor(for: tab) : unselectedTabColor)
+//            .frame(maxWidth: tab == .plus ? nil : .infinity)
+//            .frame(width: tab == .plus ? 66 : nil, height: tab == .plus ? 66 : nil)
+//            .padding(.vertical, tab == .plus ? 0 : 10)
+//            .padding(.horizontal, tab == .plus ? 0 : 10)
+//            .background(
+//                ZStack {
+//                    if tab == .plus {
+//                        Circle()
+//                            .fill(tabBarShellColor)
+//
+//                        Circle()
+//                            .fill(.ultraThinMaterial)
+//                            .opacity(isDarkMode ? 0.28 : 0.72)
+//
+//                        Circle()
+//                            .strokeBorder(tabBarBorderColor, lineWidth: 1)
+//
+//                        Circle()
+//                            .strokeBorder(Color.white.opacity(isDarkMode ? 0.10 : 0.45), lineWidth: 0.5)
+//                            .blur(radius: 0.2)
+//
+//                        if isSelected {
+//                            Circle()
+//                                .fill(selectedTabBackgroundColor.opacity(isDarkMode ? 0.55 : 0.85))
+//                        }
+//                    } else if isSelected {
+//                        Capsule(style: .continuous)
+//                            .fill(selectedTabBackgroundColor)
+//
+//                        Capsule(style: .continuous)
+//                            .fill(.ultraThinMaterial)
+//                            .opacity(isDarkMode ? 0.14 : 0.42)
+//                    }
+//                }
+//            )
+//            .overlay(
+//                Group {
+//                    if tab == .plus {
+//                        Circle()
+//                            .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
+//                    } else {
+//                        Capsule(style: .continuous)
+//                            .stroke(isSelected ? selectedTabBorderColor : Color.clear, lineWidth: 1)
+//                    }
+//                }
+//            )
+//            .shadow(
+//                color: isSelected ? Color.black.opacity(isDarkMode ? 0.16 : 0.05) : Color.clear,
+//                radius: 8,
+//                x: 0,
+//                y: 4
+//            )
+//        }
+//        .buttonStyle(.plain)
+//        .accessibilityLabel(title)
+//    }
+//
+//    private var isDarkMode: Bool {
+//        let effectiveColorScheme = settings.colorScheme ?? systemColorScheme
+//        return effectiveColorScheme == .dark
+//    }
+//
+//    private var tabBarShellColor: Color {
+//        isDarkMode
+//            ? Color.black.opacity(0.74)
+//            : Color(red: 0.90, green: 0.90, blue: 0.92).opacity(0.70)
+//    }
+//
+//    private var tabBarBorderColor: Color {
+//        isDarkMode
+//            ? Color.white.opacity(0.10)
+//            : Color.white.opacity(0.78)
+//    }
+//
+//    private var selectedTabBackgroundColor: Color {
+//        isDarkMode
+//            ? Color.white.opacity(0.11)
+//            : Color.white.opacity(0.50)
+//    }
+//
+//    private var selectedTabBorderColor: Color {
+//        isDarkMode
+//            ? Color.white.opacity(0.10)
+//            : Color.white.opacity(0.92)
+//    }
+//
+//    private var unselectedTabColor: Color {
+//        isDarkMode ? Color.white.opacity(0.92) : Color.black.opacity(0.62)
+//    }
+//
+//    private func selectedTabColor(for tab: AppTab) -> Color {
+//        switch tab {
+//        case .today:
+//            return Color(red: 0.98, green: 0.39, blue: 0.37)
+//        case .plus:
+//            return settings.accentColor.color
+//        case .adhan, .widgets, .library:
+//            return isDarkMode ? Color.white : Color.black.opacity(0.84)
+//        }
+//    }
+//
+//    private func tabHidesOnScroll(_ tab: AppTab) -> Bool {
+//        switch tab {
+//        case .adhan, .today, .widgets, .library, .plus:
+//            return false
+//        }
+//    }
 
     @ViewBuilder
     private var supportTabContent: some View {

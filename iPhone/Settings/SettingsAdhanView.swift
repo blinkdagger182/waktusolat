@@ -1512,8 +1512,6 @@ struct WidgetPreviewGalleryView: View {
                 pendingLockedSelectionSnapshot = nil
             }
         }
-        .navigationTitle(appLocalized("Widgets"))
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     @ViewBuilder
@@ -1559,9 +1557,21 @@ struct WidgetsTabView: View {
     @EnvironmentObject var revenueCat: RevenueCatManager
     @State private var selectedSegment: WidgetsTabSegment = .home
 
+    private var heroTitle: String {
+        selectedSegment == .live ? "Live Notification" : appLocalized("Widgets")
+    }
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                Text(heroTitle)
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+
                 Picker("", selection: $selectedSegment) {
                     ForEach(WidgetsTabSegment.allCases) { segment in
                         Text(segment.title).tag(segment)
@@ -1569,7 +1579,6 @@ struct WidgetsTabView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
                 .padding(.bottom, 8)
 
                 Group {
@@ -1587,10 +1596,13 @@ struct WidgetsTabView: View {
                             .environmentObject(settings)
                     }
                 }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear.frame(height: 72)
+                }
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle(appLocalized("Widgets"))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
         }
         .navigationViewStyle(.stack)
     }
@@ -2430,6 +2442,14 @@ private struct LiveActivityWidgetSettingsView: View {
     var body: some View {
         List {
             Section {
+                AccurateLiveNotificationPreviewCard(style: selectedStyle)
+                    .environmentObject(settings)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            } header: {
+                Text(isMalayAppLanguage() ? "Pratonton" : "Preview")
+            }
+
+            Section {
                 Toggle(appLocalized("Live Next Prayer Activity"), isOn: $settings.liveNextPrayerEnabled.animation(.easeInOut))
                     .font(.subheadline)
                     .tint(settings.accentColor.toggleTint)
@@ -2490,6 +2510,557 @@ private struct LiveActivityWidgetSettingsView: View {
         .applyConditionalListStyle(defaultView: true)
     }
 }
+
+private struct LiveNotificationPreviewModel {
+    let prayerName: String
+    let city: String
+    let prayerTime: Date
+    let startedAt: Date
+    let prayers: [Prayer]
+    let hijriText: String
+
+    static func make(settings: Settings, now: Date = Date()) -> Self {
+        let sourcePrayers = settings.prayers?.fullPrayers.isEmpty == false
+            ? settings.prayers?.fullPrayers ?? []
+            : settings.prayers?.prayers ?? []
+        let next = settings.nextPrayer
+            ?? sourcePrayers.sorted { $0.time < $1.time }.first { $0.time > now }
+        let prayerTime = next?.time ?? now.addingTimeInterval(15 * 60)
+        let leadSeconds = TimeInterval(max(settings.liveActivityLeadMinutes, 1) * 60)
+        let startedAt = min(now, prayerTime.addingTimeInterval(-leadSeconds))
+        let city = settings.effectivePrayerLocationDisplayName
+            ?? settings.currentLocation?.city
+            ?? appLocalized("Current Location")
+
+        return LiveNotificationPreviewModel(
+            prayerName: next?.nameTransliteration ?? "Fajr",
+            city: city,
+            prayerTime: prayerTime,
+            startedAt: startedAt,
+            prayers: sourcePrayers,
+            hijriText: Self.hijriText(settings: settings, prayers: sourcePrayers, now: now)
+        )
+    }
+
+    private static func hijriText(settings: Settings, prayers: [Prayer], now: Date) -> String {
+        var calendar = Calendar(identifier: .islamicUmmAlQura)
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+        let referenceDate = Settings.islamicReferenceDate(now: now, prayers: prayers)
+        let effectiveOffset = Settings.effectiveHijriOffset(baseOffset: settings.hijriOffset, location: settings.currentLocation)
+        let date = calendar.date(byAdding: .day, value: effectiveOffset, to: referenceDate) ?? referenceDate
+        let day = calendar.component(.day, from: date)
+
+        let monthFormatter = DateFormatter()
+        monthFormatter.calendar = calendar
+        monthFormatter.locale = Locale(identifier: "en_US_POSIX")
+        monthFormatter.dateFormat = "MMMM"
+        return "\(day) \(monthFormatter.string(from: date))"
+    }
+}
+
+private struct AccurateLiveNotificationPreviewCard: View {
+    @EnvironmentObject var settings: Settings
+    let style: LiveNotificationStyle
+
+    private var model: LiveNotificationPreviewModel {
+        LiveNotificationPreviewModel.make(settings: settings)
+    }
+
+    var body: some View {
+        Group {
+            switch style {
+            case .current:
+                AccurateDefaultLiveNotificationPreview(model: model, accentColor: settings.accentColor.color)
+            case .timeline:
+                AccurateTimelineLiveNotificationPreview(model: model)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(style.title) live notification preview")
+    }
+}
+
+private struct AccurateDefaultLiveNotificationPreview: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let model: LiveNotificationPreviewModel
+    let accentColor: Color
+
+    private var palette: (bg: Color, fg: Color, muted: Color, track: Color, progress: Color) {
+        #if os(iOS)
+        let accent = UIColor(accentColor)
+        let background = colorScheme == .dark
+            ? accent.blendedForLivePreview(with: .black, fraction: 0.62)
+            : accent.blendedForLivePreview(with: .white, fraction: 0.18)
+        let foreground: UIColor = colorScheme == .dark || background.livePreviewRelativeLuminance < 0.58 ? .white : .black
+        return (
+            bg: Color(background),
+            fg: Color(foreground),
+            muted: Color(foreground).opacity(0.78),
+            track: Color(foreground).opacity(0.16),
+            progress: Color(foreground).opacity(0.94)
+        )
+        #else
+        return (
+            bg: accentColor.opacity(0.14),
+            fg: .primary,
+            muted: .secondary,
+            track: .primary.opacity(0.16),
+            progress: .primary.opacity(0.94)
+        )
+        #endif
+    }
+
+    var body: some View {
+        let palette = palette
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("\(localizedPrayerName(model.prayerName)) · \(Self.prayerTimeText(model.prayerTime))")
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
+                    .foregroundStyle(palette.fg)
+                Spacer()
+                Text(model.city)
+                    .font(.system(.subheadline, design: .rounded))
+                    .foregroundStyle(palette.muted)
+                    .lineLimit(1)
+            }
+
+            HStack(spacing: 6) {
+                LiveNotificationPreviewCountdownText(
+                    prayerName: model.prayerName,
+                    prayerTime: model.prayerTime,
+                    reachedText: appLocalized("It's time for %@", localizedPrayerName(model.prayerName))
+                )
+                .foregroundStyle(palette.fg)
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
+
+            TimelineView(.explicit([.distantPast, model.prayerTime])) { timeline in
+                if timeline.date >= model.prayerTime {
+                    Capsule(style: .continuous)
+                        .fill(palette.progress)
+                        .frame(height: 14)
+                } else {
+                    let duration = max(model.prayerTime.timeIntervalSince(model.startedAt), 60)
+                    let progress = min(max(timeline.date.timeIntervalSince(model.startedAt) / duration, 0), 1)
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule(style: .continuous)
+                                .fill(palette.track)
+                            Capsule(style: .continuous)
+                                .fill(palette.progress)
+                                .frame(width: proxy.size.width * progress)
+                        }
+                    }
+                    .frame(height: 14)
+                    .padding(.vertical, 4)
+                }
+            }
+
+            HStack {
+                Text(model.hijriText)
+                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                    .foregroundStyle(palette.muted)
+                Spacer()
+                Label(appLocalized("Waktu"), systemImage: "moon.stars.fill")
+                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                    .foregroundStyle(palette.muted)
+            }
+        }
+        .padding()
+        .background(palette.bg, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private static func prayerTimeText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "h.mm"
+        return formatter.string(from: date)
+    }
+}
+
+private struct LiveNotificationPreviewCountdownText: View {
+    let prayerName: String
+    let prayerTime: Date
+    let reachedText: String
+
+    var body: some View {
+        TimelineView(.explicit([.distantPast, prayerTime])) { _ in
+            let now = Date()
+            if now >= prayerTime {
+                HStack {
+                    Text(reachedText)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                    Spacer()
+                    Text(appLocalized("Tap to Dismiss"))
+                        .font(.system(.caption, design: .rounded))
+                        .opacity(0.55)
+                }
+            } else {
+                HStack(spacing: 6) {
+                    Text(appLocalized("Next in"))
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                    Text(Self.countdownText(from: now, to: prayerTime))
+                        .font(.system(.title3, design: .rounded).weight(.black))
+                        .monospacedDigit()
+                }
+            }
+        }
+    }
+
+    private static func countdownText(from now: Date, to prayerTime: Date) -> String {
+        let remaining = max(Int(prayerTime.timeIntervalSince(now)), 0)
+        let hours = remaining / 3600
+        let minutes = (remaining % 3600) / 60
+        let seconds = remaining % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+private struct AccurateTimelineLiveNotificationPreview: View {
+    let model: LiveNotificationPreviewModel
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 15)) { timeline in
+            let timelineModel = LiveNotificationPreviewTimeline.make(model: model, now: timeline.date)
+            let palette = LiveNotificationPreviewTimelinePalette(isNight: timelineModel.isNightMode, accent: timelineModel.accent)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(localizedPrayerName(model.prayerName))
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundStyle(palette.primary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 12)
+
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(timelineModel.targetTimeText)
+                            .font(.system(.title3, design: .rounded).weight(.bold))
+                            .monospacedDigit()
+                            .foregroundStyle(palette.primary)
+                        Text(timelineModel.city)
+                            .font(.system(.caption, design: .rounded))
+                            .foregroundStyle(palette.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.78)
+                    }
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(timelineModel.remainingValueText)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundStyle(palette.accent)
+                        .monospacedDigit()
+                    Text(timelineModel.remainingUnitText)
+                        .font(.system(.callout, design: .rounded).weight(.bold))
+                        .foregroundStyle(palette.primary)
+                    Text(timelineModel.remainingSuffixText)
+                        .font(.system(.callout, design: .rounded).weight(.bold))
+                        .foregroundStyle(palette.primary)
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+                LiveNotificationPreviewTimelineProgress(model: timelineModel)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+            .padding(.bottom, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(palette.background)
+            )
+        }
+    }
+}
+
+private struct LiveNotificationPreviewTimelineProgress: View {
+    let model: LiveNotificationPreviewTimeline
+
+    var body: some View {
+        let palette = LiveNotificationPreviewTimelinePalette(isNight: model.isNightMode, accent: model.accent)
+
+        VStack(spacing: 8) {
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                let y = proxy.size.height / 2
+                let safeActiveIndex = min(max(model.activeIndex, 0), model.markers.count - 1)
+                let previousMarker = model.markers[max(safeActiveIndex - 1, 0)]
+                let activeMarker = model.markers[safeActiveIndex]
+                let activeX = width * (previousMarker.position + (activeMarker.position - previousMarker.position) * model.progress)
+
+                ZStack(alignment: .leading) {
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: width, y: y))
+                    }
+                    .stroke(palette.track, lineWidth: 2)
+
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: activeX, y: y))
+                    }
+                    .stroke(palette.accent, lineWidth: 3)
+
+                    ForEach(model.markers) { marker in
+                        Circle()
+                            .fill(marker.isActive ? palette.accent : palette.inactiveDotFill)
+                            .frame(width: marker.isActive ? 13 : 9, height: marker.isActive ? 13 : 9)
+                            .overlay(
+                                Circle()
+                                    .stroke(marker.isActive ? palette.background : palette.inactiveDotStroke, lineWidth: 2)
+                            )
+                            .shadow(color: marker.isActive ? palette.accent.opacity(0.35) : .clear, radius: 4)
+                            .position(x: width * marker.position, y: y)
+                    }
+                }
+            }
+            .frame(height: 18)
+
+            HStack {
+                ForEach(model.markers) { marker in
+                    Text(marker.label)
+                        .font(.system(.caption2, design: .rounded).weight(marker.isActive ? .semibold : .regular))
+                        .foregroundStyle(marker.isActive ? palette.accent : palette.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+}
+
+private struct LiveNotificationPreviewTimeline {
+    struct Marker: Identifiable {
+        let id: String
+        let label: String
+        let position: CGFloat
+        let isActive: Bool
+    }
+
+    let city: String
+    let markers: [Marker]
+    let activeIndex: Int
+    let progress: CGFloat
+    let remainingValueText: String
+    let remainingUnitText: String
+    let remainingSuffixText: String
+    let targetTimeText: String
+    let accent: Color
+    let isNightMode: Bool
+
+    static func make(model: LiveNotificationPreviewModel, now: Date) -> Self {
+        let canonicalNext = canonicalKey(model.prayerName)
+        let activeIndex = canonicalPrayerOrder.firstIndex(of: canonicalNext) ?? 0
+        let previousTime = previousPrayerTime(
+            beforeActiveIndex: activeIndex,
+            prayers: model.prayers,
+            activeTime: model.prayerTime,
+            fallback: model.startedAt
+        )
+        let denominator = max(model.prayerTime.timeIntervalSince(previousTime), 60)
+        let progress = CGFloat(min(max(now.timeIntervalSince(previousTime) / denominator, 0), 1))
+        let markerCount = canonicalPrayerOrder.count
+        let markers = canonicalPrayerOrder.enumerated().map { index, key in
+            Marker(
+                id: key,
+                label: compactPrayerLabel(key),
+                position: CGFloat(index) / CGFloat(markerCount - 1),
+                isActive: index == activeIndex
+            )
+        }
+
+        let remaining = max(model.prayerTime.timeIntervalSince(now), 0)
+        let roundedMinutes = max(Int(ceil(remaining / 60)), 0)
+        let remainingValue: String
+        let remainingUnit: String
+        if roundedMinutes >= 60 {
+            let hours = roundedMinutes / 60
+            let minutes = roundedMinutes % 60
+            remainingValue = minutes == 0 ? "\(hours)" : "\(hours)h \(minutes)"
+            remainingUnit = minutes == 0 ? "hr" : "min"
+        } else {
+            remainingValue = "\(max(roundedMinutes, 1))"
+            remainingUnit = "min"
+        }
+
+        return LiveNotificationPreviewTimeline(
+            city: model.city,
+            markers: markers,
+            activeIndex: activeIndex,
+            progress: progress,
+            remainingValueText: remainingValue,
+            remainingUnitText: remainingUnit,
+            remainingSuffixText: "until \(localizedPrayerName(model.prayerName))",
+            targetTimeText: targetTimeFormatter.string(from: model.prayerTime),
+            accent: Color(red: 0.05, green: 0.34, blue: 0.18),
+            isNightMode: canonicalNext == "fajr" || canonicalNext == "isha"
+        )
+    }
+
+    private static let canonicalPrayerOrder = ["fajr", "shurooq", "dhuhr", "asr", "maghrib", "isha"]
+
+    private static func previousPrayerTime(
+        beforeActiveIndex activeIndex: Int,
+        prayers: [Prayer],
+        activeTime: Date,
+        fallback: Date
+    ) -> Date {
+        guard activeIndex > 0 else { return fallback < activeTime ? fallback : activeTime.addingTimeInterval(-15 * 60) }
+        let previousKey = canonicalPrayerOrder[activeIndex - 1]
+        guard let previousPrayer = prayers.first(where: { canonicalKey($0.nameTransliteration) == previousKey }) else {
+            return fallback < activeTime ? fallback : activeTime.addingTimeInterval(-15 * 60)
+        }
+        return latestOccurrence(of: previousPrayer.time, before: activeTime)
+    }
+
+    private static func latestOccurrence(of time: Date, before reference: Date) -> Date {
+        var candidate = time
+        while candidate >= reference {
+            candidate = Calendar.current.date(byAdding: .day, value: -1, to: candidate) ?? candidate.addingTimeInterval(-86_400)
+        }
+        while let next = Calendar.current.date(byAdding: .day, value: 1, to: candidate), next < reference {
+            candidate = next
+        }
+        return candidate
+    }
+
+    private static func canonicalKey(_ name: String) -> String {
+        let normalized = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "subuh", "fajr": return "fajr"
+        case "syuruk", "shurooq", "sunrise": return "shurooq"
+        case "zuhur", "dhuhr", "jumuah": return "dhuhr"
+        case "asar", "asr": return "asr"
+        case "maghrib", "magrib": return "maghrib"
+        case "isyak", "isha", "isya": return "isha"
+        default: return normalized
+        }
+    }
+
+    private static func compactPrayerLabel(_ name: String) -> String {
+        switch canonicalKey(name) {
+        case "fajr": return localizedPrayerName("Fajr")
+        case "shurooq": return localizedPrayerName("Shurooq")
+        case "dhuhr": return localizedPrayerName("Dhuhr")
+        case "asr": return localizedPrayerName("Asr")
+        case "maghrib": return localizedPrayerName("Maghrib")
+        case "isha": return localizedPrayerName("Isha")
+        default: return localizedPrayerName(name)
+        }
+    }
+
+    private static let targetTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "h:mm a"
+        return formatter
+    }()
+}
+
+private struct LiveNotificationPreviewTimelinePalette {
+    let background: Color
+    let primary: Color
+    let secondary: Color
+    let accent: Color
+    let track: Color
+    let inactiveDotFill: Color
+    let inactiveDotStroke: Color
+
+    init(isNight: Bool, accent: Color) {
+        self.accent = accent
+        if isNight {
+            background = Color(red: 0.035, green: 0.047, blue: 0.062)
+            primary = .white
+            secondary = .white.opacity(0.62)
+            track = .white.opacity(0.22)
+            inactiveDotFill = background
+            inactiveDotStroke = .white.opacity(0.36)
+        } else {
+            background = Color(red: 0.95, green: 0.98, blue: 0.94)
+            primary = Color(red: 0.08, green: 0.12, blue: 0.09)
+            secondary = Color(red: 0.36, green: 0.44, blue: 0.38)
+            track = Color(red: 0.58, green: 0.68, blue: 0.58).opacity(0.45)
+            inactiveDotFill = background
+            inactiveDotStroke = Color(red: 0.54, green: 0.62, blue: 0.54).opacity(0.65)
+        }
+    }
+}
+
+#if os(iOS)
+private extension UIColor {
+    func blendedForLivePreview(with other: UIColor, fraction: CGFloat) -> UIColor {
+        let clamped = min(max(fraction, 0), 1)
+        var r1: CGFloat = 0
+        var g1: CGFloat = 0
+        var b1: CGFloat = 0
+        var a1: CGFloat = 0
+        var r2: CGFloat = 0
+        var g2: CGFloat = 0
+        var b2: CGFloat = 0
+        var a2: CGFloat = 0
+        guard getRed(&r1, green: &g1, blue: &b1, alpha: &a1),
+              other.getRed(&r2, green: &g2, blue: &b2, alpha: &a2) else {
+            return self
+        }
+        return UIColor(
+            red: r1 + (r2 - r1) * clamped,
+            green: g1 + (g2 - g1) * clamped,
+            blue: b1 + (b2 - b1) * clamped,
+            alpha: a1 + (a2 - a1) * clamped
+        )
+    }
+
+    var livePreviewRelativeLuminance: CGFloat {
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        guard getRed(&r, green: &g, blue: &b, alpha: &a) else { return 0 }
+        return (0.2126 * r) + (0.7152 * g) + (0.0722 * b)
+    }
+}
+#endif
+
+#if DEBUG
+struct LiveNotificationPreviewVerificationView: View {
+    @StateObject private var settings = Settings.shared
+    @AppStorage(LiveNotificationStyle.storageKey, store: UserDefaults(suiteName: sharedAppGroupID))
+    private var selectedStyleRaw = LiveNotificationStyle.timeline.rawValue
+
+    var body: some View {
+        ZStack {
+            Color(.systemGroupedBackground).ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 18) {
+                Text("Live Notification Preview")
+                    .font(.title2.weight(.bold))
+
+                AccurateLiveNotificationPreviewCard(style: LiveNotificationStyle(rawValue: selectedStyleRaw) ?? .timeline)
+                    .environmentObject(settings)
+
+                Picker("", selection: $selectedStyleRaw) {
+                    ForEach(LiveNotificationStyle.allCases) { style in
+                        Text(style.title).tag(style.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            .padding(20)
+        }
+        .onAppear {
+            selectedStyleRaw = ProcessInfo.processInfo.arguments.contains("--live-preview-current")
+                ? LiveNotificationStyle.current.rawValue
+                : LiveNotificationStyle.timeline.rawValue
+        }
+    }
+}
+#endif
 
 #if DEBUG
 private enum WidgetPreviewVerificationProfile: String {

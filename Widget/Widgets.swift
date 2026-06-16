@@ -561,53 +561,23 @@ private struct LiveActivityPrayerTimeline {
     ) -> Self {
         let prayers = cachedPrayers()
         let canonicalNext = canonicalKey(prayerName)
-        let sorted = prayers.sorted { $0.time < $1.time }
-        let matchedIndex = sorted.firstIndex { prayer in
-            canonicalKey(prayer.nameTransliteration) == canonicalNext
-        } ?? sorted.firstIndex { $0.time >= now }
-
-        let timelinePrayers: [(name: String, time: Date)]
-        let activeIndex: Int
-        let previousTime: Date
-
-        if let matchedIndex, !sorted.isEmpty {
-            let builtTimelinePrayers = buildTimelinePrayers(
-                from: sorted,
-                activeIndex: matchedIndex,
-                activeTime: prayerTime
-            )
-            if builtTimelinePrayers.count >= 2 {
-                timelinePrayers = builtTimelinePrayers
-                activeIndex = min(1, builtTimelinePrayers.count - 1)
-                previousTime = builtTimelinePrayers.first?.time ?? startedAt
-            } else {
-                let previous = startedAt < prayerTime ? startedAt : now.addingTimeInterval(-15 * 60)
-                timelinePrayers = [
-                    (name: previousPrayerFallbackName(before: prayerName), time: previous),
-                    (name: prayerName, time: prayerTime)
-                ]
-                activeIndex = 1
-                previousTime = previous
-            }
-        } else {
-            let previous = startedAt < prayerTime ? startedAt : now.addingTimeInterval(-15 * 60)
-            timelinePrayers = [
-                (name: previousPrayerFallbackName(before: prayerName), time: previous),
-                (name: prayerName, time: prayerTime)
-            ]
-            activeIndex = 1
-            previousTime = previous
-        }
+        let activeIndex = canonicalPrayerOrder.firstIndex(of: canonicalNext) ?? 0
+        let previousTime = previousPrayerTime(
+            beforeActiveIndex: activeIndex,
+            prayers: prayers,
+            activeTime: prayerTime,
+            fallback: startedAt
+        )
 
         let denominator = max(prayerTime.timeIntervalSince(previousTime), 60)
         let rawProgress = (now.timeIntervalSince(previousTime) / denominator)
         let progress = CGFloat(min(max(rawProgress, 0), 1))
 
-        let markerCount = max(timelinePrayers.count, 2)
-        let markers = timelinePrayers.enumerated().map { index, item in
+        let markerCount = canonicalPrayerOrder.count
+        let markers = canonicalPrayerOrder.enumerated().map { index, key in
             Marker(
-                id: "\(index)-\(item.name)-\(Int(item.time.timeIntervalSince1970))",
-                label: compactPrayerLabel(item.name),
+                id: key,
+                label: compactPrayerLabel(key),
                 position: CGFloat(index) / CGFloat(markerCount - 1),
                 isActive: index == activeIndex
             )
@@ -631,7 +601,7 @@ private struct LiveActivityPrayerTimeline {
             ? cachedCityFallback()
             : city
         let targetName = localizedPrayerName(prayerName)
-        let isNightMode = canonicalNext == "fajr" || canonicalKey(timelinePrayers.first?.name ?? "") == "isha"
+        let isNightMode = canonicalNext == "fajr" || canonicalNext == "isha"
 
         return LiveActivityPrayerTimeline(
             prayerName: prayerName,
@@ -670,38 +640,20 @@ private struct LiveActivityPrayerTimeline {
         return appLocalized("Current Location")
     }
 
-    private static func buildTimelinePrayers(
-        from prayers: [Prayer],
-        activeIndex: Int,
-        activeTime: Date
-    ) -> [(name: String, time: Date)] {
-        let displayable = prayers.filter { !canonicalKey($0.nameTransliteration).isEmpty }
-        guard !displayable.isEmpty else { return [] }
-        let activePrayer = prayers[activeIndex]
-        let displayActiveIndex = displayable.firstIndex { $0.id == activePrayer.id }
-            ?? displayable.firstIndex { canonicalKey($0.nameTransliteration) == canonicalKey(activePrayer.nameTransliteration) }
-            ?? 0
+    private static let canonicalPrayerOrder = ["fajr", "shurooq", "dhuhr", "asr", "maghrib", "isha"]
 
-        var items: [(name: String, time: Date)] = []
-        let previousIndex = displayActiveIndex == 0 ? displayable.count - 1 : displayActiveIndex - 1
-        let previousPrayer = displayable[previousIndex]
-        let previousTime = latestOccurrence(of: previousPrayer.time, before: activeTime)
-        items.append((previousPrayer.nameTransliteration, previousTime))
-
-        items.append((activePrayer.nameTransliteration, activeTime))
-
-        var lastTime = activeTime
-        let nextCount = min(displayable.count - 1, 4)
-        guard nextCount > 0 else { return items }
-
-        for offset in 1...nextCount {
-            let index = (displayActiveIndex + offset) % displayable.count
-            let prayer = displayable[index]
-            let time = earliestOccurrence(of: prayer.time, after: lastTime)
-            items.append((prayer.nameTransliteration, time))
-            lastTime = time
+    private static func previousPrayerTime(
+        beforeActiveIndex activeIndex: Int,
+        prayers: [Prayer],
+        activeTime: Date,
+        fallback: Date
+    ) -> Date {
+        guard activeIndex > 0 else { return fallback < activeTime ? fallback : activeTime.addingTimeInterval(-15 * 60) }
+        let previousKey = canonicalPrayerOrder[activeIndex - 1]
+        guard let previousPrayer = prayers.first(where: { canonicalKey($0.nameTransliteration) == previousKey }) else {
+            return fallback < activeTime ? fallback : activeTime.addingTimeInterval(-15 * 60)
         }
-        return items
+        return latestOccurrence(of: previousPrayer.time, before: activeTime)
     }
 
     private static func latestOccurrence(of time: Date, before reference: Date) -> Date {
@@ -715,26 +667,6 @@ private struct LiveActivityPrayerTimeline {
             candidate = next
         }
         return candidate
-    }
-
-    private static func earliestOccurrence(of time: Date, after reference: Date) -> Date {
-        var candidate = time
-        while candidate <= reference {
-            candidate = Calendar.current.date(byAdding: .day, value: 1, to: candidate)
-                ?? candidate.addingTimeInterval(86_400)
-        }
-        return candidate
-    }
-
-    private static func previousPrayerFallbackName(before prayerName: String) -> String {
-        switch canonicalKey(prayerName) {
-        case "fajr": return "Isha"
-        case "dhuhr": return "Fajr"
-        case "asr": return "Dhuhr"
-        case "maghrib": return "Asr"
-        case "isha": return "Maghrib"
-        default: return "Isha"
-        }
     }
 
     private static func canonicalKey(_ name: String) -> String {
