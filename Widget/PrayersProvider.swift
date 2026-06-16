@@ -7,9 +7,7 @@ private let preferredPrayerLockScreenFooterWidgetKindKey = "preferredPrayerLockS
 struct PrayersProvider: TimelineProvider {
     private let store = UserDefaults(suiteName: widgetAppGroupID)
     private let settings = Settings.shared
-    private let minuteInterval: TimeInterval = 60
     private let fiveMinuteInterval: TimeInterval = 5 * 60
-    private let maxDenseTimelineEntries = 180
 
     func placeholder(in context: Context) -> PrayersEntry { previewEntry() }
 
@@ -75,15 +73,10 @@ struct PrayersProvider: TimelineProvider {
         var entries = [makeEntry(at: now, baseContext: baseContext)]
         guard refreshBoundary > now else { return entries }
 
-        let totalInterval = refreshBoundary.timeIntervalSince(now)
-        let step = totalInterval / minuteInterval <= Double(maxDenseTimelineEntries)
-            ? minuteInterval
-            : fiveMinuteInterval
-
-        var nextDate = now.addingTimeInterval(step)
+        var nextDate = now.addingTimeInterval(fiveMinuteInterval)
         while nextDate < refreshBoundary {
             entries.append(makeEntry(at: nextDate, baseContext: baseContext))
-            nextDate = nextDate.addingTimeInterval(step)
+            nextDate = nextDate.addingTimeInterval(fiveMinuteInterval)
         }
 
         for transitionDate in exactDisplayTransitionDates(
@@ -433,13 +426,25 @@ func widgetResolvedCurrentAndNextPrayers(in entry: PrayersEntry, at renderDate: 
 }
 
 func widgetPrayerDisplayName(_ prayer: Prayer, in entry: PrayersEntry) -> String {
-    localizedPrayerName(widgetPrayerDisplayInfo(prayer, in: entry).nameTransliteration)
+    localizedPrayerName(widgetPrayerDisplayInfo(prayer, in: entry, at: entry.date).nameTransliteration)
 }
 
 func widgetPrayerDisplayTime(_ prayer: Prayer, in entry: PrayersEntry) -> Date {
-    widgetPrayerDisplayInfo(prayer, in: entry).time
+    widgetPrayerDisplayInfo(prayer, in: entry, at: entry.date).time
 }
 
 func widgetIsShurooq(_ prayer: Prayer, in entry: PrayersEntry) -> Bool {
-    widgetPrayerDisplayInfo(prayer, in: entry).usesSecondarySunStyle
+    widgetPrayerDisplayInfo(prayer, in: entry, at: entry.date).usesSecondarySunStyle
+}
+
+func widgetApproxRemainingText(until target: Date, from now: Date, compact: Bool = false) -> String {
+    let seconds = max(target.timeIntervalSince(now), 0)
+    let totalMinutes = max(Int(ceil(seconds / 60)), 0)
+    let hours = totalMinutes / 60
+    let minutes = totalMinutes % 60
+
+    if hours > 0 {
+        return compact ? "\(hours)h \(minutes)m" : "\(hours)h \(String(format: "%02d", minutes))m"
+    }
+    return "\(max(totalMinutes, 1))m"
 }

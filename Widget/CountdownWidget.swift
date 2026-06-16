@@ -159,7 +159,7 @@ struct CountdownEntryView: View {
 
     private func activeIndex(in prayers: [Prayer]) -> Int {
         guard !prayers.isEmpty else { return 0 }
-        let now = Date()
+        let now = entry.date
         var idx = -1
         for (i, prayer) in prayers.enumerated() where now >= prayer.time {
             idx = i
@@ -192,7 +192,7 @@ struct CountdownEntryView: View {
 
                                 Spacer(minLength: 4)
 
-                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
+                                Text(widgetApproxRemainingText(until: widgetPrayerDisplayTime(nextPrayer, in: entry), from: entry.date))
                                     .font(.title3.monospacedDigit())
                                     .lineLimit(1)
 
@@ -234,7 +234,7 @@ struct CountdownEntryView: View {
                                     .foregroundColor(entry.accentColor.color)
                                     .lineLimit(1)
                                 Spacer()
-                                Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
+                                Text(widgetApproxRemainingText(until: widgetPrayerDisplayTime(nextPrayer, in: entry), from: entry.date, compact: true))
                                     .font(.caption.monospacedDigit())
                                     .lineLimit(1)
                             }

@@ -213,6 +213,7 @@ enum HomeWidgetStyle: String, CaseIterable, Identifiable {
     case minimalist
     case metro
     case neo
+    case neoTransit
     case sketch
     case proNext
     case proIndex
@@ -242,6 +243,8 @@ enum HomeWidgetStyle: String, CaseIterable, Identifiable {
             return "Metro"
         case .neo:
             return "Neo"
+        case .neoTransit:
+            return "Neo Transit"
         case .sketch:
             return "Sketch"
         case .proNext:
@@ -271,6 +274,8 @@ enum HomeWidgetStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage() ? "Papan jadual transit." : "Transit-board layout."
         case .neo:
             return isMalayAppLanguage() ? "Terminal gelap dengan aksen hijau." : "Dark terminal with green accents."
+        case .neoTransit:
+            return isMalayAppLanguage() ? "Papan LED solat seterusnya." : "Dot-matrix next-prayer board."
         case .sketch:
             return isMalayAppLanguage() ? "Kanvas lakaran oren." : "Orange sketch canvas."
         case .proNext, .proIndex, .proArc:
@@ -280,7 +285,7 @@ enum HomeWidgetStyle: String, CaseIterable, Identifiable {
 
     var supportedSizes: Set<HomeWidgetPresetSize> {
         switch self {
-        case .simpleCountdown, .countdown, .proNext:
+        case .simpleCountdown, .countdown, .neoTransit, .proNext:
             return [.small]
         case .countdownMedium, .prayerTimesCompact, .prayerTimesGrid, .proIndex:
             return [.medium]
@@ -295,7 +300,7 @@ enum HomeWidgetStyle: String, CaseIterable, Identifiable {
 
     var requiresPremiumWidgets: Bool {
         switch self {
-        case .metro, .neo, .sketch, .proNext, .proIndex, .proArc:
+        case .metro, .neo, .neoTransit, .sketch, .proNext, .proIndex, .proArc:
             return true
         default:
             return false

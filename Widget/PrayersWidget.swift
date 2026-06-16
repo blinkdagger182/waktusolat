@@ -156,7 +156,7 @@ struct PrayersEntryView: View {
                                         Text(appLocalized("Time left:"))
                                             .fixedSize(horizontal: true, vertical: false)
                                             .layoutPriority(1)
-                                        Text(widgetPrayerDisplayTime(nextPrayer, in: entry), style: .timer)
+                                        Text(widgetApproxRemainingText(until: widgetPrayerDisplayTime(nextPrayer, in: entry), from: entry.date))
                                     }
                                     .font(.caption)
                                     .padding(.trailing, 2)

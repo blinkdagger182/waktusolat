@@ -111,7 +111,7 @@ struct ProNextEntryView: View {
                     .minimumScaleFactor(0.65)
 
                 HStack(spacing: 0) {
-                    Text(widgetPrayerDisplayTime(next, in: entry), style: .timer)
+                    Text(widgetApproxRemainingText(until: widgetPrayerDisplayTime(next, in: entry), from: entry.date, compact: true))
                         .monospacedDigit()
                         .foregroundStyle(proGold)
                     Text(" left")
@@ -399,7 +399,7 @@ struct ProArcEntryView: View {
 
                     if let next = pair?.next {
                         HStack(spacing: 0) {
-                            Text(widgetPrayerDisplayTime(next, in: entry), style: .timer)
+                            Text(widgetApproxRemainingText(until: widgetPrayerDisplayTime(next, in: entry), from: entry.date, compact: true))
                                 .monospacedDigit()
                                 .foregroundStyle(proGold)
                             Text(" remaining")
@@ -525,7 +525,7 @@ private struct ProLockEntryView: View {
 
             Spacer(minLength: 4)
 
-            Text(widgetPrayerDisplayTime(next, in: entry), style: .timer)
+            Text(widgetPrayerDisplayTime(next, in: entry), style: .timer) // home-widget-audit: allow-live-timer-lock-screen
                 .font(.system(size: 18, design: .monospaced))
                 .monospacedDigit()
                 .proAccentable()

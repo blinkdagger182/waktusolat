@@ -24,10 +24,7 @@ private let mtroTimeFmt: DateFormatter = {
 private func mtroTime(_ d: Date) -> String { mtroTimeFmt.string(from: d) }
 
 private func mtroCountdown(to target: Date, from now: Date) -> String {
-    let s = max(Int(target.timeIntervalSince(now)), 0)
-    let h = s / 3600; let m = (s % 3600) / 60; let sec = s % 60
-    if h > 0 { return String(format: "%02d:%02d", h, m) }
-    return String(format: "%02d:%02d", m, sec)
+    widgetApproxRemainingText(until: target, from: now, compact: true)
 }
 
 private func mtroHijriLabel(for entry: PrayersEntry) -> (day: String, month: String, year: String) {

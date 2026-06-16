@@ -59,6 +59,8 @@ struct ConfigurableHomeWidgetEntryView: View {
                 metroView
             case .neo:
                 neoView
+            case .neoTransit:
+                NeoTransitSmallView(entry: entry.prayersEntry)
             case .sketch:
                 sketchView
             case .proNext:

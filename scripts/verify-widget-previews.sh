@@ -17,6 +17,8 @@ fi
 
 mkdir -p "$CURRENT_DIR" "$BASELINE_DIR" "$DERIVED_DATA"
 
+"$ROOT_DIR/scripts/audit-home-widget-constraints.sh"
+
 if [[ -n "${SIMULATOR_ID:-}" ]]; then
   DEVICE_ID="$SIMULATOR_ID"
 else
@@ -63,7 +65,7 @@ xcrun simctl install "$DEVICE_ID" "$APP_PATH"
 styles_for_size() {
   case "$1" in
     small)
-      echo "simpleCountdown countdown minimalist metro neo sketch proNext"
+      echo "simpleCountdown countdown minimalist metro neo neoTransit sketch proNext"
       ;;
     medium)
       echo "countdownMedium prayerTimesCompact prayerTimesGrid minimalist metro neo sketch proIndex"
