@@ -425,6 +425,7 @@ struct ZikirWidget: Widget {
 private struct TasbihCounterEntry: TimelineEntry {
     let date: Date
     let counts: [String: Int]
+    let theme: TasbihCounterTheme
 
     var activeItem: TasbihCounterItem {
         TasbihCounterStore.items.first { count(for: $0) < $0.target } ?? TasbihCounterStore.items.last!
@@ -444,7 +445,8 @@ private struct TasbihCounterProvider: TimelineProvider {
                 "subhanAllah": 17,
                 "alhamdulillah": 0,
                 "allahuAkbar": 0,
-            ]
+            ],
+            theme: .gold
         )
     }
 
@@ -457,7 +459,7 @@ private struct TasbihCounterProvider: TimelineProvider {
     }
 
     private func makeEntry() -> TasbihCounterEntry {
-        TasbihCounterEntry(date: Date(), counts: TasbihCounterStore.counts())
+        TasbihCounterEntry(date: Date(), counts: TasbihCounterStore.counts(), theme: TasbihCounterStore.theme())
     }
 }
 
@@ -466,6 +468,10 @@ private struct TasbihCounterEntryView: View {
     @Environment(\.widgetFamily) private var family
 
     let entry: TasbihCounterEntry
+
+    private var palette: TasbihCounterPalette {
+        TasbihCounterPalette(theme: entry.theme)
+    }
 
     var body: some View {
         Group {
@@ -477,14 +483,7 @@ private struct TasbihCounterEntryView: View {
             }
         }
         .containerBackground(for: .widget) {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.06, green: 0.07, blue: 0.06),
-                    Color(red: 0.10, green: 0.12, blue: 0.10),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            palette.background
         }
         .widgetAccentable(false)
     }
@@ -497,20 +496,20 @@ private struct TasbihCounterEntryView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
                     .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(palette.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.76)
 
                 Text("\(count) / \(item.target)")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(palette.primaryText)
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
 
             ProgressView(value: Double(count), total: Double(item.target))
-                .tint(Color(red: 0.83, green: 0.72, blue: 0.42))
+                .tint(palette.accent)
                 .scaleEffect(x: 1, y: 1.4, anchor: .center)
 
             Spacer(minLength: 0)
@@ -521,8 +520,8 @@ private struct TasbihCounterEntryView: View {
                     .frame(maxWidth: .infinity, minHeight: 34)
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color(red: 0.83, green: 0.72, blue: 0.42))
-            .foregroundStyle(.black)
+            .tint(palette.accent)
+            .foregroundStyle(palette.buttonText)
         }
         .padding(16)
     }
@@ -533,12 +532,12 @@ private struct TasbihCounterEntryView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Morning Dhikr")
                         .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(palette.primaryText)
                         .lineLimit(1)
 
                     Text("Tasbih, Tahmid, Takbir")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.58))
+                        .foregroundStyle(palette.secondaryText)
                         .lineLimit(1)
                 }
 
@@ -548,7 +547,8 @@ private struct TasbihCounterEntryView: View {
                             title: item.title,
                             count: entry.count(for: item),
                             target: item.target,
-                            active: item.id == entry.activeItem.id
+                            active: item.id == entry.activeItem.id,
+                            palette: palette
                         )
                     }
                 }
@@ -558,7 +558,7 @@ private struct TasbihCounterEntryView: View {
             VStack(spacing: 8) {
                 Text(totalProgressText)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color(red: 0.83, green: 0.72, blue: 0.42))
+                    .foregroundStyle(palette.accent)
                     .monospacedDigit()
                     .lineLimit(1)
 
@@ -568,8 +568,8 @@ private struct TasbihCounterEntryView: View {
                         .frame(width: 74, height: 46)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color(red: 0.83, green: 0.72, blue: 0.42))
-                .foregroundStyle(.black)
+                .tint(palette.accent)
+                .foregroundStyle(palette.buttonText)
 
                 Button(intent: ResetTasbihCounterIntent()) {
                     Text("Reset")
@@ -577,7 +577,7 @@ private struct TasbihCounterEntryView: View {
                         .frame(width: 74, height: 32)
                 }
                 .buttonStyle(.bordered)
-                .tint(.white.opacity(0.82))
+                .tint(palette.primaryText.opacity(0.82))
             }
             .frame(minWidth: 82, idealWidth: 82, maxWidth: 82, maxHeight: .infinity)
         }
@@ -597,17 +597,18 @@ private struct TasbihCounterRow: View {
     let count: Int
     let target: Int
     let active: Bool
+    let palette: TasbihCounterPalette
 
     var body: some View {
         HStack(spacing: 10) {
             Capsule()
-                .fill(active ? Color(red: 0.83, green: 0.72, blue: 0.42) : .white.opacity(0.16))
+                .fill(active ? palette.accent : palette.primaryText.opacity(0.16))
                 .frame(width: 4)
 
             HStack(spacing: 8) {
                 Text(title)
                     .font(.system(size: 13, weight: active ? .semibold : .medium, design: .rounded))
-                    .foregroundStyle(active ? .white : .white.opacity(0.68))
+                    .foregroundStyle(active ? palette.primaryText : palette.secondaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
@@ -615,7 +616,7 @@ private struct TasbihCounterRow: View {
 
                 Text("\(count)/\(target)")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(active ? Color(red: 0.83, green: 0.72, blue: 0.42) : .white.opacity(0.62))
+                    .foregroundStyle(active ? palette.accent : palette.secondaryText)
                     .monospacedDigit()
             }
         }
@@ -623,8 +624,67 @@ private struct TasbihCounterRow: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(active ? .white.opacity(0.10) : .white.opacity(0.045))
+                .fill(active ? palette.rowActiveBackground : palette.rowBackground)
         )
+    }
+}
+
+@available(iOS 17.0, *)
+private struct TasbihCounterPalette {
+    let theme: TasbihCounterTheme
+
+    var background: LinearGradient {
+        switch theme {
+        case .gold:
+            return LinearGradient(
+                colors: [Color(red: 0.06, green: 0.07, blue: 0.06), Color(red: 0.10, green: 0.12, blue: 0.10)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .dawn:
+            return LinearGradient(
+                colors: [Color(red: 0.94, green: 0.91, blue: 0.82), Color(red: 0.78, green: 0.88, blue: 0.92)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .slate:
+            return LinearGradient(
+                colors: [Color(red: 0.08, green: 0.10, blue: 0.13), Color(red: 0.14, green: 0.18, blue: 0.22)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    var accent: Color {
+        switch theme {
+        case .gold:
+            return Color(red: 0.83, green: 0.72, blue: 0.42)
+        case .dawn:
+            return Color(red: 0.10, green: 0.38, blue: 0.48)
+        case .slate:
+            return Color(red: 0.40, green: 0.68, blue: 0.92)
+        }
+    }
+
+    var primaryText: Color {
+        theme == .dawn ? .black : .white
+    }
+
+    var secondaryText: Color {
+        primaryText.opacity(theme == .dawn ? 0.62 : 0.60)
+    }
+
+    var buttonText: Color {
+        theme == .slate ? .black : (theme == .dawn ? .white : .black)
+    }
+
+    var rowBackground: Color {
+        primaryText.opacity(theme == .dawn ? 0.12 : 0.045)
+    }
+
+    var rowActiveBackground: Color {
+        primaryText.opacity(theme == .dawn ? 0.20 : 0.10)
     }
 }
 

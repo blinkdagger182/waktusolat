@@ -7,6 +7,38 @@ struct TasbihCounterItem: Identifiable {
     let target: Int
 }
 
+enum TasbihCounterTheme: String, CaseIterable, Identifiable {
+    static let storageKey = "tasbihCounterWidget.theme"
+
+    case gold
+    case dawn
+    case slate
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .gold:
+            return isMalayAppLanguage() ? "Emas" : "Gold"
+        case .dawn:
+            return isMalayAppLanguage() ? "Fajar" : "Dawn"
+        case .slate:
+            return isMalayAppLanguage() ? "Batu" : "Slate"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .gold:
+            return isMalayAppLanguage() ? "Gelap dengan aksen emas." : "Dark with gold accents."
+        case .dawn:
+            return isMalayAppLanguage() ? "Lembut, cerah, dan tenang." : "Soft, bright, and calm."
+        case .slate:
+            return isMalayAppLanguage() ? "Neutral gelap dengan aksen biru." : "Neutral dark with blue accents."
+        }
+    }
+}
+
 enum TasbihCounterStore {
     static let widgetKind = "TasbihCounterWidget"
     static let items: [TasbihCounterItem] = [
@@ -42,6 +74,17 @@ enum TasbihCounterStore {
         for item in items {
             defaults.set(0, forKey: storageKey(for: item))
         }
+    }
+
+    static func theme(defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) -> TasbihCounterTheme {
+        guard let rawValue = defaults?.string(forKey: TasbihCounterTheme.storageKey) else {
+            return .gold
+        }
+        return TasbihCounterTheme(rawValue: rawValue) ?? .gold
+    }
+
+    static func setTheme(_ theme: TasbihCounterTheme, defaults: UserDefaults? = UserDefaults(suiteName: sharedAppGroupID)) {
+        defaults?.set(theme.rawValue, forKey: TasbihCounterTheme.storageKey)
     }
 
     private static func storageKey(for item: TasbihCounterItem) -> String {

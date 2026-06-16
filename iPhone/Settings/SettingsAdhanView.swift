@@ -1600,6 +1600,7 @@ private struct HomeWidgetPresetManagerView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
     @State private var selectedSlot: HomeWidgetPresetSlot?
+    @State private var showingTasbihCustomization = false
     @State private var refreshID = UUID()
 
     private var hasPremiumWidgetAccess: Bool {
@@ -1620,10 +1621,11 @@ private struct HomeWidgetPresetManagerView: View {
                 presetSection(size: .small)
                 presetSection(size: .medium)
                 presetSection(size: .large)
+                tasbihCounterSection
 
                 Text(isMalayAppLanguage()
-                     ? "Tambah widget Waktu pada Skrin Utama, kemudian pilih preset ini daripada editor widget iOS."
-                     : "Add the Waktu widget to your Home Screen, then choose one of these presets in the iOS widget editor.")
+                     ? "Tambah widget Waktu pada Skrin Utama, kemudian pilih preset atau Tasbih Counter yang dikonfigurasi di sini."
+                     : "Add Waktu widgets to your Home Screen, then choose one of these presets or the Tasbih Counter configured here.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
@@ -1643,6 +1645,12 @@ private struct HomeWidgetPresetManagerView: View {
                     refreshID = UUID()
                 }
             )
+            .environmentObject(settings)
+        }
+        .sheet(isPresented: $showingTasbihCustomization) {
+            TasbihCounterCustomizationSheet {
+                refreshID = UUID()
+            }
             .environmentObject(settings)
         }
     }
@@ -1690,6 +1698,56 @@ private struct HomeWidgetPresetManagerView: View {
             return isMalayAppLanguage() ? "Widget Sederhana" : "Medium Widgets"
         case .large:
             return isMalayAppLanguage() ? "Widget Besar" : "Large Widgets"
+        }
+    }
+
+    private var tasbihCounterSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(isMalayAppLanguage() ? "Widget Interaktif" : "Interactive Widgets")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 16)
+
+            Button {
+                settings.hapticFeedback()
+                showingTasbihCustomization = true
+            } label: {
+                HStack(spacing: 14) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Tasbih Counter")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Text(isMalayAppLanguage() ? "Ketik untuk edit" : "Tap to customize")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(width: 96, alignment: .leading)
+
+                    HStack(spacing: 10) {
+                        HomeTasbihCounterSmallPreviewCard(theme: TasbihCounterStore.theme())
+                            .frame(width: 74, height: 74)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                        HomeTasbihCounterMediumPreviewCard(theme: TasbihCounterStore.theme(), compact: true)
+                            .frame(width: 142, height: 66)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+
+                    Spacer(minLength: 4)
+
+                    Image(systemName: "chevron.right")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(.horizontal, 16)
         }
     }
 }
@@ -1744,6 +1802,319 @@ private struct HomeWidgetPresetRow: View {
         case .large:
             return HomeWidgetCanvasMetrics.thumbnailSize(for: .large, width: 96)
         }
+    }
+}
+
+private struct TasbihCounterCustomizationSheet: View {
+    @EnvironmentObject var settings: Settings
+    @Environment(\.dismiss) private var dismiss
+
+    let onChange: () -> Void
+
+    @State private var selectedTheme = TasbihCounterStore.theme()
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(spacing: 14) {
+                        HomeTasbihCounterSmallPreviewCard(theme: selectedTheme)
+                            .frame(width: 150, height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+
+                        HomeTasbihCounterMediumPreviewCard(theme: selectedTheme)
+                            .frame(maxWidth: .infinity)
+                            .aspectRatio(HomeWidgetCanvasMetrics.designSize(for: .medium), contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(isMalayAppLanguage() ? "Tema" : "Theme")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                            .padding(.horizontal, 16)
+
+                        VStack(spacing: 0) {
+                            ForEach(TasbihCounterTheme.allCases) { theme in
+                                Button {
+                                    settings.hapticFeedback()
+                                    selectedTheme = theme
+                                    TasbihCounterStore.setTheme(theme)
+                                    WidgetCenter.shared.reloadTimelines(ofKind: TasbihCounterStore.widgetKind)
+                                    onChange()
+                                } label: {
+                                    HStack(spacing: 14) {
+                                        Circle()
+                                            .fill(HomeTasbihCounterPreviewPalette(theme: theme).accent)
+                                            .frame(width: 26, height: 26)
+
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(theme.title)
+                                                .font(.headline)
+                                                .foregroundStyle(.primary)
+                                            Text(theme.subtitle)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        if selectedTheme == theme {
+                                            Image(systemName: "checkmark")
+                                                .font(.title3.weight(.bold))
+                                                .foregroundStyle(settings.accentColor.color)
+                                        }
+                                    }
+                                    .padding(14)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+
+                                if theme != TasbihCounterTheme.allCases.last {
+                                    Divider()
+                                        .padding(.leading, 54)
+                                }
+                            }
+                        }
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .padding(.horizontal, 16)
+                    }
+
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        TasbihCounterStore.reset()
+                        WidgetCenter.shared.reloadTimelines(ofKind: TasbihCounterStore.widgetKind)
+                        onChange()
+                    } label: {
+                        Label(isMalayAppLanguage() ? "Set Semula Kiraan" : "Reset Counts", systemImage: "arrow.counterclockwise")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(14)
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
+                }
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Tasbih Counter")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(appLocalized("Done")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct HomeTasbihCounterPreviewPalette {
+    let theme: TasbihCounterTheme
+
+    var background: LinearGradient {
+        switch theme {
+        case .gold:
+            return LinearGradient(
+                colors: [Color(red: 0.06, green: 0.07, blue: 0.06), Color(red: 0.10, green: 0.12, blue: 0.10)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .dawn:
+            return LinearGradient(
+                colors: [Color(red: 0.94, green: 0.91, blue: 0.82), Color(red: 0.78, green: 0.88, blue: 0.92)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .slate:
+            return LinearGradient(
+                colors: [Color(red: 0.08, green: 0.10, blue: 0.13), Color(red: 0.14, green: 0.18, blue: 0.22)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    var accent: Color {
+        switch theme {
+        case .gold:
+            return Color(red: 0.83, green: 0.72, blue: 0.42)
+        case .dawn:
+            return Color(red: 0.10, green: 0.38, blue: 0.48)
+        case .slate:
+            return Color(red: 0.40, green: 0.68, blue: 0.92)
+        }
+    }
+
+    var primaryText: Color {
+        theme == .dawn ? .black : .white
+    }
+
+    var secondaryText: Color {
+        primaryText.opacity(theme == .dawn ? 0.62 : 0.60)
+    }
+
+    var buttonText: Color {
+        theme == .slate ? .black : (theme == .dawn ? .white : .black)
+    }
+
+    var rowBackground: Color {
+        primaryText.opacity(theme == .dawn ? 0.12 : 0.045)
+    }
+
+    var rowActiveBackground: Color {
+        primaryText.opacity(theme == .dawn ? 0.20 : 0.10)
+    }
+}
+
+private struct HomeTasbihCounterSmallPreviewCard: View {
+    let theme: TasbihCounterTheme
+
+    private var palette: HomeTasbihCounterPreviewPalette {
+        HomeTasbihCounterPreviewPalette(theme: theme)
+    }
+
+    var body: some View {
+        ZStack {
+            palette.background
+
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("SubhanAllah")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(palette.primaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
+
+                    Text("17 / 33")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(palette.primaryText)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                }
+
+                ProgressView(value: 17, total: 33)
+                    .tint(palette.accent)
+                    .scaleEffect(x: 1, y: 1.4, anchor: .center)
+
+                Spacer(minLength: 0)
+
+                Text("+1")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(palette.buttonText)
+                    .frame(maxWidth: .infinity, minHeight: 34)
+                    .background(palette.accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .padding(16)
+        }
+    }
+}
+
+private struct HomeTasbihCounterMediumPreviewCard: View {
+    let theme: TasbihCounterTheme
+    var compact = false
+
+    private var palette: HomeTasbihCounterPreviewPalette {
+        HomeTasbihCounterPreviewPalette(theme: theme)
+    }
+
+    var body: some View {
+        ZStack {
+            palette.background
+
+            HStack(alignment: .center, spacing: compact ? 8 : 14) {
+                VStack(alignment: .leading, spacing: compact ? 5 : 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Morning Dhikr")
+                            .font(.system(size: compact ? 11 : 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(palette.primaryText)
+                            .lineLimit(1)
+                        if !compact {
+                            Text("Tasbih, Tahmid, Takbir")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(palette.secondaryText)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    VStack(spacing: compact ? 3 : 6) {
+                        HomeTasbihCounterPreviewRow(title: "SubhanAllah", count: 17, target: 33, active: true, compact: compact, palette: palette)
+                        HomeTasbihCounterPreviewRow(title: "Alhamdulillah", count: 0, target: 33, active: false, compact: compact, palette: palette)
+                        HomeTasbihCounterPreviewRow(title: "Allahu Akbar", count: 0, target: 34, active: false, compact: compact, palette: palette)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+
+                VStack(spacing: compact ? 4 : 8) {
+                    Text("17/100")
+                        .font(.system(size: compact ? 9 : 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(palette.accent)
+                        .monospacedDigit()
+                        .lineLimit(1)
+
+                    Text("+1")
+                        .font(.system(size: compact ? 11 : 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(palette.buttonText)
+                        .frame(width: compact ? 38 : 74, height: compact ? 22 : 46)
+                        .background(palette.accent, in: RoundedRectangle(cornerRadius: compact ? 7 : 12, style: .continuous))
+
+                    Text("Reset")
+                        .font(.system(size: compact ? 8 : 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(palette.primaryText)
+                        .frame(width: compact ? 38 : 74, height: compact ? 18 : 32)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: compact ? 7 : 10, style: .continuous)
+                                .stroke(palette.primaryText.opacity(0.35), lineWidth: 1)
+                        )
+                }
+                .frame(minWidth: compact ? 42 : 82, idealWidth: compact ? 42 : 82, maxWidth: compact ? 42 : 82, maxHeight: .infinity)
+            }
+            .padding(compact ? 8 : 16)
+        }
+    }
+}
+
+private struct HomeTasbihCounterPreviewRow: View {
+    let title: String
+    let count: Int
+    let target: Int
+    let active: Bool
+    let compact: Bool
+    let palette: HomeTasbihCounterPreviewPalette
+
+    var body: some View {
+        HStack(spacing: compact ? 5 : 10) {
+            Capsule()
+                .fill(active ? palette.accent : palette.primaryText.opacity(0.16))
+                .frame(width: compact ? 2 : 4)
+
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: compact ? 8 : 13, weight: active ? .semibold : .medium, design: .rounded))
+                    .foregroundStyle(active ? palette.primaryText : palette.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+
+                Spacer(minLength: 2)
+
+                Text("\(count)/\(target)")
+                    .font(.system(size: compact ? 8 : 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(active ? palette.accent : palette.secondaryText)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, compact ? 5 : 10)
+        .padding(.vertical, compact ? 4 : 8)
+        .background(
+            RoundedRectangle(cornerRadius: compact ? 7 : 12, style: .continuous)
+                .fill(active ? palette.rowActiveBackground : palette.rowBackground)
+        )
     }
 }
 
@@ -6000,18 +6371,17 @@ private struct HomeProNextPreviewCard: View {
                 }
                 Spacer()
                 Text(localizedPrayerName("Maghrib"))
-                    .font(.system(size: 30, weight: .light, design: .serif))
+                    .font(.system(size: 34, weight: .light, design: .serif))
                     .foregroundStyle(pvTextMain)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                HStack(spacing: 2) {
+                    .minimumScaleFactor(0.65)
+                HStack(spacing: 0) {
                     Text("1:14:22")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(pvGold)
-                    Text("left")
-                        .font(.system(size: 12, design: .monospaced))
+                    Text(" left")
                         .foregroundStyle(pvTextDim)
                 }
+                .font(.system(size: 13, design: .monospaced))
                 .padding(.top, 4)
                 Text("Then \(localizedPrayerName("Isha")) · 20:38")
                     .font(.system(size: 11))
@@ -6082,8 +6452,7 @@ private struct HomeProIndexPreviewCard: View {
                     }
                 }
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 18)
+            .padding(18)
         }
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
@@ -6176,8 +6545,7 @@ private struct HomeProArcPreviewCard: View {
                         .frame(height: 1)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 22)
+            .padding(22)
         }
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
