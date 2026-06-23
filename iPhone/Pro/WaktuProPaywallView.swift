@@ -8,6 +8,8 @@ import RevenueCat
 struct WaktuProPaywallView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var revenueCat: RevenueCatManager
+    @Environment(\.colorScheme) private var colorScheme
+    var offeringIdentifiers: [String] = ["waktu_pro", "Waktu Plus Supporter"]
     var onPurchaseCompleted: (() -> Void)?
     var onDismiss: (() -> Void)?
 
@@ -25,6 +27,28 @@ struct WaktuProPaywallView: View {
         "Rich prayer insights right on your Home Screen.",
         "Real-time prayer countdowns on your Lock Screen.",
     ]
+
+    private var isSupportPaywall: Bool {
+        offeringIdentifiers.first == "Waktu Plus Supporter"
+    }
+
+    private var heroHeadline: String {
+        isSupportPaywall ? "Support Waktu" : "Make Waktu feel like yours"
+    }
+
+    private var heroSubtitle: String {
+        isSupportPaywall
+            ? "Buy a coffee to support prayer-time accuracy, widgets, and ongoing app improvements."
+            : "Unlock custom icons, premium widgets, and live prayer updates across your iPhone."
+    }
+
+    private var ctaTitle: String {
+        isSupportPaywall ? "Buy me a coffee" : "Unlock Waktu Pro"
+    }
+
+    private var ctaIconName: String {
+        isSupportPaywall ? "cup.and.saucer.fill" : "crown.fill"
+    }
     private let comparisonRows: [ProComparisonRow] = [
         .init(title: "Background usage", basic: "Open app", pro: "Always ready"),
         .init(title: "Apple Watch", basic: "Basic times", pro: "Full access"),
@@ -38,7 +62,7 @@ struct WaktuProPaywallView: View {
 
     #if canImport(RevenueCat)
     private var proOffering: Offering? {
-        revenueCat.offerings?.all["waktu_pro"] ?? revenueCat.offerings?.all["Waktu Plus Supporter"]
+        offeringIdentifiers.compactMap { revenueCat.offerings?.all[$0] }.first
     }
     private var monthlyPackage: Package? {
         proOffering?.availablePackages.first { $0.packageType == .monthly }
@@ -296,11 +320,11 @@ struct WaktuProPaywallView: View {
     private var carouselSection: some View {
         VStack(spacing: 10) {
             VStack(spacing: 5) {
-                Text("Make Waktu feel like yours")
+                Text(heroHeadline)
                     .font(.system(size: 22, weight: .bold))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-                Text("Unlock custom icons, premium widgets, and live prayer updates across your iPhone.")
+                Text(heroSubtitle)
                     .font(.subheadline)
                     .foregroundColor(Color(.secondaryLabel))
                     .multilineTextAlignment(.center)
@@ -415,10 +439,26 @@ struct WaktuProPaywallView: View {
         .padding(.top, 14)
         .padding(.bottom, 8)
         .background(
-            Color(.systemBackground)
-                .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: -4)
-                .ignoresSafeArea(edges: .bottom)
+            ZStack(alignment: .top) {
+                Color(.systemBackground)
+
+                LinearGradient(
+                    colors: [
+                        bottomPanelTopGlow,
+                        .clear
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 42)
+            }
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.38 : 0.06), radius: 14, x: 0, y: -4)
+            .ignoresSafeArea(edges: .bottom)
         )
+    }
+
+    private var bottomPanelTopGlow: Color {
+        colorScheme == .dark ? .white.opacity(0.075) : .black.opacity(0.035)
     }
 
     #if canImport(RevenueCat)
@@ -477,23 +517,23 @@ struct WaktuProPaywallView: View {
         Button { purchase() } label: {
             ZStack {
                 if isPurchasing {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(ctaForegroundColor)
                 } else {
                     HStack(spacing: 8) {
-                        Image(systemName: "crown.fill")
+                        Image(systemName: ctaIconName)
                             .font(.system(size: 14))
-                            .foregroundColor(.white)
+                            .foregroundColor(ctaForegroundColor)
                         VStack(spacing: 1) {
-                            Text("Unlock Waktu Pro")
+                            Text(ctaTitle)
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
+                                .foregroundColor(ctaForegroundColor)
                             #if canImport(RevenueCat)
                             if let pkg = selectedPackage {
                                 Text(selectedIndex == 0
                                      ? "\(pkg.storeProduct.localizedPriceString) / month"
                                      : "\(pkg.storeProduct.localizedPriceString) / year · billed annually")
                                     .font(.system(size: 11, weight: .regular))
-                                    .foregroundColor(.white.opacity(0.7))
+                                    .foregroundColor(ctaSecondaryForegroundColor)
                             }
                             #endif
                         }
@@ -505,14 +545,35 @@ struct WaktuProPaywallView: View {
         .buttonStyle(.plain)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.black)
+                .fill(ctaBackgroundColor)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(ctaBorderColor, lineWidth: 1)
         )
+        .shadow(color: ctaShadowColor, radius: colorScheme == .dark ? 18 : 10, x: 0, y: colorScheme == .dark ? 0 : 4)
         .disabled(isPurchasing || isRestoring)
         .opacity((isPurchasing || isRestoring) ? 0.6 : 1)
+    }
+
+    private var ctaBackgroundColor: Color {
+        colorScheme == .dark ? .white : .black
+    }
+
+    private var ctaForegroundColor: Color {
+        colorScheme == .dark ? .black : .white
+    }
+
+    private var ctaSecondaryForegroundColor: Color {
+        ctaForegroundColor.opacity(colorScheme == .dark ? 0.62 : 0.7)
+    }
+
+    private var ctaBorderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.35) : Color.white.opacity(0.12)
+    }
+
+    private var ctaShadowColor: Color {
+        colorScheme == .dark ? .white.opacity(0.18) : .black.opacity(0.10)
     }
 
     // MARK: - Footer
@@ -527,7 +588,7 @@ struct WaktuProPaywallView: View {
                         Text("Restore Purchases").font(.footnote).underline()
                     }
                 }
-                .foregroundColor(Color(.secondaryLabel))
+                .foregroundColor(footerPrimaryColor)
             }
             .disabled(isRestoring || isPurchasing)
 
@@ -539,8 +600,17 @@ struct WaktuProPaywallView: View {
                 Link("Privacy", destination: URL(string: "https://getwaktu.app/privacy")!)
             }
             .font(.caption2)
-            .foregroundColor(Color(.secondaryLabel))
+            .foregroundColor(footerSecondaryColor)
+            .tint(footerPrimaryColor)
         }
+    }
+
+    private var footerPrimaryColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.72) : Color(.secondaryLabel)
+    }
+
+    private var footerSecondaryColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.46) : Color(.secondaryLabel)
     }
 
     // MARK: - Actions

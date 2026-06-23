@@ -333,7 +333,7 @@ struct SettingsView: View {
     @State private var showDonationCelebration = false
     @State private var hasInitializedEntitlementState = false
     @State private var lastKnownDonationState = false
-    private let paywallOfferingIdentifiers = ["waktu_pro", "Waktu Plus Supporter"]
+    private let paywallOfferingIdentifiers = ["Waktu Plus Supporter", "waktu_pro"]
 
     private func postUIHeartbeat() {
         NotificationCenter.default.post(name: .uiContentHeartbeat, object: nil)
@@ -462,14 +462,6 @@ struct SettingsView: View {
                                 .foregroundColor(settings.accentColor.color)
                         }
 
-                        Button {
-                            openDonationPaywall()
-                        } label: {
-                            Text("Buy me a coffee")
-                                .font(.subheadline)
-                                .foregroundColor(settings.accentColor.color)
-                        }
-
                         if !revenueCat.hasPro {
                             Button {
                                 redeemOfferCode()
@@ -496,6 +488,25 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            openDonationPaywall()
+                        } label: {
+                            Text("Buy me a coffee")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.blue.opacity(0.12), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                    }
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 10, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
                 .navigationTitle("Settings")
                 #if DEBUG
@@ -736,6 +747,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var paywallSheet: some View {
         WaktuProPaywallView(
+            offeringIdentifiers: paywallOfferingIdentifiers,
             onPurchaseCompleted: { handleDonationCompleted(countDonation: true) },
             onDismiss: { showingPaywall = false }
         )
