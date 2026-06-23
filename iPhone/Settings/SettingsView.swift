@@ -455,14 +455,21 @@ struct SettingsView: View {
                     }
 
                     Section(header: Text("SUPPORT")) {
-                        Button {
-                            openDonationPaywall()
-                        } label: {
-                            Label("Support Waktu", systemImage: "hands.sparkles.fill")
-                                .foregroundColor(settings.accentColor.color)
-                        }
+                        if revenueCat.hasPro {
+                            Button {
+                                openRevenueCatDonationPaywall()
+                            } label: {
+                                Label("Buy me a coffee", systemImage: "cup.and.saucer.fill")
+                                    .foregroundColor(settings.accentColor.color)
+                            }
+                        } else {
+                            Button {
+                                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
+                            } label: {
+                                Label("Support Waktu", systemImage: "hands.sparkles.fill")
+                                    .foregroundColor(settings.accentColor.color)
+                            }
 
-                        if !revenueCat.hasPro {
                             Button {
                                 redeemOfferCode()
                             } label: {
@@ -480,7 +487,7 @@ struct SettingsView: View {
                                 HStack {
                                     Spacer()
                                     Button(donationImpactCTA) {
-                                        openDonationPaywall()
+                                        NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
                                     }
                                     .font(.caption2.weight(.semibold))
                                     Spacer()
@@ -489,24 +496,26 @@ struct SettingsView: View {
                         }
                     }
 
-                    HStack {
-                        Spacer()
-                        Button {
-                            openDonationPaywall()
-                        } label: {
-                            Text("Buy me a coffee")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.blue.opacity(0.12), in: Capsule())
+                    if !revenueCat.hasPro {
+                        HStack {
+                            Spacer()
+                            Button {
+                                openRevenueCatDonationPaywall()
+                            } label: {
+                                Text("Buy me a coffee instead")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue.opacity(0.12), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            Spacer()
                         }
-                        .buttonStyle(.plain)
-                        Spacer()
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 10, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 10, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
                 }
                 .navigationTitle("Settings")
                 #if DEBUG
@@ -577,10 +586,11 @@ struct SettingsView: View {
             // Celebration is intentionally limited to fresh purchases only.
             lastKnownDonationState = newValue
         }
-        .fullScreenCover(isPresented: $showingPaywall, onDismiss: {
+        .sheet(isPresented: $showingPaywall, onDismiss: {
             NotificationCenter.default.post(name: .supportDonationPaywallDismissed, object: nil)
         }) {
             paywallSheet
+                .applySupportPaywallSheetStyle()
         }
         .sheet(isPresented: $showingAdhanSetup) {
             AdhanSetupSheet()
@@ -678,7 +688,7 @@ struct SettingsView: View {
         paywallOfferingIdentifiers.compactMap { revenueCat.offerings?.all[$0] }.first
     }
 
-    private func openDonationPaywall() {
+    private func openRevenueCatDonationPaywall() {
         settings.hapticFeedback()
         Task {
             await revenueCat.refreshOfferings()
@@ -746,6 +756,25 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var paywallSheet: some View {
+        #if canImport(RevenueCatUI)
+        if let offering = resolvedPaywallOffering {
+            PaywallView(offering: offering, displayCloseButton: true)
+                .onPurchaseCompleted { _ in
+                    handleDonationCompleted(countDonation: true)
+                }
+                .onRestoreCompleted { _ in
+                    handleDonationCompleted(countDonation: false)
+                }
+        } else {
+            WaktuProPaywallView(
+                offeringIdentifiers: paywallOfferingIdentifiers,
+                onPurchaseCompleted: { handleDonationCompleted(countDonation: true) },
+                onDismiss: { showingPaywall = false }
+            )
+            .environmentObject(settings)
+            .environmentObject(revenueCat)
+        }
+        #else
         WaktuProPaywallView(
             offeringIdentifiers: paywallOfferingIdentifiers,
             onPurchaseCompleted: { handleDonationCompleted(countDonation: true) },
@@ -753,6 +782,7 @@ struct SettingsView: View {
         )
         .environmentObject(settings)
         .environmentObject(revenueCat)
+        #endif
     }
 
 }
@@ -2581,5 +2611,18 @@ private struct WidgetPreviewCard: View {
         .frame(maxWidth: .infinity)
         .frame(height: 170)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func applySupportPaywallSheetStyle() -> some View {
+        if #available(iOS 16.0, *) {
+            self
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
     }
 }

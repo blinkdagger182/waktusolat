@@ -42,13 +42,6 @@ struct WaktuProPaywallView: View {
             : "Unlock custom icons, premium widgets, and live prayer updates across your iPhone."
     }
 
-    private var ctaTitle: String {
-        isSupportPaywall ? "Buy me a coffee" : "Unlock Waktu Pro"
-    }
-
-    private var ctaIconName: String {
-        isSupportPaywall ? "cup.and.saucer.fill" : "crown.fill"
-    }
     private let comparisonRows: [ProComparisonRow] = [
         .init(title: "Background usage", basic: "Open app", pro: "Always ready"),
         .init(title: "Apple Watch", basic: "Basic times", pro: "Full access"),
@@ -123,7 +116,7 @@ struct WaktuProPaywallView: View {
             ZStack(alignment: .topTrailing) {
                 Color(.systemBackground).ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
+                ScrollView(showsIndicators: true) {
                     VStack(spacing: 0) {
                         heroSection
 
@@ -135,7 +128,7 @@ struct WaktuProPaywallView: View {
 
                         pricingOptionsSection(width: contentWidth)
                             .padding(.top, 14)
-                            .padding(.bottom, 132)
+                            .padding(.bottom, 220)
                     }
                     .frame(width: contentWidth)
                 }
@@ -520,11 +513,11 @@ struct WaktuProPaywallView: View {
                     ProgressView().tint(ctaForegroundColor)
                 } else {
                     HStack(spacing: 8) {
-                        Image(systemName: ctaIconName)
+                        Image(systemName: "crown.fill")
                             .font(.system(size: 14))
                             .foregroundColor(ctaForegroundColor)
                         VStack(spacing: 1) {
-                            Text(ctaTitle)
+                            Text("Unlock Waktu Pro")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(ctaForegroundColor)
                             #if canImport(RevenueCat)
