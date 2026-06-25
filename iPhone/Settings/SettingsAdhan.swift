@@ -447,7 +447,7 @@ extension Settings {
                 travelTurnOnAutomatic  = true
                 #if !os(watchOS)
                 let content = UNMutableNotificationContent()
-                content.title = "Waktu Solat"
+                content.title = "Waktu"
                 content.body  = "Traveling mode automatically turned on at \(currentLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -462,7 +462,7 @@ extension Settings {
                 travelTurnOffAutomatic = true
                 #if !os(watchOS)
                 let content = UNMutableNotificationContent()
-                content.title = "Waktu Solat"
+                content.title = "Waktu"
                 content.body  = "Traveling mode automatically turned off at \(currentLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -2346,7 +2346,7 @@ extension Settings {
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
 
         let content = UNMutableNotificationContent()
-        content.title = "Waktu Solat"
+        content.title = "Waktu"
         content.body  = "Please open the app to refresh today’s prayer times and notifications."
         content.sound = .default
 
@@ -2786,7 +2786,7 @@ extension Settings {
         }
 
         let content = UNMutableNotificationContent()
-        content.title = "Waktu Solat"
+        content.title = "Waktu"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = prayerNotificationSound(for: prayer, minutesBefore: minutes)
 
@@ -2825,7 +2825,7 @@ extension Settings {
             }
             
             let content = UNMutableNotificationContent()
-            content.title = "Waktu Solat"
+            content.title = "Waktu"
             content.body = "\(titleText) (\(eventSubTitle))"
             content.sound = .default
             

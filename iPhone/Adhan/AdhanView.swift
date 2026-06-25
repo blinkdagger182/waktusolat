@@ -360,7 +360,7 @@ struct AdhanView: View {
                     loadDailyQuranQuote()
                 }
             }
-            .navigationTitle("Waktu Solat")
+            .navigationTitle("Waktu")
             #if !os(watchOS)
             .toolbar {
                 #if DEBUG
