@@ -808,6 +808,8 @@ struct Widgets: WidgetBundle {
             LockScreen2Widget()
             LockScreen3Widget()
             LockScreen6Widget()
+            NeoTransitLockScreenWidget()
+            NeoTransitLockScreenSmallWidget()
             LockScreenZikirWidget()
             // LockScreen5Widget()
             LockScreenVerseWidget()

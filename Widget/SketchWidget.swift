@@ -215,78 +215,109 @@ struct SketchSmallWidget: Widget {
     }
 }
 
+struct SketchTransitSmallView: View {
+    let entry: PrayersEntry
+
+    private var next: Prayer? { entry.nextPrayer }
+
+    var body: some View {
+        ZStack {
+            skBlack
+            if !premiumWidgetsUnlocked() {
+                SketchLockedView()
+            } else {
+                ZStack(alignment: .bottom) {
+                    SketchWaveView()
+                        .opacity(0.75)
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Next")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(.white)
+                                Text(entry.currentCity.isEmpty ? "Current location" : entry.currentCity)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(skGray)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                            }
+                            Spacer()
+                            Image(systemName: next?.image ?? "moon.fill")
+                                .font(.system(size: 18))
+                                .foregroundStyle(skOrange)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.top, 14)
+
+                        Spacer()
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(localizedPrayerName(next?.nameTransliteration ?? "Waktu"))
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                                Text(next.map { widgetApproxRemainingText(until: $0.time, from: entry.date, compact: true) } ?? "--")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(skOrange)
+                                Text(next.map { skTimeFmt.string(from: $0.time) } ?? "--:--")
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .monospacedDigit()
+                            }
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 18)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct SketchMixedTile<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(skOrange.opacity(0.32), lineWidth: 1)
+            }
+    }
+}
+
 // ═══════════════════════════════════════════════════════
-// MARK: - MEDIUM — prayer progress + bar
+// MARK: - MEDIUM — Sketch + Sketch Transit mix
 // ═══════════════════════════════════════════════════════
 
 struct SketchMediumView: View {
     let entry: PrayersEntry
 
-    private var prog: SketchPrayerData { skProgress(from: entry) }
-
     var body: some View {
         ZStack {
-            skBg
+            skBlack
             if !premiumWidgetsUnlocked() {
                 SketchLockedView()
             } else {
-                ZStack(alignment: .bottomTrailing) {
-                    // Hatch texture bottom-right
-                    SketchHatchView(opacity: 0.22)
-                        .frame(width: 90, height: 60)
-                        .padding(.trailing, 16).padding(.bottom, 14)
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Header
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Waktu")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(skBlack)
-                                Text("Prayer progress")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(skGray)
-                            }
-                            Spacer()
-                            Image(systemName: "moon.fill")
-                                .font(.system(size: 20))
-                                .foregroundStyle(skBlack)
-                        }
-                        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 10)
-
-                        // Percentage
-                        HStack(alignment: .bottom) {
-                            Spacer()
-                            Text(prog.percentText)
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundStyle(skBlack)
-                                .padding(.trailing, 16)
-                        }
-                        .padding(.bottom, 6)
-
-                        // Progress bar
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .fill(skDim.opacity(0.35))
-                                    .frame(height: 16)
-                                Capsule()
-                                    .fill(skOrange)
-                                    .frame(width: geo.size.width * prog.fraction, height: 16)
-                            }
-                        }
-                        .frame(height: 16)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 10)
-
-                        // Footer
-                        Text("\(prog.done) of \(prog.total) prayers")
-                            .font(.system(size: 12))
-                            .foregroundStyle(skGray)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 14)
+                HStack(spacing: 10) {
+                    SketchMixedTile {
+                        SketchSmallView(entry: entry)
+                    }
+                    SketchMixedTile {
+                        SketchTransitSmallView(entry: entry)
                     }
                 }
+                .padding(10)
             }
         }
     }
@@ -304,13 +335,13 @@ struct SketchMediumWidget: Widget {
         }
         .supportedFamilies([.systemMedium])
         .configurationDisplayName("Sketch Progress")
-        .description("Daily prayer progress as a percentage and progress bar.")
+        .description("Sketch canvas and Sketch Transit next-prayer board.")
         .contentMarginsDisabled()
     }
 }
 
 // ═══════════════════════════════════════════════════════
-// MARK: - LARGE — dot grid + donut + prayer row
+// MARK: - LARGE — Sketch + Sketch Transit mix
 // ═══════════════════════════════════════════════════════
 
 private struct SketchDotGrid: View {
@@ -361,84 +392,21 @@ private struct SketchDotGrid: View {
 struct SketchLargeView: View {
     let entry: PrayersEntry
 
-    private var prog: SketchPrayerData { skProgress(from: entry) }
-    private let dotTotal = 25
-
     var body: some View {
         ZStack {
-            skBg
+            skBlack
             if !premiumWidgetsUnlocked() {
                 SketchLockedView()
             } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Top header
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(prog.percentText)
-                                .font(.system(size: 38, weight: .bold))
-                                .foregroundStyle(skBlack)
-                            Text("Waktu today")
-                                .font(.system(size: 13))
-                                .foregroundStyle(skGray)
-                        }
-                        Spacer()
-                        Image(systemName: "moon.fill")
-                            .font(.system(size: 22))
-                            .foregroundStyle(skBlack)
+                VStack(spacing: 10) {
+                    SketchMixedTile {
+                        SketchTransitSmallView(entry: entry)
                     }
-                    .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 14)
-
-                    Spacer(minLength: 0)
-
-                    // Dot grid + donut row
-                    HStack(spacing: 18) {
-                        SketchDotGrid(
-                            filledCount: Int(round(prog.fraction * Double(dotTotal))),
-                            total: dotTotal
-                        )
-                        .frame(maxWidth: .infinity)
-
-                        SketchDonut(
-                            fraction: prog.fraction,
-                            done: prog.done,
-                            total: prog.total
-                        )
-                        .frame(width: 106, height: 106)
+                    SketchMixedTile {
+                        SketchSmallView(entry: entry)
                     }
-                    .padding(.horizontal, 16)
-                    .frame(height: 178)
-
-                    Spacer(minLength: 0)
-
-                    // Prayer row
-                    HStack(spacing: 0) {
-                        ForEach(prog.items, id: \.short) { item in
-                            VStack(spacing: 7) {
-                                Text(item.short)
-                                    .font(.system(size: 12, weight: item.isDone ? .semibold : .regular))
-                                    .foregroundStyle(item.isDone ? skBlack : skGray)
-                                    .lineLimit(1).minimumScaleFactor(0.7)
-                                ZStack {
-                                    if item.isDone {
-                                        Circle().fill(skOrange)
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .foregroundStyle(.white)
-                                    } else {
-                                        Circle()
-                                            .stroke(skDim.opacity(0.5), lineWidth: 1.2)
-                                        SketchHatchView(opacity: 0.3)
-                                            .clipShape(Circle())
-                                    }
-                                }
-                                .frame(width: 26, height: 26)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 16)
                 }
+                .padding(12)
             }
         }
     }
@@ -456,7 +424,7 @@ struct SketchLargeWidget: Widget {
         }
         .supportedFamilies([.systemLarge])
         .configurationDisplayName("Sketch Max")
-        .description("Prayer completion grid with donut chart and prayer status row.")
+        .description("Large Sketch mix with canvas and next-prayer board.")
         .contentMarginsDisabled()
     }
 }

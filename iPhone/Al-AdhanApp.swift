@@ -265,6 +265,10 @@ struct AlAdhanApp: App {
     #if DEBUG
     private let widgetPreviewVerificationLaunch = ProcessInfo.processInfo.arguments.contains("--verify-widget-previews")
     private let liveNotificationPreviewVerificationLaunch = ProcessInfo.processInfo.arguments.contains("--verify-live-notification-preview")
+
+    private var verificationColorSchemeOverride: ColorScheme? {
+        widgetPreviewVerificationLaunch || liveNotificationPreviewVerificationLaunch ? .light : settings.colorScheme
+    }
     #endif
 
     init() {
@@ -295,7 +299,11 @@ struct AlAdhanApp: App {
             .environment(\.locale, appLocale(for: appLanguageCode))
             .accentColor(settings.accentColor.color)
             .tint(settings.accentColor.color)
+            #if DEBUG
+            .preferredColorScheme(verificationColorSchemeOverride)
+            #else
             .preferredColorScheme(settings.colorScheme)
+            #endif
             .transition(.opacity)
             .animation(.easeInOut, value: isLaunching)
             .animation(.easeInOut, value: settings.firstLaunch)

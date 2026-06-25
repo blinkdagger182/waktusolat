@@ -326,6 +326,7 @@ struct SettingsView: View {
     @State private var showingCredits = false
     @State private var showingAdhanSetup = false
     @State private var showingPaywall = false
+    @State private var showingWaktuProPaywall = false
     @State private var showingLiveActivityDebug = false
     @State private var showingWidgetPreviewDebug = false
     @State private var showingSupportToastDebugPicker = false
@@ -455,21 +456,14 @@ struct SettingsView: View {
                     }
 
                     Section(header: Text("SUPPORT")) {
-                        if revenueCat.hasPro {
-                            Button {
-                                openRevenueCatDonationPaywall()
-                            } label: {
-                                Label("Buy me a coffee", systemImage: "cup.and.saucer.fill")
-                                    .foregroundColor(settings.accentColor.color)
-                            }
-                        } else {
-                            Button {
-                                NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
-                            } label: {
-                                Label("Support Waktu", systemImage: "hands.sparkles.fill")
-                                    .foregroundColor(settings.accentColor.color)
-                            }
+                        Button {
+                            openWaktuProPaywall()
+                        } label: {
+                            Label("Waktu Pro", systemImage: "hands.sparkles.fill")
+                                .foregroundColor(settings.accentColor.color)
+                        }
 
+                        if !revenueCat.hasPro {
                             Button {
                                 redeemOfferCode()
                             } label: {
@@ -484,38 +478,28 @@ struct SettingsView: View {
                                 Text(donationImpactMessage)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
-                                HStack {
-                                    Spacer()
-                                    Button(donationImpactCTA) {
-                                        NotificationCenter.default.post(name: .openSupportDonationPaywall, object: nil)
-                                    }
-                                    .font(.caption2.weight(.semibold))
-                                    Spacer()
-                                }
                             }
                         }
                     }
 
-                    if !revenueCat.hasPro {
-                        HStack {
-                            Spacer()
-                            Button {
-                                openRevenueCatDonationPaywall()
-                            } label: {
-                                Text("Buy me a coffee instead")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(.blue)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.blue.opacity(0.12), in: Capsule())
-                            }
-                            .buttonStyle(.plain)
-                            Spacer()
+                    HStack {
+                        Spacer()
+                        Button {
+                            openRevenueCatDonationPaywall()
+                        } label: {
+                            Text("Buy me a coffee")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.blue.opacity(0.12), in: Capsule())
                         }
-                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 10, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                        .buttonStyle(.plain)
+                        Spacer()
                     }
+                    .listRowInsets(EdgeInsets(top: -18, leading: 16, bottom: 10, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
                 .navigationTitle("Settings")
                 #if DEBUG
@@ -591,6 +575,21 @@ struct SettingsView: View {
         }) {
             paywallSheet
                 .applySupportPaywallSheetStyle()
+        }
+        .fullScreenCover(isPresented: $showingWaktuProPaywall, onDismiss: {
+            NotificationCenter.default.post(name: .supportDonationPaywallDismissed, object: nil)
+        }) {
+            WaktuProPaywallView(
+                offeringIdentifiers: paywallOfferingIdentifiers,
+                onPurchaseCompleted: {
+                    showingWaktuProPaywall = false
+                },
+                onDismiss: {
+                    showingWaktuProPaywall = false
+                }
+            )
+            .environmentObject(settings)
+            .environmentObject(revenueCat)
         }
         .sheet(isPresented: $showingAdhanSetup) {
             AdhanSetupSheet()
@@ -682,6 +681,14 @@ struct SettingsView: View {
         settings.hapticFeedback()
         AudioServicesPlaySystemSound(1025)
         #endif
+    }
+
+    private func openWaktuProPaywall() {
+        settings.hapticFeedback()
+        Task {
+            await revenueCat.refreshOfferings()
+            showingWaktuProPaywall = true
+        }
     }
 
     private var resolvedPaywallOffering: RevenueCat.Offering? {

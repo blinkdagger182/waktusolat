@@ -417,9 +417,14 @@ struct LockScreen2EntryView: View {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
                     .font(.caption)
+            } else if selectedStyle == .neoTransit || selectedStyle == .neoTransitSmall {
+                NeoTransitLockScreenRectangularView(
+                    entry: entry,
+                    scale: selectedStyle == .neoTransitSmall ? 0.72 : 1
+                )
             } else if let currentPrayer = widgetResolvedCurrentAndNextPrayers(in: entry).current,
                       let nextPrayer = widgetResolvedCurrentAndNextPrayers(in: entry).next,
-                      let window = countdownBarPrayerWindow(for: entry) {
+                      countdownBarPrayerWindow(for: entry) != nil {
                 if selectedStyle == .prayerTimelineWithLocation
                     || selectedStyle == .prayerTimelineWithoutLocation
                     || selectedStyle == .prayerTimelinePlusWithLocation

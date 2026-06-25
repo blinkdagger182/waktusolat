@@ -205,7 +205,7 @@ struct NeoSmallWidget: Widget {
     }
 }
 
-private struct NeoDotMatrixText: View {
+struct NeoDotMatrixText: View {
     let text: String
     let color: Color
     let offColor: Color
@@ -296,19 +296,29 @@ private struct NeoDotMatrixText: View {
     }
 }
 
+private struct NeoMixedTile<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(neoSubtle.opacity(0.42), lineWidth: 1)
+            }
+    }
+}
+
 // ═══════════════════════════════════════════════════════
-// MARK: - MEDIUM — departure board
+// MARK: - MEDIUM — Neo + Neo Transit mix
 // ═══════════════════════════════════════════════════════
 
 struct NeoMediumView: View {
     let entry: PrayersEntry
-
-    private var current: Prayer? { entry.currentPrayer ?? entry.prayers.first }
-    private var next: Prayer?    { entry.nextPrayer }
-
-    private func countdown(to target: Date, from now: Date) -> String {
-        widgetApproxRemainingText(until: target, from: now, compact: true)
-    }
 
     var body: some View {
         ZStack {
@@ -316,56 +326,15 @@ struct NeoMediumView: View {
             if !premiumWidgetsUnlocked() {
                 NeoLockedView()
             } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Header
-                    HStack {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Next prayer")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(neoGray)
-                            Text(entry.currentCity)
-                                .font(.system(size: 11))
-                                .foregroundStyle(neoSubtle)
-                        }
-                        Spacer()
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 14))
-                            .foregroundStyle(neoSubtle)
+                HStack(spacing: 10) {
+                    NeoMixedTile {
+                        NeoSmallView(entry: entry)
                     }
-                    .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
-
-                    HStack(alignment: .center, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text((current?.nameTransliteration.uppercased() ?? "------"))
-                                .font(.system(size: 34, weight: .bold, design: .monospaced))
-                                .foregroundStyle(neoLime)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.5)
-
-                            Text(next.map { countdown(to: $0.time, from: entry.date) } ?? "--:--")
-                                .font(.system(size: 34, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                        }
-
-                        Spacer()
-
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("TODAY")
-                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                                .foregroundStyle(neoSubtle)
-                            Text(next.map { neoTimeFmt.string(from: $0.time) } ?? "--:--")
-                                .font(.system(size: 18, weight: .bold, design: .monospaced))
-                                .foregroundStyle(neoGray)
-                            Text(next.map { neoTimeFmt.string(from: $0.time) } ?? "--:--")
-                                .font(.system(size: 14, design: .monospaced))
-                                .foregroundStyle(neoSubtle)
-                        }
+                    NeoMixedTile {
+                        NeoTransitSmallView(entry: entry)
                     }
-                    .padding(.horizontal, 16)
-                    .frame(maxHeight: .infinity, alignment: .center)
-                    .padding(.bottom, 14)
                 }
+                .padding(10)
             }
         }
     }
@@ -383,19 +352,17 @@ struct NeoMediumWidget: Widget {
         }
         .supportedFamilies([.systemMedium])
         .configurationDisplayName("Neo Board")
-        .description("Departure-board countdown to the next prayer.")
+        .description("Neo sentence and Neo Transit next-prayer board.")
         .contentMarginsDisabled()
     }
 }
 
 // ═══════════════════════════════════════════════════════
-// MARK: - LARGE — prayer progress tracker
+// MARK: - LARGE — Neo + Neo Transit mix
 // ═══════════════════════════════════════════════════════
 
 struct NeoLargeView: View {
     let entry: PrayersEntry
-
-    private var progress: NeoPrayerData { neoProgress(from: entry) }
 
     var body: some View {
         ZStack {
@@ -403,102 +370,15 @@ struct NeoLargeView: View {
             if !premiumWidgetsUnlocked() {
                 NeoLockedView()
             } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Header row
-                    HStack(alignment: .top) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "moon.stars.fill")
-                                .font(.system(size: 28))
-                                .foregroundStyle(neoLime)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Prayer Progress")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(.white)
-                                Text("\(progress.done) of \(progress.total) prayers completed today")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(neoGray)
-                            }
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(neoDateFmt.string(from: entry.date))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(neoGray)
-                            Text("\(progress.done)/\(progress.total)")
-                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.white)
-                            Text("prayers")
-                                .font(.system(size: 10))
-                                .foregroundStyle(neoSubtle)
-                        }
+                VStack(spacing: 10) {
+                    NeoMixedTile {
+                        NeoTransitSmallView(entry: entry)
                     }
-                    .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 16)
-
-                    // Progress bar
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(neoSubtle.opacity(0.3))
-                                .frame(height: 14)
-                            Capsule()
-                                .fill(neoLime)
-                                .frame(width: geo.size.width * progress.fraction, height: 14)
-                        }
+                    NeoMixedTile {
+                        NeoSmallView(entry: entry)
                     }
-                    .frame(height: 14)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
-
-                    VStack(spacing: 18) {
-                        HStack(spacing: 0) {
-                            ForEach(progress.items, id: \.short) { item in
-                                VStack(spacing: 8) {
-                                    Text(item.short)
-                                        .font(.system(size: 13, weight: item.isDone ? .semibold : .regular))
-                                        .foregroundStyle(item.isDone ? .white : neoSubtle)
-                                        .lineLimit(1).minimumScaleFactor(0.7)
-                                    Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 28))
-                                        .foregroundStyle(item.isDone ? neoLime : neoSubtle)
-                                    Text(neoTimeFmt.string(from: item.time))
-                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                        .foregroundStyle(item.isDone ? neoGray : neoSubtle)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                        }
-
-                        if let next = progress.nextRemaining {
-                            HStack(spacing: 8) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 14, weight: .semibold))
-                                Text("\(next.name) remaining")
-                                    .font(.system(size: 14, weight: .semibold))
-                                Text(progress.remainingLabel(from: entry.date) ?? "")
-                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                            }
-                            .foregroundStyle(neoGray)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .frame(maxHeight: .infinity, alignment: .center)
-
-                    // Footer
-                    HStack {
-                        Text("\(progress.done) complete")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(neoGray)
-                        Spacer()
-                        Text(progress.isOnTrack(now: entry.date) ? "On track" : "Keep going")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(neoBlack)
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(neoLime)
-                            .clipShape(Capsule())
-                    }
-                    .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 14)
                 }
+                .padding(12)
             }
         }
     }
@@ -516,7 +396,78 @@ struct NeoLargeWidget: Widget {
         }
         .supportedFamilies([.systemLarge])
         .configurationDisplayName("Neo Progress")
-        .description("Daily prayer progress tracker with completion status.")
+        .description("Large Neo mix with sentence and Neo Transit board.")
+        .contentMarginsDisabled()
+    }
+}
+
+struct NeoTransitLockScreenRectangularView: View {
+    let entry: PrayersEntry
+    var scale: CGFloat = 1
+
+    private var next: Prayer? { widgetResolvedCurrentAndNextPrayers(in: entry).next }
+
+    var body: some View {
+        GeometryReader { geo in
+            let rows = [
+                neoWidgetPrayerDisplayName(next, in: entry).uppercased(),
+                next.map { neoTimeFmt.string(from: $0.time) } ?? "--:--"
+            ]
+            let dotSize = max(1.4, NeoDotMatrixText.dotSize(for: rows, availableWidth: geo.size.width) * scale)
+
+            VStack(alignment: .leading, spacing: scale < 1 ? 2 : 4) {
+                NeoDotMatrixText(
+                    text: rows[0],
+                    color: neoLime,
+                    offColor: Color.primary.opacity(0.18),
+                    dotSize: dotSize
+                )
+                NeoDotMatrixText(
+                    text: rows[1],
+                    color: Color.primary.opacity(0.92),
+                    offColor: Color.primary.opacity(0.18),
+                    dotSize: dotSize
+                )
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: scale < 1 ? .center : .leading)
+        }
+    }
+}
+
+private func neoWidgetPrayerDisplayName(_ prayer: Prayer?, in entry: PrayersEntry) -> String {
+    guard let prayer else { return "Waktu" }
+    return widgetPrayerDisplayName(prayer, in: entry)
+}
+
+@available(iOS 16.0, *)
+struct NeoTransitLockScreenWidget: Widget {
+    let kind = "NeoTransitLockScreenWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
+            NeoTransitLockScreenRectangularView(entry: entry)
+        }
+        .supportedFamilies([.accessoryRectangular])
+        .configurationDisplayName("Neo Transit")
+        .description("Dot-matrix style next prayer for the Lock Screen.")
+        .contentMarginsDisabled()
+    }
+}
+
+struct NeoTransitLockScreenSmallWidget: Widget {
+    let kind = "NeoTransitLockScreenSmallWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
+            if #available(iOS 17.0, *) {
+                NeoTransitSmallView(entry: entry).containerBackground(for: .widget) { neoBlack }
+            } else {
+                NeoTransitSmallView(entry: entry)
+            }
+        }
+        .supportedFamilies([.systemSmall])
+        .configurationDisplayName("Neo Transit")
+        .description("Neo Transit next-prayer board for the Lock Screen.")
         .contentMarginsDisabled()
     }
 }

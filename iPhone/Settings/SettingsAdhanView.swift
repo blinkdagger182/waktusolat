@@ -1378,6 +1378,7 @@ struct WidgetPreviewGalleryView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
+
                         }
                         .padding(.vertical, 4)
                     }
@@ -5442,7 +5443,7 @@ private struct PrayerTimesStyleCard: View {
                         )
                         .frame(width: 188)
                         .padding(.bottom, 20)
-                    } else {
+                    } else if style == .prayerTimelinePlusWithoutLocation {
                         CurvierPrayerTimelineGraphPreviewCard(
                             currentPrayer: localizedPrayerName("Maghrib"),
                             nextPrayer: localizedPrayerName("Isha"),
@@ -5452,6 +5453,14 @@ private struct PrayerTimesStyleCard: View {
                         )
                         .frame(width: 188)
                         .padding(.bottom, 20)
+                    } else if style == .neoTransit {
+                        LockScreenNeoTransitPreviewCard(scale: 1)
+                            .frame(width: 188)
+                            .padding(.bottom, 20)
+                    } else {
+                        LockScreenNeoTransitPreviewCard(scale: 0.72)
+                            .frame(width: 188)
+                            .padding(.bottom, 20)
                     }
                 }
             }
@@ -5477,6 +5486,46 @@ private struct PrayerTimesStyleCard: View {
             }
             .frame(width: 188, alignment: .leading)
         }
+    }
+}
+
+private struct LockScreenNeoTransitPreviewCard: View {
+    private let neoBlack = Color(red: 0.07, green: 0.07, blue: 0.08)
+    private let neoLime = Color(red: 0.72, green: 0.93, blue: 0.35)
+    private let neoDotOff = Color(red: 0.26, green: 0.26, blue: 0.27)
+    let scale: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(neoBlack)
+            .overlay {
+                GeometryReader { geo in
+                    let rows = ["ASAR", "16:15"]
+                    let dotSize = max(1.4, PreviewNeoDotMatrixText.dotSize(for: rows, availableWidth: geo.size.width - 22) * scale)
+
+                    VStack(alignment: .leading, spacing: scale < 1 ? 2 : 5) {
+                        PreviewNeoDotMatrixText(
+                            text: rows[0],
+                            color: neoLime,
+                            offColor: neoDotOff,
+                            dotSize: dotSize
+                        )
+                        PreviewNeoDotMatrixText(
+                            text: rows[1],
+                            color: .white.opacity(0.92),
+                            offColor: neoDotOff,
+                            dotSize: dotSize
+                        )
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .padding(.horizontal, 11)
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(neoLime.opacity(0.22), lineWidth: 1)
+            )
+            .frame(height: 74)
     }
 }
 
@@ -7777,111 +7826,32 @@ private struct HomeNeoMediumPreviewCard: View {
     var body: some View {
         ZStack {
             pvNeoBlack
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Next prayer").font(.system(size: 8, weight: .medium)).foregroundStyle(pvNeoGray)
-                        Text("Subang Jaya").font(.system(size: 7)).foregroundStyle(pvNeoSubtle)
-                    }
-                    Spacer()
-                    Image(systemName: "ellipsis").font(.system(size: 8)).foregroundStyle(pvNeoSubtle)
+            HStack(spacing: 6) {
+                HomePreviewMixedTile(stroke: pvNeoSubtle.opacity(0.42)) {
+                    HomeNeoSmallPreviewCard()
                 }
-                .padding(.horizontal, 10).padding(.top, 8).padding(.bottom, 4)
-
-                HStack(alignment: .center, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("MAGHRIB")
-                            .font(.system(size: 20, weight: .bold, design: .monospaced))
-                            .foregroundStyle(pvNeoLime)
-                            .lineLimit(1).minimumScaleFactor(0.6)
-                        Text("01:28")
-                            .font(.system(size: 20, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text("TODAY").font(.system(size: 6, weight: .semibold, design: .monospaced)).foregroundStyle(pvNeoSubtle)
-                        Text("18:42").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(pvNeoGray)
-                        Text("18:42").font(.system(size: 8, design: .monospaced)).foregroundStyle(pvNeoSubtle)
-                    }
+                HomePreviewMixedTile(stroke: pvNeoSubtle.opacity(0.42)) {
+                    HomeNeoTransitSmallPreviewCard()
                 }
-                .padding(.horizontal, 10)
-                .frame(maxHeight: .infinity, alignment: .center)
-                .padding(.bottom, 8)
             }
+            .padding(6)
         }
     }
 }
 
 private struct HomeNeoLargePreviewCard: View {
-    private let prayers = [("Fajr", true), ("Dhuhr", true), ("Asr", true), ("Maghrib", true), ("Isha", false)]
     var body: some View {
         ZStack {
             pvNeoBlack
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "moon.stars.fill").font(.system(size: 18)).foregroundStyle(pvNeoLime)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Prayer Progress").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
-                            Text("4 of 5 completed today").font(.system(size: 8)).foregroundStyle(pvNeoGray)
-                        }
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 0) {
-                        Text("Fri, 17 Jan").font(.system(size: 8)).foregroundStyle(pvNeoGray)
-                        Text("4/5").font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(.white)
-                        Text("prayers").font(.system(size: 7)).foregroundStyle(pvNeoSubtle)
-                    }
+            VStack(spacing: 6) {
+                HomePreviewMixedTile(stroke: pvNeoSubtle.opacity(0.42)) {
+                    HomeNeoTransitSmallPreviewCard()
                 }
-                .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 8)
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(pvNeoSubtle.opacity(0.3)).frame(height: 8)
-                        Capsule().fill(pvNeoLime).frame(width: geo.size.width * 0.8, height: 8)
-                    }
+                HomePreviewMixedTile(stroke: pvNeoSubtle.opacity(0.42)) {
+                    HomeNeoSmallPreviewCard()
                 }
-                .frame(height: 8).padding(.horizontal, 10).padding(.bottom, 10)
-
-                VStack(spacing: 10) {
-                    HStack(spacing: 0) {
-                        ForEach(Array(prayers.enumerated()), id: \.element.0) { index, item in
-                            let name = item.0
-                            let done = item.1
-                            VStack(spacing: 4) {
-                                Text(name).font(.system(size: 7, weight: done ? .semibold : .regular))
-                                    .foregroundStyle(done ? .white : pvNeoSubtle).lineLimit(1).minimumScaleFactor(0.7)
-                                Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                                    .font(.system(size: 17))
-                                    .foregroundStyle(done ? pvNeoLime : pvNeoSubtle)
-                                Text(["05:52", "13:23", "16:46", "19:31", "20:38"][index])
-                                    .font(.system(size: 6, weight: .medium, design: .monospaced))
-                                    .foregroundStyle(done ? pvNeoGray : pvNeoSubtle)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock").font(.system(size: 8)).foregroundStyle(pvNeoGray)
-                        Text("Isha remaining ~2h 15m").font(.system(size: 8, weight: .medium)).foregroundStyle(pvNeoGray)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.horizontal, 10)
-                .frame(maxHeight: .infinity, alignment: .center)
-
-                HStack {
-                    Text("4 complete").font(.system(size: 8)).foregroundStyle(pvNeoGray)
-                    Spacer()
-                    Text("On track")
-                        .font(.system(size: 8, weight: .semibold)).foregroundStyle(pvNeoBlack)
-                        .padding(.horizontal, 7).padding(.vertical, 3)
-                        .background(pvNeoLime).clipShape(Capsule())
-                }
-                .padding(.horizontal, 10).padding(.bottom, 10).padding(.top, 8)
             }
+            .padding(7)
         }
     }
 }
@@ -7960,108 +7930,87 @@ private struct HomeSketchSmallPreviewCard: View {
     }
 }
 
-private struct HomeSketchMediumPreviewCard: View {
+private struct HomeSketchTransitSmallPreviewCard: View {
     var body: some View {
         ZStack {
-            pvSkBg
-            ZStack(alignment: .bottomTrailing) {
-                PvSketchHatch().frame(width: 60, height: 38).padding(.trailing, 10).padding(.bottom, 8)
+            pvSkBlack
+            ZStack(alignment: .bottom) {
+                PvSketchWave().opacity(0.75)
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("Waktu").font(.system(size: 12, weight: .bold)).foregroundStyle(pvSkBlack)
-                            Text("Prayer progress").font(.system(size: 8)).foregroundStyle(pvSkGray)
+                            Text("Next").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                            Text("Kuala Lumpur").font(.system(size: 7)).foregroundStyle(pvSkGray)
+                                .lineLimit(1)
                         }
                         Spacer()
-                        Image(systemName: "moon.fill").font(.system(size: 13)).foregroundStyle(pvSkBlack)
+                        Image(systemName: "moon.fill").font(.system(size: 13)).foregroundStyle(pvSkOrange)
                     }
-                    .padding(.horizontal, 10).padding(.top, 8).padding(.bottom, 5)
-
-                    HStack {
-                        Spacer()
-                        Text("80%").font(.system(size: 18, weight: .bold)).foregroundStyle(pvSkBlack)
-                    }.padding(.trailing, 10).padding(.bottom, 4)
-
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(pvSkDim.opacity(0.4)).frame(height: 9)
-                            Capsule().fill(pvSkOrange).frame(width: geo.size.width * 0.8, height: 9)
+                    .padding(.horizontal, 10).padding(.top, 10)
+                    Spacer()
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Maghrib").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                        HStack(spacing: 4) {
+                            Text("1h 28m").font(.system(size: 9, weight: .semibold)).foregroundStyle(pvSkOrange)
+                            Text("18:42").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
                         }
                     }
-                    .frame(height: 9).padding(.horizontal, 10).padding(.bottom, 5)
-
-                    Text("4 of 5 prayers").font(.system(size: 8)).foregroundStyle(pvSkGray)
-                        .padding(.horizontal, 10).padding(.bottom, 8)
+                    .padding(.horizontal, 10).padding(.bottom, 12)
                 }
             }
         }
     }
 }
 
-private struct HomeSketchLargePreviewCard: View {
-    private let prayers = [("Fajr", true), ("Dhuhr", true), ("Asr", true), ("Maghrib", true), ("Isha", false)]
+private struct HomePreviewMixedTile<Content: View>: View {
+    let stroke: Color
+    let content: Content
+
+    init(stroke: Color, @ViewBuilder content: () -> Content) {
+        self.stroke = stroke
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(stroke, lineWidth: 1)
+            }
+    }
+}
+
+private struct HomeSketchMediumPreviewCard: View {
     var body: some View {
         ZStack {
-            pvSkBg
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("80%").font(.system(size: 24, weight: .bold)).foregroundStyle(pvSkBlack)
-                        Text("Waktu today").font(.system(size: 9)).foregroundStyle(pvSkGray)
-                    }
-                    Spacer()
-                    Image(systemName: "moon.fill").font(.system(size: 14)).foregroundStyle(pvSkBlack)
+            pvSkBlack
+            HStack(spacing: 6) {
+                HomePreviewMixedTile(stroke: pvSkOrange.opacity(0.32)) {
+                    HomeSketchSmallPreviewCard()
                 }
-                .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 8)
-
-                Spacer(minLength: 0)
-
-                HStack(spacing: 10) {
-                    // 5x5 dot mini-grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 5), spacing: 3) {
-                        ForEach(0..<25) { i in
-                            Circle().fill(i < 16 ? pvSkOrange : pvSkDim.opacity(0.4)).frame(width: 8, height: 8)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    // Mini donut
-                    ZStack {
-                        Circle().stroke(pvSkDim.opacity(0.4), lineWidth: 6)
-                        Circle().trim(from: 0, to: 0.8)
-                            .stroke(pvSkOrange, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                        Text("4/5").font(.system(size: 10, weight: .bold)).foregroundStyle(pvSkBlack)
-                    }
-                    .frame(width: 64, height: 64)
+                HomePreviewMixedTile(stroke: pvSkOrange.opacity(0.32)) {
+                    HomeSketchTransitSmallPreviewCard()
                 }
-                .padding(.horizontal, 10)
-                .frame(height: 88)
-                .padding(.bottom, 6)
-
-                Spacer(minLength: 0)
-
-                HStack(spacing: 0) {
-                    ForEach(prayers, id: \.0) { name, done in
-                        VStack(spacing: 3) {
-                            Text(name).font(.system(size: 7, weight: done ? .semibold : .regular))
-                                .foregroundStyle(done ? pvSkBlack : pvSkGray).lineLimit(1).minimumScaleFactor(0.7)
-                            ZStack {
-                                if done {
-                                    Circle().fill(pvSkOrange)
-                                    Image(systemName: "checkmark").font(.system(size: 6, weight: .bold)).foregroundStyle(.white)
-                                } else {
-                                    Circle().stroke(pvSkDim.opacity(0.5), lineWidth: 1)
-                                    PvSketchHatch().clipShape(Circle())
-                                }
-                            }
-                            .frame(width: 16, height: 16)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .padding(.horizontal, 8).padding(.bottom, 10)
             }
+            .padding(6)
+        }
+    }
+}
+
+private struct HomeSketchLargePreviewCard: View {
+    var body: some View {
+        ZStack {
+            pvSkBlack
+            VStack(spacing: 6) {
+                HomePreviewMixedTile(stroke: pvSkOrange.opacity(0.32)) {
+                    HomeSketchTransitSmallPreviewCard()
+                }
+                HomePreviewMixedTile(stroke: pvSkOrange.opacity(0.32)) {
+                    HomeSketchSmallPreviewCard()
+                }
+            }
+            .padding(7)
         }
     }
 }

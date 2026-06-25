@@ -911,6 +911,8 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
     case prayerTimelineWithoutLocation
     case prayerTimelinePlusWithLocation
     case prayerTimelinePlusWithoutLocation
+    case neoTransit
+    case neoTransitSmall
 
     var id: String { rawValue }
 
@@ -936,6 +938,10 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage() ? "Garis Masa Solat+ + Lokasi" : "Prayer Timeline+ + Location"
         case .prayerTimelinePlusWithoutLocation:
             return isMalayAppLanguage() ? "Garis Masa Solat+" : "Prayer Timeline+"
+        case .neoTransit:
+            return "Neo Transit"
+        case .neoTransitSmall:
+            return "Neo Transit Small"
         }
     }
 
@@ -981,6 +987,14 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
             return isMalayAppLanguage()
                 ? "Graf yang lebih lembut, tinggi, dan melengkung tanpa lokasi."
                 : "A softer, taller, curvier graph without the location."
+        case .neoTransit:
+            return isMalayAppLanguage()
+                ? "Papan piksel Neo untuk solat seterusnya."
+                : "Pixel Neo board for the next prayer time."
+        case .neoTransitSmall:
+            return isMalayAppLanguage()
+                ? "Papan piksel Neo yang lebih kecil untuk solat seterusnya."
+                : "Smaller pixel Neo board for the next prayer time."
         }
     }
 
@@ -997,7 +1011,9 @@ enum LockScreenPrayerTimesStyle: String, CaseIterable, Identifiable {
              .prayerCountdownCenteredWithLocation,
              .prayerCountdownCenteredWithoutLocation,
              .prayerTimelinePlusWithLocation,
-             .prayerTimelinePlusWithoutLocation:
+             .prayerTimelinePlusWithoutLocation,
+             .neoTransit,
+             .neoTransitSmall:
             return true
         }
     }
